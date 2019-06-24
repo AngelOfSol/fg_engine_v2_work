@@ -146,7 +146,6 @@ fn main() {
 struct FightingGame {
     current_frame: usize,
     resource: [graphics::Image; 10],
-    test: Option<animation::Sprite>,
 }
 
 impl FightingGame {
@@ -165,7 +164,6 @@ impl FightingGame {
                 graphics::Image::new(ctx, "/yuyuko/stand/008.png").unwrap(),
                 graphics::Image::new(ctx, "/yuyuko/stand/009.png").unwrap(),
             ],
-            test: None,
         }
     }
 }
@@ -184,12 +182,12 @@ impl EventHandler for FightingGame {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let test = &self.resource;
         graphics::clear(ctx, graphics::BLACK);
-        graphics::draw(
+        let _ = graphics::draw(
             ctx,
             &test[self.current_frame],
             graphics::DrawParam::new().dest([0.0f32, 0.0f32]),
         );
-        graphics::present(ctx);
+        let _ = graphics::present(ctx);
         Ok(())
         // Draw code here...
     }
