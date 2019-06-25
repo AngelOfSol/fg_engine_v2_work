@@ -27,16 +27,11 @@ fn main() {
         .build()
         .expect("expected context");
 
-    let file = std::fs::File::open("./resources/animation.json").unwrap();
-    let buf_read = std::io::BufReader::new(file);
-    let animation: animation::Animation =
-        serde_json::from_reader::<_, animation::Animation>(buf_read).unwrap();
-
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let mut my_game = game::FightingGame::new(&mut ctx, animation);
+    let mut my_game = game::FightingGame::new(&mut ctx).unwrap();
     // Run!
     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
         Ok(_) => println!("Exited cleanly."),

@@ -1,6 +1,5 @@
 mod animation_editor;
 
-use crate::animation::Animation;
 use crate::assets::Assets;
 
 use ggez::event::EventHandler;
@@ -12,10 +11,8 @@ use std::collections::HashMap;
 
 use animation_editor::AnimationEditor;
 
-
 pub struct FightingGame {
     game_state: GameState,
-    resource: Animation,
     assets: Assets,
 }
 
@@ -24,16 +21,14 @@ enum GameState {
 }
 
 impl FightingGame {
-    pub fn new(ctx: &mut Context, data: Animation) -> Self {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let mut assets = Assets {
             images: HashMap::new(),
         };
-        data.load_images(ctx, &mut assets).unwrap();
-        Self {
-            game_state: GameState::Animating(AnimationEditor::new()),
-            resource: data,
+        Ok(Self {
+            game_state: GameState::Animating(AnimationEditor::new(ctx, &mut assets)?),
             assets,
-        }
+        })
     }
 }
 
@@ -53,7 +48,7 @@ impl EventHandler for FightingGame {
         graphics::clear(ctx, graphics::BLACK);
 
         match self.game_state {
-            GameState::Animating(ref editor) => editor.draw(ctx, &self.assets, &self.resource),
+            GameState::Animating(ref editor) => editor.draw(ctx, &self.assets),
         }?;
 
         graphics::present(ctx)?;
