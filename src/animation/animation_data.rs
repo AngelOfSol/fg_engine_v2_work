@@ -1,34 +1,39 @@
 
 use super::sprite::Sprite;
+use crate::assets::Assets;
 use crate::timeline::Timeline;
-use ggez::graphics;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Animation<T> {
-	pub frames: Timeline<Option<Sprite<T>>>,
+pub struct Animation {
+	pub frames: Timeline<Option<Sprite>>,
 }
 
-pub type RenderAnimation = Animation<graphics::Image>;
-pub type DataAnimation = Animation<String>;
 
-
-impl DataAnimation {
-	pub fn with_images(self, ctx: &mut Context) -> GameResult<RenderAnimation> {
-		Ok(RenderAnimation {
-			frames: self
-				.frames
-				.into_iter()
-				.map(|(frame, duration)| {
-					frame
-						.map(|unresolved| unresolved.with_image(ctx))
-						.transpose()
-						.map(|resolved| (resolved, duration))
-				})
-				.collect::<GameResult<Vec<_>>>()?,
-		})
-
+impl Animation {
+	pub fn load_images(&self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
+		for (sprite, _) in &self.frames {
+			if let Some(data) = sprite {
+				data.load_image(ctx, assets)?
+			}
+		}
+		Ok(())
+	}
+	pub fn draw(
+		ctx: &mut Context,
+		assets: &Assets,
+		animation: &Animation,
+		time: usize,
+		world: nalgebra::Matrix4<f32>,
+	) -> GameResult<()> {
+		use crate::timeline::AtTime;
+		let data = animation.frames.at_time(time);
+		if let Some(image) = data {
+			Sprite::draw(ctx, assets, &image, world)
+		} else {
+			Ok(())
+		}
 	}
 }
