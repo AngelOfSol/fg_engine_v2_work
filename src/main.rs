@@ -1,18 +1,16 @@
 use ggez::conf;
-use ggez::event::{self, EventHandler};
-use ggez::graphics;
+use ggez::event;
 
-use ggez::timer;
-use ggez::{Context, ContextBuilder, GameResult};
+use ggez::ContextBuilder;
 
-use std::collections::HashMap;
 use std::env;
 use std::path;
 
 mod animation;
 mod assets;
-mod timeline;
 
+mod state;
+mod timeline;
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -29,72 +27,19 @@ fn main() {
         .build()
         .expect("expected context");
 
-    let mut assets = assets::Assets {
-        images: HashMap::new(),
-    };
-
     let file = std::fs::File::open("./resources/animation.json").unwrap();
     let buf_read = std::io::BufReader::new(file);
     let animation: animation::Animation =
         serde_json::from_reader::<_, animation::Animation>(buf_read).unwrap();
 
-    animation.load_images(&mut ctx, &mut assets).unwrap();
-
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let mut my_game = FightingGame::new(&mut ctx, animation, assets);
+    let mut my_game = state::FightingGame::new(&mut ctx, animation);
     // Run!
     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
         Ok(_) => println!("Exited cleanly."),
         Err(e) => println!("Error occured: {}", e),
-    }
-}
-
-struct FightingGame {
-    current_frame: usize,
-    resource: animation::Animation,
-    assets: assets::Assets,
-}
-
-impl FightingGame {
-    fn new(_ctx: &mut Context, data: animation::Animation, assets: assets::Assets) -> Self {
-        Self {
-            current_frame: 0,
-            resource: data,
-            assets,
-        }
-    }
-}
-
-impl EventHandler for FightingGame {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-
-        while timer::check_update_time(ctx, 60) {
-            self.current_frame += 1;
-        }
-        Ok(())
-        // Update code here...
-    }
-
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        use timeline::AtTime;
-
-        let test = &self.resource;
-        graphics::clear(ctx, graphics::BLACK);
-
-        animation::Animation::draw(
-            ctx,
-            &self.assets,
-            &test,
-            self.current_frame % test.frames.duration(),
-            nalgebra::Translation3::new(100.0, 100.0, 0.0).to_homogeneous(),
-        )?;
-
-        graphics::present(ctx)?;
-
-        Ok(())
-        // Draw code here...
     }
 }
