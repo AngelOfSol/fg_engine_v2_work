@@ -8,9 +8,9 @@ use std::path;
 
 mod animation;
 mod assets;
-
-mod state;
+mod game;
 mod timeline;
+
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -36,7 +36,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let mut my_game = state::FightingGame::new(&mut ctx, animation);
+    let mut my_game = game::FightingGame::new(&mut ctx, animation);
     // Run!
     match event::run(&mut ctx, &mut event_loop, &mut my_game) {
         Ok(_) => println!("Exited cleanly."),
