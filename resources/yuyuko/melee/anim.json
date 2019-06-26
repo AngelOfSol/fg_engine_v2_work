@@ -1,0 +1,165 @@
+{
+	"general": { 
+        "center_bottom": {
+        	"x": 0,
+        	"y": 0
+        },
+        "velocity": {
+            "x": 0,
+            "y": 0
+        },
+        "body": {
+        	"size": {
+        		"x": 20,
+        		"y": 100
+        	}
+        },
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 110
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	"frames": [{
+		"file": "001.png",
+		"duration": 2
+	},
+	{
+		"file": "002.png",
+		"duration": 2
+	},
+	{
+		"file": "003.png",
+		"duration": 3
+	},
+	{
+		"file": "004.png",
+		"duration": 3
+	},
+	{
+		"file": "005.png",
+		"duration": 3
+	},
+	{
+		"file": "006.png",
+		"duration": 3,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 100 
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	
+	{
+		"file": "007.png",
+		"duration": 4,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 80
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }],
+        "hurtboxes": [{
+            "size": {
+                "x": 70,
+                "y": 100
+            },
+            "position": {
+                "x": 40,
+                "y": 10 
+            }
+        }],
+        "hit_properties": {
+            "hitstun": 24,
+            "hitstop": 10
+        }
+	},
+	{
+		"file": "008.png",
+		"duration": 4,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 80
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	{
+		"file": "009.png",
+		"duration": 4,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 80
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	{
+		"file": "010.png",
+		"duration": 7,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 80
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	{
+		"file": "011.png",
+		"duration": 3,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 80
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	{
+		"file": "012.png",
+		"duration": 3,
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 90
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	{
+		"file": "013.png",
+		"duration": 3
+	}]
+}

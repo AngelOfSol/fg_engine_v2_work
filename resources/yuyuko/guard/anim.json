@@ -1,0 +1,33 @@
+{
+	"general": { 
+        "center_bottom": {
+        	"x": 0,
+        	"y": 0
+        },
+        "body": {
+        	"size": {
+        		"x": 20,
+        		"y": 100
+        	}
+        },
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 110
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }],
+        "guard": true
+	},
+	"frames": [{
+		"file": "000.png",
+		"duration": 1
+	},
+	{
+		"file": "001.png",
+		"duration": 1
+	}]
+}

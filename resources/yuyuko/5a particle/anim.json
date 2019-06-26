@@ -1,0 +1,50 @@
+{
+    "general": {
+        "center_bottom": {
+            "x": 0,
+            "y": 0 
+        },
+        "duration": 2
+    },
+	"frames": [
+    {
+        "file":"010.png",
+        "duration":1
+    },
+    {
+        "file":"011.png",
+        "duration":1
+    },
+    {
+        "file":"012.png",
+        "duration":1
+    },
+    {
+        "file":"013.png",
+        "duration":1
+    },
+    {
+        "file":"014.png",
+        "duration":1
+    },
+    {
+        "file":"015.png",
+        "duration":1
+    },
+    {
+        "file":"016.png",
+        "duration":1
+    },
+    {
+        "file":"017.png",
+        "duration":1
+    },
+    {
+        "file":"018.png"
+    },
+    {
+        "file":"019.png",
+        "duration":1
+    }
+]
+}

@@ -1,0 +1,12 @@
+{
+	"general": { 
+                "center_bottom": {
+                	"x": 0,
+                	"y": 0
+                }
+	},
+	"frames": [{
+		"file": "000.png",
+		"duration": 2
+	}]
+}

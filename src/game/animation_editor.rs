@@ -1,13 +1,19 @@
 use ggez::{Context, GameResult};
 
-use crate::animation::Animation;
-use crate::timeline::AtTime;
+
+use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
+use crate::imgui_wrapper::ImGuiWrapper;
+use crate::timeline::AtTime;
+
+
+use imgui::*;
 
 pub struct AnimationEditor {
     pub frame: usize,
     resource: Animation,
+    ui_data: AnimationUi,
 }
 
 impl AnimationEditor {
@@ -16,7 +22,11 @@ impl AnimationEditor {
         let buf_read = std::io::BufReader::new(file);
         let resource: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
         resource.load_images(ctx, assets)?;
-        Ok(Self { frame: 0, resource })
+        Ok(Self {
+            frame: 0,
+            resource,
+            ui_data: AnimationUi::new(),
+        })
     }
 
     pub fn update(&mut self) -> GameResult<()> {
@@ -24,7 +34,12 @@ impl AnimationEditor {
         Ok(())
     }
 
-    pub fn draw(&self, ctx: &mut Context, assets: &Assets) -> GameResult<()> {
+    pub fn draw<'a>(
+        &mut self,
+        ctx: &mut Context,
+        assets: &mut Assets,
+        imgui: &'a mut ImGuiWrapper,
+    ) -> GameResult<()> {
         Animation::draw(
             ctx,
             assets,
@@ -32,7 +47,22 @@ impl AnimationEditor {
             self.frame % self.resource.frames.duration(),
             nalgebra::Translation3::new(100.0, 100.0, 0.0).to_homogeneous(),
         )?;
+        imgui.render(ctx, |ui| {
+            // Window
+            ui.window(im_str!("Animation"))
+                .scrollable(true)
+                .size((300.0, 200.0), ImGuiCond::FirstUseEver)
+                .build(|| {
+                    ui.text(im_str!("Hello world!"));
+                    ui.separator();
+                    self.resource.draw_ui(&ui, &mut self.ui_data);
+                });
+        });
+
+        self.resource.load_images(ctx, assets)?;
+
 
         Ok(())
+
     }
 }

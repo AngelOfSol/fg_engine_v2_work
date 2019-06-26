@@ -1,1 +1,115 @@
-{"frames":[[{"offset":[0.0,0.0],"image":"/yuyuko/stand/000.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/001.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/002.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/003.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/004.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/005.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/006.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/007.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/008.png","rotation":0.0},6],[{"offset":[0.0,0.0],"image":"/yuyuko/stand/009.png","rotation":0.0},6]]}
+{
+    "name": "idle",
+    "frames": [
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/000.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/001.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/002.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/003.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/004.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/005.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/006.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/007.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/008.png",
+                "rotation": 0.0
+            },
+            6
+        ],
+        [
+            {
+                "offset": [
+                    0.0,
+                    0.0
+                ],
+                "image": "/yuyuko/stand/009.png",
+                "rotation": 0.0
+            },
+            6
+        ]
+    ]
+}

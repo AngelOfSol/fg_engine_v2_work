@@ -1,0 +1,90 @@
+{
+	"general": { 
+        "center_bottom": {
+        	"x": 0,
+        	"y": 0
+        },
+        "velocity": {
+            "x": 0,
+            "y": 0
+        },
+        "body": {
+        	"size": {
+        		"x": 20,
+        		"y": 100
+        	}
+        },
+        "hitboxes": [{
+        	"size": {
+        		"x": 40,
+        		"y": 110
+        	},
+        	"position": {
+        		"x": 0,
+        		"y": 0 
+        	}
+        }]
+	},
+	"frames": [{
+        "file": "000.png",
+        "duration": 3
+    },
+    {
+		"file": "001.png",
+		"duration": 3
+	},
+	{
+		"file": "002.png",
+		"duration": 3, 
+        "center_bottom": {
+            "x": -30,
+            "y": 0
+        }
+	},
+	{
+		"file": "003.png",
+		"duration": 6,
+        "hurtboxes": [{
+            "size": {
+                "x": 70,
+                "y": 40
+            },
+            "position": {
+                "x": 50,
+                "y": 50 
+            }
+        }],
+        "hit_properties": {
+            "hitstun": 17,
+            "hitstop": 10
+        }, 
+        "center_bottom": {
+            "x": -30,
+            "y": 0
+        }
+	},
+	{
+		"file": "004.png",
+		"duration": 2, 
+        "center_bottom": {
+            "x": -30,
+            "y": 0
+        }
+	},
+	{
+		"file": "005.png",
+		"duration": 6, 
+        "center_bottom": {
+            "x": -30,
+            "y": 0
+        }
+	},
+	{
+		"file": "006.png",
+		"duration": 7, 
+        "center_bottom": {
+            "x": -40,
+            "y": 0
+        }
+	}]
+}
