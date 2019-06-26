@@ -76,7 +76,7 @@ impl Animation {
 		if ui.collapsing_header(im_str!("Frames")).build() {
 			let mut buffer = i32::try_from(ui_data.current_sprite).unwrap();
 			ui.list_box_owned(
-				im_str!("Frame"),
+				im_str!("Frame List"),
 				&mut buffer,
 				&self
 					.frames

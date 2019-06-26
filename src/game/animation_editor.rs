@@ -53,8 +53,6 @@ impl AnimationEditor {
                 .scrollable(true)
                 .size((300.0, 200.0), ImGuiCond::FirstUseEver)
                 .build(|| {
-                    ui.text(im_str!("Hello world!"));
-                    ui.separator();
                     self.resource.draw_ui(&ui, &mut self.ui_data);
                 });
         });

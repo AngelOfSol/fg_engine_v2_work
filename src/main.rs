@@ -34,6 +34,7 @@ fn main() {
         .build()
         .expect("expected context");
 
+    // TODO fix this to be proper error checking
     // first call to dialog doesn't work after creating the ggez Context
     // so we manually call the first one ourselves and let the error pass through
     dbg!(nfd::dialog().open().err());
