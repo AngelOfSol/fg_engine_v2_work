@@ -3,6 +3,8 @@ use ggez::event;
 
 use ggez::ContextBuilder;
 
+use std::error::Error;
+
 use std::env;
 use std::path;
 
@@ -34,14 +36,21 @@ fn main() {
         .build()
         .expect("expected context");
 
-    // TODO fix this to be proper error checking
     // first call to dialog doesn't work after creating the ggez Context
     // so we manually call the first one ourselves and let the error pass through
-    dbg!(nfd::dialog().open().err());
-    /*nfd::dialog().open().err() = Some(
-    Error(
-        "Could not initialize COM.",
-    ),*/
+    let result = nfd::dialog().open() ;
+
+    if let Err(error) = result {
+        if error.description() == "Could not initialize COM." {
+            println!("Attempted to open unnecessary dialog.  This is in place because the first dialog after building a context breaks.");
+
+        } else {
+        println!("Unexpected error: {}", error);
+
+        }
+    } else {
+        println!("Unexpected success.");
+    }
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
