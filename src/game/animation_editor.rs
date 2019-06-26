@@ -1,7 +1,7 @@
 use ggez::{Context, GameResult};
 
 
-use crate::animation::{Animation, AnimationUi};
+use crate::animation::{load_image, Animation, AnimationUi, UiAction};
 
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -47,17 +47,35 @@ impl AnimationEditor {
             self.frame % self.resource.frames.duration(),
             nalgebra::Translation3::new(100.0, 100.0, 0.0).to_homogeneous(),
         )?;
+        let mut ui_actions = Vec::new();
+
         imgui.render(ctx, |ui| {
             // Window
             ui.window(im_str!("Animation"))
                 .scrollable(true)
                 .size((300.0, 200.0), ImGuiCond::FirstUseEver)
                 .build(|| {
-                    self.resource.draw_ui(&ui, &mut self.ui_data);
+                    ui_actions = self.resource.draw_ui(&ui, &mut self.ui_data);
                 });
         });
 
-        self.resource.load_images(ctx, assets)?;
+        for item in ui_actions {
+            match item {
+                UiAction::ReloadAssets => {
+                    self.resource.load_images(ctx, assets)?;
+                }
+
+                UiAction::RenameAsset { from, to } => {
+                    let asset = assets.images.remove(&from);
+                    if let Some(asset) = asset {
+                        assets.images.insert(to, asset);
+                    }
+                }
+                UiAction::ReplaceAsset { asset, path } => {
+                    load_image(asset, &path, ctx, assets)?;
+                }
+            }
+        }
 
 
         Ok(())
