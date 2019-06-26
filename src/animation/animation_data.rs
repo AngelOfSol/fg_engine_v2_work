@@ -133,7 +133,10 @@ impl Animation {
 				}
 			}
 
-			if ui.small_button(im_str!("New")) {}
+			if ui.small_button(im_str!("New")) {
+				self.frames.push((None, 1));
+				ui_data.current_sprite = self.frames.len() - 1;
+			}
 			ui.same_line(0.0);
 			if ui.small_button(im_str!("Delete")) {}
 
