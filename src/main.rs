@@ -38,15 +38,14 @@ fn main() {
 
     // first call to dialog doesn't work after creating the ggez Context
     // so we manually call the first one ourselves and let the error pass through
-    let result = nfd::dialog().open() ;
+    let result = nfd::dialog().open();
 
     if let Err(error) = result {
         if error.description() == "Could not initialize COM." {
             println!("Attempted to open unnecessary dialog.  This is in place because the first dialog after building a context breaks.");
 
         } else {
-        println!("Unexpected error: {}", error);
-
+            println!("Unexpected error: {}", error);
         }
     } else {
         println!("Unexpected success.");
