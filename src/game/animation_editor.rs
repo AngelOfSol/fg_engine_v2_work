@@ -40,20 +40,25 @@ impl AnimationEditor {
         assets: &mut Assets,
         imgui: &'a mut ImGuiWrapper,
     ) -> GameResult<()> {
-        Animation::draw(
-            ctx,
-            assets,
-            &self.resource,
-            self.frame % self.resource.frames.duration(),
-            nalgebra::Translation3::new(100.0, 100.0, 0.0).to_homogeneous(),
-        )?;
+        if self.resource.frames.duration() > 0 {
+            Animation::draw(
+                ctx,
+                assets,
+                &self.resource,
+                self.frame % self.resource.frames.duration(),
+                nalgebra::Translation3::new(100.0, 100.0, 0.0).to_homogeneous(),
+            )?;
+        }
         let mut ui_actions = Vec::new();
 
         imgui.render(ctx, |ui| {
             // Window
             ui.window(im_str!("Animation"))
-                .scrollable(true)
-                .size((300.0, 200.0), ImGuiCond::FirstUseEver)
+                .size((300.0, 465.0), ImGuiCond::Always)
+                .position((0.0, 0.0), ImGuiCond::Always)
+                .resizable(false)
+                .movable(false)
+                .collapsible(false)
                 .build(|| {
                     ui_actions = self.resource.draw_ui(&ui, &mut self.ui_data);
                 });
