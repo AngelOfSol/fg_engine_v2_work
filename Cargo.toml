@@ -10,3 +10,11 @@ nalgebra = { version = "0.18", features = ["serde-serialize", "mint"] }
 mint = "0.5"
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0"
+gfx_core = "0.9.1"
+gfx_device_gl = "0.16.1"
+imgui = "0.0.23"
+imgui-gfx-renderer = "0.0.23"
+imgui-sys = "0.0.23"
+nfd = "0.0.4"
+lodepng = "2.4.2"
+rgb = "0.8.13"
