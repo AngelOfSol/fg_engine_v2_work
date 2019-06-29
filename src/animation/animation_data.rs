@@ -1,4 +1,4 @@
-use super::sprite::Sprite;
+use super::sprite::{load_image, Sprite};
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 
@@ -15,13 +15,6 @@ use std::convert::TryFrom;
 pub struct Animation {
 	pub name: String,
 	pub frames: Timeline<Option<Sprite>>,
-}
-
-
-pub enum UiAction {
-	ReloadAssets,
-	RenameAsset { from: String, to: String },
-	ReplaceAsset { asset: String, path: String },
 }
 
 pub struct AnimationUi {
@@ -83,9 +76,13 @@ impl Animation {
 	}
 
 	#[allow(clippy::cognitive_complexity)]
-	pub fn draw_ui(&mut self, ui: &imgui::Ui, ui_data: &mut AnimationUi) -> Vec<UiAction> {
-		let mut actions = vec![];
-
+	pub fn draw_ui(
+		&mut self,
+		ui: &imgui::Ui,
+		ctx: &mut Context,
+		assets: &mut Assets,
+		ui_data: &mut AnimationUi,
+	) -> GameResult<()> {
 		let mut buffer = im_str_owned!("{}", self.name.clone());
 		buffer.reserve_exact(16);
 		if ui.input_text(im_str!("Name"), &mut buffer).build() {
@@ -155,10 +152,7 @@ impl Animation {
 						.filter(|(_, item)| item.is_some())
 						.map(|(idx, item)| (idx, item.as_mut().unwrap()))
 					{
-						actions.push(normalize_sprite_name(
-							format!("/{}/{:03}.png", self.name, idx),
-							sprite,
-						));
+						rename_sprite(format!("/{}/{:03}.png", self.name, idx), sprite, assets)
 					}
 				}
 			}
@@ -175,11 +169,11 @@ impl Animation {
 					match response {
 						nfd::Response::Cancel => (),
 						nfd::Response::Okay(path) => {
-							actions.push(UiAction::ReloadAssets);
+							self.load_images(ctx, assets)?;
 							self.frames.push((Some(Sprite::new(path)), 1));
 						}
 						nfd::Response::OkayMultiple(paths) => {
-							actions.push(UiAction::ReloadAssets);
+							self.load_images(ctx, assets)?;
 							for path in paths {
 								self.frames.push((Some(Sprite::new(path)), 1));
 							}
@@ -234,8 +228,9 @@ impl Animation {
 									Ok(response) => match response {
 										nfd::Response::Cancel => None,
 										nfd::Response::Okay(path) => {
-											actions.push(UiAction::ReloadAssets);
-											Some(Sprite::new(path))
+											let new_sprite = Sprite::new(path);
+											new_sprite.load_image(ctx, assets)?;
+											Some(new_sprite)
 										}
 										nfd::Response::OkayMultiple(_) => {
 											dbg!("no sprite loaded because multiple paths were given");
@@ -275,11 +270,7 @@ impl Animation {
 						let mut buffer = im_str_owned!("{}", sprite.image.clone());
 						buffer.reserve_exact(16);
 						if ui.input_text(im_str!("Name##Frame"), &mut buffer).build() {
-							actions.push(UiAction::RenameAsset {
-								from: sprite.image.clone(),
-								to: buffer.to_str().to_owned(),
-							});
-							sprite.image = buffer.to_str().to_owned();
+							rename_sprite(buffer.to_str().to_owned(), sprite, assets);
 						}
 
 						ui.columns(2, im_str!("Image Buttons"), false);
@@ -296,10 +287,7 @@ impl Animation {
 								Ok(result) => match result {
 									nfd::Response::Cancel => (),
 									nfd::Response::Okay(path) => {
-										actions.push(UiAction::ReplaceAsset {
-											asset: sprite.image.clone(),
-											path,
-										})
+										replace_asset(sprite.image.clone(), &path, ctx, assets)?;
 									}
 									nfd::Response::OkayMultiple(_) => println!(
 										"Cancelling because multiple images were specified."
@@ -319,10 +307,11 @@ impl Animation {
 								ui.get_text_line_height_with_spacing(),
 							],
 						) {
-							actions.push(normalize_sprite_name(
+							rename_sprite(
 								format!("/{}/{:03}.png", self.name, current_sprite),
 								sprite,
-							));
+								assets,
+							)
 						}
 					}
 
@@ -331,18 +320,24 @@ impl Animation {
 
 		}
 
-		actions
-
+		Ok(())
 	}
 
 }
 
-fn normalize_sprite_name<S: Into<String>>(new_name: S, sprite: &mut Sprite) -> UiAction {
+fn replace_asset<S: Into<String>>(
+	asset: S,
+	path: &str,
+	ctx: &mut Context,
+	assets: &mut Assets,
+) -> GameResult<()> {
+	load_image(asset, path, ctx, assets)
+}
+fn rename_sprite<S: Into<String>>(new_name: S, sprite: &mut Sprite, assets: &mut Assets) {
+	let asset = assets.images.remove(&sprite.image);
 	let new_name = new_name.into();
-	let ret = UiAction::RenameAsset {
-		from: sprite.image.clone(),
-		to: new_name.clone(),
-	};
+	if let Some(asset) = asset {
+		assets.images.insert(new_name.clone(), asset);
+	}
 	sprite.image = new_name;
-	ret
 }
