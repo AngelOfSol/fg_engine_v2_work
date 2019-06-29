@@ -15,6 +15,7 @@ pub struct Sprite {
 	pub rotation: f32,
 }
 
+
 pub fn load_image<S: Into<String>>(
 	key: S,
 	path: &str,
@@ -57,35 +58,52 @@ impl Sprite {
 		}
 		load_image(self.image.clone(), &self.image, ctx, assets)
 	}
-	pub fn draw(
+
+	fn draw_ex(
 		ctx: &mut Context,
 		assets: &Assets,
 		sprite: &Sprite,
-		world: nalgebra::Matrix4<f32>,
-	) -> GameResult<()> {
+		world: nalgebra::Matrix3<f32>,
+		debug: bool,
+	) {
 		let image = assets
 			.images
 			.get(&sprite.image)
 			.ok_or_else(|| GameError::ResourceNotFound(sprite.image.clone(), Vec::new()))?;
-		graphics::set_transform(
-			ctx,
-			world
-				* nalgebra::Translation3::new(
-					sprite.offset.x - f32::from(image.width()) / 2.0,
-					sprite.offset.y - f32::from(image.height()),
-					0.0,
-				)
-				.to_homogeneous()
-				* nalgebra::Rotation3::from_axis_angle(
-					&nalgebra::Vector3::z_axis(),
-					sprite.rotation,
-				)
-				.to_homogeneous(),
 
-		);
-		graphics::apply_transformations(ctx)?;
-		graphics::draw(ctx, image, graphics::DrawParam::default())?;
+		let base = nalgebra::Point2::new(0.0f32, 0.0f32);
+		let transform = nalgebra::Translation2::new(
+			sprite.offset.x - f32::from(image.width()) / 2.0,
+			sprite.offset.y - f32::from(image.height()),
+		)
+		.to_homogeneous()
+			* world;
+		graphics::draw(
+			ctx,
+			image,
+			graphics::DrawParam::default().dest(transform.transform_point(&base)),
+		)?;
 
 		Ok(())
+	}
+	pub fn draw_debug(
+
+		ctx: &mut Context,
+		assets: &Assets,
+		sprite: &Sprite,
+		world: nalgebra::Matrix3<f32>,
+
+	) {
+		Self::draw_ex(ctx, assets, sprite, world, true)
+
+	}
+	pub fn draw(
+		ctx: &mut Context,
+		assets: &Assets,
+		sprite: &Sprite,
+		world: nalgebra::Matrix3<f32>,
+	) -> GameResult<()> {
+		Self::draw_ex(ctx, assets, sprite, world, false)
+
 	}
 }
