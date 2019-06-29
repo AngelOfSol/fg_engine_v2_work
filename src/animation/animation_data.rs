@@ -72,7 +72,7 @@ impl Animation {
 			.filter(|(item, _)| item.is_some())
 			.map(|(ref item, _)| item.as_ref().unwrap())
 		{
-			Sprite::draw(ctx, assets, sprite, world)?
+			Sprite::draw_debug(ctx, assets, sprite, world)?
 		}
 
 		Ok(())
@@ -221,11 +221,12 @@ impl Animation {
 				ui.separator();
 
 				let (ref mut sprite, ref mut duration) = self.frames[current_sprite];
-				let mut buffer =
+				/*let mut buffer =
 					i32::try_from(*duration).expect("expected duration to be within i32 range");
 				ui.slider_int(im_str!("Duration"), &mut buffer, 1, 16)
 					.build();
-				*duration = usize::try_from(buffer).unwrap_or(1);
+				*duration = usize::try_from(buffer).unwrap_or(1);*/
+				let _ = ui.input_whole(im_str!("Duration"), duration);
 				ui.separator();
 
 				let mut pick = if sprite.is_none() { 0 } else { 1 };

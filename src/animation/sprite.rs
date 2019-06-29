@@ -1,5 +1,6 @@
 use ggez::error::GameError;
 use ggez::graphics;
+use ggez::graphics::{Color, DrawMode, Rect};
 use ggez::{Context, GameResult};
 
 use serde::{Deserialize, Serialize};
@@ -59,13 +60,13 @@ impl Sprite {
 		load_image(self.image.clone(), &self.image, ctx, assets)
 	}
 
-	fn draw_ex(
+	pub fn draw_ex(
 		ctx: &mut Context,
 		assets: &Assets,
 		sprite: &Sprite,
 		world: nalgebra::Matrix3<f32>,
 		debug: bool,
-	) {
+	) -> GameResult<()> {
 		let image = assets
 			.images
 			.get(&sprite.image)
@@ -84,6 +85,22 @@ impl Sprite {
 			graphics::DrawParam::default().dest(transform.transform_point(&base)),
 		)?;
 
+		if debug {
+			let origin = transform.transform_point(&base);
+			let rectangle = graphics::Mesh::new_rectangle(
+				ctx,
+				DrawMode::stroke(1.0),
+				Rect::new(
+					0.0,
+					0.0,
+					f32::from(image.width()),
+					f32::from(image.height()),
+				),
+				Color::new(1.0, 0.0, 0.0, 1.0),
+			)?;
+			graphics::draw(ctx, &rectangle, graphics::DrawParam::default().dest(origin))?;
+		}
+
 		Ok(())
 	}
 	pub fn draw_debug(
@@ -93,7 +110,7 @@ impl Sprite {
 		sprite: &Sprite,
 		world: nalgebra::Matrix3<f32>,
 
-	) {
+	) -> GameResult<()> {
 		Self::draw_ex(ctx, assets, sprite, world, true)
 
 	}
