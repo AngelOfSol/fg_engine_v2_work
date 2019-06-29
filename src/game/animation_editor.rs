@@ -1,6 +1,6 @@
 
 use ggez::graphics;
-use ggez::graphics::{Color, DrawMode, Rect};
+use ggez::graphics::Color;
 use ggez::{Context, GameResult};
 
 use crate::animation::{Animation, AnimationUi};
@@ -13,10 +13,9 @@ use crate::timeline::AtTime;
 use imgui::*;
 
 pub struct AnimationEditor {
-    pub frame: usize,
+    frame: usize,
     resource: Animation,
     ui_data: AnimationUi,
-    rectangle: ggez::graphics::Mesh,
 }
 
 impl AnimationEditor {
@@ -25,17 +24,11 @@ impl AnimationEditor {
         let buf_read = std::io::BufReader::new(file);
         let resource: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
         resource.load_images(ctx, assets)?;
-        let rectangle = graphics::Mesh::new_rectangle(
-            ctx,
-            DrawMode::fill(),
-            Rect::new(-5.0, -5.0, 10.0, 10.0),
-            Color::new(1.0, 0.0, 0.0, 1.0),
-        )?;
+
         Ok(Self {
             frame: 0,
             resource,
             ui_data: AnimationUi::new(),
-            rectangle,
         })
     }
 
