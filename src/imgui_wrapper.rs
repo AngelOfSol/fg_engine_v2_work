@@ -8,9 +8,10 @@ use gfx_device_gl;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
+use ggez::input::keyboard::{KeyCode, KeyMods};
+use std::marker::PhantomData;
 use std::time::Instant;
 
-use ggez::input::keyboard::{KeyCode, KeyMods};
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
@@ -25,6 +26,54 @@ pub struct ImGuiWrapper {
     last_frame: Instant,
     mouse_state: MouseState,
 }
+
+pub struct ImguiFrameRunner<'ui, 'parent: 'ui, Stage> {
+    ui: Ui<'ui>,
+    renderer: &'parent mut Renderer<gfx_device_gl::Resources>,
+    data: PhantomData<Stage>,
+}
+pub struct RunUi;
+pub struct Render;
+
+impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, RunUi> {
+    fn new(
+        holding: &'parent mut ImGuiWrapper,
+        frame_size: FrameSize,
+        delta_s: f32,
+    ) -> ImguiFrameRunner<'ui, 'parent, RunUi> {
+        ImguiFrameRunner {
+            ui: holding.imgui.frame(frame_size, delta_s),
+            renderer: &mut holding.renderer,
+            data: PhantomData,
+        }
+    }
+
+    pub fn run<F: FnOnce(&Ui<'ui>) -> ()>(
+        self,
+        run_ui: F,
+    ) -> ImguiFrameRunner<'ui, 'parent, Render> {
+        run_ui(&self.ui);
+
+        ImguiFrameRunner {
+            ui: self.ui,
+            renderer: self.renderer,
+            data: PhantomData,
+        }
+    }
+
+}
+
+
+impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
+    pub fn render(self, ctx: &mut Context) {
+
+        let (factory, _, encoder, _, _) = graphics::gfx_objects(ctx);
+        self.renderer
+            .render(self.ui, &mut *factory, encoder)
+            .unwrap();
+    }
+}
+
 
 impl ImGuiWrapper {
     pub fn new(ctx: &mut Context) -> Self {
@@ -97,7 +146,7 @@ impl ImGuiWrapper {
     }
 
 
-    pub fn render<F: FnMut(&Ui) -> ()>(&mut self, ctx: &mut Context, mut run_ui: F) {
+    pub fn frame(&mut self, ctx: &mut Context) -> ImguiFrameRunner<'_, '_, RunUi> {
         // Update mouse
         self.update_mouse();
 
@@ -116,14 +165,7 @@ impl ImGuiWrapper {
         let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
         self.last_frame = now;
 
-        let ui = self.imgui.frame(frame_size, delta_s);
-
-        run_ui(&ui);
-
-        // Render
-        let (factory, _, encoder, _, _) = graphics::gfx_objects(ctx);
-        self.renderer.render(ui, &mut *factory, encoder).unwrap();
-
+        ImguiFrameRunner::new(self, frame_size, delta_s)
     }
 
     fn update_mouse(&mut self) {
