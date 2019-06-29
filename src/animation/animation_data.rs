@@ -56,6 +56,21 @@ impl Animation {
 		ctx: &mut Context,
 		assets: &Assets,
 		animation: &Animation,
+		index: usize,
+		world: nalgebra::Matrix4<f32>,
+	) -> GameResult<()> {
+		let data = animation.frames.get(index);
+		if let Some((Some(ref image), _)) = data {
+			Sprite::draw(ctx, assets, image, world)
+		} else {
+			Ok(())
+		}
+	}
+
+	pub fn draw_at_time(
+		ctx: &mut Context,
+		assets: &Assets,
+		animation: &Animation,
 		time: usize,
 		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
