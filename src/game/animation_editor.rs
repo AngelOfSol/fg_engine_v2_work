@@ -1,10 +1,9 @@
 
 use ggez::graphics;
-use ggez::graphics::{Color, DrawMode, DrawParam, Rect};
+use ggez::graphics::{Color, DrawMode, Rect};
 use ggez::{Context, GameResult};
 
-
-use crate::animation::{load_image, Animation, AnimationUi, UiAction};
+use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -52,78 +51,64 @@ impl AnimationEditor {
         imgui: &'a mut ImGuiWrapper,
     ) -> GameResult<()> {
 
-        let mut ui_actions = Vec::new();
-
         let dim = (256.0, 256.0);
         let (width, height) = dim;
         let pos = (300.0, 20.0);
         let (x, y) = pos;
         if true {
-            imgui.render(ctx, |ui| {
-                // Window
-                ui.window(im_str!("Editor"))
-                    .size((300.0, 465.0), ImGuiCond::Always)
-                    .position((0.0, 20.0), ImGuiCond::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {
-                        ui_actions = self.resource.draw_ui(&ui, &mut self.ui_data);
-                    });
 
-                if self.resource.frames.duration() > 0 {
-                    ui.window(im_str!("Animation"))
-                        .size(dim, ImGuiCond::Always)
-                        .position(pos, ImGuiCond::Always)
+            let mut editor_result = Ok(());
+            imgui
+                .frame(ctx)
+                .run(|ui| {
+                    // Window
+                    ui.window(im_str!("Editor"))
+                        .size((300.0, 465.0), ImGuiCond::Always)
+                        .position((0.0, 20.0), ImGuiCond::Always)
                         .resizable(false)
                         .movable(false)
                         .collapsible(false)
-                        .build(|| {});
+                        .build(|| {
+                            editor_result =
+                                self.resource.draw_ui(&ui, ctx, assets, &mut self.ui_data);
+                        });
 
-                    ui.window(im_str!("Current Frame"))
-                        .size(dim, ImGuiCond::Always)
-                        .position((x + width, y), ImGuiCond::Always)
-                        .resizable(false)
-                        .movable(false)
-                        .collapsible(false)
-                        .build(|| {});
+                    if self.resource.frames.duration() > 0 {
+                        ui.window(im_str!("Animation"))
+                            .size(dim, ImGuiCond::Always)
+                            .position(pos, ImGuiCond::Always)
+                            .resizable(false)
+                            .movable(false)
+                            .collapsible(false)
+                            .build(|| {});
+                        ui.window(im_str!("Current Frame"))
+                            .size(dim, ImGuiCond::Always)
+                            .position((x + width, y), ImGuiCond::Always)
+                            .resizable(false)
+                            .movable(false)
+                            .collapsible(false)
+                            .build(|| {});
 
-                    ui.window(im_str!("Every Frame"))
-                        .size(dim, ImGuiCond::Always)
-                        .position((x, y + height), ImGuiCond::Always)
-                        .resizable(false)
-                        .movable(false)
-                        .collapsible(false)
-                        .build(|| {});
-                }
-                ui.main_menu_bar(|| {
-                    ui.menu(im_str!("File")).build(|| {
-                        ui.menu_item(im_str!("New")).build();
-                        ui.menu_item(im_str!("Save")).build();
-                        ui.menu_item(im_str!("Open")).build();
-                    });
-                });
-            });
-
-        }
-
-        for item in ui_actions {
-            match item {
-                UiAction::ReloadAssets => {
-                    self.resource.load_images(ctx, assets)?;
-                }
-
-                UiAction::RenameAsset { from, to } => {
-                    let asset = assets.images.remove(&from);
-                    if let Some(asset) = asset {
-                        assets.images.insert(to, asset);
+                        ui.window(im_str!("Every Frame"))
+                            .size(dim, ImGuiCond::Always)
+                            .position((x, y + height), ImGuiCond::Always)
+                            .resizable(false)
+                            .movable(false)
+                            .collapsible(false)
+                            .build(|| {});
                     }
-                }
-                UiAction::ReplaceAsset { asset, path } => {
-                    load_image(asset, &path, ctx, assets)?;
-                }
-            }
+                    ui.main_menu_bar(|| {
+                        ui.menu(im_str!("File")).build(|| {
+                            ui.menu_item(im_str!("New")).build();
+                            ui.menu_item(im_str!("Save")).build();
+                            ui.menu_item(im_str!("Open")).build();
+                        });
+                    });
+                })
+                .render(ctx);
+            editor_result?;
         }
+
 
         let dim = (256.0, 256.0);
         let (width, height) = dim;
@@ -147,11 +132,13 @@ impl AnimationEditor {
                 nalgebra::Translation3::new(0.0, 100.0, 0.0).to_homogeneous(),
             );
             graphics::apply_transformations(ctx)?;
+            /*
             graphics::draw(
                 ctx,
                 &rectangle,
                 graphics::DrawParam::default().dest([10.0, 10.0]),
             )?;
+            */
 
             graphics::set_transform(
                 ctx,
