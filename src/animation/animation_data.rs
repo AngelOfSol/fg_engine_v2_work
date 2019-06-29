@@ -18,7 +18,7 @@ pub struct Animation {
 }
 
 pub struct AnimationUi {
-	current_sprite: Option<usize>,
+	pub current_sprite: Option<usize>,
 }
 
 impl AnimationUi {
@@ -45,12 +45,12 @@ impl Animation {
 		}
 		Ok(())
 	}
-	pub fn draw(
+	pub fn draw_frame(
 		ctx: &mut Context,
 		assets: &Assets,
 		animation: &Animation,
 		index: usize,
-		world: nalgebra::Matrix4<f32>,
+		world: nalgebra::Matrix3<f32>,
 	) -> GameResult<()> {
 		let data = animation.frames.get(index);
 		if let Some((Some(ref image), _)) = data {
@@ -60,12 +60,30 @@ impl Animation {
 		}
 	}
 
+	pub fn draw_every_frame(
+		ctx: &mut Context,
+		assets: &Assets,
+		animation: &Animation,
+		world: nalgebra::Matrix3<f32>,
+	) -> GameResult<()> {
+		for sprite in animation
+			.frames
+			.iter()
+			.filter(|(item, _)| item.is_some())
+			.map(|(ref item, _)| item.as_ref().unwrap())
+		{
+			Sprite::draw(ctx, assets, sprite, world)?
+		}
+
+		Ok(())
+	}
+
 	pub fn draw_at_time(
 		ctx: &mut Context,
 		assets: &Assets,
 		animation: &Animation,
 		time: usize,
-		world: nalgebra::Matrix4<f32>,
+		world: nalgebra::Matrix3<f32>,
 	) -> GameResult<()> {
 		let data = animation.frames.at_time(time);
 		if let Some(image) = data {
@@ -169,14 +187,14 @@ impl Animation {
 					match response {
 						nfd::Response::Cancel => (),
 						nfd::Response::Okay(path) => {
-							self.load_images(ctx, assets)?;
 							self.frames.push((Some(Sprite::new(path)), 1));
+							self.load_images(ctx, assets)?;
 						}
 						nfd::Response::OkayMultiple(paths) => {
-							self.load_images(ctx, assets)?;
 							for path in paths {
 								self.frames.push((Some(Sprite::new(path)), 1));
 							}
+							self.load_images(ctx, assets)?;
 						}
 					}
 				}
