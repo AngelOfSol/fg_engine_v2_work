@@ -30,7 +30,7 @@ impl AnimationUi {
 }
 
 impl Animation {
-	pub fn new<N: Into<String>>(name: N) -> Self {
+	pub fn new<S: Into<String>>(name: S) -> Self {
 		Self {
 			name: name.into(),
 			frames: Timeline::new(),
@@ -101,11 +101,7 @@ impl Animation {
 		assets: &mut Assets,
 		ui_data: &mut AnimationUi,
 	) -> GameResult<()> {
-		let mut buffer = im_str_owned!("{}", self.name.clone());
-		buffer.reserve_exact(16);
-		if ui.input_text(im_str!("Name"), &mut buffer).build() {
-			self.name = buffer.to_str().to_owned();
-		}
+		ui.input_string(im_str!("Name"), &mut self.name);
 
 		ui.text(im_str!("Duration: {}", self.frames.duration()));
 
@@ -221,11 +217,6 @@ impl Animation {
 				ui.separator();
 
 				let (ref mut sprite, ref mut duration) = self.frames[current_sprite];
-				/*let mut buffer =
-					i32::try_from(*duration).expect("expected duration to be within i32 range");
-				ui.slider_int(im_str!("Duration"), &mut buffer, 1, 16)
-					.build();
-				*duration = usize::try_from(buffer).unwrap_or(1);*/
 				let _ = ui.input_whole(im_str!("Duration"), duration);
 				ui.separator();
 
@@ -286,10 +277,9 @@ impl Animation {
 						.default_open(true)
 						.build()
 					{
-						let mut buffer = im_str_owned!("{}", sprite.image.clone());
-						buffer.reserve_exact(16);
-						if ui.input_text(im_str!("Name##Frame"), &mut buffer).build() {
-							rename_sprite(buffer.to_str().to_owned(), sprite, assets);
+						let mut buffer = sprite.image.clone();
+						if ui.input_string(im_str!("Name##Frame"), &mut buffer) {
+							rename_sprite(buffer, sprite, assets);
 						}
 
 						ui.columns(2, im_str!("Image Buttons"), false);

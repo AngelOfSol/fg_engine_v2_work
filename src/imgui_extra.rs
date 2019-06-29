@@ -26,6 +26,7 @@ pub trait UiExtensions {
         label: &ImStr,
         value: &mut I,
     ) -> Result<bool, String>;
+    fn input_string(&self, label: &ImStr, value: &mut String) -> bool;
 }
 
 impl<'a> UiExtensions for Ui<'a> {
@@ -37,9 +38,11 @@ impl<'a> UiExtensions for Ui<'a> {
         let mut buffer = (*value)
             .try_into()
             .map_err(|_| "something happened".to_owned())?;
-        let ret = self.input_int(label, &mut buffer).build();
-        *value = I::try_from(buffer).map_err(|_| "something happened".to_owned())?;
-        Ok(ret)
+        let changed = self.input_int(label, &mut buffer).build();
+        if changed {
+            *value = I::try_from(buffer).map_err(|_| "something happened".to_owned())?;
+        }
+        Ok(changed)
     }
     fn input_text_left(&self, label: &ImStr, buf: &mut ImString) {
         unsafe { imgui_sys::igAlignTextToFramePadding() };
@@ -48,6 +51,16 @@ impl<'a> UiExtensions for Ui<'a> {
         self.push_id(label);
         self.input_text(im_str!("###Input"), buf).build();
         self.pop_id();
+    }
+    fn input_string(&self, label: &ImStr, value: &mut String) -> bool {
+
+		let mut buffer = im_str_owned!("{}", value.clone());
+		buffer.reserve_exact(16);
+		let changed = self.input_text(label, &mut buffer).build();
+        if changed {
+			*value = buffer.to_str().to_owned();
+        }
+        changed
     }
 
     fn list_box_owned<'p>(
