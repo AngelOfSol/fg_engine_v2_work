@@ -81,8 +81,11 @@ impl Sprite {
 					sprite.rotation,
 				)
 				.to_homogeneous(),
+
 		);
 		graphics::apply_transformations(ctx)?;
-		graphics::draw(ctx, image, graphics::DrawParam::default())
+		graphics::draw(ctx, image, graphics::DrawParam::default())?;
+
+		Ok(())
 	}
 }
