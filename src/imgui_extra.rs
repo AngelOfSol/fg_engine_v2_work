@@ -4,11 +4,12 @@ use std::convert::{TryFrom, TryInto};
 macro_rules! im_str_owned {
     ($e:tt, $($arg:tt)*) => ({
         unsafe {
-          ImString::from_utf8_with_nul_unchecked(
+          imgui::ImString::from_utf8_with_nul_unchecked(
             format!(concat!($e, "\0"), $($arg)*).into_bytes())
         }
     });
 }
+
 
 
 pub trait UiExtensions {
