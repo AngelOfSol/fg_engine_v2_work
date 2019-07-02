@@ -8,7 +8,7 @@ use crate::animation::{Animation, AnimationUi};
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
-
+use crate::game;
 
 use imgui::*;
 
@@ -20,19 +20,24 @@ pub struct AnimationEditor {
 }
 
 impl AnimationEditor {
-    pub fn new(_ctx: &mut Context, _assets: &mut Assets) -> GameResult<Self> {
-
-        Ok(Self {
+    pub fn new() -> Self {
+        Self {
             frame: 0,
             resource: Animation::new("new_animation"),
             ui_data: AnimationUi::new(),
             done: false,
-        })
+        }
     }
 
-    pub fn update(&mut self) -> GameResult<bool> {
+    pub fn update(&mut self) -> GameResult<game::Transition> {
         self.frame += 1;
-        Ok(self.done)
+        if self.done {
+            
+        Ok(game::Transition::Pop)
+        } else {
+            
+        Ok(game::Transition::None)
+        }
     }
 
     pub fn draw<'a>(
@@ -41,8 +46,8 @@ impl AnimationEditor {
         assets: &mut Assets,
         imgui: &'a mut ImGuiWrapper,
     ) -> GameResult<()> {
-
-        let dim = [256.0, 256.0];
+        let editor_height = 526.0;
+        let dim = [editor_height / 2.0, editor_height / 2.0];
         let [width, height] = dim;
         let pos = [300.0, 20.0];
         let [x, y] = pos;
@@ -51,7 +56,7 @@ impl AnimationEditor {
         let imgui_render = imgui.frame().run(|ui| {
             // Window
             ui.window(im_str!("Editor"))
-                .size([300.0, 465.0], Condition::Always)
+                .size([300.0, editor_height], Condition::Always)
                 .position([0.0, 20.0], Condition::Always)
                 .resizable(false)
                 .movable(false)
@@ -114,7 +119,6 @@ impl AnimationEditor {
                                 nfd::Response::Okay(path) => {
                                     self.resource =
                                         Animation::load_tar(ctx, assets, &path).unwrap();
-                                    //editor_result = self.resource.save_tar(ctx, assets, &path);
                                 }
                                 nfd::Response::OkayMultiple(_) => (),
                             },
@@ -231,5 +235,12 @@ impl AnimationEditor {
             }
         }
         Ok(())
+    }
+}
+
+
+impl Into<game::GameState> for AnimationEditor {
+    fn into(self) -> game::GameState {
+        game::GameState::Animating(self)
     }
 }
