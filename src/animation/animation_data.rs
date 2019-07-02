@@ -56,7 +56,7 @@ impl Animation {
 		let file = File::create(path)?;
 		let mut tar = tar::Builder::new(file);
 
-		let data_file_name = format!("{}-animation.json", self.name);
+		let data_file_name = "data.json"; // format!("{}-animation.json", self.name);
 		{
 			let mut json_target = File::create(&data_file_name)?;
 			serde_json::to_writer(&mut json_target, &self)
@@ -71,18 +71,29 @@ impl Animation {
 			let image = &assets.images[&sprite.image];
 
 			let file_name = "temp.png";
-			dbg!(file_name);
-			{
-				let _ = File::create(&file_name)?;
-			}
 
-			lodepng::encode32_file(
-				&file_name,
-				&image.to_rgba8(ctx)?,
-				image.width() as usize,
-				image.height() as usize,
+			let temp_file = File::create(&file_name)?;
+
+			let writer = std::io::BufWriter::new(temp_file);
+
+			let png_writer = image::png::PNGEncoder::new(writer);
+
+			let image: image::ImageBuffer<image::Rgba<_>, _> = image::ImageBuffer::from_raw(
+				u32::from(image.width()),
+				u32::from(image.height()),
+				image.to_rgba8(ctx)?.to_vec(),
 			)
-			.map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))?;
+			.unwrap();
+
+			// image buffers are flipped in memory for ggez, so we have to unflip them
+			let image = image::imageops::flip_vertical(&image);
+
+			png_writer.encode(
+				&image,
+				image.width(),
+				image.height(),
+				image::ColorType::RGBA(8),
+			)?;
 
 			tar.append_path_with_name(file_name, &sprite.image)?;
 
@@ -91,7 +102,45 @@ impl Animation {
 		Ok(())
 
 	}
-	pub fn load_tar() {}
+	pub fn load_tar<P: AsRef<Path>>(
+		ctx: &mut Context,
+		assets: &mut Assets,
+		path: P,
+	) -> GameResult<Animation> {
+		let file = File::open(path)?;
+		let mut tar = tar::Archive::new(file);
+		tar.unpack("./temp/")?;
+
+		let file = std::fs::File::open("./temp/data.json")?;
+		let buf_read = std::io::BufReader::new(file);
+		let animation: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
+
+		for file in std::fs::read_dir("./temp/")? {
+			let entry = file?;
+			let path = entry.path();
+			if let Some(file_type) = path.extension() {
+				if file_type == "png" {
+					let file_name = path.file_name().unwrap();
+					load_image(file_name.to_str().expect("expected valid utf8 filename").to_owned(), path, ctx, assets)?;
+				}
+			}
+
+		}
+
+		std::fs::remove_dir_all("./temp/")?;
+
+		Ok(animation)
+		/*let files: Vec<_> = tar.entries()?.filter(|item| item.is_ok()).map(|item| item.unwrap()).collect();
+		use std::io::Read;
+		let temp = &files[0];
+		//temp.
+		serde_json::from_reader(temp).map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))*/
+		/*for item in tar.entries()? {
+			let item = item?;
+
+
+		}*/
+	}
 
 
 	pub fn draw_frame(
