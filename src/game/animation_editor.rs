@@ -42,17 +42,17 @@ impl AnimationEditor {
         imgui: &'a mut ImGuiWrapper,
     ) -> GameResult<()> {
 
-        let dim = (256.0, 256.0);
-        let (width, height) = dim;
-        let pos = (300.0, 20.0);
-        let (x, y) = pos;
+        let dim = [256.0, 256.0];
+        let [width, height] = dim;
+        let pos = [300.0, 20.0];
+        let [x, y] = pos;
 
         let mut editor_result = Ok(());
-        let imgui_render = imgui.frame(ctx).run(|ui| {
+        let imgui_render = imgui.frame().run(|ui| {
             // Window
             ui.window(im_str!("Editor"))
-                .size((300.0, 465.0), ImGuiCond::Always)
-                .position((0.0, 20.0), ImGuiCond::Always)
+                .size([300.0, 465.0], Condition::Always)
+                .position([0.0, 20.0], Condition::Always)
                 .resizable(false)
                 .movable(false)
                 .collapsible(false)
@@ -62,23 +62,23 @@ impl AnimationEditor {
 
             if self.resource.frames.duration() > 0 {
                 ui.window(im_str!("Animation"))
-                    .size(dim, ImGuiCond::Always)
-                    .position(pos, ImGuiCond::Always)
+                    .size(dim, Condition::Always)
+                    .position(pos, Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
                     .build(|| {});
                 ui.window(im_str!("Current Frame"))
-                    .size(dim, ImGuiCond::Always)
-                    .position((x + width, y), ImGuiCond::Always)
+                    .size(dim, Condition::Always)
+                    .position([x + width, y], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
                     .build(|| {});
 
                 ui.window(im_str!("Every Frame"))
-                    .size(dim, ImGuiCond::Always)
-                    .position((x, y + height), ImGuiCond::Always)
+                    .size(dim, Condition::Always)
+                    .position([x, y + height], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)

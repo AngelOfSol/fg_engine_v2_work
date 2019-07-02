@@ -220,6 +220,10 @@ impl Animation {
 
 		ui.text(im_str!("Duration: {}", self.frames.duration()));
 
+		ui.text(im_str!("Blend Mode"));
+
+		//ui.radio_button(im_str!("Alpha"), , wanted: i32)
+
 		if ui
 			.collapsing_header(im_str!("Frames"))
 			.default_open(true)
@@ -229,6 +233,7 @@ impl Animation {
 				.current_sprite
 				.and_then(|item| i32::try_from(item).ok())
 				.unwrap_or(-1);
+
 			ui.list_box_owned(
 				im_str!("Frame List"),
 				&mut buffer,
@@ -236,7 +241,7 @@ impl Animation {
 					.frames
 					.iter()
 					.enumerate()
-					.map(|(idx, item)| im_str_owned!("{} ({})", idx, item.0.image.clone()))
+					.map(|(idx, item)| im_str!("{} ({})", idx, item.0.image.clone()))
 					.collect::<Vec<_>>(),
 				5,
 			);
@@ -281,6 +286,7 @@ impl Animation {
 							let new_sprite = Sprite::new(path);
 							new_sprite.load_image(ctx, assets)?;
 							self.frames.push((new_sprite, 1));
+							ui_data.current_sprite = Some(self.frames.len() - 1);
 						}
 						nfd::Response::OkayMultiple(_) => {
 							dbg!("no sprite loaded because multiple paths were given");
@@ -290,7 +296,6 @@ impl Animation {
 						dbg!(err);
 					}
 				}
-				ui_data.current_sprite = Some(self.frames.len() - 1);
 			}
 			ui.same_line(0.0);
 			if ui.small_button(im_str!("New Bulk")) {
@@ -364,7 +369,7 @@ impl Animation {
 					if ui.button(
 						im_str!("Load New Image"),
 						[
-							ui.get_content_region_avail().0,
+							ui.get_content_region_avail()[0],
 							ui.get_text_line_height_with_spacing(),
 						],
 					) {
@@ -389,7 +394,7 @@ impl Animation {
 					if ui.button(
 						im_str!("Normalize Name"),
 						[
-							ui.get_content_region_avail().0,
+							ui.get_content_region_avail()[0],
 							ui.get_text_line_height_with_spacing(),
 						],
 					) {
