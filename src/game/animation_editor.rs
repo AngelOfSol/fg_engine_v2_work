@@ -88,8 +88,24 @@ impl AnimationEditor {
             }
             ui.main_menu_bar(|| {
                 ui.menu(im_str!("File")).build(|| {
-                    ui.menu_item(im_str!("New")).build();
-                    ui.menu_item(im_str!("Save")).build();
+                    if ui.menu_item(im_str!("New")).build() {
+                        self.resource = Animation::new("new animation");
+                    }
+                    if ui.menu_item(im_str!("Save")).build() {
+                        let path_result = nfd::open_save_dialog(Some("tar"), None);
+                        match path_result {
+                            Ok(path) => match path {
+                                nfd::Response::Cancel => (),
+                                nfd::Response::Okay(path) => {
+                                    editor_result = self.resource.save_tar(ctx, assets, &path);
+                                }
+                                nfd::Response::OkayMultiple(_) => (),
+                            },
+                            Err(err) => {
+                                dbg!(err);
+                            }
+                        }
+                    }
                     ui.menu_item(im_str!("Open")).build();
                 });
             });
@@ -193,11 +209,7 @@ impl AnimationEditor {
                     draw_cross(ctx, origin)?;
                 }
             }
-
         }
-
-
         Ok(())
-
     }
 }

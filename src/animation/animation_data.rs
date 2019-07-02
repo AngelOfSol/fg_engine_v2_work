@@ -11,6 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 
+use std::fs::File;
+use std::path::Path;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Animation {
 	pub name: String,
@@ -43,6 +46,54 @@ impl Animation {
 		}
 		Ok(())
 	}
+
+	pub fn save_tar<P: AsRef<Path>>(
+		&self,
+		ctx: &mut Context,
+		assets: &Assets,
+		path: P,
+	) -> GameResult<()> {
+		let file = File::create(path)?;
+		let mut tar = tar::Builder::new(file);
+
+		let data_file_name = format!("{}-animation.json", self.name);
+		{
+			let mut json_target = File::create(&data_file_name)?;
+			serde_json::to_writer(&mut json_target, &self)
+				.map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))?;
+		}
+
+		tar.append_path(&data_file_name)?;
+		std::fs::remove_file(&data_file_name)?;
+
+		for (sprite, _) in self.frames.iter() {
+
+			let image = &assets.images[&sprite.image];
+
+			let file_name = "temp.png";
+			dbg!(file_name);
+			{
+				let _ = File::create(&file_name)?;
+			}
+
+			lodepng::encode32_file(
+				&file_name,
+				&image.to_rgba8(ctx)?,
+				image.width() as usize,
+				image.height() as usize,
+			)
+			.map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))?;
+
+			tar.append_path_with_name(file_name, &sprite.image)?;
+
+			std::fs::remove_file(&file_name)?;
+		}
+		Ok(())
+
+	}
+	pub fn load_tar() {}
+
+
 	pub fn draw_frame(
 		ctx: &mut Context,
 		assets: &Assets,
@@ -137,18 +188,15 @@ impl Animation {
 					ui_data.current_sprite = Some(current_sprite + 1);
 				}
 
-				if ui.small_button(im_str!("Normalize All Names")) {
-					for (idx, ref mut sprite) in
-						self.frames.iter_mut().map(|item| &mut item.0).enumerate()
-					{
-						rename_sprite(format!("/{}/{:03}.png", self.name, idx), sprite, assets)
-					}
+			}
+			if ui.small_button(im_str!("Normalize All Names")) {
+				for (idx, ref mut sprite) in
+					self.frames.iter_mut().map(|item| &mut item.0).enumerate()
+				{
+					rename_sprite(format!("{}-{:03}.png", self.name, idx), sprite, assets)
 				}
 			}
-
-
 			if ui.small_button(im_str!("New")) {
-
 				let result = nfd::open_file_dialog(None, None);
 				match result {
 					Ok(response) => match response {
@@ -160,13 +208,11 @@ impl Animation {
 						}
 						nfd::Response::OkayMultiple(_) => {
 							dbg!("no sprite loaded because multiple paths were given");
-
 						}
 					},
 					Err(err) => {
 						dbg!(err);
 					}
-
 				}
 				ui_data.current_sprite = Some(self.frames.len() - 1);
 			}
@@ -272,7 +318,7 @@ impl Animation {
 						],
 					) {
 						rename_sprite(
-							format!("/{}/{:03}.png", self.name, current_sprite),
+							format!("{}-{:03}.png", self.name, current_sprite),
 							sprite,
 							assets,
 						)
