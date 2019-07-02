@@ -16,25 +16,23 @@ pub struct AnimationEditor {
     frame: usize,
     resource: Animation,
     ui_data: AnimationUi,
+    done: bool,
 }
 
 impl AnimationEditor {
-    pub fn new(ctx: &mut Context, assets: &mut Assets) -> GameResult<Self> {
-        let file = std::fs::File::open("./resources/animation.json")?;
-        let buf_read = std::io::BufReader::new(file);
-        let resource: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
-        resource.load_images(ctx, assets)?;
+    pub fn new(_ctx: &mut Context, _assets: &mut Assets) -> GameResult<Self> {
 
         Ok(Self {
             frame: 0,
-            resource,
+            resource: Animation::new("new_animation"),
             ui_data: AnimationUi::new(),
+            done: false,
         })
     }
 
-    pub fn update(&mut self) -> GameResult<()> {
+    pub fn update(&mut self) -> GameResult<bool> {
         self.frame += 1;
-        Ok(())
+        Ok(self.done)
     }
 
     pub fn draw<'a>(
@@ -90,6 +88,7 @@ impl AnimationEditor {
                 ui.menu(im_str!("File")).build(|| {
                     if ui.menu_item(im_str!("New")).build() {
                         self.resource = Animation::new("new animation");
+                        self.ui_data = AnimationUi::new();
                     }
                     if ui.menu_item(im_str!("Save")).build() {
                         let path_result = nfd::open_save_dialog(Some("tar"), None);
@@ -107,12 +106,14 @@ impl AnimationEditor {
                         }
                     }
                     if ui.menu_item(im_str!("Open")).build() {
-                        let path_result = nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
+                        let path_result =
+                            nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
                         match path_result {
                             Ok(path) => match path {
                                 nfd::Response::Cancel => (),
                                 nfd::Response::Okay(path) => {
-                                    self.resource = Animation::load_tar(ctx, assets, &path).unwrap();
+                                    self.resource =
+                                        Animation::load_tar(ctx, assets, &path).unwrap();
                                     //editor_result = self.resource.save_tar(ctx, assets, &path);
                                 }
                                 nfd::Response::OkayMultiple(_) => (),
@@ -121,6 +122,10 @@ impl AnimationEditor {
                                 dbg!(err);
                             }
                         }
+                    }
+                    ui.separator();
+                    if ui.menu_item(im_str!("Back")).build() {
+                        self.done = true;
                     }
                 });
             });
