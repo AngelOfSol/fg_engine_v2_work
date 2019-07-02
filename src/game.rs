@@ -1,4 +1,5 @@
 mod animation_editor;
+mod main_menu;
 
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -9,41 +10,59 @@ use ggez::input::mouse::MouseButton;
 use ggez::timer;
 use ggez::{Context, GameResult};
 
-use std::collections::HashMap;
 
 use animation_editor::AnimationEditor;
+use main_menu::MainMenu;
 
 pub struct FightingGame {
-    game_state: GameState,
+    game_state: Vec<GameState>,
     assets: Assets,
     imgui: ImGuiWrapper,
 }
 
-enum GameState {
+pub enum GameState {
     Animating(AnimationEditor),
+    MainMenu(MainMenu),
+}
+
+
+pub enum Transition {
+    None,
+    Pop,
+    Push(Box<GameState>),
 }
 
 impl FightingGame {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        let mut assets = Assets {
-            images: HashMap::new(),
-        };
+
         Ok(Self {
             imgui: ImGuiWrapper::new(ctx),
-            game_state: GameState::Animating(AnimationEditor::new(ctx, &mut assets)?),
-            assets,
+            game_state: vec![main_menu::MainMenu::new().into()],
+            assets: Assets::new(),
         })
     }
 }
 
 impl EventHandler for FightingGame {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-
         while timer::check_update_time(ctx, 60) {
-
-            match self.game_state {
+            let transition = match self
+                .game_state
+                .last_mut()
+                .expect("should have at least one gamestate")
+            {
                 GameState::Animating(ref mut editor) => editor.update(),
+                GameState::MainMenu(ref mut menu) => menu.update(),
             }?;
+            match transition {
+                Transition::None => (),
+                Transition::Pop => {
+                    self.game_state.pop();
+                }
+                Transition::Push(state) => {
+                    self.game_state.push(*state);
+                }
+            }
         }
         Ok(())
         // Update code here...
@@ -52,8 +71,16 @@ impl EventHandler for FightingGame {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
-        match self.game_state {
-            GameState::Animating(ref mut editor) => editor.draw(ctx, & mut self.assets, &mut self.imgui),
+        match self
+            .game_state
+            .last_mut()
+            .expect("should have at least one gamestate")
+        {
+            GameState::Animating(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, &mut self.imgui)
+            }
+
+            GameState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.imgui),
         }?;
 
         graphics::present(ctx)?;
