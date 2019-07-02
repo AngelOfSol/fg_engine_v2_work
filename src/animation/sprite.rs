@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use crate::assets::Assets;
 
 use rgb::ComponentBytes;
+use std::io::Read;
+use std::path::Path;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
@@ -17,25 +19,25 @@ pub struct Sprite {
 }
 
 
-pub fn load_image<S: Into<String>>(
+pub fn load_image<S: Into<String>, P: AsRef<Path>>(
 	key: S,
-	path: &str,
+	path: P,
 	ctx: &mut Context,
 	assets: &mut Assets,
 ) -> GameResult<()> {
 	let key = key.into();
-	let image = match graphics::Image::new(ctx, path) {
+	let image = match graphics::Image::new(ctx, &path) {
 		Ok(result) => result,
 		Err(GameError::ResourceNotFound(_, _)) => {
-			let raw_image = lodepng::decode32_file(path).map_err(|_| {
-				GameError::ResourceNotFound(format!("image not valid at '{}'", path), vec![])
-			})?;
-			graphics::Image::from_rgba8(
-				ctx,
-				raw_image.width as u16,
-				raw_image.height as u16,
-				&raw_image.buffer.as_bytes(),
-			)?
+			let img = {
+				let mut buf = Vec::new();
+				let mut reader = std::fs::File::open(&path)?;
+				let _ = reader.read_to_end(&mut buf)?;
+				image::load_from_memory(&buf)?.to_rgba()
+			};
+			let (width, height) = img.dimensions();
+
+			graphics::Image::from_rgba8(ctx, width as u16, height as u16, &img)?
 		}
 		Err(err) => return Err(err),
 	};

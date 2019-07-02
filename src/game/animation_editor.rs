@@ -20,7 +20,7 @@ pub struct AnimationEditor {
 
 impl AnimationEditor {
     pub fn new(ctx: &mut Context, assets: &mut Assets) -> GameResult<Self> {
-        let file = std::fs::File::open("./resources/animation.json").unwrap();
+        let file = std::fs::File::open("./resources/animation.json")?;
         let buf_read = std::io::BufReader::new(file);
         let resource: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
         resource.load_images(ctx, assets)?;
@@ -106,7 +106,22 @@ impl AnimationEditor {
                             }
                         }
                     }
-                    ui.menu_item(im_str!("Open")).build();
+                    if ui.menu_item(im_str!("Open")).build() {
+                        let path_result = nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
+                        match path_result {
+                            Ok(path) => match path {
+                                nfd::Response::Cancel => (),
+                                nfd::Response::Okay(path) => {
+                                    self.resource = Animation::load_tar(ctx, assets, &path).unwrap();
+                                    //editor_result = self.resource.save_tar(ctx, assets, &path);
+                                }
+                                nfd::Response::OkayMultiple(_) => (),
+                            },
+                            Err(err) => {
+                                dbg!(err);
+                            }
+                        }
+                    }
                 });
             });
         });
