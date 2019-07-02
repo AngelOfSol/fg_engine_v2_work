@@ -74,7 +74,7 @@ impl<'a> UiExtensions for Ui<'a> {
         self.list_box(
             label,
             current_item,
-            &items.iter().map(|item| item.as_ref()).collect::<Vec<_>>(),
+            &items.iter().collect::<Vec<_>>(),
             height_in_items,
         )
     }
