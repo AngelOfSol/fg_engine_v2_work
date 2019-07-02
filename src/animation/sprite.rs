@@ -65,7 +65,7 @@ impl Sprite {
 		ctx: &mut Context,
 		assets: &Assets,
 		sprite: &Sprite,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 		debug: bool,
 	) -> GameResult<()> {
 		let image = assets
@@ -73,22 +73,27 @@ impl Sprite {
 			.get(&sprite.image)
 			.ok_or_else(|| GameError::ResourceNotFound(sprite.image.clone(), Vec::new()))?;
 
-		let base = nalgebra::Point2::new(0.0f32, 0.0f32);
-		let transform = nalgebra::Translation2::new(
-			sprite.offset.x - f32::from(image.width()) / 2.0,
-			sprite.offset.y - f32::from(image.height()),
-		)
-		.to_homogeneous()
-			* world;
-		graphics::draw(
-			ctx,
-			image,
-			graphics::DrawParam::default().dest(transform.transform_point(&base)),
-		)?;
+		let image_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
+			-f32::from(image.width()) / 2.0,
+			-f32::from(image.height()) / 2.0,
+			0.0,
+		));
+
+		let sprite_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
+			sprite.offset.x,
+			sprite.offset.y,
+			0.0,
+		));
+
+		let transform = world * image_offset * sprite_offset;
+
+		graphics::set_transform(ctx, transform);
+		graphics::apply_transformations(ctx)?;
+
+		graphics::draw(ctx, image, graphics::DrawParam::default())?;
 
 
 		if debug {
-			let origin = transform.transform_point(&base);
 			let rectangle = graphics::Mesh::new_rectangle(
 				ctx,
 				DrawMode::stroke(1.0),
@@ -100,8 +105,10 @@ impl Sprite {
 				),
 				Color::new(1.0, 0.0, 0.0, 1.0),
 			)?;
-			graphics::draw(ctx, &rectangle, graphics::DrawParam::default().dest(origin))?;
+			graphics::draw(ctx, &rectangle, graphics::DrawParam::default())?;
 		}
+		graphics::set_transform(ctx, nalgebra::Matrix4::identity());
+		graphics::apply_transformations(ctx)?;
 
 		Ok(())
 	}
@@ -110,7 +117,7 @@ impl Sprite {
 		ctx: &mut Context,
 		assets: &Assets,
 		sprite: &Sprite,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 
 	) -> GameResult<()> {
 		Self::draw_ex(ctx, assets, sprite, world, true)
@@ -120,7 +127,7 @@ impl Sprite {
 		ctx: &mut Context,
 		assets: &Assets,
 		sprite: &Sprite,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
 		Self::draw_ex(ctx, assets, sprite, world, false)
 

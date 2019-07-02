@@ -6,9 +6,10 @@ use ggez::{Context, GameResult};
 use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
-use crate::imgui_wrapper::ImGuiWrapper;
-use crate::timeline::AtTime;
 use crate::game;
+use crate::timeline::AtTime;
+
+use crate::imgui_wrapper::ImGuiWrapper;
 
 use imgui::*;
 
@@ -32,11 +33,9 @@ impl AnimationEditor {
     pub fn update(&mut self) -> GameResult<game::Transition> {
         self.frame += 1;
         if self.done {
-            
-        Ok(game::Transition::Pop)
+            Ok(game::Transition::Pop)
         } else {
-            
-        Ok(game::Transition::None)
+            Ok(game::Transition::None)
         }
     }
 
@@ -176,14 +175,14 @@ impl AnimationEditor {
                 // normal animation
                 let pos = (300.0, 20.0);
                 let (x, y) = pos;
-                let origin = (x + width / 2.0, y + height - padding);
+                let origin = (x + width / 2.0, y + height / 2.0);
 
                 Animation::draw_at_time(
                     ctx,
                     assets,
                     &self.resource,
                     self.frame % self.resource.frames.duration(),
-                    nalgebra::Translation2::new(origin.0, origin.1).to_homogeneous(),
+                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                 )?;
                 draw_cross(ctx, origin)?;
             }
@@ -192,13 +191,13 @@ impl AnimationEditor {
                 // current_frame
                 let pos = (300.0, 20.0 + height);
                 let (x, y) = pos;
-                let origin = (x + width / 2.0, y + height - padding);
+                let origin = (x + width / 2.0, y + height / 2.0);
 
                 Animation::draw_every_frame(
                     ctx,
                     assets,
                     &self.resource,
-                    nalgebra::Translation2::new(origin.0, origin.1).to_homogeneous(),
+                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                 )?;
             }
 
@@ -207,13 +206,13 @@ impl AnimationEditor {
                     // current_frame
                     let pos = (300.0 + width, 20.0);
                     let (x, y) = pos;
-                    let origin = (x + width / 2.0, y + height - padding);
+                    let origin = (x + width / 2.0, y + height / 2.0);
                     Animation::draw_frame(
                         ctx,
                         assets,
                         &self.resource,
                         frame,
-                        nalgebra::Translation2::new(origin.0, origin.1).to_homogeneous(),
+                        nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                     )?;
                     draw_cross(ctx, origin)?;
                 }
@@ -221,14 +220,14 @@ impl AnimationEditor {
                     // current_frame
                     let pos = (300.0, 20.0 + height);
                     let (x, y) = pos;
-                    let origin = (x + width / 2.0, y + height - padding);
+                    let origin = (x + width / 2.0, y + height / 2.0);
 
                     Animation::draw_frame(
                         ctx,
                         assets,
                         &self.resource,
                         frame,
-                        nalgebra::Translation2::new(origin.0, origin.1).to_homogeneous(),
+                        nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                     )?;
                     draw_cross(ctx, origin)?;
                 }

@@ -171,7 +171,7 @@ impl Animation {
 		assets: &Assets,
 		animation: &Animation,
 		index: usize,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
 		let data = animation.frames.get(index);
 		if let Some((ref image, _)) = data {
@@ -186,7 +186,7 @@ impl Animation {
 		ctx: &mut Context,
 		assets: &Assets,
 		animation: &Animation,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
 		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
 		for sprite in animation.frames.iter().map(|(ref sprite, _)| sprite) {
@@ -201,7 +201,7 @@ impl Animation {
 		assets: &Assets,
 		animation: &Animation,
 		time: usize,
-		world: nalgebra::Matrix3<f32>,
+		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
 		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
 		let image = animation.frames.at_time(time);
