@@ -40,7 +40,7 @@ pub struct Animation {
 }
 
 fn default_blend_mode() -> BlendMode {
-	BlendMode::Add
+	BlendMode::Alpha
 }
 
 pub struct AnimationUi {
@@ -218,11 +218,17 @@ impl Animation {
 	) -> GameResult<()> {
 		ui.input_string(im_str!("Name"), &mut self.name);
 
-		ui.text(im_str!("Duration: {}", self.frames.duration()));
+		ui.label_text(im_str!("Duration"), &im_str!("{}", self.frames.duration()));
 
-		ui.text(im_str!("Blend Mode"));
+		if ui
+			.collapsing_header(im_str!("Blend Mode"))
+			.default_open(true)
+			.build()
+		{
+			ui.radio_button(im_str!("Alpha"), &mut self.blend_mode, BlendMode::Alpha);
+			ui.radio_button(im_str!("Add"), &mut self.blend_mode, BlendMode::Add);
+		}
 
-		//ui.radio_button(im_str!("Alpha"), , wanted: i32)
 
 		if ui
 			.collapsing_header(im_str!("Frames"))
@@ -250,15 +256,15 @@ impl Animation {
 			if let (Some(current_sprite), true) = (ui_data.current_sprite, !self.frames.is_empty())
 			{
 				let (up, down) = if current_sprite == 0 {
-					let temp = ui.small_button(im_str!("Swap Down"));
+					let temp = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
 					(false, temp)
 				} else if current_sprite == self.frames.len() - 1 {
-					let temp = ui.small_button(im_str!("Swap Up"));
+					let temp = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
 					(temp, false)
 				} else {
-					let up = ui.small_button(im_str!("Swap Up"));
+					let up = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
 					ui.same_line(0.0);
-					let down = ui.small_button(im_str!("Swap Down"));
+					let down = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
 					(up, down)
 				};
 				if up && current_sprite != 0 {
@@ -364,8 +370,6 @@ impl Animation {
 						rename_sprite(buffer, sprite, assets);
 					}
 
-					ui.columns(2, im_str!("Image Buttons"), false);
-
 					if ui.button(
 						im_str!("Load New Image"),
 						[
@@ -390,20 +394,7 @@ impl Animation {
 						}
 
 					}
-					ui.next_column();
-					if ui.button(
-						im_str!("Normalize Name"),
-						[
-							ui.get_content_region_avail()[0],
-							ui.get_text_line_height_with_spacing(),
-						],
-					) {
-						rename_sprite(
-							format!("{}-{:03}.png", self.name, current_sprite),
-							sprite,
-							assets,
-						)
-					}
+
 				}
 			}
 		}
