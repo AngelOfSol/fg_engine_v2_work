@@ -4,8 +4,10 @@ use crate::timeline::{AtTime, Timeline};
 
 use crate::imgui_extra::UiExtensions;
 
+use imgui::im_str;
+
+use ggez::graphics;
 use ggez::{Context, GameResult};
-use imgui::{im_str, ImString};
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
@@ -14,10 +16,31 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::path::Path;
 
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum BlendMode {
+	Alpha,
+	Add,
+}
+
+impl Into<graphics::BlendMode> for BlendMode {
+	fn into(self) -> graphics::BlendMode {
+		match self {
+			BlendMode::Add => graphics::BlendMode::Add,
+			BlendMode::Alpha => graphics::BlendMode::Alpha,
+		}
+	}
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Animation {
 	pub name: String,
 	pub frames: Timeline<Sprite>,
+	#[serde(default = "default_blend_mode")]
+	pub blend_mode: BlendMode,
+}
+
+fn default_blend_mode() -> BlendMode {
+	BlendMode::Add
 }
 
 pub struct AnimationUi {
@@ -37,6 +60,7 @@ impl Animation {
 		Self {
 			name: name.into(),
 			frames: Timeline::new(),
+			blend_mode: BlendMode::Alpha,
 		}
 	}
 
@@ -121,7 +145,15 @@ impl Animation {
 			if let Some(file_type) = path.extension() {
 				if file_type == "png" {
 					let file_name = path.file_name().unwrap();
-					load_image(file_name.to_str().expect("expected valid utf8 filename").to_owned(), path, ctx, assets)?;
+					load_image(
+						file_name
+							.to_str()
+							.expect("expected valid utf8 filename")
+							.to_owned(),
+						path,
+						ctx,
+						assets,
+					)?;
 				}
 			}
 
@@ -130,16 +162,7 @@ impl Animation {
 		std::fs::remove_dir_all("./temp/")?;
 
 		Ok(animation)
-		/*let files: Vec<_> = tar.entries()?.filter(|item| item.is_ok()).map(|item| item.unwrap()).collect();
-		use std::io::Read;
-		let temp = &files[0];
-		//temp.
-		serde_json::from_reader(temp).map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))*/
-		/*for item in tar.entries()? {
-			let item = item?;
 
-
-		}*/
 	}
 
 
@@ -152,6 +175,7 @@ impl Animation {
 	) -> GameResult<()> {
 		let data = animation.frames.get(index);
 		if let Some((ref image, _)) = data {
+			graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
 			Sprite::draw(ctx, assets, image, world)
 		} else {
 			Ok(())
@@ -164,6 +188,7 @@ impl Animation {
 		animation: &Animation,
 		world: nalgebra::Matrix3<f32>,
 	) -> GameResult<()> {
+		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
 		for sprite in animation.frames.iter().map(|(ref sprite, _)| sprite) {
 			Sprite::draw_debug(ctx, assets, sprite, world)?
 		}
@@ -178,6 +203,7 @@ impl Animation {
 		time: usize,
 		world: nalgebra::Matrix3<f32>,
 	) -> GameResult<()> {
+		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
 		let image = animation.frames.at_time(time);
 		Sprite::draw(ctx, assets, &image, world)
 	}
@@ -216,7 +242,8 @@ impl Animation {
 			);
 			ui_data.current_sprite = usize::try_from(buffer).ok();
 
-			if let Some(current_sprite) = ui_data.current_sprite {
+			if let (Some(current_sprite), true) = (ui_data.current_sprite, !self.frames.is_empty())
+			{
 				let (up, down) = if current_sprite == 0 {
 					let temp = ui.small_button(im_str!("Swap Down"));
 					(false, temp)

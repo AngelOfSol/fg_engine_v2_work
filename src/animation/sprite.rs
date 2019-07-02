@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::assets::Assets;
 
-use rgb::ComponentBytes;
 use std::io::Read;
 use std::path::Path;
 
@@ -86,6 +85,7 @@ impl Sprite {
 			image,
 			graphics::DrawParam::default().dest(transform.transform_point(&base)),
 		)?;
+
 
 		if debug {
 			let origin = transform.transform_point(&base);
