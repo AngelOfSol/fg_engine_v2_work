@@ -65,7 +65,7 @@ impl StateEditor {
                         .collapsible(false)
                         .build(|| {
                             editor_result =
-                                self.resource.draw_ui(ctx, assets, ui, &mut self.ui_data);
+                                self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         });
                     ui.menu(im_str!("State Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
