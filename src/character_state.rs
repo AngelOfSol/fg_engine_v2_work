@@ -2,21 +2,13 @@ mod animation_data;
 
 use crate::animation::Animation;
 use crate::assets::Assets;
-use crate::timeline::{AtTime, Timeline};
 
 use crate::imgui_extra::UiExtensions;
 
 use imgui::*;
 
-use ggez::graphics;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
-
-use std::convert::TryFrom;
-
-
-use std::fs::File;
-use std::path::Path;
 
 use std::cmp;
 
@@ -80,47 +72,13 @@ impl CharacterState {
     ) -> GameResult<()> {
         ui.label_text(im_str!("Duration"), &im_str!("{}", self.duration()));
 
-        let mut buffer = ui_data
-            .current_animation
-            .and_then(|item| i32::try_from(item).ok())
-            .unwrap_or(-1);
-        ui.list_box_owned(
+        ui.rearrangable_list_box(
             im_str!("Frame List"),
-            &mut buffer,
-            &self
-                .animations
-                .iter()
-                .map(|item| im_str!("{}", item.name().to_owned()))
-                .collect::<Vec<_>>(),
+            &mut ui_data.current_animation,
+            &mut self.animations,
+            |item| im_str!("{}", item.name().to_owned()),
             5,
         );
-        ui_data.current_animation = usize::try_from(buffer).ok();
-
-        if let (Some(current_animation), true) =
-            (ui_data.current_animation, !self.animations.is_empty())
-        {
-            let (up, down) = if current_animation == 0 {
-                let temp = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
-                (false, temp)
-            } else if current_animation == self.animations.len() - 1 {
-                let temp = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
-                (temp, false)
-            } else {
-                let up = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
-                ui.same_line(0.0);
-                let down = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
-                (up, down)
-            };
-            if up && current_animation != 0 {
-                self.animations
-                    .swap(current_animation, current_animation - 1);
-                ui_data.current_animation = Some(current_animation - 1);
-            } else if down && current_animation != self.animations.len() - 1 {
-                self.animations
-                    .swap(current_animation, current_animation + 1);
-                ui_data.current_animation = Some(current_animation + 1);
-            }
-        }
 
         if ui.small_button(im_str!("Add Animation(s)")) {
             let path_result = nfd::open_file_multiple_dialog(Some("tar"), None);

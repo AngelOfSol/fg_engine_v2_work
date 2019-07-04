@@ -1,32 +1,27 @@
-use super::sprite::{load_image, Sprite};
-use crate::assets::Assets;
-use crate::timeline::{AtTime, Timeline};
+use super::sprite::{load_image, rename_sprite, Sprite, SpriteUi};
 
+use crate::assets::Assets;
 use crate::imgui_extra::UiExtensions;
+use crate::timeline::{AtTime, Timeline};
+use crate::typedefs::graphics::Matrix4;
 
 use imgui::im_str;
 
 use ggez::graphics;
 use ggez::{Context, GameError, GameResult};
 
-use serde::{Deserialize, Serialize};
-
-use std::convert::TryFrom;
-
-use std::io::{BufReader, BufWriter};
-
+use image::imageops::flip_vertical;
 use image::png::PNGEncoder;
+use image::{ColorType, ImageBuffer, Rgba};
 
 use nfd::Response;
 
-use image::imageops::flip_vertical;
-
-use image::{ColorType, ImageBuffer, Rgba};
+use serde::{Deserialize, Serialize};
 
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
-use crate::typedefs::graphics::Matrix4;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum BlendMode {
@@ -53,18 +48,6 @@ pub struct Animation {
 
 fn default_blend_mode() -> BlendMode {
 	BlendMode::Alpha
-}
-
-pub struct AnimationUi {
-	pub current_sprite: Option<usize>,
-}
-
-impl AnimationUi {
-	pub fn new() -> Self {
-		Self {
-			current_sprite: None,
-		}
-	}
 }
 
 impl Animation {
@@ -215,25 +198,45 @@ impl Animation {
 		image.draw(ctx, assets, world)
 	}
 
-	#[allow(clippy::cognitive_complexity)]
+}
+
+
+pub struct AnimationUi {
+	pub current_sprite: Option<usize>,
+}
+
+impl AnimationUi {
+	pub fn new() -> Self {
+		Self {
+			current_sprite: None,
+		}
+	}
+
 	pub fn draw_ui(
 		&mut self,
 		ui: &imgui::Ui,
 		ctx: &mut Context,
 		assets: &mut Assets,
-		ui_data: &mut AnimationUi,
+		animation: &mut Animation,
 	) -> GameResult<()> {
-		ui.input_string(im_str!("Name"), &mut self.name);
+		ui.input_string(im_str!("Name"), &mut animation.name);
 
-		ui.label_text(im_str!("Duration"), &im_str!("{}", self.frames.duration()));
+		ui.label_text(
+			im_str!("Duration"),
+			&im_str!("{}", animation.frames.duration()),
+		);
 
 		if ui
 			.collapsing_header(im_str!("Blend Mode"))
 			.default_open(true)
 			.build()
 		{
-			ui.radio_button(im_str!("Alpha"), &mut self.blend_mode, BlendMode::Alpha);
-			ui.radio_button(im_str!("Add"), &mut self.blend_mode, BlendMode::Add);
+			ui.radio_button(
+				im_str!("Alpha"),
+				&mut animation.blend_mode,
+				BlendMode::Alpha,
+			);
+			ui.radio_button(im_str!("Add"), &mut animation.blend_mode, BlendMode::Add);
 		}
 
 
@@ -242,52 +245,22 @@ impl Animation {
 			.default_open(true)
 			.build()
 		{
-			let mut buffer = ui_data
-				.current_sprite
-				.and_then(|item| i32::try_from(item).ok())
-				.unwrap_or(-1);
-
-			ui.list_box_owned(
+			ui.rearrangable_list_box(
 				im_str!("Frame List"),
-				&mut buffer,
-				&self
-					.frames
-					.iter()
-					.enumerate()
-					.map(|(idx, item)| im_str!("{} ({})", idx, item.0.image.clone()))
-					.collect::<Vec<_>>(),
+				&mut self.current_sprite,
+				&mut animation.frames,
+				|item| im_str!("{}", item.0.image.clone()),
 				5,
 			);
-			ui_data.current_sprite = usize::try_from(buffer).ok();
 
-			if let (Some(current_sprite), true) = (ui_data.current_sprite, !self.frames.is_empty())
-			{
-				let (up, down) = if current_sprite == 0 {
-					let temp = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
-					(false, temp)
-				} else if current_sprite == self.frames.len() - 1 {
-					let temp = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
-					(temp, false)
-				} else {
-					let up = ui.arrow_button(im_str!("Swap Up"), imgui::Direction::Up);
-					ui.same_line(0.0);
-					let down = ui.arrow_button(im_str!("Swap Down"), imgui::Direction::Down);
-					(up, down)
-				};
-				if up && current_sprite != 0 {
-					self.frames.swap(current_sprite, current_sprite - 1);
-					ui_data.current_sprite = Some(current_sprite - 1);
-				} else if down && current_sprite != self.frames.len() - 1 {
-					self.frames.swap(current_sprite, current_sprite + 1);
-					ui_data.current_sprite = Some(current_sprite + 1);
-				}
-
-			}
 			if ui.small_button(im_str!("Normalize All Names")) {
-				for (idx, ref mut sprite) in
-					self.frames.iter_mut().map(|item| &mut item.0).enumerate()
+				for (idx, ref mut sprite) in animation
+					.frames
+					.iter_mut()
+					.map(|item| &mut item.0)
+					.enumerate()
 				{
-					rename_sprite(format!("{}-{:03}.png", self.name, idx), sprite, assets)
+					rename_sprite(format!("{}-{:03}.png", animation.name, idx), sprite, assets)
 				}
 			}
 			if ui.small_button(im_str!("New")) {
@@ -298,8 +271,8 @@ impl Animation {
 						Response::Okay(path) => {
 							let new_sprite = Sprite::new(path);
 							new_sprite.load_image(ctx, assets)?;
-							self.frames.push((new_sprite, 1));
-							ui_data.current_sprite = Some(self.frames.len() - 1);
+							animation.frames.push((new_sprite, 1));
+							self.current_sprite = Some(animation.frames.len() - 1);
 						}
 						Response::OkayMultiple(_) => {
 							dbg!("no sprite loaded because multiple paths were given");
@@ -317,114 +290,49 @@ impl Animation {
 					match response {
 						Response::Cancel => (),
 						Response::Okay(path) => {
-							self.frames.push((Sprite::new(path), 1));
-							self.load_images(ctx, assets)?;
+							animation.frames.push((Sprite::new(path), 1));
+							animation.load_images(ctx, assets)?;
 						}
 						Response::OkayMultiple(paths) => {
 							for path in paths {
-								self.frames.push((Sprite::new(path), 1));
+								animation.frames.push((Sprite::new(path), 1));
 							}
-							self.load_images(ctx, assets)?;
+							animation.load_images(ctx, assets)?;
 						}
 					}
 				}
 			}
-			if let Some(current_sprite) = ui_data.current_sprite {
+			if let Some(current_sprite) = self.current_sprite {
 				ui.same_line(0.0);
 				if ui.small_button(im_str!("Delete")) {
-					self.frames.remove(current_sprite);
-					if self.frames.is_empty() {
-						ui_data.current_sprite = None;
+					animation.frames.remove(current_sprite);
+					if animation.frames.is_empty() {
+						self.current_sprite = None;
 					} else {
-						ui_data.current_sprite =
-							Some(std::cmp::min(self.frames.len() - 1, current_sprite));
+						self.current_sprite =
+							Some(std::cmp::min(animation.frames.len() - 1, current_sprite));
 					}
 				}
 			}
 			ui.same_line(0.0);
 			if ui.small_button(im_str!("Delete All")) {
-				self.frames.clear();
-				ui_data.current_sprite = None;
+				animation.frames.clear();
+				self.current_sprite = None;
 			}
 
-			if let Some(current_sprite) = ui_data.current_sprite {
+			if let Some(current_sprite) = self.current_sprite {
 				ui.separator();
 
-				let (ref mut sprite, ref mut duration) = self.frames[current_sprite];
+				let (ref mut sprite, ref mut duration) = animation.frames[current_sprite];
 				let _ = ui.input_whole(im_str!("Duration"), duration);
 				*duration = std::cmp::max(1, *duration);
 				ui.separator();
 
-				if ui
-					.collapsing_header(im_str!("Offset"))
-					.default_open(true)
-					.build()
-				{
-					ui.input_float(im_str!("X"), &mut sprite.offset.x).build();
-					ui.input_float(im_str!("Y"), &mut sprite.offset.y).build();
-					ui.separator();
-				}
-				ui.input_float(im_str!("Rotation"), &mut sprite.rotation)
-					.build();
-
-				ui.separator();
-				if ui
-					.collapsing_header(im_str!("Image"))
-					.default_open(true)
-					.build()
-				{
-					let mut buffer = sprite.image.clone();
-					if ui.input_string(im_str!("Name##Frame"), &mut buffer) {
-						rename_sprite(buffer, sprite, assets);
-					}
-
-					if ui.button(
-						im_str!("Load New Image"),
-						[
-							ui.get_content_region_avail()[0],
-							ui.get_text_line_height_with_spacing(),
-						],
-					) {
-						let result = nfd::open_file_dialog(Some("png"), None);
-						match result {
-							Ok(result) => match result {
-								Response::Cancel => (),
-								Response::Okay(path) => {
-									replace_asset(sprite.image.clone(), &path, ctx, assets)?;
-								}
-								Response::OkayMultiple(_) => {
-									println!("Cancelling because multiple images were specified.")
-								}
-							},
-							Err(err) => {
-								dbg!(err);
-							}
-						}
-
-					}
-
-				}
+				SpriteUi::new().draw_ui(ctx, assets, ui, sprite)?;
 			}
 		}
 
 		Ok(())
 	}
 
-}
-
-fn replace_asset<S: Into<String>>(
-	asset: S,
-	path: &str,
-	ctx: &mut Context,
-	assets: &mut Assets,
-) -> GameResult<()> {
-	load_image(asset, path, ctx, assets)
-}
-fn rename_sprite<S: Into<String>>(new_name: S, sprite: &mut Sprite, assets: &mut Assets) {
-	let asset = assets.images.remove(&sprite.image);
-	let new_name = new_name.into();
-	if let Some(asset) = asset {
-		assets.images.insert(new_name.clone(), asset);
-	}
-	sprite.image = new_name;
 }
