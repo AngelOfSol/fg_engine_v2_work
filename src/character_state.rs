@@ -18,7 +18,13 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::path::Path;
 
+use std::cmp;
+
+use nfd::Response;
+
 use animation_data::AnimationData;
+
+use crate::typedefs::graphics::Matrix4;
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
@@ -47,7 +53,7 @@ impl CharacterState {
         self.animations
             .iter()
             .map(|item| item.delay + item.duration())
-            .fold(0, std::cmp::max)
+            .fold(0, cmp::max)
     }
 
     pub fn draw_at_time(
@@ -55,7 +61,7 @@ impl CharacterState {
         ctx: &mut Context,
         assets: &Assets,
         time: usize,
-        world: nalgebra::Matrix4<f32>,
+        world: Matrix4,
     ) -> GameResult<()> {
         if time < self.duration() {
             for animation in self.animations.iter() {
@@ -120,13 +126,13 @@ impl CharacterState {
             let path_result = nfd::open_file_multiple_dialog(Some("tar"), None);
             match path_result {
                 Ok(path) => match path {
-                    nfd::Response::Cancel => (),
-                    nfd::Response::Okay(path) => {
+                    Response::Cancel => (),
+                    Response::Okay(path) => {
                         self.animations.push(AnimationData::new(
                             Animation::load_tar(ctx, assets, &path).unwrap(),
                         ));
                     }
-                    nfd::Response::OkayMultiple(paths) => {
+                    Response::OkayMultiple(paths) => {
                         for path in paths {
                             self.animations.push(AnimationData::new(
                                 Animation::load_tar(ctx, assets, &path).unwrap(),

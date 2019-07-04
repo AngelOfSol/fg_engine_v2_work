@@ -13,6 +13,8 @@ use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
+use crate::typedefs::graphics::{Vec3, Matrix4};
+
 use imgui::*;
 
 use crate::character_state::{CharacterState, CharacterStateUi};
@@ -21,7 +23,7 @@ pub struct StateEditor {
     resource: CharacterState,
     frame: usize,
     done: bool,
-    ui_data: CharacterStateUi, 
+    ui_data: CharacterStateUi,
 }
 
 impl StateEditor {
@@ -83,7 +85,7 @@ impl StateEditor {
                 ctx,
                 assets,
                 self.frame % self.resource.duration(),
-                nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(600.0, 200.0, 0.0)),
+                Matrix4::new_translation(&Vec3::new(600.0, 200.0, 0.0)),
             )?;
         }
         Ok(())
