@@ -13,7 +13,7 @@ use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
-use crate::typedefs::graphics::{Vec3, Matrix4};
+use crate::typedefs::graphics::{Matrix4, Vec3};
 
 use imgui::*;
 
@@ -52,6 +52,7 @@ impl StateEditor {
         assets: &mut Assets,
         imgui: &mut ImGuiWrapper,
     ) -> GameResult<()> {
+        let mut editor_result = Ok(());
         imgui
             .frame()
             .run(|ui| {
@@ -63,9 +64,8 @@ impl StateEditor {
                         .movable(false)
                         .collapsible(false)
                         .build(|| {
-
-                            self.resource.draw_ui(ctx, assets, ui, &mut self.ui_data);
-
+                            editor_result =
+                                self.resource.draw_ui(ctx, assets, ui, &mut self.ui_data);
                         });
                     ui.menu(im_str!("State Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
@@ -80,6 +80,7 @@ impl StateEditor {
                 });
             })
             .render(ctx);
+        editor_result?;
         if self.resource.duration() > 0 {
             self.resource.draw_at_time(
                 ctx,
@@ -88,6 +89,7 @@ impl StateEditor {
                 Matrix4::new_translation(&Vec3::new(600.0, 200.0, 0.0)),
             )?;
         }
+
         Ok(())
     }
 }
