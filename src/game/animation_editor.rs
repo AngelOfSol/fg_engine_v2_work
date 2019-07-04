@@ -66,7 +66,7 @@ impl AnimationEditor {
                     .movable(false)
                     .collapsible(false)
                     .build(|| {
-                        editor_result = self.resource.draw_ui(&ui, ctx, assets, &mut self.ui_data);
+                        editor_result = self.ui_data.draw_ui(&ui, ctx, assets, &mut self.resource);
                     });
 
                 if self.resource.frames.duration() > 0 {

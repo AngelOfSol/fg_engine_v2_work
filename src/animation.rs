@@ -1,4 +1,5 @@
 
+#[allow(clippy::module_inception)]
 mod animation;
 mod sprite;
 
