@@ -39,11 +39,11 @@ impl AnimationEditor {
         }
     }
 
-    pub fn draw<'a>(
+    pub fn draw(
         &mut self,
         ctx: &mut Context,
         assets: &mut Assets,
-        imgui: &'a mut ImGuiWrapper,
+        imgui: &mut ImGuiWrapper,
     ) -> GameResult<()> {
         let editor_height = 526.0;
         let dim = [editor_height / 2.0, editor_height / 2.0];
@@ -89,7 +89,7 @@ impl AnimationEditor {
                     .build(|| {});
             }
             ui.main_menu_bar(|| {
-                ui.menu(im_str!("File")).build(|| {
+                ui.menu(im_str!("Animation Editor")).build(|| {
                     if ui.menu_item(im_str!("New")).build() {
                         self.resource = Animation::new("new animation");
                         self.ui_data = AnimationUi::new();
@@ -177,10 +177,9 @@ impl AnimationEditor {
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
 
-                Animation::draw_at_time(
+                self.resource.draw_at_time(
                     ctx,
                     assets,
-                    &self.resource,
                     self.frame % self.resource.frames.duration(),
                     nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                 )?;
@@ -193,44 +192,25 @@ impl AnimationEditor {
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
 
-                Animation::draw_every_frame(
+                self.resource.draw_every_frame(
                     ctx,
                     assets,
-                    &self.resource,
                     nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
                 )?;
             }
 
             if let Some(frame) = self.ui_data.current_sprite {
-                {
-                    // current_frame
-                    let pos = (300.0 + width, 20.0);
-                    let (x, y) = pos;
-                    let origin = (x + width / 2.0, y + height / 2.0);
-                    Animation::draw_frame(
-                        ctx,
-                        assets,
-                        &self.resource,
-                        frame,
-                        nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
-                    )?;
-                    draw_cross(ctx, origin)?;
-                }
-                {
-                    // current_frame
-                    let pos = (300.0, 20.0 + height);
-                    let (x, y) = pos;
-                    let origin = (x + width / 2.0, y + height / 2.0);
-
-                    Animation::draw_frame(
-                        ctx,
-                        assets,
-                        &self.resource,
-                        frame,
-                        nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
-                    )?;
-                    draw_cross(ctx, origin)?;
-                }
+                // current_frame
+                let pos = (300.0 + width, 20.0);
+                let (x, y) = pos;
+                let origin = (x + width / 2.0, y + height / 2.0);
+                self.resource.draw_frame(
+                    ctx,
+                    assets,
+                    frame,
+                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
+                )?;
+                draw_cross(ctx, origin)?;
             }
         }
         Ok(())

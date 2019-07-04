@@ -167,45 +167,45 @@ impl Animation {
 
 
 	pub fn draw_frame(
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		animation: &Animation,
 		index: usize,
 		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
-		let data = animation.frames.get(index);
-		if let Some((ref image, _)) = data {
-			graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
-			Sprite::draw(ctx, assets, image, world)
+		let data = self.frames.get(index);
+		if let Some((ref sprite, _)) = data {
+			graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+			sprite.draw(ctx, assets, world)
 		} else {
 			Ok(())
 		}
 	}
 
 	pub fn draw_every_frame(
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		animation: &Animation,
 		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
-		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
-		for sprite in animation.frames.iter().map(|(ref sprite, _)| sprite) {
-			Sprite::draw_debug(ctx, assets, sprite, world)?
+		graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+		for sprite in self.frames.iter().map(|(ref sprite, _)| sprite) {
+			sprite.draw_debug(ctx, assets, world)?
 		}
 
 		Ok(())
 	}
 
 	pub fn draw_at_time(
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		animation: &Animation,
 		time: usize,
 		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
-		graphics::set_blend_mode(ctx, animation.blend_mode.into())?;
-		let image = animation.frames.at_time(time);
-		Sprite::draw(ctx, assets, &image, world)
+		graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+		let image = self.frames.at_time(time);
+		image.draw(ctx, assets, world)
 	}
 
 	#[allow(clippy::cognitive_complexity)]

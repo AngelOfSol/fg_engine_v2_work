@@ -1,6 +1,6 @@
 
-mod animation_data;
+mod animation;
 mod sprite;
 
-pub use animation_data::{Animation, AnimationUi};
+pub use animation::{Animation, AnimationUi};
 pub use sprite::{load_image, Sprite};

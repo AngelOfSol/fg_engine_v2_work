@@ -1,5 +1,6 @@
 mod animation_editor;
 mod main_menu;
+mod state_editor;
 
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -13,6 +14,7 @@ use ggez::{Context, GameResult};
 
 use animation_editor::AnimationEditor;
 use main_menu::MainMenu;
+use state_editor::StateEditor;
 
 pub struct FightingGame {
     game_state: Vec<GameState>,
@@ -23,6 +25,7 @@ pub struct FightingGame {
 pub enum GameState {
     Animating(AnimationEditor),
     MainMenu(MainMenu),
+    StateEditor(StateEditor),
 }
 
 
@@ -53,6 +56,7 @@ impl EventHandler for FightingGame {
             {
                 GameState::Animating(ref mut editor) => editor.update(),
                 GameState::MainMenu(ref mut menu) => menu.update(),
+                GameState::StateEditor(ref mut editor) => editor.update(),
             }?;
             match transition {
                 Transition::None => (),
@@ -81,6 +85,9 @@ impl EventHandler for FightingGame {
             }
 
             GameState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.imgui),
+                GameState::StateEditor(ref mut editor) => {
+                    editor.draw(ctx, &mut self.assets, &mut self.imgui)
+                }
         }?;
 
         graphics::present(ctx)?;

@@ -4,7 +4,7 @@ use imgui::*;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
-use super::AnimationEditor;
+use super::{AnimationEditor, StateEditor};
 use crate::game;
 
 pub struct MainMenu {
@@ -24,18 +24,25 @@ impl MainMenu {
         Ok(next)
     }
 
-    pub fn draw<'a>(&mut self, ctx: &mut Context, imgui: &'a mut ImGuiWrapper) -> GameResult<()> {
-        let imgui_render = imgui.frame().run(|ui| {
-            // Window
-            ui.main_menu_bar(|| {
-                ui.menu(im_str!("Editor")).build(|| {
-                    if ui.menu_item(im_str!("Edit Animations")).build() {
-                        self.next = game::Transition::Push(Box::new(AnimationEditor::new().into()));
-                    }
+    pub fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        imgui
+            .frame()
+            .run(|ui| {
+                // Window
+                ui.main_menu_bar(|| {
+                    ui.menu(im_str!("Main Menu")).build(|| {
+                        if ui.menu_item(im_str!("Edit Animations")).build() {
+                            self.next =
+                                game::Transition::Push(Box::new(AnimationEditor::new().into()));
+                        }
+
+                        if ui.menu_item(im_str!("Edit States")).build() {
+                            self.next = game::Transition::Push(Box::new(StateEditor::new().into()));
+                        }
+                    });
                 });
-            });
-        });
-        imgui_render.render(ctx);
+            })
+            .render(ctx);
         Ok(())
     }
 }
