@@ -21,24 +21,16 @@ use crate::typedefs::graphics::Matrix4;
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
-}
-
-pub struct CharacterStateUi {
-    current_animation: Option<usize>,
-}
-
-impl CharacterStateUi {
-    pub fn new() -> Self {
-        Self {
-            current_animation: None,
-        }
-    }
+    pub name: String,
 }
 
 
 impl CharacterState {
     pub fn new() -> Self {
-        Self { animations: vec![] }
+        Self {
+            animations: vec![],
+            name: "new_state".to_owned(),
+        }
     }
 
     pub fn duration(&self) -> usize {
@@ -63,19 +55,33 @@ impl CharacterState {
         Ok(())
     }
 
+}
+
+pub struct CharacterStateUi {
+    current_animation: Option<usize>,
+}
+
+impl CharacterStateUi {
+    pub fn new() -> Self {
+        Self {
+            current_animation: None,
+        }
+    }
+
     pub fn draw_ui(
         &mut self,
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        ui_data: &mut CharacterStateUi,
+        data: &mut CharacterState,
     ) -> GameResult<()> {
-        ui.label_text(im_str!("Duration"), &im_str!("{}", self.duration()));
+        ui.input_string(im_str!("Name"), &mut data.name);
+        ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         ui.rearrangable_list_box(
             im_str!("Frame List"),
-            &mut ui_data.current_animation,
-            &mut self.animations,
+            &mut self.current_animation,
+            &mut data.animations,
             |item| im_str!("{}", item.name().to_owned()),
             5,
         );
@@ -86,13 +92,13 @@ impl CharacterState {
                 Ok(path) => match path {
                     Response::Cancel => (),
                     Response::Okay(path) => {
-                        self.animations.push(AnimationData::new(
+                        data.animations.push(AnimationData::new(
                             Animation::load_tar(ctx, assets, &path).unwrap(),
                         ));
                     }
                     Response::OkayMultiple(paths) => {
                         for path in paths {
-                            self.animations.push(AnimationData::new(
+                            data.animations.push(AnimationData::new(
                                 Animation::load_tar(ctx, assets, &path).unwrap(),
                             ));
                         }
