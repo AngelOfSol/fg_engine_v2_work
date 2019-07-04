@@ -62,16 +62,16 @@ impl Sprite {
 	}
 
 	pub fn draw_ex(
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		sprite: &Sprite,
 		world: nalgebra::Matrix4<f32>,
 		debug: bool,
 	) -> GameResult<()> {
 		let image = assets
 			.images
-			.get(&sprite.image)
-			.ok_or_else(|| GameError::ResourceNotFound(sprite.image.clone(), Vec::new()))?;
+			.get(&self.image)
+			.ok_or_else(|| GameError::ResourceNotFound(self.image.clone(), Vec::new()))?;
 
 		let image_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
 			-f32::from(image.width()) / 2.0,
@@ -80,8 +80,8 @@ impl Sprite {
 		));
 
 		let sprite_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
-			sprite.offset.x,
-			sprite.offset.y,
+			self.offset.x,
+			self.offset.y,
 			0.0,
 		));
 
@@ -113,23 +113,21 @@ impl Sprite {
 		Ok(())
 	}
 	pub fn draw_debug(
-
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		sprite: &Sprite,
 		world: nalgebra::Matrix4<f32>,
-
 	) -> GameResult<()> {
-		Self::draw_ex(ctx, assets, sprite, world, true)
-
+		self.draw_ex(ctx, assets, world, true)
 	}
+
 	pub fn draw(
+		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		sprite: &Sprite,
 		world: nalgebra::Matrix4<f32>,
 	) -> GameResult<()> {
-		Self::draw_ex(ctx, assets, sprite, world, false)
-
+		self.draw_ex(ctx, assets, world, false)
 	}
+	
 }

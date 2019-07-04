@@ -17,6 +17,8 @@ mod assets;
 mod game;
 mod timeline;
 
+mod character_state;
+
 mod imgui_wrapper;
 
 
