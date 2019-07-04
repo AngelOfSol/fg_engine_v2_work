@@ -35,6 +35,10 @@ impl AnimationData {
         }
     }
 
+    pub fn name(&self) -> &str {
+        &self.animation.name
+    }
+
     pub fn duration(&self) -> usize {
         self.animation.frames.duration()
     }

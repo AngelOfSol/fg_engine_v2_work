@@ -345,6 +345,7 @@ impl Animation {
 
 				let (ref mut sprite, ref mut duration) = self.frames[current_sprite];
 				let _ = ui.input_whole(im_str!("Duration"), duration);
+				*duration = std::cmp::max(1, *duration);
 				ui.separator();
 
 				if ui

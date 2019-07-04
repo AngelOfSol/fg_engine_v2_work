@@ -15,11 +15,13 @@ use crate::imgui_wrapper::ImGuiWrapper;
 
 use imgui::*;
 
-use crate::character_state::CharacterState;
+use crate::character_state::{CharacterState, CharacterStateUi};
 
 pub struct StateEditor {
     resource: CharacterState,
+    frame: usize,
     done: bool,
+    ui_data: CharacterStateUi, 
 }
 
 impl StateEditor {
@@ -27,10 +29,14 @@ impl StateEditor {
         Self {
             resource: CharacterState::new(),
             done: false,
+            frame: 0,
+            ui_data: CharacterStateUi::new(),
         }
     }
 
     pub fn update(&mut self) -> GameResult<Transition> {
+        self.frame = self.frame.wrapping_add(1);
+
         if self.done {
             Ok(Transition::Pop)
         } else {
@@ -47,10 +53,22 @@ impl StateEditor {
         imgui
             .frame()
             .run(|ui| {
-                // Window
                 ui.main_menu_bar(|| {
+                    ui.window(im_str!("Editor"))
+                        .size([300.0, 526.0], Condition::Always)
+                        .position([0.0, 20.0], Condition::Always)
+                        .resizable(false)
+                        .movable(false)
+                        .collapsible(false)
+                        .build(|| {
+
+                            self.resource.draw_ui(ctx, assets, ui, &mut self.ui_data);
+
+                        });
                     ui.menu(im_str!("State Editor")).build(|| {
-                        if ui.menu_item(im_str!("New")).build() {}
+                        if ui.menu_item(im_str!("New")).build() {
+                            self.resource = CharacterState::new();
+                        }
                         ui.separator();
 
                         if ui.menu_item(im_str!("Back")).build() {
@@ -60,6 +78,14 @@ impl StateEditor {
                 });
             })
             .render(ctx);
+        if self.resource.duration() > 0 {
+            self.resource.draw_at_time(
+                ctx,
+                assets,
+                self.frame % self.resource.duration(),
+                nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(600.0, 200.0, 0.0)),
+            )?;
+        }
         Ok(())
     }
 }

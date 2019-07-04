@@ -21,6 +21,7 @@ mod character_state;
 
 mod imgui_wrapper;
 
+mod typedefs;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
