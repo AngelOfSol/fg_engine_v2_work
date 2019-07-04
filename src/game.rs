@@ -40,7 +40,7 @@ impl FightingGame {
 
         Ok(Self {
             imgui: ImGuiWrapper::new(ctx),
-            game_state: vec![main_menu::MainMenu::new().into()],
+            game_state: vec![MainMenu::new().into()],
             assets: Assets::new(),
         })
     }
@@ -85,9 +85,9 @@ impl EventHandler for FightingGame {
             }
 
             GameState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.imgui),
-                GameState::StateEditor(ref mut editor) => {
-                    editor.draw(ctx, &mut self.assets, &mut self.imgui)
-                }
+            GameState::StateEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, &mut self.imgui)
+            }
         }?;
 
         graphics::present(ctx)?;

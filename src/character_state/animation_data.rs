@@ -2,7 +2,7 @@ use crate::animation::Animation;
 use serde::{Deserialize, Serialize};
 
 use crate::assets::Assets;
-use crate::timeline::{AtTime};
+use crate::timeline::AtTime;
 
 
 use imgui::im_str;
@@ -16,13 +16,15 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::path::Path;
 
+use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
+
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct AnimationData {
     pub animation: Animation,
     pub delay: usize,
-    pub offset: nalgebra::Vector2<f32>,
-    pub scale: nalgebra::Vector2<f32>,
+    pub offset: Vec2,
+    pub scale: Vec2,
 }
 
 impl AnimationData {
@@ -31,7 +33,7 @@ impl AnimationData {
             animation,
             delay: 0,
             offset: nalgebra::zero(),
-            scale: nalgebra::Vector2::new(1.0, 1.0),
+            scale: Vec2::new(1.0, 1.0),
         }
     }
 
@@ -43,20 +45,20 @@ impl AnimationData {
         self.animation.frames.duration()
     }
 
-    
+
     pub fn draw_at_time(
         &self,
         ctx: &mut Context,
         assets: &Assets,
         time: usize,
-        world: nalgebra::Matrix4<f32>,
+        world: Matrix4,
     ) -> GameResult<()> {
         if time >= self.delay && time < self.duration() {
-            let transform = 
-            nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(self.offset.x, self.offset.y, 0.0)) *
-            nalgebra::Matrix4::new_nonuniform_scaling(&nalgebra::Vector3::new(self.scale.x, self.scale.y, 1.0));
-            self.animation.draw_at_time(ctx, assets, time - self.delay, world * transform)
-        } else { 
+            let transform = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0))
+                * Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+            self.animation
+                .draw_at_time(ctx, assets, time - self.delay, world * transform)
+        } else {
             Ok(())
         }
     }

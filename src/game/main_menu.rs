@@ -5,22 +5,22 @@ use imgui::*;
 use crate::imgui_wrapper::ImGuiWrapper;
 
 use super::{AnimationEditor, StateEditor};
-use crate::game;
+use crate::game::{GameState, Transition};
 
 pub struct MainMenu {
-    next: game::Transition,
+    next: Transition,
 }
 
 impl MainMenu {
 
     pub fn new() -> Self {
         Self {
-            next: game::Transition::None,
+            next: Transition::None,
         }
     }
 
-    pub fn update(&mut self) -> GameResult<game::Transition> {
-        let next = std::mem::replace(&mut self.next, game::Transition::None);
+    pub fn update(&mut self) -> GameResult<Transition> {
+        let next = std::mem::replace(&mut self.next, Transition::None);
         Ok(next)
     }
 
@@ -33,11 +33,11 @@ impl MainMenu {
                     ui.menu(im_str!("Main Menu")).build(|| {
                         if ui.menu_item(im_str!("Edit Animations")).build() {
                             self.next =
-                                game::Transition::Push(Box::new(AnimationEditor::new().into()));
+                                Transition::Push(Box::new(AnimationEditor::new().into()));
                         }
 
                         if ui.menu_item(im_str!("Edit States")).build() {
-                            self.next = game::Transition::Push(Box::new(StateEditor::new().into()));
+                            self.next = Transition::Push(Box::new(StateEditor::new().into()));
                         }
                     });
                 });
@@ -47,13 +47,8 @@ impl MainMenu {
     }
 }
 
-impl Into<game::GameState> for MainMenu {
-    fn into(self) -> game::GameState {
-        game::GameState::MainMenu(self)
+impl Into<GameState> for MainMenu {
+    fn into(self) -> GameState {
+        GameState::MainMenu(self)
     }
 }
-
-/*GameState::Animating(AnimationEditor::new(
-    ctx,
-    &mut assets,
-)?)*/

@@ -7,14 +7,26 @@ use crate::imgui_extra::UiExtensions;
 use imgui::im_str;
 
 use ggez::graphics;
-use ggez::{Context, GameResult};
+use ggez::{Context, GameError, GameResult};
+
 use serde::{Deserialize, Serialize};
 
 use std::convert::TryFrom;
 
+use std::io::{BufReader, BufWriter};
 
-use std::fs::File;
+use image::png::PNGEncoder;
+
+use nfd::Response;
+
+use image::imageops::flip_vertical;
+
+use image::{ColorType, ImageBuffer, Rgba};
+
+use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::path::Path;
+
+use crate::typedefs::graphics::Matrix4;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum BlendMode {
@@ -80,11 +92,11 @@ impl Animation {
 		let file = File::create(path)?;
 		let mut tar = tar::Builder::new(file);
 
-		let data_file_name = "data.json"; // format!("{}-animation.json", self.name);
+		let data_file_name = "data.json";
 		{
 			let mut json_target = File::create(&data_file_name)?;
 			serde_json::to_writer(&mut json_target, &self)
-				.map_err(|err| ggez::GameError::FilesystemError(format!("{}", err)))?;
+				.map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
 		}
 
 		tar.append_path(&data_file_name)?;
@@ -98,11 +110,11 @@ impl Animation {
 
 			let temp_file = File::create(&file_name)?;
 
-			let writer = std::io::BufWriter::new(temp_file);
+			let writer = BufWriter::new(temp_file);
 
-			let png_writer = image::png::PNGEncoder::new(writer);
+			let png_writer = PNGEncoder::new(writer);
 
-			let image: image::ImageBuffer<image::Rgba<_>, _> = image::ImageBuffer::from_raw(
+			let image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
 				u32::from(image.width()),
 				u32::from(image.height()),
 				image.to_rgba8(ctx)?.to_vec(),
@@ -110,18 +122,13 @@ impl Animation {
 			.unwrap();
 
 			// image buffers are flipped in memory for ggez, so we have to unflip them
-			let image = image::imageops::flip_vertical(&image);
+			let image = flip_vertical(&image);
 
-			png_writer.encode(
-				&image,
-				image.width(),
-				image.height(),
-				image::ColorType::RGBA(8),
-			)?;
+			png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
 
 			tar.append_path_with_name(file_name, &sprite.image)?;
 
-			std::fs::remove_file(&file_name)?;
+			remove_file(&file_name)?;
 		}
 		Ok(())
 
@@ -135,11 +142,11 @@ impl Animation {
 		let mut tar = tar::Archive::new(file);
 		tar.unpack("./temp/")?;
 
-		let file = std::fs::File::open("./temp/data.json")?;
-		let buf_read = std::io::BufReader::new(file);
+		let file = File::open("./temp/data.json")?;
+		let buf_read = BufReader::new(file);
 		let animation: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
 
-		for file in std::fs::read_dir("./temp/")? {
+		for file in read_dir("./temp/")? {
 			let entry = file?;
 			let path = entry.path();
 			if let Some(file_type) = path.extension() {
@@ -159,7 +166,7 @@ impl Animation {
 
 		}
 
-		std::fs::remove_dir_all("./temp/")?;
+		remove_dir_all("./temp/")?;
 
 		Ok(animation)
 
@@ -171,7 +178,7 @@ impl Animation {
 		ctx: &mut Context,
 		assets: &Assets,
 		index: usize,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 	) -> GameResult<()> {
 		let data = self.frames.get(index);
 		if let Some((ref sprite, _)) = data {
@@ -186,7 +193,7 @@ impl Animation {
 		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 	) -> GameResult<()> {
 		graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 		for sprite in self.frames.iter().map(|(ref sprite, _)| sprite) {
@@ -201,7 +208,7 @@ impl Animation {
 		ctx: &mut Context,
 		assets: &Assets,
 		time: usize,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 	) -> GameResult<()> {
 		graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 		let image = self.frames.at_time(time);
@@ -287,14 +294,14 @@ impl Animation {
 				let result = nfd::open_file_dialog(None, None);
 				match result {
 					Ok(response) => match response {
-						nfd::Response::Cancel => (),
-						nfd::Response::Okay(path) => {
+						Response::Cancel => (),
+						Response::Okay(path) => {
 							let new_sprite = Sprite::new(path);
 							new_sprite.load_image(ctx, assets)?;
 							self.frames.push((new_sprite, 1));
 							ui_data.current_sprite = Some(self.frames.len() - 1);
 						}
-						nfd::Response::OkayMultiple(_) => {
+						Response::OkayMultiple(_) => {
 							dbg!("no sprite loaded because multiple paths were given");
 						}
 					},
@@ -308,12 +315,12 @@ impl Animation {
 				let result = nfd::open_file_multiple_dialog(Some("png"), None);
 				if let Ok(response) = result {
 					match response {
-						nfd::Response::Cancel => (),
-						nfd::Response::Okay(path) => {
+						Response::Cancel => (),
+						Response::Okay(path) => {
 							self.frames.push((Sprite::new(path), 1));
 							self.load_images(ctx, assets)?;
 						}
-						nfd::Response::OkayMultiple(paths) => {
+						Response::OkayMultiple(paths) => {
 							for path in paths {
 								self.frames.push((Sprite::new(path), 1));
 							}
@@ -381,11 +388,11 @@ impl Animation {
 						let result = nfd::open_file_dialog(Some("png"), None);
 						match result {
 							Ok(result) => match result {
-								nfd::Response::Cancel => (),
-								nfd::Response::Okay(path) => {
+								Response::Cancel => (),
+								Response::Okay(path) => {
 									replace_asset(sprite.image.clone(), &path, ctx, assets)?;
 								}
-								nfd::Response::OkayMultiple(_) => {
+								Response::OkayMultiple(_) => {
 									println!("Cancelling because multiple images were specified.")
 								}
 							},

@@ -1,15 +1,17 @@
 
 use ggez::graphics;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 
 use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
-use crate::game;
+use crate::game::{GameState, Transition};
 use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
+
+use crate::typedefs::graphics::{Matrix4, Vec3};
 
 use imgui::*;
 
@@ -30,13 +32,13 @@ impl AnimationEditor {
         }
     }
 
-    pub fn update(&mut self) -> GameResult<game::Transition> {
+    pub fn update(&mut self) -> GameResult<Transition> {
         self.frame = self.frame.wrapping_add(1);
 
         if self.done {
-            Ok(game::Transition::Pop)
+            Ok(Transition::Pop)
         } else {
-            Ok(game::Transition::None)
+            Ok(Transition::None)
         }
     }
 
@@ -142,14 +144,14 @@ impl AnimationEditor {
         editor_result?;
 
 
-        let vertical = graphics::Mesh::new_line(
+        let vertical = Mesh::new_line(
             ctx,
             &[[0.0, -10.0], [0.0, 10.0]],
             1.0,
             Color::new(0.0, 1.0, 0.0, 1.0),
         )?;
 
-        let horizontal = graphics::Mesh::new_line(
+        let horizontal = Mesh::new_line(
             ctx,
             &[[-10.0, 0.0], [10.0, 0.0]],
             1.0,
@@ -160,18 +162,16 @@ impl AnimationEditor {
         let dim = (256.0, 256.0);
         let (width, height) = dim;
 
-        let padding = 15.0;
-
         let draw_cross = |ctx: &mut Context, origin: (f32, f32)| {
             graphics::draw(
                 ctx,
                 &vertical,
-                graphics::DrawParam::default().dest([origin.0, origin.1]),
+                DrawParam::default().dest([origin.0, origin.1]),
             )?;
             graphics::draw(
                 ctx,
                 &horizontal,
-                graphics::DrawParam::default().dest([origin.0, origin.1]),
+                DrawParam::default().dest([origin.0, origin.1]),
             )
         };
 
@@ -186,7 +186,7 @@ impl AnimationEditor {
                     ctx,
                     assets,
                     self.frame % self.resource.frames.duration(),
-                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
+                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
                 )?;
                 draw_cross(ctx, origin)?;
             }
@@ -200,7 +200,7 @@ impl AnimationEditor {
                 self.resource.draw_every_frame(
                     ctx,
                     assets,
-                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
+                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
                 )?;
             }
 
@@ -213,7 +213,7 @@ impl AnimationEditor {
                     ctx,
                     assets,
                     frame,
-                    nalgebra::Translation3::new(origin.0, origin.1, 0.0).to_homogeneous(),
+                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
                 )?;
                 draw_cross(ctx, origin)?;
             }
@@ -223,8 +223,8 @@ impl AnimationEditor {
 }
 
 
-impl Into<game::GameState> for AnimationEditor {
-    fn into(self) -> game::GameState {
-        game::GameState::Animating(self)
+impl Into<GameState> for AnimationEditor {
+    fn into(self) -> GameState {
+        GameState::Animating(self)
     }
 }

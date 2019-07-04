@@ -1,6 +1,6 @@
 use ggez::error::GameError;
 use ggez::graphics;
-use ggez::graphics::{Color, DrawMode, Rect};
+use ggez::graphics::{Color, DrawMode, Rect, Mesh, DrawParam};
 use ggez::{Context, GameResult};
 
 use serde::{Deserialize, Serialize};
@@ -10,9 +10,11 @@ use crate::assets::Assets;
 use std::io::Read;
 use std::path::Path;
 
+use crate::typedefs::graphics::{Vec2, Vec3, Matrix4};
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
-	pub offset: nalgebra::Vector2<f32>,
+	pub offset: Vec2,
 	pub image: String,
 	pub rotation: f32,
 }
@@ -65,7 +67,7 @@ impl Sprite {
 		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 		debug: bool,
 	) -> GameResult<()> {
 		let image = assets
@@ -73,13 +75,13 @@ impl Sprite {
 			.get(&self.image)
 			.ok_or_else(|| GameError::ResourceNotFound(self.image.clone(), Vec::new()))?;
 
-		let image_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
+		let image_offset = Matrix4::new_translation(&Vec3::new(
 			-f32::from(image.width()) / 2.0,
 			-f32::from(image.height()) / 2.0,
 			0.0,
 		));
 
-		let sprite_offset = nalgebra::Matrix4::new_translation(&nalgebra::Vector3::new(
+		let sprite_offset = Matrix4::new_translation(&Vec3::new(
 			self.offset.x,
 			self.offset.y,
 			0.0,
@@ -90,11 +92,11 @@ impl Sprite {
 		graphics::set_transform(ctx, transform);
 		graphics::apply_transformations(ctx)?;
 
-		graphics::draw(ctx, image, graphics::DrawParam::default())?;
+		graphics::draw(ctx, image, DrawParam::default())?;
 
 
 		if debug {
-			let rectangle = graphics::Mesh::new_rectangle(
+			let rectangle = Mesh::new_rectangle(
 				ctx,
 				DrawMode::stroke(1.0),
 				Rect::new(
@@ -105,9 +107,9 @@ impl Sprite {
 				),
 				Color::new(1.0, 0.0, 0.0, 1.0),
 			)?;
-			graphics::draw(ctx, &rectangle, graphics::DrawParam::default())?;
+			graphics::draw(ctx, &rectangle, DrawParam::default())?;
 		}
-		graphics::set_transform(ctx, nalgebra::Matrix4::identity());
+		graphics::set_transform(ctx, Matrix4::identity());
 		graphics::apply_transformations(ctx)?;
 
 		Ok(())
@@ -116,7 +118,7 @@ impl Sprite {
 		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 	) -> GameResult<()> {
 		self.draw_ex(ctx, assets, world, true)
 	}
@@ -125,7 +127,7 @@ impl Sprite {
 		&self,
 		ctx: &mut Context,
 		assets: &Assets,
-		world: nalgebra::Matrix4<f32>,
+		world: Matrix4,
 	) -> GameResult<()> {
 		self.draw_ex(ctx, assets, world, false)
 	}
