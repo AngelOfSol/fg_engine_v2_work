@@ -31,7 +31,8 @@ impl AnimationEditor {
     }
 
     pub fn update(&mut self) -> GameResult<game::Transition> {
-        self.frame += 1;
+        self.frame = self.frame.wrapping_add(1);
+
         if self.done {
             Ok(game::Transition::Pop)
         } else {
@@ -52,88 +53,92 @@ impl AnimationEditor {
         let [x, y] = pos;
 
         let mut editor_result = Ok(());
-        let imgui_render = imgui.frame().run(|ui| {
-            // Window
-            ui.window(im_str!("Editor"))
-                .size([300.0, editor_height], Condition::Always)
-                .position([0.0, 20.0], Condition::Always)
-                .resizable(false)
-                .movable(false)
-                .collapsible(false)
-                .build(|| {
-                    editor_result = self.resource.draw_ui(&ui, ctx, assets, &mut self.ui_data);
-                });
+        imgui
+            .frame()
+            .run(|ui| {
+                // Window
+                ui.window(im_str!("Editor"))
+                    .size([300.0, editor_height], Condition::Always)
+                    .position([0.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        editor_result = self.resource.draw_ui(&ui, ctx, assets, &mut self.ui_data);
+                    });
 
-            if self.resource.frames.duration() > 0 {
-                ui.window(im_str!("Animation"))
-                    .size(dim, Condition::Always)
-                    .position(pos, Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {});
-                ui.window(im_str!("Current Frame"))
-                    .size(dim, Condition::Always)
-                    .position([x + width, y], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {});
+                if self.resource.frames.duration() > 0 {
+                    ui.window(im_str!("Animation"))
+                        .size(dim, Condition::Always)
+                        .position(pos, Condition::Always)
+                        .resizable(false)
+                        .movable(false)
+                        .collapsible(false)
+                        .build(|| {});
+                    ui.window(im_str!("Current Frame"))
+                        .size(dim, Condition::Always)
+                        .position([x + width, y], Condition::Always)
+                        .resizable(false)
+                        .movable(false)
+                        .collapsible(false)
+                        .build(|| {});
 
-                ui.window(im_str!("Every Frame"))
-                    .size(dim, Condition::Always)
-                    .position([x, y + height], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {});
-            }
-            ui.main_menu_bar(|| {
-                ui.menu(im_str!("Animation Editor")).build(|| {
-                    if ui.menu_item(im_str!("New")).build() {
-                        self.resource = Animation::new("new animation");
-                        self.ui_data = AnimationUi::new();
-                    }
-                    if ui.menu_item(im_str!("Save")).build() {
-                        let path_result = nfd::open_save_dialog(Some("tar"), None);
-                        match path_result {
-                            Ok(path) => match path {
-                                nfd::Response::Cancel => (),
-                                nfd::Response::Okay(path) => {
-                                    editor_result = self.resource.save_tar(ctx, assets, &path);
+                    ui.window(im_str!("Every Frame"))
+                        .size(dim, Condition::Always)
+                        .position([x, y + height], Condition::Always)
+                        .resizable(false)
+                        .movable(false)
+                        .collapsible(false)
+                        .build(|| {});
+                }
+                ui.main_menu_bar(|| {
+                    ui.menu(im_str!("Animation Editor")).build(|| {
+                        if ui.menu_item(im_str!("New")).build() {
+                            self.resource = Animation::new("new animation");
+                            self.ui_data = AnimationUi::new();
+                        }
+                        if ui.menu_item(im_str!("Save")).build() {
+                            let path_result = nfd::open_save_dialog(Some("tar"), None);
+                            match path_result {
+                                Ok(path) => match path {
+                                    nfd::Response::Cancel => (),
+                                    nfd::Response::Okay(path) => {
+                                        editor_result = self.resource.save_tar(ctx, assets, &path);
+                                    }
+                                    nfd::Response::OkayMultiple(_) => (),
+                                },
+                                Err(err) => {
+                                    dbg!(err);
                                 }
-                                nfd::Response::OkayMultiple(_) => (),
-                            },
-                            Err(err) => {
-                                dbg!(err);
+
                             }
                         }
-                    }
-                    if ui.menu_item(im_str!("Open")).build() {
-                        let path_result =
-                            nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
-                        match path_result {
-                            Ok(path) => match path {
-                                nfd::Response::Cancel => (),
-                                nfd::Response::Okay(path) => {
-                                    self.resource =
-                                        Animation::load_tar(ctx, assets, &path).unwrap();
+                        if ui.menu_item(im_str!("Open")).build() {
+                            let path_result =
+                                nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
+                            match path_result {
+                                Ok(path) => match path {
+                                    nfd::Response::Cancel => (),
+                                    nfd::Response::Okay(path) => {
+                                        self.resource =
+                                            Animation::load_tar(ctx, assets, &path).unwrap();
+                                    }
+                                    nfd::Response::OkayMultiple(_) => (),
+                                },
+                                Err(err) => {
+                                    dbg!(err);
                                 }
-                                nfd::Response::OkayMultiple(_) => (),
-                            },
-                            Err(err) => {
-                                dbg!(err);
+
                             }
                         }
-                    }
-                    ui.separator();
-                    if ui.menu_item(im_str!("Back")).build() {
-                        self.done = true;
-                    }
+                        ui.separator();
+                        if ui.menu_item(im_str!("Back")).build() {
+                            self.done = true;
+                        }
+                    });
                 });
-            });
-        });
-        imgui_render.render(ctx);
+            })
+            .render(ctx);
         editor_result?;
 
 
