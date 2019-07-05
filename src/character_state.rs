@@ -1,4 +1,5 @@
 mod animation_data;
+mod flags;
 
 use crate::animation::Animation;
 use crate::assets::Assets;
@@ -14,13 +15,17 @@ use std::cmp;
 
 use nfd::Response;
 
-use animation_data::AnimationData;
+use animation_data::{AnimationData, AnimationDataUi};
+use flags::{Flags, FlagsUi};
+
+use crate::timeline::Timeline;
 
 use crate::typedefs::graphics::Matrix4;
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
+    pub flags: Timeline<Flags>,
     pub name: String,
 }
 
@@ -29,6 +34,7 @@ impl CharacterState {
     pub fn new() -> Self {
         Self {
             animations: vec![],
+            flags: vec![],
             name: "new_state".to_owned(),
         }
     }
@@ -59,12 +65,14 @@ impl CharacterState {
 
 pub struct CharacterStateUi {
     current_animation: Option<usize>,
+    current_flags: Option<usize>,
 }
 
 impl CharacterStateUi {
     pub fn new() -> Self {
         Self {
             current_animation: None,
+            current_flags: None,
         }
     }
 
@@ -78,37 +86,75 @@ impl CharacterStateUi {
         ui.input_string(im_str!("Name"), &mut data.name);
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
-        ui.rearrangable_list_box(
-            im_str!("Frame List"),
-            &mut self.current_animation,
-            &mut data.animations,
-            |item| im_str!("{}", item.name().to_owned()),
-            5,
-        );
-
-        if ui.small_button(im_str!("Add Animation(s)")) {
-            let path_result = nfd::open_file_multiple_dialog(Some("tar"), None);
-            match path_result {
-                Ok(path) => match path {
-                    Response::Cancel => (),
-                    Response::Okay(path) => {
-                        data.animations.push(AnimationData::new(
-                            Animation::load_tar(ctx, assets, &path).unwrap(),
-                        ));
-                    }
-                    Response::OkayMultiple(paths) => {
-                        for path in paths {
+        if ui.collapsing_header(im_str!("Animations")).build() {
+            ui.push_id("Animations");
+            ui.rearrangable_list_box(
+                im_str!("List"),
+                &mut self.current_animation,
+                &mut data.animations,
+                |item| im_str!("{}", item.name().to_owned()),
+                5,
+            );
+            if ui.small_button(im_str!("Add")) {
+                let path_result = nfd::open_file_multiple_dialog(Some("tar"), None);
+                match path_result {
+                    Ok(path) => match path {
+                        Response::Cancel => (),
+                        Response::Okay(path) => {
                             data.animations.push(AnimationData::new(
                                 Animation::load_tar(ctx, assets, &path).unwrap(),
                             ));
                         }
+                        Response::OkayMultiple(paths) => {
+                            for path in paths {
+                                data.animations.push(AnimationData::new(
+                                    Animation::load_tar(ctx, assets, &path).unwrap(),
+                                ));
+                            }
+                        }
+                    },
+                    Err(err) => {
+                        dbg!(err);
                     }
-                },
-                Err(err) => {
-                    dbg!(err);
                 }
-
             }
+            if let Some(animation) = self.current_animation {
+                let animation = &mut data.animations[animation];
+                AnimationDataUi::new().draw_ui(ui, animation)?;
+            }
+            ui.pop_id();
+        }
+
+
+        if ui.collapsing_header(im_str!("Flags")).build() {
+            ui.push_id("Flags");
+            let mut counter = 0;
+            ui.rearrangable_list_box(
+                im_str!("List\n[Start, End]"),
+                &mut self.current_flags,
+                &mut data.flags,
+                |(_, duration)| {
+                    let start = counter;
+                    let end = counter + duration - 1;
+                    counter += duration;
+                    im_str!("[{}, {}]", start, end)
+                },
+                5,
+            );
+
+            if ui.small_button(im_str!("Add")) {
+                data.flags.push((Flags::new(), 1));
+            }
+
+            if let Some(flags) = self.current_flags {
+                let (ref mut flags, ref mut duration) = &mut data.flags[flags];
+                let _ = ui.input_whole(im_str!("Duration"), duration);
+                ui.separator();
+                FlagsUi::new().draw_ui(ui, flags)?;
+            }
+
+
+            ui.pop_id();
         }
         Ok(())
     }

@@ -12,7 +12,7 @@ macro_rules! im_str_owned {
 
 
 pub trait UiExtensions {
-    fn rearrangable_list_box<T, F: Fn(&T) -> ImString>(
+    fn rearrangable_list_box<T, F: FnMut(&T) -> ImString>(
         &self,
         label: &ImStr,
         idx: &mut Option<usize>,
@@ -35,11 +35,19 @@ pub trait UiExtensions {
         label: &ImStr,
         value: &mut I,
     ) -> Result<bool, String>;
+
+    fn slider_whole<I: Copy + TryInto<i32> + TryFrom<i32>>(
+        &self,
+        label: &ImStr,
+        value: &mut I,
+        min: I,
+        max: I,
+    ) -> Result<bool, String>;
     fn input_string(&self, label: &ImStr, value: &mut String) -> bool;
 }
 
 impl<'a> UiExtensions for Ui<'a> {
-    fn rearrangable_list_box<T, F: Fn(&T) -> ImString>(
+    fn rearrangable_list_box<T, F: FnMut(&T) -> ImString>(
         &self,
         label: &ImStr,
         idx: &mut Option<usize>,
@@ -95,6 +103,28 @@ impl<'a> UiExtensions for Ui<'a> {
         }
         Ok(changed)
     }
+
+
+    fn slider_whole<I: Copy + TryInto<i32> + TryFrom<i32>>(
+        &self,
+        label: &ImStr,
+        value: &mut I,
+        min: I,
+        max: I,
+    ) -> Result<bool, String> {
+        let min = min.try_into().map_err(|_| "something happened".to_owned())?;
+        let max = max.try_into().map_err(|_| "something happened".to_owned())?;
+        let mut buffer = (*value)
+            .try_into()
+            .map_err(|_| "something happened".to_owned())?;
+        let changed = self.slider_int(label, &mut buffer, min, max).build();
+        if changed {
+            *value = I::try_from(buffer).map_err(|_| "something happened".to_owned())?;
+        }
+        Ok(changed)
+
+    }
+
     fn input_text_left(&self, label: &ImStr, buf: &mut ImString) {
         unsafe { imgui_sys::igAlignTextToFramePadding() };
         self.text(label);
