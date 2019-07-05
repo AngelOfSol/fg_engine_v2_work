@@ -63,7 +63,7 @@ impl Display for MoveType {
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct CancelSet {
-    whiff: HashSet<MoveType>,
+    always: HashSet<MoveType>,
     hit: HashSet<MoveType>,
     block: HashSet<MoveType>,
 }
@@ -71,7 +71,7 @@ pub struct CancelSet {
 impl CancelSet {
     pub fn new() -> Self {
         Self {
-            whiff: HashSet::new(),
+            always: HashSet::new(),
             hit: HashSet::new(),
             block: HashSet::new(),
         }
@@ -85,8 +85,8 @@ impl CancelSetUi {
         CancelSetUi
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet) {
-        if ui.collapsing_header(im_str!("On Whiff")).build() {
-            ui.checkbox_set(MoveType::all(), &mut data.whiff);
+        if ui.collapsing_header(im_str!("Always")).build() {
+            ui.checkbox_set(MoveType::all(), &mut data.always);
         }
         if ui.collapsing_header(im_str!("On Block")).build() {
             ui.checkbox_set(MoveType::all(), &mut data.block);
@@ -95,5 +95,21 @@ impl CancelSetUi {
             ui.checkbox_set(MoveType::all(), &mut data.hit);
         }
     }
-    pub fn draw_display_ui() {}
+    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet) {
+        if ui.collapsing_header(im_str!("Always")).build() {
+            for move_type in data.always.iter() {
+                ui.text(im_str!("{}", move_type));
+            }
+        }
+        if ui.collapsing_header(im_str!("On Block")).build() {
+            for move_type in data.block.iter() {
+                ui.text(im_str!("{}", move_type));
+            }
+        }
+        if ui.collapsing_header(im_str!("On Hit")).build() {
+            for move_type in data.hit.iter() {
+                ui.text(im_str!("{}", move_type));
+            }
+        }
+    }
 }

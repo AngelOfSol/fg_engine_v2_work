@@ -16,7 +16,7 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 
 use crate::typedefs::collision::{IntoGraphical, Vec2};
 
-use crate::character_state::{CharacterState, CharacterStateUi, FlagsUi, MovementData};
+use crate::character_state::{CharacterState, CharacterStateUi, FlagsUi, MovementData, CancelSetUi};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -97,7 +97,7 @@ impl StateEditor {
                     .movable(false)
                     .collapsible(false)
                     .build(|| {});
-                ui.window(im_str!("Flags At Time"))
+                ui.window(im_str!("Current Flags"))
                     .size([200.0, 263.0], Condition::Always)
                     .position([300.0, 263.0 + 20.0], Condition::Always)
                     .resizable(false)
@@ -106,6 +106,17 @@ impl StateEditor {
                     .build(|| {
                         if let Some(data) = self.resource.flags.try_time(self.frame) {
                             FlagsUi::draw_display_ui(ui, data, &move_data);
+                        }
+                    });
+                ui.window(im_str!("Current Cancels"))
+                    .size([200.0, 263.0], Condition::Always)
+                    .position([500.0, 263.0 + 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        if let Some(data) = self.resource.cancels.try_time(self.frame) {
+                            CancelSetUi::draw_display_ui(ui, data);
                         }
                     });
                 if self.resource.duration() > 0 {

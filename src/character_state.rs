@@ -17,13 +17,12 @@ use std::cmp;
 use nfd::Response;
 
 use animation_data::{AnimationData, AnimationDataUi};
-use cancel_set::{CancelSet, CancelSetUi};
+pub use cancel_set::{CancelSet, CancelSetUi};
 pub use flags::{Flags, FlagsUi, MovementData};
 
 use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
-use num_traits::real::Real;
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
@@ -52,26 +51,8 @@ impl CharacterState {
 
     pub fn fix_duration(&mut self) {
         if self.duration() > 0 {
-            let diff = self.flags.duration() as isize - self.duration() as isize;
-            if diff != 0 {
-                if diff > 0 {
-                    loop {
-                        let diff = self.flags.duration() as isize - self.duration() as isize;
-
-                        let last_element = &mut self.flags.last_mut().unwrap().1;
-                        let new_duration = *last_element as isize - diff;
-                        if new_duration <= 0 {
-                            self.flags.pop();
-                        } else {
-                            *last_element = new_duration as usize;
-                            break;
-                        }
-                    }
-                } else {
-                    let last_element = &mut self.flags.last_mut().unwrap().1;
-                    *last_element += diff.abs() as usize;
-                }
-            }
+            self.flags.fix_duration(self.duration());
+            self.cancels.fix_duration(self.duration());
         }
     }
 
