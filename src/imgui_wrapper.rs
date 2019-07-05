@@ -14,7 +14,6 @@ use std::time::Instant;
 
 type RendererType = GfxRenderer<gfx::format::Rgba8, gfx_device_gl::Resources>;
 
-
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
     pos: (f32, f32),
@@ -58,13 +57,10 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, RunUi> {
             data: PhantomData,
         }
     }
-
 }
-
 
 impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
     pub fn render(self, ctx: &mut Context) {
-
         let render_target = graphics::screen_render_target(ctx);
 
         let (factory, _, encoder, _, _) = graphics::gfx_objects(ctx);
@@ -78,7 +74,6 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
             .unwrap();
     }
 }
-
 
 impl ImGuiWrapper {
     pub fn new(ctx: &mut Context) -> Self {
@@ -123,7 +118,6 @@ impl ImGuiWrapper {
                     Shaders::GlSl130
                 }
             } else {
-
                 Shaders::GlSl110
             }
         };
@@ -151,10 +145,8 @@ impl ImGuiWrapper {
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
-
         }
     }
-
 
     pub fn frame(&mut self) -> ImguiFrameRunner<'_, '_, RunUi> {
         // Update mouse
@@ -180,7 +172,6 @@ impl ImGuiWrapper {
 
         io.mouse_wheel = self.mouse_state.wheel;
         self.mouse_state.wheel = 0.0;
-
     }
 
     pub fn update_mouse_pos(&mut self, x: f32, y: f32) {

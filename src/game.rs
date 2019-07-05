@@ -11,7 +11,6 @@ use ggez::input::mouse::MouseButton;
 use ggez::timer;
 use ggez::{Context, GameResult};
 
-
 use animation_editor::AnimationEditor;
 use main_menu::MainMenu;
 use state_editor::StateEditor;
@@ -28,7 +27,6 @@ pub enum GameState {
     StateEditor(StateEditor),
 }
 
-
 pub enum Transition {
     None,
     Pop,
@@ -37,7 +35,6 @@ pub enum Transition {
 
 impl FightingGame {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
-
         Ok(Self {
             imgui: ImGuiWrapper::new(ctx),
             game_state: vec![MainMenu::new().into()],

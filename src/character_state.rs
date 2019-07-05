@@ -1,4 +1,5 @@
 mod animation_data;
+mod cancel_set;
 mod flags;
 
 use crate::animation::Animation;
@@ -16,26 +17,28 @@ use std::cmp;
 use nfd::Response;
 
 use animation_data::{AnimationData, AnimationDataUi};
+use cancel_set::{CancelSet, CancelSetUi};
 pub use flags::{Flags, FlagsUi, MovementData};
 
-use crate::timeline::Timeline;
+use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
-
+use num_traits::real::Real;
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
+    pub cancels: Timeline<CancelSet>,
     pub name: String,
 }
-
 
 impl CharacterState {
     pub fn new() -> Self {
         Self {
             animations: vec![],
-            flags: vec![],
+            flags: vec![(Flags::new(), 1)],
+            cancels: vec![(CancelSet::new(), 1)],
             name: "new_state".to_owned(),
         }
     }
@@ -45,6 +48,31 @@ impl CharacterState {
             .iter()
             .map(|item| item.delay + item.duration())
             .fold(0, cmp::max)
+    }
+
+    pub fn fix_duration(&mut self) {
+        if self.duration() > 0 {
+            let diff = self.flags.duration() as isize - self.duration() as isize;
+            if diff != 0 {
+                if diff > 0 {
+                    loop {
+                        let diff = self.flags.duration() as isize - self.duration() as isize;
+
+                        let last_element = &mut self.flags.last_mut().unwrap().1;
+                        let new_duration = *last_element as isize - diff;
+                        if new_duration <= 0 {
+                            self.flags.pop();
+                        } else {
+                            *last_element = new_duration as usize;
+                            break;
+                        }
+                    }
+                } else {
+                    let last_element = &mut self.flags.last_mut().unwrap().1;
+                    *last_element += diff.abs() as usize;
+                }
+            }
+        }
     }
 
     pub fn draw_at_time(
@@ -61,12 +89,12 @@ impl CharacterState {
         }
         Ok(())
     }
-
 }
 
 pub struct CharacterStateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
+    current_cancels: Option<usize>,
 }
 
 impl CharacterStateUi {
@@ -74,6 +102,7 @@ impl CharacterStateUi {
         Self {
             current_animation: None,
             current_flags: None,
+            current_cancels: None,
         }
     }
 
@@ -125,7 +154,7 @@ impl CharacterStateUi {
             }
             ui.pop_id();
         }
-
+        data.fix_duration();
 
         if ui.collapsing_header(im_str!("Flags")).build() {
             ui.push_id("Flags");
@@ -143,17 +172,47 @@ impl CharacterStateUi {
                 5,
             );
 
-            if ui.small_button(im_str!("Add")) {
-                data.flags.push((Flags::new(), 1));
-            }
+            if let Some(ref mut idx) = self.current_flags {
+                ui.timeline_modify(idx, &mut data.flags);
 
-            if let Some(flags) = self.current_flags {
-                let (ref mut flags, ref mut duration) = &mut data.flags[flags];
+                let (ref mut flags, ref mut duration) = &mut data.flags[*idx];
+
                 let _ = ui.input_whole(im_str!("Duration"), duration);
+                *duration = cmp::max(*duration, 1);
+
                 ui.separator();
-                FlagsUi::new().draw_ui(ui, flags)?;
+                FlagsUi::new().draw_ui(ui, flags);
             }
 
+            ui.pop_id();
+        }
+        if ui.collapsing_header(im_str!("Cancels")).build() {
+            ui.push_id("Cancels");
+            let mut counter = 0;
+            ui.rearrangable_list_box(
+                im_str!("List\n[Start, End]"),
+                &mut self.current_cancels,
+                &mut data.cancels,
+                |(_, duration)| {
+                    let start = counter;
+                    let end = counter + duration - 1;
+                    counter += duration;
+                    im_str!("[{}, {}]", start, end)
+                },
+                5,
+            );
+
+            if let Some(ref mut idx) = self.current_cancels {
+                ui.timeline_modify(idx, &mut data.cancels);
+
+                let (ref mut cancels, ref mut duration) = &mut data.cancels[*idx];
+
+                let _ = ui.input_whole(im_str!("Duration"), duration);
+                *duration = cmp::max(*duration, 1);
+
+                ui.separator();
+                CancelSetUi::new().draw_ui(ui, cancels);
+            }
 
             ui.pop_id();
         }

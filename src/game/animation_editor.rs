@@ -1,4 +1,3 @@
-
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -112,7 +111,6 @@ impl AnimationEditor {
                                 Err(err) => {
                                     dbg!(err);
                                 }
-
                             }
                         }
                         if ui.menu_item(im_str!("Open")).build() {
@@ -130,7 +128,6 @@ impl AnimationEditor {
                                 Err(err) => {
                                     dbg!(err);
                                 }
-
                             }
                         }
                         ui.separator();
@@ -142,7 +139,6 @@ impl AnimationEditor {
             })
             .render(ctx);
         editor_result?;
-
 
         let vertical = Mesh::new_line(
             ctx,
@@ -157,7 +153,6 @@ impl AnimationEditor {
             1.0,
             Color::new(0.0, 1.0, 0.0, 1.0),
         )?;
-
 
         let dim = (256.0, 256.0);
         let (width, height) = dim;
@@ -221,7 +216,6 @@ impl AnimationEditor {
         Ok(())
     }
 }
-
 
 impl Into<GameState> for AnimationEditor {
     fn into(self) -> GameState {
