@@ -11,6 +11,7 @@ use std::path;
 #[macro_use]
 mod imgui_extra;
 
+
 mod animation;
 mod assets;
 mod game;
@@ -21,6 +22,8 @@ mod character_state;
 mod imgui_wrapper;
 
 mod typedefs;
+
+mod hitbox;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

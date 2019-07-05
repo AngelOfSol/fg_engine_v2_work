@@ -28,19 +28,5 @@ pub mod collision {
             self.map(|item| item.into_graphical())
         }
     }
-    // TODO: Put hitbox type in here
-
-    pub struct Hitbox {
-        center: Vec2,
-        half_size: Vec2,
-    }
-    impl Hitbox {
-        pub fn new() -> Self {
-            Self {
-                center: Vec2::zeros(),
-                half_size: Vec2::zeros(),
-            }
-        }
-    }
 
 }

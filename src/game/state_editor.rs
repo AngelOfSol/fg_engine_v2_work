@@ -16,7 +16,9 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 
 use crate::typedefs::collision::{IntoGraphical, Vec2};
 
-use crate::character_state::{CharacterState, CharacterStateUi, FlagsUi, MovementData, CancelSetUi};
+use crate::character_state::{
+    CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
+};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -26,6 +28,12 @@ pub struct StateEditor {
     is_playing: bool,
     done: bool,
     ui_data: CharacterStateUi,
+    draw_mode: DrawMode,
+}
+struct DrawMode {
+    hitbox_alpha: f32,
+    debug_animation: bool,
+    show_travel: bool,
 }
 
 impl StateEditor {
@@ -36,6 +44,11 @@ impl StateEditor {
             frame: 0,
             is_playing: true,
             ui_data: CharacterStateUi::new(),
+            draw_mode: DrawMode {
+                hitbox_alpha: 0.15,
+                debug_animation: true,
+                show_travel: true,
+            },
         }
     }
 
@@ -121,7 +134,7 @@ impl StateEditor {
                     });
                 if self.resource.duration() > 0 {
                     ui.window(im_str!("Playback"))
-                        .size([300.0, 80.0], Condition::Always)
+                        .size([300.0, 100.0], Condition::Always)
                         .position([0.0, 546.0], Condition::Always)
                         .resizable(false)
                         .build(|| {
@@ -143,6 +156,16 @@ impl StateEditor {
                             if ui.small_button(im_str!("Stop")) {
                                 self.is_playing = false;
                             };
+
+                            ui.checkbox(im_str!("Draw Debug"), &mut self.draw_mode.debug_animation);
+                            ui.checkbox(im_str!("Show Travel"), &mut self.draw_mode.show_travel);
+                            ui.slider_float(
+                                im_str!("Hitbox Alpha"),
+                                &mut self.draw_mode.hitbox_alpha,
+                                0.0,
+                                1.0,
+                            )
+                            .build();
                         });
                 }
                 ui.main_menu_bar(|| {
@@ -162,12 +185,37 @@ impl StateEditor {
             .render(ctx);
         editor_result?;
 
-        let graphics_offset = move_data.pos.into_graphical();
-        let offset =
-            Vec3::new(600.0, 200.0, 0.0) + Vec3::new(graphics_offset.x, graphics_offset.y, 0.0);
+        let movement_offset = move_data.pos.into_graphical();
+        let offset = {
+            let mut offset = Vec3::new(600.0, 240.0, 0.0);
+            if self.draw_mode.show_travel {
+                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
+            }
 
-        self.resource
-            .draw_at_time(ctx, assets, self.frame, Matrix4::new_translation(&offset))?;
+            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+                let recenter = boxes.collision.collision_graphic_recenter();
+                offset.x -= recenter.x;
+                offset.y -= recenter.y;
+            }
+            offset
+        };
+
+        let offset = Matrix4::new_translation(&offset);
+
+        if self.draw_mode.debug_animation {
+            self.resource
+                .draw_at_time_debug(ctx, assets, self.frame, offset)?;
+        } else {
+            self.resource
+                .draw_at_time(ctx, assets, self.frame, offset)?;
+        }
+        if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+            boxes.collision.draw(
+                ctx,
+                offset,
+                Color::new(1.0, 1.0, 1.0, self.draw_mode.hitbox_alpha),
+            )?;
+        }
 
         Ok(())
     }
