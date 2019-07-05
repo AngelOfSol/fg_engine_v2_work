@@ -1,7 +1,7 @@
 use crate::game::{GameState, Transition};
 
 use ggez::graphics;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 
 use crate::animation::{Animation, AnimationUi};
@@ -31,9 +31,12 @@ pub struct StateEditor {
     draw_mode: DrawMode,
 }
 struct DrawMode {
+    collision_alpha: f32,
+    hurtbox_alpha: f32,
     hitbox_alpha: f32,
     debug_animation: bool,
     show_travel: bool,
+    show_axes: bool,
 }
 
 impl StateEditor {
@@ -45,9 +48,12 @@ impl StateEditor {
             is_playing: true,
             ui_data: CharacterStateUi::new(),
             draw_mode: DrawMode {
+                collision_alpha: 0.15,
+                hurtbox_alpha: 0.15,
                 hitbox_alpha: 0.15,
                 debug_animation: true,
                 show_travel: true,
+                show_axes: true,
             },
         }
     }
@@ -132,15 +138,15 @@ impl StateEditor {
                             CancelSetUi::draw_display_ui(ui, data);
                         }
                     });
-                if self.resource.duration() > 0 {
-                    ui.window(im_str!("Playback"))
-                        .size([300.0, 100.0], Condition::Always)
-                        .position([0.0, 546.0], Condition::Always)
-                        .resizable(false)
-                        .build(|| {
+                ui.window(im_str!("Playback"))
+                    .size([300.0, 160.0], Condition::Always)
+                    .position([0.0, 546.0], Condition::Always)
+                    .resizable(false)
+                    .build(|| {
+                        if self.resource.duration() > 0 {
                             if ui
                                 .slider_whole(
-                                    im_str!("Frame "),
+                                    im_str!("Frame"),
                                     &mut self.frame,
                                     0,
                                     self.resource.duration() - 1,
@@ -156,18 +162,38 @@ impl StateEditor {
                             if ui.small_button(im_str!("Stop")) {
                                 self.is_playing = false;
                             };
-
-                            ui.checkbox(im_str!("Draw Debug"), &mut self.draw_mode.debug_animation);
-                            ui.checkbox(im_str!("Show Travel"), &mut self.draw_mode.show_travel);
-                            ui.slider_float(
-                                im_str!("Hitbox Alpha"),
-                                &mut self.draw_mode.hitbox_alpha,
-                                0.0,
-                                1.0,
-                            )
-                            .build();
-                        });
-                }
+                        }
+                        ui.text(im_str!("Draw"));
+                        ui.separator();
+                        ui.checkbox(im_str!("Debug"), &mut self.draw_mode.debug_animation);
+                        ui.same_line(0.0);
+                        ui.checkbox(im_str!("Movement"), &mut self.draw_mode.show_travel);
+                        ui.same_line(0.0);
+                        ui.checkbox(im_str!("Axes"), &mut self.draw_mode.show_axes);
+                        ui.text(im_str!("Alpha"));
+                        ui.separator();
+                        ui.slider_float(
+                            im_str!("Collision"),
+                            &mut self.draw_mode.collision_alpha,
+                            0.0,
+                            1.0,
+                        )
+                        .build();
+                        ui.slider_float(
+                            im_str!("Hurtbox"),
+                            &mut self.draw_mode.hurtbox_alpha,
+                            0.0,
+                            1.0,
+                        )
+                        .build();
+                        ui.slider_float(
+                            im_str!("Hitbox"),
+                            &mut self.draw_mode.hitbox_alpha,
+                            0.0,
+                            1.0,
+                        )
+                        .build();
+                    });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
@@ -184,6 +210,25 @@ impl StateEditor {
             })
             .render(ctx);
         editor_result?;
+
+        if self.draw_mode.show_axes {
+            graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 240.0, 0.0)));
+            graphics::apply_transformations(ctx)?;
+            let x_axis = Mesh::new_line(
+                ctx,
+                &[[-280.0, 0.0], [280.0, 0.0]],
+                1.0,
+                Color::new(0.0, 0.0, 0.0, 1.0),
+            )?;
+            let y_axis = Mesh::new_line(
+                ctx,
+                &[[0.0, 0.0], [0.0, -150.0]],
+                1.0,
+                Color::new(0.0, 0.0, 0.0, 1.0),
+            )?;
+            graphics::draw(ctx, &x_axis, DrawParam::default())?;
+            graphics::draw(ctx, &y_axis, DrawParam::default())?;
+        }
 
         let movement_offset = move_data.pos.into_graphical();
         let offset = {
@@ -213,8 +258,25 @@ impl StateEditor {
             boxes.collision.draw(
                 ctx,
                 offset,
-                Color::new(1.0, 1.0, 1.0, self.draw_mode.hitbox_alpha),
+                Color::new(1.0, 1.0, 1.0, self.draw_mode.collision_alpha),
             )?;
+
+            let offset = {
+                let mut offset = Vec3::new(600.0, 240.0, 0.0);
+                if self.draw_mode.show_travel {
+                    offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
+                }
+                offset
+            };
+
+            let offset = Matrix4::new_translation(&offset);
+            for hurtbox in boxes.hurtbox.iter() {
+                hurtbox.draw(
+                    ctx,
+                    offset,
+                    Color::new(0.0, 1.0, 0.0, self.draw_mode.hurtbox_alpha),
+                )?;
+            }
         }
 
         Ok(())

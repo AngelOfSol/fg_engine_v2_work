@@ -24,6 +24,12 @@ impl Hitbox {
             half_size: Vec2::new(100, 100),
         }
     }
+    pub fn with_half_size(half_size: Vec2) -> Self {
+        Self {
+            center: Vec2::zeros(),
+            half_size,
+        }
+    }
 
     pub fn left(&self) -> Int {
         self.center.x - self.half_size.x
