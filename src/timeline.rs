@@ -9,7 +9,6 @@ pub trait AtTime<T> {
 impl<T> AtTime<T> for Timeline<T> {
     fn at_time(&self, time: usize) -> &T {
         self.try_time(time).expect("Time out of bounds.")
-
     }
     fn try_time(&self, mut time: usize) -> Option<&T> {
         for (data, duration) in self {
@@ -20,7 +19,6 @@ impl<T> AtTime<T> for Timeline<T> {
             }
         }
         None
-
     }
     fn duration(&self) -> usize {
         self.iter().map(|(_, duration)| duration).sum()

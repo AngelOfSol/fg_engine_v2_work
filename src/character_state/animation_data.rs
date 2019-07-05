@@ -8,7 +8,6 @@ use ggez::{Context, GameResult};
 
 use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 
-
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -37,7 +36,6 @@ impl AnimationData {
     pub fn duration(&self) -> usize {
         self.animation.frames.duration()
     }
-
 
     pub fn draw_at_time(
         &self,

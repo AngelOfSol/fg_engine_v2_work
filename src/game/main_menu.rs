@@ -12,7 +12,6 @@ pub struct MainMenu {
 }
 
 impl MainMenu {
-
     pub fn new() -> Self {
         Self {
             next: Transition::None,
@@ -32,8 +31,7 @@ impl MainMenu {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Main Menu")).build(|| {
                         if ui.menu_item(im_str!("Edit Animations")).build() {
-                            self.next =
-                                Transition::Push(Box::new(AnimationEditor::new().into()));
+                            self.next = Transition::Push(Box::new(AnimationEditor::new().into()));
                         }
 
                         if ui.menu_item(im_str!("Edit States")).build() {

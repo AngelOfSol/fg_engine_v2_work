@@ -8,7 +8,6 @@ use std::error::Error;
 use std::env;
 use std::path;
 
-
 #[macro_use]
 mod imgui_extra;
 
@@ -46,7 +45,6 @@ fn main() {
     if let Err(error) = result {
         if error.description() == "Could not initialize COM." {
             println!("Attempted to open unnecessary dialog.  This is in place because the first dialog after building a context breaks.");
-
         } else {
             println!("Unexpected error: {}", error);
         }

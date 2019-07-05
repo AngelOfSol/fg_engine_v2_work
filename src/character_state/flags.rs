@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use ggez::GameResult;
-
 use crate::typedefs::collision::Vec2;
-
 
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
@@ -14,17 +11,16 @@ pub enum MeleeHittable {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-pub enum BulletHittable {
+pub enum MagicHittable {
     Hit,
     Graze,
     Invuln,
 }
 
-
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct Flags {
     pub melee: MeleeHittable,
-    pub bullet: BulletHittable,
+    pub bullet: MagicHittable,
     pub can_block: bool,
     pub airborne: bool,
     pub reset_velocity: bool,
@@ -51,12 +47,11 @@ impl Flags {
     pub fn new() -> Self {
         Self {
             melee: MeleeHittable::Hit,
-            bullet: BulletHittable::Hit,
+            bullet: MagicHittable::Hit,
             can_block: false,
             airborne: false,
             reset_velocity: true,
             accel: Vec2::zeros(),
-
         }
     }
 
@@ -72,14 +67,12 @@ impl Flags {
 
 pub struct FlagsUi {}
 
-
 impl FlagsUi {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut Flags) -> GameResult<()> {
-
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut Flags) {
         ui.checkbox(im_str!("Can Block"), &mut data.can_block);
         ui.checkbox(im_str!("Airborne"), &mut data.airborne);
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
@@ -89,11 +82,11 @@ impl FlagsUi {
             ui.radio_button(im_str!("Invuln"), &mut data.melee, MeleeHittable::Invuln);
             ui.pop_id();
         }
-        if ui.collapsing_header(im_str!("Bullet")).build() {
-            ui.push_id("Bullet");
-            ui.radio_button(im_str!("Hit"), &mut data.bullet, BulletHittable::Hit);
-            ui.radio_button(im_str!("Graze"), &mut data.bullet, BulletHittable::Graze);
-            ui.radio_button(im_str!("Invuln"), &mut data.bullet, BulletHittable::Invuln);
+        if ui.collapsing_header(im_str!("Magic")).build() {
+            ui.push_id("Magic");
+            ui.radio_button(im_str!("Hit"), &mut data.bullet, MagicHittable::Hit);
+            ui.radio_button(im_str!("Graze"), &mut data.bullet, MagicHittable::Graze);
+            ui.radio_button(im_str!("Invuln"), &mut data.bullet, MagicHittable::Invuln);
             ui.pop_id();
         }
         if ui.collapsing_header(im_str!("Acceleration")).build() {
@@ -102,11 +95,9 @@ impl FlagsUi {
             let _ = ui.input_whole(im_str!("Y"), &mut data.accel.y);
             ui.pop_id();
         }
-        Ok(())
     }
 
-
-    pub fn draw_display_ui(ui: &Ui<'_>, data: &Flags, movement: &MovementData) -> GameResult<()> {
+    pub fn draw_display_ui(ui: &Ui<'_>, data: &Flags, movement: &MovementData) {
         ui.push_id("Display");
         if ui
             .collapsing_header(im_str!("Boolean Flags"))
@@ -124,7 +115,7 @@ impl FlagsUi {
             .build()
         {
             ui.text(&im_str!("Melee Invuln: {:?}", data.melee));
-            ui.text(&im_str!("Bullet Invuln: {:?}", data.bullet));
+            ui.text(&im_str!("Magic Invuln: {:?}", data.bullet));
         }
 
         if ui
@@ -149,6 +140,5 @@ impl FlagsUi {
             ));
         }
         ui.pop_id();
-        Ok(())
     }
 }

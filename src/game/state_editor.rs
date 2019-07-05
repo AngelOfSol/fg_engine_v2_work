@@ -1,6 +1,5 @@
 use crate::game::{GameState, Transition};
 
-
 use ggez::graphics;
 use ggez::graphics::Color;
 use ggez::{Context, GameResult};
@@ -15,8 +14,7 @@ use crate::imgui_wrapper::ImGuiWrapper;
 
 use crate::typedefs::graphics::{Matrix4, Vec3};
 
-use crate::typedefs::collision::Vec2;
-
+use crate::typedefs::collision::{IntoGraphical, Vec2};
 
 use crate::character_state::{CharacterState, CharacterStateUi, FlagsUi, MovementData};
 use crate::imgui_extra::UiExtensions;
@@ -45,7 +43,6 @@ impl StateEditor {
         if self.is_playing {
             self.frame = self.frame.wrapping_add(1);
             if self.resource.duration() > 0 {
-
                 self.frame %= self.resource.duration();
             } else {
                 self.frame = 0;
@@ -77,7 +74,6 @@ impl StateEditor {
                     move_data.vel += move_data.accel;
                     move_data.pos += move_data.vel;
                 }
-
             }
             move_data
         };
@@ -103,13 +99,13 @@ impl StateEditor {
                     .build(|| {});
                 ui.window(im_str!("Flags At Time"))
                     .size([200.0, 263.0], Condition::Always)
-                    .position([300.0, 263.0 + 20.0], Condition::FirstUseEver)
-                    .resizable(true)
+                    .position([300.0, 263.0 + 20.0], Condition::Always)
+                    .resizable(false)
                     .movable(false)
                     .collapsible(false)
                     .build(|| {
                         if let Some(data) = self.resource.flags.try_time(self.frame) {
-                            editor_result = FlagsUi::draw_display_ui(ui, data, &move_data);
+                            FlagsUi::draw_display_ui(ui, data, &move_data);
                         }
                     });
                 if self.resource.duration() > 0 {
@@ -117,7 +113,6 @@ impl StateEditor {
                         .size([300.0, 80.0], Condition::Always)
                         .position([0.0, 546.0], Condition::Always)
                         .resizable(false)
-
                         .build(|| {
                             if ui
                                 .slider_whole(
@@ -156,12 +151,9 @@ impl StateEditor {
             .render(ctx);
         editor_result?;
 
-        let offset = Vec3::new(600.0, 200.0, 0.0)
-            + Vec3::new(
-                (move_data.pos.x / 100) as f32,
-                (move_data.pos.y / 100) as f32,
-                0.0,
-            );
+        let graphics_offset = move_data.pos.into_graphical();
+        let offset =
+            Vec3::new(600.0, 200.0, 0.0) + Vec3::new(graphics_offset.x, graphics_offset.y, 0.0);
 
         self.resource
             .draw_at_time(ctx, assets, self.frame, Matrix4::new_translation(&offset))?;
