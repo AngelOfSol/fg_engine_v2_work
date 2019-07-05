@@ -1,6 +1,7 @@
 mod animation_data;
 mod cancel_set;
 mod flags;
+mod hitbox_set;
 
 use crate::animation::Animation;
 use crate::assets::Assets;
@@ -19,6 +20,7 @@ use nfd::Response;
 use animation_data::{AnimationData, AnimationDataUi};
 pub use cancel_set::{CancelSet, CancelSetUi};
 pub use flags::{Flags, FlagsUi, MovementData};
+pub use hitbox_set::{HitboxSet, HitboxSetUi};
 
 use crate::timeline::{AtTime, Timeline};
 
@@ -29,6 +31,7 @@ pub struct CharacterState {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
     pub cancels: Timeline<CancelSet>,
+    pub hitboxes: Timeline<HitboxSet>,
     pub name: String,
 }
 
@@ -38,6 +41,7 @@ impl CharacterState {
             animations: vec![],
             flags: vec![(Flags::new(), 1)],
             cancels: vec![(CancelSet::new(), 1)],
+            hitboxes: vec![(HitboxSet::new(), 1)],
             name: "new_state".to_owned(),
         }
     }
@@ -53,6 +57,7 @@ impl CharacterState {
         if self.duration() > 0 {
             self.flags.fix_duration(self.duration());
             self.cancels.fix_duration(self.duration());
+            self.hitboxes.fix_duration(self.duration());
         }
     }
 
@@ -70,12 +75,27 @@ impl CharacterState {
         }
         Ok(())
     }
+    pub fn draw_at_time_debug(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        time: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        if time < self.duration() {
+            for animation in self.animations.iter() {
+                animation.draw_at_time_debug(ctx, assets, time, world)?
+            }
+        }
+        Ok(())
+    }
 }
 
 pub struct CharacterStateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
+    current_hitboxes: Option<usize>,
 }
 
 impl CharacterStateUi {
@@ -84,6 +104,7 @@ impl CharacterStateUi {
             current_animation: None,
             current_flags: None,
             current_cancels: None,
+            current_hitboxes: None,
         }
     }
 
@@ -133,6 +154,7 @@ impl CharacterStateUi {
                 let animation = &mut data.animations[animation];
                 AnimationDataUi::new().draw_ui(ui, animation)?;
             }
+            ui.separator();
             ui.pop_id();
         }
         data.fix_duration();
@@ -165,6 +187,7 @@ impl CharacterStateUi {
                 FlagsUi::new().draw_ui(ui, flags);
             }
 
+            ui.separator();
             ui.pop_id();
         }
         if ui.collapsing_header(im_str!("Cancels")).build() {
@@ -194,7 +217,38 @@ impl CharacterStateUi {
                 ui.separator();
                 CancelSetUi::new().draw_ui(ui, cancels);
             }
+            ui.separator();
+            ui.pop_id();
+        }
+        if ui.collapsing_header(im_str!("Hitboxes")).build() {
+            ui.push_id("Hitboxes");
+            let mut counter = 0;
+            ui.rearrangable_list_box(
+                im_str!("List\n[Start, End]"),
+                &mut self.current_hitboxes,
+                &mut data.hitboxes,
+                |(_, duration)| {
+                    let start = counter;
+                    let end = counter + duration - 1;
+                    counter += duration;
+                    im_str!("[{}, {}]", start, end)
+                },
+                5,
+            );
 
+            if let Some(ref mut idx) = self.current_hitboxes {
+                ui.timeline_modify(idx, &mut data.hitboxes);
+
+                let (ref mut hitboxes, ref mut duration) = &mut data.hitboxes[*idx];
+
+                let _ = ui.input_whole(im_str!("Duration"), duration);
+                *duration = cmp::max(*duration, 1);
+
+                ui.separator();
+                HitboxSetUi::new().draw_ui(ui, hitboxes);
+            }
+
+            ui.separator();
             ui.pop_id();
         }
         Ok(())

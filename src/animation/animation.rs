@@ -191,6 +191,17 @@ impl Animation {
         let image = self.frames.at_time(time);
         image.draw(ctx, assets, world)
     }
+    pub fn draw_at_time_debug(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        time: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+        let image = self.frames.at_time(time);
+        image.draw_debug(ctx, assets, world)
+    }
 }
 
 pub struct AnimationUi {

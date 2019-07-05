@@ -53,6 +53,22 @@ impl AnimationData {
             Ok(())
         }
     }
+    pub fn draw_at_time_debug(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        time: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        if time >= self.delay && time - self.delay < self.duration() {
+            let transform = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0))
+                * Matrix4::new_nonuniform_scaling(&Vec3::new(self.scale.x, self.scale.y, 1.0));
+            self.animation
+                .draw_at_time_debug(ctx, assets, time - self.delay, world * transform)
+        } else {
+            Ok(())
+        }
+    }
 }
 pub struct AnimationDataUi;
 
