@@ -16,11 +16,12 @@ use std::cmp;
 use nfd::Response;
 
 use animation_data::{AnimationData, AnimationDataUi};
-use flags::{Flags, FlagsUi};
+pub use flags::{Flags, FlagsUi, MovementData};
 
 use crate::timeline::Timeline;
 
 use crate::typedefs::graphics::Matrix4;
+
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
