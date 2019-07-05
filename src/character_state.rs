@@ -96,6 +96,7 @@ pub struct CharacterStateUi {
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
     current_hitboxes: Option<usize>,
+    current_hitbox_ui: Option<HitboxSetUi>,
 }
 
 impl CharacterStateUi {
@@ -105,6 +106,7 @@ impl CharacterStateUi {
             current_flags: None,
             current_cancels: None,
             current_hitboxes: None,
+            current_hitbox_ui: None,
         }
     }
 
@@ -223,20 +225,25 @@ impl CharacterStateUi {
         if ui.collapsing_header(im_str!("Hitboxes")).build() {
             ui.push_id("Hitboxes");
             let mut counter = 0;
-            ui.rearrangable_list_box(
+            let format_entry = |(_, duration): &(_, usize)| {
+                let start = counter;
+                let end = counter + duration - 1;
+                counter += duration;
+                im_str!("[{}, {}]", start, end)
+            };
+            if ui.rearrangable_list_box(
                 im_str!("List\n[Start, End]"),
                 &mut self.current_hitboxes,
                 &mut data.hitboxes,
-                |(_, duration)| {
-                    let start = counter;
-                    let end = counter + duration - 1;
-                    counter += duration;
-                    im_str!("[{}, {}]", start, end)
-                },
+                format_entry,
                 5,
-            );
+            ) {
+                self.current_hitbox_ui = None;
+            }
 
             if let Some(ref mut idx) = self.current_hitboxes {
+                let ui_data = self.current_hitbox_ui.get_or_insert_with(HitboxSetUi::new);
+
                 ui.timeline_modify(idx, &mut data.hitboxes);
 
                 let (ref mut hitboxes, ref mut duration) = &mut data.hitboxes[*idx];
@@ -245,7 +252,7 @@ impl CharacterStateUi {
                 *duration = cmp::max(*duration, 1);
 
                 ui.separator();
-                HitboxSetUi::new().draw_ui(ui, hitboxes);
+                ui_data.draw_ui(ui, hitboxes);
             }
 
             ui.separator();
