@@ -86,13 +86,19 @@ impl CancelSetUi {
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet) {
         if ui.collapsing_header(im_str!("Always")).build() {
+            ui.push_id("Always");
             ui.checkbox_set(MoveType::all(), &mut data.always);
+            ui.pop_id();
         }
         if ui.collapsing_header(im_str!("On Block")).build() {
+            ui.push_id("On Block");
             ui.checkbox_set(MoveType::all(), &mut data.block);
+            ui.pop_id();
         }
         if ui.collapsing_header(im_str!("On Hit")).build() {
+            ui.push_id("On Hit");
             ui.checkbox_set(MoveType::all(), &mut data.hit);
+            ui.pop_id();
         }
     }
     pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet) {

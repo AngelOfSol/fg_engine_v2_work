@@ -140,24 +140,23 @@ impl AnimationEditor {
             .render(ctx);
         editor_result?;
 
-        let vertical = Mesh::new_line(
-            ctx,
-            &[[0.0, -10.0], [0.0, 10.0]],
-            1.0,
-            Color::new(0.0, 1.0, 0.0, 1.0),
-        )?;
-
-        let horizontal = Mesh::new_line(
-            ctx,
-            &[[-10.0, 0.0], [10.0, 0.0]],
-            1.0,
-            Color::new(0.0, 1.0, 0.0, 1.0),
-        )?;
-
         let dim = (256.0, 256.0);
         let (width, height) = dim;
 
         let draw_cross = |ctx: &mut Context, origin: (f32, f32)| {
+            let vertical = Mesh::new_line(
+                ctx,
+                &[[0.0, -10.0], [0.0, 10.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
+
+            let horizontal = Mesh::new_line(
+                ctx,
+                &[[-10.0, 0.0], [10.0, 0.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
             graphics::draw(
                 ctx,
                 &vertical,
