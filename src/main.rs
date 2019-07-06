@@ -8,9 +8,10 @@ use std::error::Error;
 use std::env;
 use std::path;
 
+mod attack;
+
 #[macro_use]
 mod imgui_extra;
-
 
 mod animation;
 mod assets;

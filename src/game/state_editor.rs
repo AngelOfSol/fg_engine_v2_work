@@ -261,21 +261,21 @@ impl StateEditor {
                 Color::new(1.0, 1.0, 1.0, self.draw_mode.collision_alpha),
             )?;
 
-            let offset = {
-                let mut offset = Vec3::new(600.0, 240.0, 0.0);
-                if self.draw_mode.show_travel {
-                    offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
-                }
-                offset
-            };
-
-            let offset = Matrix4::new_translation(&offset);
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(
                     ctx,
                     offset,
                     Color::new(0.0, 1.0, 0.0, self.draw_mode.hurtbox_alpha),
                 )?;
+            }
+            if let Some(attack_data) = &boxes.hitbox {
+                for hitbox in attack_data.boxes.iter() {
+                    hitbox.draw(
+                        ctx,
+                        offset,
+                        Color::new(1.0, 0.0, 0.0, self.draw_mode.hitbox_alpha),
+                    )?;
+                }
             }
         }
 
