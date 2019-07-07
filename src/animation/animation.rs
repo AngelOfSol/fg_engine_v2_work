@@ -1,4 +1,4 @@
-use super::sprite::{load_image, rename_sprite, Sprite, SpriteUi};
+use super::sprite::{rename_sprite, Sprite, SpriteUi};
 
 use crate::assets::Assets;
 use crate::imgui_extra::UiExtensions;
@@ -10,17 +10,13 @@ use imgui::im_str;
 use ggez::graphics;
 use ggez::{Context, GameError, GameResult};
 
-use image::imageops::flip_vertical;
-use image::png::PNGEncoder;
-use image::{ColorType, ImageBuffer, Rgba};
-
 use nfd::Response;
 
 use serde::{Deserialize, Serialize};
 
-use std::fs::{read_dir, remove_dir_all, remove_file, File};
-use std::io::{BufReader, BufWriter};
-use std::path::{Path, PathBuf};
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum BlendMode {
@@ -108,91 +104,6 @@ impl Animation {
             sprite.load_image(ctx, assets)?
         }
         Ok(())
-    }
-
-    pub fn save_tar<P: AsRef<Path>>(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        path: P,
-    ) -> GameResult<()> {
-        let file = File::create(path)?;
-        let mut tar = tar::Builder::new(file);
-
-        let data_file_name = "data.json";
-        {
-            let mut json_target = File::create(&data_file_name)?;
-            serde_json::to_writer(&mut json_target, &self)
-                .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
-        }
-
-        tar.append_path(&data_file_name)?;
-        std::fs::remove_file(&data_file_name)?;
-
-        for (sprite, _) in self.frames.iter() {
-            let image = &assets.images[&sprite.image];
-
-            let file_name = "temp.png";
-
-            let temp_file = File::create(&file_name)?;
-
-            let writer = BufWriter::new(temp_file);
-
-            let png_writer = PNGEncoder::new(writer);
-
-            let image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
-                u32::from(image.width()),
-                u32::from(image.height()),
-                image.to_rgba8(ctx)?.to_vec(),
-            )
-            .unwrap();
-
-            // image buffers are flipped in memory for ggez, so we have to unflip them
-            let image = flip_vertical(&image);
-
-            png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
-
-            tar.append_path_with_name(file_name, &sprite.image)?;
-
-            remove_file(&file_name)?;
-        }
-        Ok(())
-    }
-    pub fn load_tar<P: AsRef<Path>>(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        path: P,
-    ) -> GameResult<Animation> {
-        let file = File::open(path)?;
-        let mut tar = tar::Archive::new(file);
-        tar.unpack("./temp/")?;
-
-        let file = File::open("./temp/data.json")?;
-        let buf_read = BufReader::new(file);
-        let animation: Animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
-
-        for file in read_dir("./temp/")? {
-            let entry = file?;
-            let path = entry.path();
-            if let Some(file_type) = path.extension() {
-                if file_type == "png" {
-                    let file_name = path.file_name().unwrap();
-                    load_image(
-                        file_name
-                            .to_str()
-                            .expect("expected valid utf8 filename")
-                            .to_owned(),
-                        path,
-                        ctx,
-                        assets,
-                    )?;
-                }
-            }
-        }
-
-        remove_dir_all("./temp/")?;
-
-        Ok(animation)
     }
 
     pub fn draw_frame(
