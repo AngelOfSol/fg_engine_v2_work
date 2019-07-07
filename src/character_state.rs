@@ -26,6 +26,12 @@ use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
 
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
+
+use ggez::GameError;
+
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
@@ -36,6 +42,52 @@ pub struct CharacterState {
 }
 
 impl CharacterState {
+    pub fn load_from_json(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        mut path: PathBuf,
+    ) -> GameResult<CharacterState> {
+        let file = File::open(&path).unwrap();
+        let buf_read = BufReader::new(file);
+        let state = serde_json::from_reader::<_, CharacterState>(buf_read).unwrap();
+        path.pop();
+        CharacterState::load(ctx, assets, &state, path);
+        Ok(state)
+    }
+    pub fn load(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        state: &CharacterState,
+        mut path: PathBuf,
+    ) -> GameResult<()> {
+        path.push(&state.name);
+        for animation in &state.animations {
+            Animation::load(ctx, assets, &animation.animation, path.clone())?;
+        }
+        Ok(())
+    }
+    pub fn save(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        state: &CharacterState,
+        mut path: PathBuf,
+    ) -> GameResult<()> {
+        std::fs::create_dir_all(&path)?;
+
+        path.push(format!("{}.json", &state.name));
+        let mut json = File::create(&path)?;
+        serde_json::to_writer(&mut json, &state)
+            .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
+
+        path.pop();
+        path.push(&state.name);
+        std::fs::create_dir_all(&path)?;
+        for animation in &state.animations {
+            Animation::save(ctx, assets, &animation.animation, path.clone())?;
+        }
+        Ok(())
+    }
+
     pub fn new() -> Self {
         Self {
             animations: vec![],
