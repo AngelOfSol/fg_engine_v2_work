@@ -22,6 +22,11 @@ use crate::character_state::{
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
+use std::path::PathBuf;
+
+use std::fs::File;
+use std::io::BufReader;
+
 pub struct StateEditor {
     resource: CharacterState,
     frame: usize,
@@ -199,6 +204,33 @@ impl StateEditor {
                         if ui.menu_item(im_str!("New")).build() {
                             self.resource = CharacterState::new();
                             self.ui_data = CharacterStateUi::new();
+                        }
+                        if ui.menu_item(im_str!("Save")).build() {
+                            if let Ok(nfd::Response::Okay(path)) = nfd::open_pick_folder(None) {
+                                editor_result = CharacterState::save(
+                                    ctx,
+                                    assets,
+                                    &self.resource,
+                                    PathBuf::from(path),
+                                );
+                            }
+                        }
+                        if ui.menu_item(im_str!("Open")).build() {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_file_dialog(Some("json"), None)
+                            {
+                                match CharacterState::load_from_json(
+                                    ctx,
+                                    assets,
+                                    PathBuf::from(path),
+                                ) {
+                                    Ok(state) => {
+                                        self.resource = state;
+                                        self.ui_data = CharacterStateUi::new();
+                                    }
+                                    Err(err) => editor_result = Err(err),
+                                }
+                            }
                         }
                         ui.separator();
 

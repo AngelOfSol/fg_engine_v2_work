@@ -8,13 +8,20 @@ use serde::{Deserialize, Serialize};
 use crate::assets::Assets;
 
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 use nfd::Response;
+
+use image::imageops::flip_vertical;
+use image::png::PNGEncoder;
+use image::{ColorType, ImageBuffer, Rgba};
+
+use std::fs::File;
+use std::io::BufWriter;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
@@ -50,6 +57,43 @@ pub fn load_image<S: Into<String>, P: AsRef<Path>>(
 }
 
 impl Sprite {
+    pub fn load(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        sprite: &Sprite,
+        mut path: PathBuf,
+    ) -> GameResult<()> {
+        path.push(&sprite.image);
+        load_image(sprite.image.clone(), &path, ctx, assets)?;
+        Ok(())
+    }
+    pub fn save(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        sprite: &Sprite,
+        mut path: PathBuf,
+    ) -> GameResult<()> {
+        path.push(&sprite.image);
+        let image = &assets.images[&sprite.image];
+        let output = File::create(&path)?;
+        let writer = BufWriter::new(output);
+        let png_writer = PNGEncoder::new(writer);
+
+        let image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
+            u32::from(image.width()),
+            u32::from(image.height()),
+            image.to_rgba8(ctx)?.to_vec(),
+        )
+        .unwrap();
+
+        // image buffers are flipped in memory for ggez/OpenGL/gfx, so we have to unflip them
+        let image = flip_vertical(&image);
+
+        png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
+
+        Ok(())
+    }
+
     pub fn new<S: Into<String>>(path: S) -> Self {
         Self {
             offset: nalgebra::zero(),

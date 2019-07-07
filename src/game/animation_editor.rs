@@ -14,6 +14,8 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 
 use imgui::*;
 
+use std::path::PathBuf;
+
 pub struct AnimationEditor {
     frame: usize,
     resource: Animation,
@@ -99,34 +101,25 @@ impl AnimationEditor {
                             self.ui_data = AnimationUi::new();
                         }
                         if ui.menu_item(im_str!("Save")).build() {
-                            let path_result = nfd::open_save_dialog(Some("tar"), None);
-                            match path_result {
-                                Ok(path) => match path {
-                                    nfd::Response::Cancel => (),
-                                    nfd::Response::Okay(path) => {
-                                        editor_result = self.resource.save_tar(ctx, assets, &path);
-                                    }
-                                    nfd::Response::OkayMultiple(_) => (),
-                                },
-                                Err(err) => {
-                                    dbg!(err);
-                                }
+                            if let Ok(nfd::Response::Okay(path)) = nfd::open_pick_folder(None) {
+                                editor_result = Animation::save(
+                                    ctx,
+                                    assets,
+                                    &self.resource,
+                                    PathBuf::from(path),
+                                );
                             }
                         }
                         if ui.menu_item(im_str!("Open")).build() {
-                            let path_result =
-                                nfd::open_dialog(Some("tar"), None, nfd::DialogType::SingleFile);
-                            match path_result {
-                                Ok(path) => match path {
-                                    nfd::Response::Cancel => (),
-                                    nfd::Response::Okay(path) => {
-                                        self.resource =
-                                            Animation::load_tar(ctx, assets, &path).unwrap();
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_file_dialog(Some("json"), None)
+                            {
+                                match Animation::load_from_json(ctx, assets, PathBuf::from(path)) {
+                                    Ok(animation) => {
+                                        self.resource = animation;
+                                        self.ui_data = AnimationUi::new();
                                     }
-                                    nfd::Response::OkayMultiple(_) => (),
-                                },
-                                Err(err) => {
-                                    dbg!(err);
+                                    Err(err) => editor_result = Err(err),
                                 }
                             }
                         }
