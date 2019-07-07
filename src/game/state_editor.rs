@@ -4,17 +4,14 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 
-use crate::animation::{Animation, AnimationUi};
-
 use crate::assets::Assets;
-use crate::game;
 use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
 use crate::typedefs::graphics::{Matrix4, Vec3};
 
-use crate::typedefs::collision::{IntoGraphical, Vec2};
+use crate::typedefs::collision::IntoGraphical;
 
 use crate::character_state::{
     CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
@@ -23,9 +20,6 @@ use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
 use std::path::PathBuf;
-
-use std::fs::File;
-use std::io::BufReader;
 
 pub struct StateEditor {
     resource: CharacterState,

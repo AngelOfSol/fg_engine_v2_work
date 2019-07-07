@@ -51,7 +51,7 @@ impl CharacterState {
         let buf_read = BufReader::new(file);
         let state = serde_json::from_reader::<_, CharacterState>(buf_read).unwrap();
         path.pop();
-        CharacterState::load(ctx, assets, &state, path);
+        CharacterState::load(ctx, assets, &state, path)?;
         Ok(state)
     }
     pub fn load(
@@ -188,13 +188,13 @@ impl CharacterStateUi {
                         Response::Cancel => (),
                         Response::Okay(path) => {
                             data.animations.push(AnimationData::new(
-                                Animation::load_tar(ctx, assets, &path).unwrap(),
+                                Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap(),
                             ));
                         }
                         Response::OkayMultiple(paths) => {
                             for path in paths {
                                 data.animations.push(AnimationData::new(
-                                    Animation::load_tar(ctx, assets, &path).unwrap(),
+                                    Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap(),
                                 ));
                             }
                         }
