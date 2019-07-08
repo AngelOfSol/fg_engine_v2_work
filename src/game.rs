@@ -1,6 +1,7 @@
 mod animation_editor;
 mod main_menu;
 mod state_editor;
+mod character_editor;
 
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -14,6 +15,7 @@ use ggez::{Context, GameResult};
 pub use animation_editor::AnimationEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
+pub use character_editor::CharacterEditor;
 
 use crate::animation::Animation;
 use crate::character_state::CharacterState;
@@ -29,16 +31,16 @@ pub enum GameState {
     Animating(AnimationEditor),
     MainMenu(MainMenu),
     StateEditor(StateEditor),
+    CharacterEditor(CharacterEditor),
 }
 
 impl GameState {
     fn handle_event(&mut self, passed_data: MessageData, mode: Mode) {
         match self {
-            GameState::Animating(_) => (),
-            GameState::MainMenu(_) => (),
             GameState::StateEditor(ref mut editor) => {
                 editor.handle_message(passed_data, mode);
             }
+            _ => ()
         }
     }
 }
@@ -83,6 +85,7 @@ impl EventHandler for FightingGame {
                 GameState::Animating(ref mut editor) => editor.update(),
                 GameState::MainMenu(ref mut menu) => menu.update(),
                 GameState::StateEditor(ref mut editor) => editor.update(),
+                GameState::CharacterEditor(ref mut editor) => editor.update(),
             }?;
             match transition {
                 Transition::None => (),
@@ -113,14 +116,13 @@ impl EventHandler for FightingGame {
             .expect("should have at least one gamestate")
             .0
         {
-            GameState::Animating(ref mut editor) => {
-                editor.draw(ctx, &mut self.assets, &mut self.imgui)
-            }
-
+            GameState::Animating(ref mut editor) => editor.draw(ctx, &mut self.assets, &mut self.imgui), 
             GameState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.imgui),
-            GameState::StateEditor(ref mut editor) => {
-                editor.draw(ctx, &mut self.assets, &mut self.imgui)
-            }
+            GameState::StateEditor(ref mut editor) => 
+                editor.draw(ctx, &mut self.assets, &mut self.imgui),
+            GameState::CharacterEditor(ref mut editor) => 
+                editor.draw(ctx, &mut self.assets, &mut self.imgui),
+            
         }?;
 
         graphics::present(ctx)?;
