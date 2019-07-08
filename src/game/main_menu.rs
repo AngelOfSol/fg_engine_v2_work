@@ -4,7 +4,7 @@ use imgui::*;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
-use super::{AnimationEditor, StateEditor};
+use super::{AnimationEditor, CharacterEditor, StateEditor};
 use crate::game::{GameState, Mode, Transition};
 
 pub struct MainMenu {
@@ -40,6 +40,12 @@ impl MainMenu {
                         if ui.menu_item(im_str!("Edit States")).build() {
                             self.next = Transition::Push(
                                 Box::new(StateEditor::new().into()),
+                                Mode::Standalone,
+                            );
+                        }
+                        if ui.menu_item(im_str!("Edit Character")).build() {
+                            self.next = Transition::Push(
+                                Box::new(CharacterEditor::new().into()),
                                 Mode::Standalone,
                             );
                         }
