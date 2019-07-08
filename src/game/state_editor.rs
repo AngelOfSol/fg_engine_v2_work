@@ -1,4 +1,4 @@
-use crate::game::{GameState, Transition};
+use crate::game::{GameState, MessageData, Mode, Transition};
 
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
@@ -14,8 +14,13 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::collision::IntoGraphical;
 
 use crate::character_state::{
-    CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
+    AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
 };
+
+use crate::game::AnimationEditor;
+
+use crate::animation::Animation;
+
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -25,7 +30,7 @@ pub struct StateEditor {
     resource: CharacterState,
     frame: usize,
     is_playing: bool,
-    done: bool,
+    transition: Transition,
     ui_data: CharacterStateUi,
     draw_mode: DrawMode,
 }
@@ -42,7 +47,7 @@ impl StateEditor {
     pub fn new() -> Self {
         Self {
             resource: CharacterState::new(),
-            done: false,
+            transition: Transition::None,
             frame: 0,
             is_playing: true,
             ui_data: CharacterStateUi::new(),
@@ -57,6 +62,45 @@ impl StateEditor {
         }
     }
 
+    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
+        if let MessageData::Animation(mut animation) = data {
+            let mut temp_name = animation.name.clone();
+            let mut counter = 1;
+            loop {
+                if self
+                    .resource
+                    .animations
+                    .iter()
+                    .map(|item| &item.animation.name)
+                    .any(|name| name == &temp_name)
+                {
+                    temp_name = format!("{} ({})", &animation.name, counter);
+                    counter += 1;
+                } else {
+                    break;
+                }
+            }
+            animation.name = temp_name;
+            match mode {
+                Mode::Standalone => (),
+                Mode::New => {
+                    self.resource.animations.push(AnimationData::new(animation));
+                }
+                Mode::Edit(name) => {
+                    let index = self
+                        .resource
+                        .animations
+                        .iter()
+                        .position(|item| item.animation.name == name);
+                    match index {
+                        Some(index) => self.resource.animations[index].animation = animation,
+                        None => self.resource.animations.push(AnimationData::new(animation)),
+                    }
+                }
+            }
+        }
+    }
+
     pub fn update(&mut self) -> GameResult<Transition> {
         if self.is_playing {
             self.frame = self.frame.wrapping_add(1);
@@ -67,11 +111,8 @@ impl StateEditor {
             }
         }
 
-        if self.done {
-            Ok(Transition::Pop)
-        } else {
-            Ok(Transition::None)
-        }
+        let ret = std::mem::replace(&mut self.transition, Transition::None);
+        Ok(ret)
     }
 
     pub fn draw(
@@ -95,7 +136,6 @@ impl StateEditor {
             }
             move_data
         };
-
         imgui
             .frame()
             .run(|ui| {
@@ -106,7 +146,25 @@ impl StateEditor {
                     .movable(false)
                     .collapsible(false)
                     .build(|| {
-                        editor_result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
+                        let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
+                        if let Ok(Some(mode)) = &result {
+                            let animation = match &mode {
+                                Mode::Edit(name) => self
+                                    .resource
+                                    .animations
+                                    .iter()
+                                    .map(|item| &item.animation)
+                                    .find(|item| &item.name == name)
+                                    .cloned()
+                                    .unwrap(),
+                                _ => Animation::new("new"),
+                            };
+                            self.transition = Transition::Push(
+                                Box::new(AnimationEditor::with_animation(animation).into()),
+                                mode.clone(),
+                            );
+                        }
+                        editor_result = result.map(|_| ());
                     });
                 ui.window(im_str!("Animation"))
                     .size([600.0, 263.0], Condition::Always)
@@ -229,7 +287,8 @@ impl StateEditor {
                         ui.separator();
 
                         if ui.menu_item(im_str!("Back")).build() {
-                            self.done = true;
+                            let ret = std::mem::replace(&mut self.resource, CharacterState::new());
+                            self.transition = Transition::Pop(Some(MessageData::State(ret)));
                         }
                     });
                 });

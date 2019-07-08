@@ -23,7 +23,7 @@ use image::{ColorType, ImageBuffer, Rgba};
 use std::fs::File;
 use std::io::BufWriter;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
     pub offset: Vec2,
     pub image: String,

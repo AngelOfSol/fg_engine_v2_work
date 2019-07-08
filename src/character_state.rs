@@ -17,7 +17,7 @@ use std::cmp;
 
 use nfd::Response;
 
-use animation_data::{AnimationData, AnimationDataUi};
+pub use animation_data::{AnimationData, AnimationDataUi};
 pub use cancel_set::{CancelSet, CancelSetUi};
 pub use flags::{Flags, FlagsUi, MovementData};
 pub use hitbox_set::{HitboxSet, HitboxSetUi};
@@ -25,6 +25,8 @@ pub use hitbox_set::{HitboxSet, HitboxSetUi};
 use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
+
+use crate::game::Mode;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -168,7 +170,9 @@ impl CharacterStateUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut CharacterState,
-    ) -> GameResult<()> {
+    ) -> GameResult<Option<Mode>> {
+        let mut ret = None;
+
         ui.input_string(im_str!("Name"), &mut data.name);
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
@@ -182,19 +186,21 @@ impl CharacterStateUi {
                 5,
             );
             if ui.small_button(im_str!("Add")) {
-                let path_result = nfd::open_file_multiple_dialog(Some("tar"), None);
+                let path_result = nfd::open_file_multiple_dialog(Some("json"), None);
                 match path_result {
                     Ok(path) => match path {
                         Response::Cancel => (),
                         Response::Okay(path) => {
                             data.animations.push(AnimationData::new(
-                                Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap(),
+                                Animation::load_from_json(ctx, assets, PathBuf::from(path))
+                                    .unwrap(),
                             ));
                         }
                         Response::OkayMultiple(paths) => {
                             for path in paths {
                                 data.animations.push(AnimationData::new(
-                                    Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap(),
+                                    Animation::load_from_json(ctx, assets, PathBuf::from(path))
+                                        .unwrap(),
                                 ));
                             }
                         }
@@ -204,8 +210,16 @@ impl CharacterStateUi {
                     }
                 }
             }
+            ui.same_line(0.0);
+            if ui.small_button(im_str!("New")) {
+                ret = Some(Mode::New);
+            }
             if let Some(animation) = self.current_animation {
                 let animation = &mut data.animations[animation];
+                ui.same_line(0.0);
+                if ui.small_button(im_str!("Edit")) {
+                    ret = Some(Mode::Edit(animation.animation.name.clone()));
+                }
                 AnimationDataUi::new().draw_ui(ui, animation)?;
             }
             ui.separator();
@@ -310,6 +324,6 @@ impl CharacterStateUi {
             ui.separator();
             ui.pop_id();
         }
-        Ok(())
+        Ok(ret)
     }
 }

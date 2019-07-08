@@ -33,7 +33,7 @@ impl Into<graphics::BlendMode> for BlendMode {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Animation {
     pub name: String,
     pub frames: Timeline<Sprite>,
