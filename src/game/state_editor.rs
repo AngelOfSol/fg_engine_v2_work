@@ -258,7 +258,7 @@ impl StateEditor {
                             self.ui_data = CharacterStateUi::new();
                         }
                         if ui.menu_item(im_str!("Save")).build() {
-                            if let Ok(nfd::Response::Okay(path)) = nfd::open_pick_folder(None) {
+                            if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
                                 editor_result = CharacterState::save(
                                     ctx,
                                     assets,
