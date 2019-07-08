@@ -5,7 +5,7 @@ use ggez::{Context, GameResult};
 use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
-use crate::game::{GameState, Transition};
+use crate::game::{GameState, Transition, MessageData};
 use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -32,12 +32,21 @@ impl AnimationEditor {
             done: false,
         }
     }
+    pub fn with_animation(data: Animation) -> Self {
+        Self {
+            frame: 0,
+            resource: data,
+            ui_data: AnimationUi::new(),
+            done: false,
+        }
+    }
 
     pub fn update(&mut self) -> GameResult<Transition> {
         self.frame = self.frame.wrapping_add(1);
 
         if self.done {
-            Ok(Transition::Pop)
+            let ret = std::mem::replace(&mut self.resource, Animation::new("none"));
+            Ok(Transition::Pop(Some(MessageData::Animation(ret))))
         } else {
             Ok(Transition::None)
         }

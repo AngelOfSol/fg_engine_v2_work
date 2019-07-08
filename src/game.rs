@@ -11,33 +11,61 @@ use ggez::input::mouse::MouseButton;
 use ggez::timer;
 use ggez::{Context, GameResult};
 
-use animation_editor::AnimationEditor;
-use main_menu::MainMenu;
-use state_editor::StateEditor;
+pub use animation_editor::AnimationEditor;
+pub use main_menu::MainMenu;
+pub use state_editor::StateEditor;
+
+use crate::animation::Animation;
+use crate::character_state::CharacterState;
 
 pub struct FightingGame {
-    game_state: Vec<GameState>,
+    game_state: Vec<(GameState, Mode)>,
     assets: Assets,
     imgui: ImGuiWrapper,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum GameState {
     Animating(AnimationEditor),
     MainMenu(MainMenu),
     StateEditor(StateEditor),
 }
 
+impl GameState {
+    fn handle_event(&mut self, passed_data: MessageData, mode: Mode) {
+        match self {
+            GameState::Animating(_) => (),
+            GameState::MainMenu(_) => (),
+            GameState::StateEditor(ref mut editor) => {
+                editor.handle_message(passed_data, mode);
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Mode {
+    Standalone,
+    Edit(String),
+    New,
+}
+
+pub enum MessageData {
+    Animation(Animation),
+    State(CharacterState),
+}
+
 pub enum Transition {
     None,
-    Pop,
-    Push(Box<GameState>),
+    Pop(Option<MessageData>),
+    Push(Box<GameState>, Mode),
 }
 
 impl FightingGame {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
         Ok(Self {
             imgui: ImGuiWrapper::new(ctx),
-            game_state: vec![MainMenu::new().into()],
+            game_state: vec![(MainMenu::new().into(), Mode::Standalone)],
             assets: Assets::new(),
         })
     }
@@ -50,6 +78,7 @@ impl EventHandler for FightingGame {
                 .game_state
                 .last_mut()
                 .expect("should have at least one gamestate")
+                .0
             {
                 GameState::Animating(ref mut editor) => editor.update(),
                 GameState::MainMenu(ref mut menu) => menu.update(),
@@ -57,12 +86,18 @@ impl EventHandler for FightingGame {
             }?;
             match transition {
                 Transition::None => (),
-                Transition::Pop => {
+                Transition::Pop(Some(passed_data)) => {
+                    let mode = self.game_state.pop().unwrap().1;
+                    self.game_state
+                        .last_mut()
+                        .unwrap()
+                        .0
+                        .handle_event(passed_data, mode);
+                }
+                Transition::Pop(None) => {
                     self.game_state.pop();
                 }
-                Transition::Push(state) => {
-                    self.game_state.push(*state);
-                }
+                Transition::Push(state, mode) => self.game_state.push((*state, mode)),
             }
         }
         Ok(())
@@ -76,6 +111,7 @@ impl EventHandler for FightingGame {
             .game_state
             .last_mut()
             .expect("should have at least one gamestate")
+            .0
         {
             GameState::Animating(ref mut editor) => {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
