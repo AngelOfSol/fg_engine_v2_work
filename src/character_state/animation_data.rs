@@ -11,7 +11,7 @@ use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct AnimationData {
     pub animation: Animation,
     pub delay: usize,

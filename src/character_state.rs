@@ -34,7 +34,7 @@ use std::path::PathBuf;
 
 use ggez::GameError;
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
@@ -85,7 +85,9 @@ impl CharacterState {
         path.push(&name);
         std::fs::create_dir_all(&path)?;
         for animation in &state.animations {
+            path.push(&format!("{}.json", &animation.animation.name));
             Animation::save(ctx, assets, &animation.animation, path.clone())?;
+            path.pop();
         }
         Ok(())
     }

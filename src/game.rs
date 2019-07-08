@@ -39,7 +39,10 @@ impl GameState {
         match self {
             GameState::StateEditor(ref mut editor) => {
                 editor.handle_message(passed_data, mode);
-            }
+            },
+            GameState::CharacterEditor(ref mut editor) => {
+                editor.handle_message(passed_data, mode);
+            }, 
             _ => ()
         }
     }

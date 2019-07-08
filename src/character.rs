@@ -1,8 +1,8 @@
 mod properties;
 mod states;
 
-pub use properties::Properties;
-pub use states::States;
+pub use properties::{Properties, PropertiesUi};
+pub use states::{States, StatesUi};
 
 use crate::character_state::CharacterState;
 
@@ -43,7 +43,9 @@ pub struct PlayerCharacter {
 macro_rules! _save_fields {
     ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
         $(
+            $path.push(format!("{}.json", stringify!($field)));
             CharacterState::save($ctx, $assets, &$obj.$field, $path.clone())?;
+            $path.pop();
         )*
     };
     () => {
@@ -109,12 +111,16 @@ impl PlayerCharacter {
 
         path.pop();
         path.push(&character_file_name);
+
+        if path.exists() {
+            std::fs::remove_dir_all(&path)?;
+        }
         std::fs::create_dir_all(&path)?;
 
         _save_fields!(ctx, assets, path, player_character.states => [idle]);
 
         for (state_name, state) in player_character.states.rest.iter() {
-            path.push(state_name);
+            path.push(format!("{}.json", state_name));
             CharacterState::save(ctx, assets, state, path.clone())?;
             path.pop();
         }

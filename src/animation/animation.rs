@@ -84,7 +84,6 @@ impl Animation {
         animation: &Animation,
         mut path: PathBuf,
     ) -> GameResult<()> {
-        path.push(format!("{}.json", &animation.name));
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &animation)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
