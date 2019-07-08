@@ -85,13 +85,11 @@ impl Animation {
         mut path: PathBuf,
     ) -> GameResult<()> {
         path.push(format!("{}.json", &animation.name));
-        dbg!(&path);
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &animation)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
         path.pop();
         path.push(&animation.name);
-        dbg!(&path);
         std::fs::create_dir_all(&path)?;
         for (sprite, _) in &animation.frames {
             Sprite::save(ctx, assets, sprite, path.clone())?;

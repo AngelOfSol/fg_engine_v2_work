@@ -5,7 +5,6 @@ use ggez::{Context, GameResult};
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
 
-
 use crate::character_state::{
     AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
 };
@@ -34,8 +33,7 @@ impl CharacterEditor {
         }
     }
 
-    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-    }
+    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {}
 
     pub fn update(&mut self) -> GameResult<Transition> {
         let ret = std::mem::replace(&mut self.transition, Transition::None);
@@ -52,15 +50,20 @@ impl CharacterEditor {
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Editor"))
+                ui.window(im_str!("Fields"))
                     .size([300.0, 526.0], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
-                        
-                    });
+                    .build(|| {});
+                ui.window(im_str!("States"))
+                    .size([300.0, 526.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {});
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Player Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
@@ -85,8 +88,8 @@ impl CharacterEditor {
                                     assets,
                                     PathBuf::from(path),
                                 ) {
-                                    Ok(state) => {
-                                        self.resource = state;
+                                    Ok(character) => {
+                                        self.resource = character;
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }

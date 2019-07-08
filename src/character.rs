@@ -1,3 +1,9 @@
+mod properties;
+mod states;
+
+pub use properties::Properties;
+pub use states::States;
+
 use crate::character_state::CharacterState;
 
 use serde::{Deserialize, Serialize};
@@ -34,23 +40,6 @@ pub struct PlayerCharacter {
     pub properties: Properties,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct States {
-    pub idle: CharacterState,
-    #[serde(flatten)]
-    pub rest: HashMap<String, CharacterState>,
-    #[serde(skip)]
-    _secret: (),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Properties {
-    pub health: u32,
-    pub name: String,
-    #[serde(skip)]
-    _secret: (),
-}
-
 macro_rules! _save_fields {
     ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
         $(
@@ -63,7 +52,7 @@ macro_rules! _save_fields {
 macro_rules! _load_fields {
     ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
         $(
-            CharacterState::load($ctx, $assets, &$obj.$field, $path.clone())?;
+            CharacterState::load($ctx, $assets, &$obj.$field, stringify!($field), $path.clone())?;
         )*
     };
     () => {
@@ -73,16 +62,8 @@ macro_rules! _load_fields {
 impl PlayerCharacter {
     pub fn new() -> Self {
         PlayerCharacter {
-            states: States {
-                idle: CharacterState::new(),
-                rest: HashMap::new(),
-                _secret: (),
-            },
-            properties: Properties {
-                health: 1,
-                name: "new_chara".to_owned(),
-                _secret: (),
-            },
+            states: States::new(),
+            properties: Properties::new(),
         }
     }
 
@@ -94,22 +75,24 @@ impl PlayerCharacter {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
         let player_character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
+        let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
-        Self::load(ctx, assets, &player_character, path)?;
+        Self::load(ctx, assets, &player_character, &character_file_name, path)?;
         Ok(player_character)
     }
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
         player_character: &Self,
+        character_file_name: &str,
         mut path: PathBuf,
     ) -> GameResult<()> {
-        path.push(&player_character.properties.name);
+        path.push(&character_file_name);
 
         _load_fields!(ctx, assets, path, player_character.states => [idle]);
 
-        for state in player_character.states.rest.values() {
-            CharacterState::load(ctx, assets, state, path.clone())?;
+        for (name, state) in player_character.states.rest.iter() {
+            CharacterState::load(ctx, assets, state, name, path.clone())?;
         }
         Ok(())
     }
@@ -119,21 +102,21 @@ impl PlayerCharacter {
         player_character: &Self,
         mut path: PathBuf,
     ) -> GameResult<()> {
-        std::fs::create_dir_all(&path)?;
-
-        path.push(format!("{}.json", &player_character.properties.name));
+        let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &player_character)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
 
         path.pop();
-        path.push(&player_character.properties.name);
+        path.push(&character_file_name);
         std::fs::create_dir_all(&path)?;
 
         _save_fields!(ctx, assets, path, player_character.states => [idle]);
 
-        for state in player_character.states.rest.values() {
+        for (state_name, state) in player_character.states.rest.iter() {
+            path.push(state_name);
             CharacterState::save(ctx, assets, state, path.clone())?;
+            path.pop();
         }
         Ok(())
     }
