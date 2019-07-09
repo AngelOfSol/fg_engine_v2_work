@@ -7,26 +7,10 @@ pub use states::{States, StatesUi};
 use crate::character_state::CharacterState;
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
-use crate::animation::Animation;
 use crate::assets::Assets;
 
-use crate::imgui_extra::UiExtensions;
-
-use imgui::*;
-
 use ggez::{Context, GameResult};
-
-use std::cmp;
-
-use nfd::Response;
-
-use crate::timeline::{AtTime, Timeline};
-
-use crate::typedefs::graphics::Matrix4;
-
-use crate::game::Mode;
 
 use std::fs::File;
 use std::io::BufReader;

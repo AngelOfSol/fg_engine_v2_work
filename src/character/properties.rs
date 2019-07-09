@@ -22,10 +22,6 @@ impl Properties {
 
 pub struct PropertiesUi {}
 impl PropertiesUi {
-    pub fn new() -> Self {
-        Self {}
-    }
-
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Properties) {
         let _ = ui.input_whole(im_str!("Health"), &mut data.health);
         ui.input_string(im_str!("Name"), &mut data.name);
