@@ -29,6 +29,7 @@ impl<T> AtTime<T> for Timeline<T> {
             let diff = self.duration() as isize - duration as isize;
             if diff != 0 {
                 if diff > 0 {
+                    // TODO FIX THIS
                     loop {
                         let diff = self.duration() as isize - self.duration() as isize;
 

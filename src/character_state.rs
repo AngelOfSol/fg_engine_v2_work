@@ -34,6 +34,7 @@ use std::path::PathBuf;
 
 use ggez::GameError;
 
+
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,

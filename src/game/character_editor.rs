@@ -5,15 +5,10 @@ use ggez::{Context, GameResult};
 use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
 
-use crate::character_state::{
-    AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
-};
+use crate::character_state::CharacterState;
 
 use crate::game::StateEditor;
 
-use crate::animation::Animation;
-
-use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
 use crate::character::{PlayerCharacter, PropertiesUi, StatesUi};
@@ -34,28 +29,17 @@ impl CharacterEditor {
     }
 
     pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        if let MessageData::State(mut state) = data {
+        if let MessageData::State(state) = data {
             match mode {
                 Mode::Standalone => (),
                 Mode::New => {
-                    let mut temp_name = "new_state".to_owned();
-                    let mut counter = 1;
-                    loop {
-                        if self
-                            .resource
-                            .states.rest.contains_key(&temp_name)
-                        {
-                            temp_name = format!("new_state ({})", counter);
-                            counter += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                    self.resource.states.rest.insert(temp_name, state);
+                    self.resource.states.rest.insert(
+                        self.resource.states.guarentee_unique_key("new state"),
+                        state,
+                    );
                 }
                 Mode::Edit(name) => {
                     self.resource.states.replace_state(name, state);
-                    
                 }
             }
         }

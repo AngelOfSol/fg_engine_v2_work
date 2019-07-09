@@ -7,7 +7,8 @@ use std::fmt::Display;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Hash, Serialize)]
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
 pub enum MoveType {
     Idle,
     Walk,
