@@ -14,7 +14,7 @@ use ggez::{Context, GameResult};
 
 use crate::assets::Assets;
 
-use crate::game::Mode;
+use crate::editor::Mode;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct States {

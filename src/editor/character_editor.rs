@@ -1,4 +1,4 @@
-use crate::game::{GameState, MessageData, Mode, Transition};
+use crate::editor::{StateEditor, EditorState, MessageData, Mode, Transition};
 
 use ggez::{Context, GameResult};
 
@@ -7,7 +7,6 @@ use crate::imgui_wrapper::ImGuiWrapper;
 
 use crate::character_state::CharacterState;
 
-use crate::game::StateEditor;
 
 use imgui::*;
 
@@ -138,8 +137,8 @@ impl CharacterEditor {
     }
 }
 
-impl Into<GameState> for CharacterEditor {
-    fn into(self) -> GameState {
-        GameState::CharacterEditor(self)
+impl Into<EditorState> for CharacterEditor {
+    fn into(self) -> EditorState {
+        EditorState::CharacterEditor(self)
     }
 }

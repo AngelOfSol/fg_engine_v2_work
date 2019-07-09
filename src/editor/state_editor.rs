@@ -1,4 +1,4 @@
-use crate::game::{GameState, MessageData, Mode, Transition};
+use crate::editor::{EditorState, MessageData, Mode, Transition};
 
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
@@ -17,7 +17,7 @@ use crate::character_state::{
     AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
 };
 
-use crate::game::AnimationEditor;
+use crate::editor::AnimationEditor;
 
 use crate::animation::Animation;
 
@@ -387,8 +387,8 @@ impl StateEditor {
     }
 }
 
-impl Into<GameState> for StateEditor {
-    fn into(self) -> GameState {
-        GameState::StateEditor(self)
+impl Into<EditorState> for StateEditor {
+    fn into(self) -> EditorState {
+        EditorState::StateEditor(self)
     }
 }

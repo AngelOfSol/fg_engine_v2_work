@@ -5,7 +5,7 @@ use ggez::{Context, GameResult};
 use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
-use crate::game::{GameState, Transition, MessageData};
+use crate::editor::{EditorState, Transition, MessageData};
 use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -218,8 +218,8 @@ impl AnimationEditor {
     }
 }
 
-impl Into<GameState> for AnimationEditor {
-    fn into(self) -> GameState {
-        GameState::Animating(self)
+impl Into<EditorState> for AnimationEditor {
+    fn into(self) -> EditorState {
+        EditorState::Animating(self)
     }
 }

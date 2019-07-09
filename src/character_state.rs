@@ -26,7 +26,7 @@ use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
 
-use crate::game::Mode;
+use crate::editor::Mode;
 
 use std::fs::File;
 use std::io::BufReader;

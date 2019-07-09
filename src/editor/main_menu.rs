@@ -5,7 +5,7 @@ use imgui::*;
 use crate::imgui_wrapper::ImGuiWrapper;
 
 use super::{AnimationEditor, CharacterEditor, StateEditor};
-use crate::game::{GameState, Mode, Transition};
+use crate::editor::{EditorState, Mode, Transition};
 
 pub struct MainMenu {
     next: Transition,
@@ -49,6 +49,10 @@ impl MainMenu {
                                 Mode::Standalone,
                             );
                         }
+                        ui.separator();
+                        if ui.menu_item(im_str!("Quit")).build() {
+                            self.next = Transition::Pop(None);
+                        }
                     });
                 });
             })
@@ -57,8 +61,8 @@ impl MainMenu {
     }
 }
 
-impl Into<GameState> for MainMenu {
-    fn into(self) -> GameState {
-        GameState::MainMenu(self)
+impl Into<EditorState> for MainMenu {
+    fn into(self) -> EditorState {
+        EditorState::MainMenu(self)
     }
 }
