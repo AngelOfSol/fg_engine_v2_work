@@ -61,6 +61,23 @@ impl StateEditor {
             },
         }
     }
+    pub fn with_state(state: CharacterState) -> Self {
+        Self {
+            resource: state,
+            transition: Transition::None,
+            frame: 0,
+            is_playing: true,
+            ui_data: CharacterStateUi::new(),
+            draw_mode: DrawMode {
+                collision_alpha: 0.15,
+                hurtbox_alpha: 0.15,
+                hitbox_alpha: 0.15,
+                debug_animation: true,
+                show_travel: true,
+                show_axes: true,
+            },
+        }
+    }
 
     pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
         if let MessageData::Animation(mut animation) = data {
@@ -258,7 +275,9 @@ impl StateEditor {
                             self.ui_data = CharacterStateUi::new();
                         }
                         if ui.menu_item(im_str!("Save")).build() {
-                            if let Ok(nfd::Response::Okay(path)) = nfd::open_pick_folder(None) {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_save_dialog(Some("json"), None)
+                            {
                                 editor_result = CharacterState::save(
                                     ctx,
                                     assets,

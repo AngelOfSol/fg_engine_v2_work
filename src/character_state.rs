@@ -34,13 +34,13 @@ use std::path::PathBuf;
 
 use ggez::GameError;
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
     pub cancels: Timeline<CancelSet>,
     pub hitboxes: Timeline<HitboxSet>,
-    pub name: String,
 }
 
 impl CharacterState {
@@ -52,17 +52,19 @@ impl CharacterState {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
         let state = serde_json::from_reader::<_, CharacterState>(buf_read).unwrap();
+        let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
-        CharacterState::load(ctx, assets, &state, path)?;
+        CharacterState::load(ctx, assets, &state, &name, path)?;
         Ok(state)
     }
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
         state: &CharacterState,
+        name: &str,
         mut path: PathBuf,
     ) -> GameResult<()> {
-        path.push(&state.name);
+        path.push(name);
         for animation in &state.animations {
             Animation::load(ctx, assets, &animation.animation, path.clone())?;
         }
@@ -74,18 +76,19 @@ impl CharacterState {
         state: &CharacterState,
         mut path: PathBuf,
     ) -> GameResult<()> {
-        std::fs::create_dir_all(&path)?;
+        let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
 
-        path.push(format!("{}.json", &state.name));
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &state)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
 
         path.pop();
-        path.push(&state.name);
+        path.push(&name);
         std::fs::create_dir_all(&path)?;
         for animation in &state.animations {
+            path.push(&format!("{}.json", &animation.animation.name));
             Animation::save(ctx, assets, &animation.animation, path.clone())?;
+            path.pop();
         }
         Ok(())
     }
@@ -96,7 +99,6 @@ impl CharacterState {
             flags: vec![(Flags::new(), 1)],
             cancels: vec![(CancelSet::new(), 1)],
             hitboxes: vec![(HitboxSet::new(), 1)],
-            name: "new_state".to_owned(),
         }
     }
 
@@ -173,7 +175,6 @@ impl CharacterStateUi {
     ) -> GameResult<Option<Mode>> {
         let mut ret = None;
 
-        ui.input_string(im_str!("Name"), &mut data.name);
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         if ui.collapsing_header(im_str!("Animations")).build() {
