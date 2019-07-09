@@ -110,7 +110,7 @@ impl AnimationEditor {
                             self.ui_data = AnimationUi::new();
                         }
                         if ui.menu_item(im_str!("Save")).build() {
-                            if let Ok(nfd::Response::Okay(path)) = nfd::open_pick_folder(None) {
+                            if let Ok(nfd::Response::Okay(path)) = nfd::open_save_dialog(Some("json"), None) {
                                 editor_result = Animation::save(
                                     ctx,
                                     assets,
