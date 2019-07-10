@@ -15,8 +15,11 @@ use ggez::timer;
 
 use std::path::PathBuf;
 
-
 use ggez::event::{KeyCode, KeyMods};
+
+use gilrs::{Button, EventType, Gilrs};
+
+use crate::input::{InputBuffer, PadControlScheme};
 
 pub struct PlayArea {
     // play area is from -320_00 to 320_00, and from -225_00 to 0_00
@@ -25,7 +28,9 @@ pub struct PlayArea {
 pub struct Match {
     resources: Yuyuko,
     state: YuyukoState,
-    input: bool,
+    control_scheme: PadControlScheme,
+    input: InputBuffer,
+    pads_context: Gilrs,
     background: Stage,
 }
 
@@ -34,7 +39,9 @@ impl Match {
         Ok(Self {
             resources: Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?,
             state: YuyukoState::new(),
-            input: false,
+            pads_context: Gilrs::new()?,
+            control_scheme: PadControlScheme::new(),
+            input: InputBuffer::new(),
             background: Stage::new(ctx, "\\bg_14.png")?,
         })
     }
@@ -43,35 +50,25 @@ impl Match {
 impl EventHandler for Match {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         while timer::check_update_time(ctx, 60) {
-            if self.input {
-                self.state = self.state.update_frame(&self.resources);
+            let mut current_frame = self.control_scheme.update_frame(*self.input.top());
+            while let Some(event) = self.pads_context.next_event() {
+                let id = event.id;
+                let event = event.event;
+                match event {
+                    EventType::ButtonPressed(button, _) => {
+                        current_frame = self.control_scheme.handle_press(button, current_frame);
+                    }
+                    EventType::ButtonReleased(button, _) => {
+                        current_frame = self.control_scheme.handle_release(button, current_frame);
+                    }
+                    _ => (),
+                }
             }
+            self.input.push(current_frame);
+
+            self.state = self.state.update_frame(&self.resources, &self.input);
         }
         Ok(())
-    }
-
-    
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: KeyCode,
-        keymod: KeyMods,
-        _repeat: bool,
-    ) {
-        if keycode == KeyCode::A {
-            self.input = true;
-        }
-    }
-    
-    fn key_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        keycode: KeyCode,
-        keymod: KeyMods,
-    ) {
-        if keycode == KeyCode::A {
-            self.input = false;
-        }
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {

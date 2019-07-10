@@ -41,6 +41,9 @@ mod game_match;
 
 mod stage;
 
+#[macro_use]
+mod input;
+
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -76,7 +79,6 @@ fn main() {
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
 
-    dbg!(ggez::graphics::transform(&ctx));
     let mut runner = Runner::new(&mut ctx).unwrap();
     runner.run(&mut ctx, &mut event_loop);
 }

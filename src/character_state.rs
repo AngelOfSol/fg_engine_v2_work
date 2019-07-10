@@ -1,7 +1,7 @@
-mod animation_data;
-mod cancel_set;
-mod flags;
-mod hitbox_set;
+pub mod animation_data;
+pub mod cancel_set;
+pub mod flags;
+pub mod hitbox_set;
 
 use crate::animation::Animation;
 use crate::assets::Assets;
@@ -27,6 +27,7 @@ use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 
 use crate::editor::Mode;
+
 
 use std::fs::File;
 use std::io::BufReader;
@@ -215,12 +216,13 @@ impl CharacterStateUi {
                 ret = Some(Mode::New);
             }
             if let Some(animation) = self.current_animation {
-                let animation = &mut data.animations[animation];
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("Edit")) {
-                    ret = Some(Mode::Edit(animation.animation.name.clone()));
+                if let Some(animation) = &mut data.animations.get_mut(animation) {                    
+                    ui.same_line(0.0);
+                    if ui.small_button(im_str!("Edit")) {
+                        ret = Some(Mode::Edit(animation.animation.name.clone()));
+                    }
+                    AnimationDataUi::new().draw_ui(ui, animation)?;
                 }
-                AnimationDataUi::new().draw_ui(ui, animation)?;
             }
             ui.separator();
             ui.pop_id();

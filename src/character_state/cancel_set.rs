@@ -64,9 +64,9 @@ impl Display for MoveType {
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct CancelSet {
-    always: HashSet<MoveType>,
-    hit: HashSet<MoveType>,
-    block: HashSet<MoveType>,
+    pub always: HashSet<MoveType>,
+    pub hit: HashSet<MoveType>,
+    pub block: HashSet<MoveType>,
 }
 
 impl CancelSet {

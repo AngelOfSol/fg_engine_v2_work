@@ -280,12 +280,8 @@ impl StateEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                editor_result = CharacterState::save(
-                                    ctx,
-                                    assets,
-                                    &self.resource,
-                                    path,
-                                );
+                                editor_result =
+                                    CharacterState::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if ui.menu_item(im_str!("Open")).build() {
@@ -309,6 +305,7 @@ impl StateEditor {
 
                         if ui.menu_item(im_str!("Back")).build() {
                             let ret = std::mem::replace(&mut self.resource, CharacterState::new());
+                            self.ui_data = CharacterStateUi::new();
                             self.transition = Transition::Pop(Some(MessageData::State(ret)));
                         }
                     });

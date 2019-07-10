@@ -19,10 +19,16 @@ pub struct Runner {
 
 impl Runner {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
-        Ok(Runner {
-            state: RunnerState::Match(Match::new(ctx)?),
-            //state: RunnerState::Editor(GameEditor::new(ctx)?),
-        })
+        let state = {
+            let mut state = RunnerState::Match(Match::new(ctx)?);
+            for arg in std::env::args() {
+                if arg == "--editor" {
+                    state = RunnerState::Editor(GameEditor::new(ctx)?);
+                }
+            }
+            state
+        };
+        Ok(Runner { state })
     }
     pub fn run(&mut self, ctx: &mut Context, event_loop: &mut winit::EventsLoop) {
         loop {

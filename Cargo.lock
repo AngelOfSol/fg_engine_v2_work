@@ -511,6 +511,7 @@ dependencies = [
  "gfx_core 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gfx_device_gl 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ggez 0.5.0-rc.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gilrs 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui 0.1.0-rc.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-gfx-renderer 0.1.0-rc.1 (registry+https://github.com/rust-lang/crates.io-index)",

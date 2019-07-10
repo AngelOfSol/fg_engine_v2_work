@@ -17,9 +17,11 @@ use std::io::BufReader;
 
 use std::collections::HashMap;
 
-use std::hash::Hash;
-
 use crate::timeline::AtTime;
+
+use crate::character_state::cancel_set::MoveType;
+
+use crate::input::{Axis, Button, ButtonState, InputBuffer};
 
 pub struct Yuyuko {
     assets: Assets,
@@ -96,7 +98,7 @@ impl YuyukoState {
             current_state: (0, YuyukoMove::Idle),
         }
     }
-    pub fn update_frame(&self, data: &Yuyuko) -> Self {
+    pub fn update_frame(&self, data: &Yuyuko, input: &InputBuffer) -> Self {
         let (frame, yuyu_move) = self.current_state;
         // if the next frame would be out of bounds
         let (frame, yuyu_move) = if frame >= data.states[&yuyu_move].duration() - 1 {
@@ -104,7 +106,25 @@ impl YuyukoState {
         } else {
             (frame + 1, yuyu_move)
         };
-        let _cancels = data.states[&yuyu_move].cancels.at_time(frame);
+        let cancels = data.states[&yuyu_move].cancels.at_time(frame);
+
+        let (frame, yuyu_move) = {
+            let (new_move, new_type) = if input.top()[Button::A] == ButtonState::JustPressed {
+                (YuyukoMove::Attack5A, MoveType::Melee)
+            } else if input.top().axis == Axis::Right {
+                (YuyukoMove::WalkForward, MoveType::Walk)
+            } else if input.top().axis == Axis::Left {
+                (YuyukoMove::WalkBackward, MoveType::Walk)
+            } else {
+                (YuyukoMove::Idle, MoveType::Idle)
+            };
+            if yuyu_move != new_move && cancels.always.contains(&new_type) {
+                (0, new_move)
+            } else {
+                (frame, yuyu_move)
+            }
+        };
+
         let _hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
         let flags = data.states[&yuyu_move].flags.at_time(frame);
 
@@ -134,13 +154,14 @@ impl YuyukoState {
         world: graphics::Matrix4,
     ) -> GameResult<()> {
         let (frame, yuyu_move) = self.current_state;
+        let collision = &data.states[&yuyu_move].hitboxes.at_time(frame).collision;
         data.states[&yuyu_move].draw_at_time(
             ctx,
             &data.assets,
             frame,
             world
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    self.position.into_graphical(),
+                    (-collision.center + self.position).into_graphical(),
                 )),
         )?;
         Ok(())
