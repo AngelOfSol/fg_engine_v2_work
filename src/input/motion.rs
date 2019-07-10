@@ -1,4 +1,4 @@
-use super::{Axis, InputBuffer, MOTION_DIRECTION_SIZE, Button};
+use super::{Axis, Button, ButtonState, InputBuffer, MOTION_DIRECTION_SIZE};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Direction {
@@ -20,7 +20,6 @@ pub enum Standing {
     Standing,
     Crouching,
 }
-
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Input {
@@ -46,11 +45,25 @@ impl Input {
     }
 }
 
+pub fn read_inputs(buffer: &InputBuffer) -> Vec<Input> {
+    let mut ret = vec![
+        read_command_normal(buffer),
+        read_normal(buffer),
+        read_dashing(buffer),
+        read_walk(buffer),
+        read_idle(buffer),
+    ];
+
+    ret.into_iter()
+        .filter(|item| item.is_some())
+        .map(|item| item.unwrap())
+        .collect()
+}
+
 fn read_idle(buffer: &InputBuffer) -> Option<Input> {
     match buffer.top().axis {
-        Axis::Neutral => Some(Input::Idle(Standing::Standing)),
+        _ => Some(Input::Idle(Standing::Standing)),
         Axis::DownLeft | Axis::Down | Axis::DownRight => Some(Input::Idle(Standing::Crouching)),
-        _ => None,
     }
 }
 
@@ -73,7 +86,7 @@ fn read_dashing(buffer: &InputBuffer) -> Option<Input> {
         return None;
     }
     let (time, should_be_neutral) = inputs[1];
-    if time > MOTION_DIRECTION_SIZE || axis != Axis::Neutral {
+    if time > MOTION_DIRECTION_SIZE || should_be_neutral != Axis::Neutral {
         return None;
     }
     if inputs[2].1 == axis {
@@ -84,7 +97,32 @@ fn read_dashing(buffer: &InputBuffer) -> Option<Input> {
 }
 
 fn read_normal(buffer: &InputBuffer) -> Option<Input> {
-    let top = buffer.top();
+    let axis = buffer.top().axis;
+    for state in buffer.iter().take(8) {
+        for (id, state) in state.buttons.iter().enumerate() {
+            if *state == ButtonState::JustPressed {
+                return Some(Input::Normal(axis.get_standing(), Button::from_usize(id)));
+            }
+        }
+    }
+    None
+}
+
+fn read_command_normal(buffer: &InputBuffer) -> Option<Input> {
+    let axis = buffer.top().axis;
+    if axis.is_command() {
+        for state in buffer.iter().take(8) {
+            for (id, state) in state.buttons.iter().enumerate() {
+                if *state == ButtonState::JustPressed {
+                    return Some(Input::CommandNormal(
+                        axis.get_standing(),
+                        axis.get_direction().unwrap(),
+                        Button::from_usize(id),
+                    ));
+                }
+            }
+        }
+    }
     None
 }
 
@@ -110,7 +148,7 @@ macro_rules! numpad_notation {
         Input::CommandNormal(Standing::Crouching, Direction::Forward, Button::$button)
     };
     (5$button:ident) => {
-        Input::Normal(Standing::Crouching, Button::$button)
+        Input::Normal(Standing::Standing, Button::$button)
     };
     (2$button:ident) => {
         Input::Normal(Standing::Crouching, Button::$button)
@@ -133,8 +171,4 @@ macro_rules! numpad_notation {
     (4) => {
         Input::Walking(Direction::Backward)
     };
-}
-
-fn rest() {
-    numpad_notation!(236 A);
 }

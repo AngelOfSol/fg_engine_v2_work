@@ -1,7 +1,6 @@
 #![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping)]
 
 use ggez::conf;
-use ggez::event;
 
 use ggez::ContextBuilder;
 

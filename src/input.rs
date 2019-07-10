@@ -2,26 +2,27 @@ use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
 
-use ringbuffer::{RingBufferIter, RingBuffer};
+use ringbuffer::{RingBuffer, RingBufferIter};
 
 const MOTION_DIRECTION_SIZE: usize = 5;
 const MOTION_LENGTH: usize = 5 * MOTION_DIRECTION_SIZE;
 const BUFFER_LENGTH: usize = MOTION_LENGTH + MOTION_DIRECTION_SIZE;
 
 mod control_scheme;
+
+#[macro_use]
 mod motion;
 mod ringbuffer;
 
 use std::ops::{Index, IndexMut};
 
 pub use control_scheme::PadControlScheme;
-
-use motion::Direction;
+pub use motion::{read_inputs, Input, Direction, Standing};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {
     pub axis: Axis,
-    buttons: [ButtonState; 4]
+    buttons: [ButtonState; 4],
 }
 
 impl Index<Button> for InputState {
@@ -40,13 +41,17 @@ impl Default for InputState {
     fn default() -> Self {
         Self {
             axis: Axis::Neutral,
-            buttons: [ButtonState::Released,ButtonState::Released,ButtonState::Released,ButtonState::Released],
+            buttons: [
+                ButtonState::Released,
+                ButtonState::Released,
+                ButtonState::Released,
+                ButtonState::Released,
+            ],
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
-
 pub enum ButtonState {
     Released,
     JustReleased,
@@ -63,7 +68,17 @@ pub enum Button {
     D = 3,
 }
 
-
+impl Button {
+    pub fn from_usize(value: usize) -> Self {
+        match value {
+            0 => Button::A,
+            1 => Button::B,
+            2 => Button::C,
+            3 => Button::D,
+            _ => panic!("invalid button value"),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Axis {
@@ -79,24 +94,33 @@ pub enum Axis {
 }
 
 impl Axis {
-    pub fn is_horizontal(&self) -> bool {
+    pub fn is_horizontal(self) -> bool {
         match self {
             Axis::Left | Axis::Right => true,
             _ => false,
         }
     }
-    pub fn is_neutral(&self) -> bool {
+    pub fn is_command(self) -> bool {
+        !self.is_neutral()
+    }
+    pub fn is_neutral(self) -> bool {
         match self {
-            Axis::Neutral | Axis::Down => true,
+            Axis::Up | Axis::Neutral | Axis::Down => true,
             _ => false,
         }
     }
 
-    pub fn get_direction(&self) -> Option<Direction> {
-        match self { 
-            Axis::UpLeft | Axis::Left | Axis::DownLeft  => Some(Direction::Backward), 
+    pub fn get_direction(self) -> Option<Direction> {
+        match self {
+            Axis::UpLeft | Axis::Left | Axis::DownLeft => Some(Direction::Backward),
             Axis::UpRight | Axis::Right | Axis::DownRight => Some(Direction::Forward),
-            _ => None
+            _ => None,
+        }
+    }
+    pub fn get_standing(self) -> Standing {
+        match self {
+            Axis::DownRight | Axis::Down | Axis::DownLeft => Standing::Crouching,
+            _ => Standing::Standing,
         }
     }
 
@@ -181,7 +205,7 @@ impl InputBuffer {
         self.buffer.top()
     }
 
-    pub fn iter(& self) -> RingBufferIter<'_> {
+    pub fn iter(&self) -> RingBufferIter<'_> {
         self.buffer.iter()
     }
 

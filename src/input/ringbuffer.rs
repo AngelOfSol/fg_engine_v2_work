@@ -56,12 +56,12 @@ pub struct DirectionIter<'ring> {
 impl<'ring> Iterator for DirectionIter<'ring> {
     type Item = (usize, Axis);
     fn next(&mut self) -> Option<Self::Item> {
-        // TODO fix this   
+        // TODO fix this
         if self.index >= BUFFER_LENGTH {
             None
         } else {
             let mut duration = 0;
-            while self.buffer[self.index].axis == self.current_axis {
+            while self.buffer[self.index].axis == self.current_axis && self.index < BUFFER_LENGTH {
                 duration += 1;
                 self.index += 1;
             }

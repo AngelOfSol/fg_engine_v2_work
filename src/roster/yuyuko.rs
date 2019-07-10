@@ -21,7 +21,9 @@ use crate::timeline::AtTime;
 
 use crate::character_state::cancel_set::MoveType;
 
-use crate::input::{Axis, Button, ButtonState, InputBuffer};
+use crate::input::{read_inputs, Button, Direction, Input, InputBuffer, Standing};
+
+use crate::numpad_notation;
 
 pub struct Yuyuko {
     assets: Assets,
@@ -109,15 +111,27 @@ impl YuyukoState {
         let cancels = data.states[&yuyu_move].cancels.at_time(frame);
 
         let (frame, yuyu_move) = {
-            let (new_move, new_type) = if input.top()[Button::A] == ButtonState::JustPressed {
-                (YuyukoMove::Attack5A, MoveType::Melee)
-            } else if input.top().axis == Axis::Right {
-                (YuyukoMove::WalkForward, MoveType::Walk)
-            } else if input.top().axis == Axis::Left {
-                (YuyukoMove::WalkBackward, MoveType::Walk)
-            } else {
-                (YuyukoMove::Idle, MoveType::Idle)
-            };
+            let mut test_hash = HashMap::new();
+            test_hash.insert(numpad_notation!(5), (YuyukoMove::Idle, MoveType::Idle));
+            test_hash.insert(
+                numpad_notation!(6),
+                (YuyukoMove::WalkForward, MoveType::Walk),
+            );
+            test_hash.insert(
+                numpad_notation!(4),
+                (YuyukoMove::WalkBackward, MoveType::Walk),
+            );
+            test_hash.insert(
+                numpad_notation!(5 A),
+                (YuyukoMove::Attack5A, MoveType::Melee),
+            );
+            let (new_move, new_type) = read_inputs(&input)
+                .into_iter()
+                .map(|move_input| test_hash.get(&move_input))
+                .fold(None, |acc, item| acc.or(item))
+                .copied()
+                .unwrap_or((YuyukoMove::Idle, MoveType::Idle));
+
             if yuyu_move != new_move && cancels.always.contains(&new_type) {
                 (0, new_move)
             } else {
