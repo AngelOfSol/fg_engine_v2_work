@@ -1,3 +1,5 @@
+#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping)]
+
 use ggez::conf;
 use ggez::event;
 
@@ -28,11 +30,16 @@ mod typedefs;
 
 mod hitbox;
 
+#[macro_use]
 mod character;
 
 mod roster;
 
 mod runner;
+
+mod game_match;
+
+mod stage;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
@@ -63,11 +70,13 @@ fn main() {
     } else {
         println!("Unexpected success.");
     }
+    ggez::graphics::set_default_filter(&mut ctx, ggez::graphics::FilterMode::Nearest);
 
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
 
+    dbg!(ggez::graphics::transform(&ctx));
     let mut runner = Runner::new(&mut ctx).unwrap();
     runner.run(&mut ctx, &mut event_loop);
 }

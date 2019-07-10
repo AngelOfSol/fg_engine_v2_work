@@ -5,7 +5,7 @@ use ggez::{Context, GameResult};
 use crate::animation::{Animation, AnimationUi};
 
 use crate::assets::Assets;
-use crate::editor::{EditorState, Transition, MessageData};
+use crate::editor::{EditorState, MessageData, Transition};
 use crate::timeline::AtTime;
 
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -110,13 +110,12 @@ impl AnimationEditor {
                             self.ui_data = AnimationUi::new();
                         }
                         if ui.menu_item(im_str!("Save")).build() {
-                            if let Ok(nfd::Response::Okay(path)) = nfd::open_save_dialog(Some("json"), None) {
-                                editor_result = Animation::save(
-                                    ctx,
-                                    assets,
-                                    &self.resource,
-                                    PathBuf::from(path),
-                                );
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_save_dialog(Some("json"), None)
+                            {
+                                let mut path = PathBuf::from(path);
+                                path.set_extension("json");
+                                editor_result = Animation::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if ui.menu_item(im_str!("Open")).build() {

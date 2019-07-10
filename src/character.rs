@@ -35,7 +35,8 @@ macro_rules! _save_fields {
     () => {
     };
 }
-macro_rules! _load_fields {
+#[macro_export]
+macro_rules! load_fields {
     ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
         $(
             CharacterState::load($ctx, $assets, &$obj.$field, stringify!($field), $path.clone())?;
@@ -75,7 +76,7 @@ impl PlayerCharacter {
     ) -> GameResult<()> {
         path.push(&character_file_name);
 
-        _load_fields!(ctx, assets, path, player_character.states => [idle]);
+        load_fields!(ctx, assets, path, player_character.states => [idle]);
 
         for (name, state) in player_character.states.rest.iter() {
             CharacterState::load(ctx, assets, state, name, path.clone())?;
@@ -89,6 +90,7 @@ impl PlayerCharacter {
         mut path: PathBuf,
     ) -> GameResult<()> {
         let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
+
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &player_character)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;

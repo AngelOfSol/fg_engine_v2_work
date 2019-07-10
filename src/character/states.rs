@@ -104,7 +104,10 @@ impl StatesUi {
         let mut to_delete = None;
         let mut to_change = None;
 
-        for (idx, (name, value)) in data.rest.iter_mut().enumerate() {
+        let mut state_list = data.rest.iter_mut().collect::<Vec<_>>();
+        state_list.sort_by(|lhs, rhs|  lhs.0.cmp(rhs.0));
+
+        for (idx, (name, value)) in state_list.into_iter().enumerate() {
             ui.push_id(&format!("Rest {}", idx));
             let mut buffer = name.clone();
             if ui.input_string(im_str!("Name"), &mut buffer) {

@@ -278,11 +278,13 @@ impl StateEditor {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
+                                let mut path = PathBuf::from(path);
+                                path.set_extension("json");
                                 editor_result = CharacterState::save(
                                     ctx,
                                     assets,
                                     &self.resource,
-                                    PathBuf::from(path),
+                                    path,
                                 );
                             }
                         }

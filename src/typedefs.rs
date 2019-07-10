@@ -3,6 +3,10 @@ pub mod graphics {
     pub type Vec2 = nalgebra::Vector2<Float>;
     pub type Vec3 = nalgebra::Vector3<Float>;
     pub type Matrix4 = nalgebra::Matrix4<Float>;
+
+    pub fn up_dimension(vec2: Vec2) -> Vec3 {
+        Vec3::new(vec2.x, vec2.y, 0.0)
+    }
 }
 
 pub mod collision {
@@ -25,7 +29,7 @@ pub mod collision {
     impl IntoGraphical for Vec2 {
         type Graphical = super::graphics::Vec2;
         fn into_graphical(self) -> Self::Graphical {
-            self.map(|item| item.into_graphical())
+            Self::Graphical::new(self.x.into_graphical(), -self.y.into_graphical())
         }
     }
 

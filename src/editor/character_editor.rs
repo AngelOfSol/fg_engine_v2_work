@@ -1,4 +1,4 @@
-use crate::editor::{StateEditor, EditorState, MessageData, Mode, Transition};
+use crate::editor::{EditorState, MessageData, Mode, StateEditor, Transition};
 
 use ggez::{Context, GameResult};
 
@@ -6,7 +6,6 @@ use crate::assets::Assets;
 use crate::imgui_wrapper::ImGuiWrapper;
 
 use crate::character_state::CharacterState;
-
 
 use imgui::*;
 
@@ -98,12 +97,10 @@ impl CharacterEditor {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
-                                editor_result = PlayerCharacter::save(
-                                    ctx,
-                                    assets,
-                                    &self.resource,
-                                    PathBuf::from(path),
-                                );
+                                let mut path = PathBuf::from(path);
+                                path.set_extension("json");
+                                editor_result =
+                                    PlayerCharacter::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if ui.menu_item(im_str!("Open")).build() {
