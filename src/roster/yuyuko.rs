@@ -85,7 +85,6 @@ impl YuyukoData {
 pub struct YuyukoState {
     velocity: collision::Vec2,
     position: collision::Vec2,
-    airborne: bool,
     current_state: (usize, YuyukoMove),
 }
 
@@ -94,7 +93,6 @@ impl YuyukoState {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
-            airborne: true,
             current_state: (0, YuyukoMove::Idle),
         }
     }
@@ -110,14 +108,12 @@ impl YuyukoState {
         let _hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
         let flags = data.states[&yuyu_move].flags.at_time(frame);
 
-        let new_airborne = flags.airborne;
-
         let new_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
         } else {
             self.velocity
                 // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
-                + if new_airborne {
+                + if flags.airborne {
                     collision::Vec2::new(0_00, -0_20) // TODO: tune gravity
                 } else {
                     collision::Vec2::zeros()
@@ -127,7 +123,6 @@ impl YuyukoState {
         Self {
             velocity: new_velocity,
             position: self.position + new_velocity,
-            airborne: new_airborne,
             current_state: (frame, yuyu_move),
         }
     }
