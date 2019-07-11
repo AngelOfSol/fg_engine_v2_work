@@ -125,7 +125,7 @@ impl YuyukoState {
                 numpad_notation!(5 A),
                 (YuyukoMove::Attack5A, MoveType::Melee),
             );
-            let (new_move, new_type) = read_inputs(&input)
+            let (new_move, new_type) = read_inputs(&input, true)
                 .into_iter()
                 .map(|move_input| test_hash.get(&move_input))
                 .fold(None, |acc, item| acc.or(item))

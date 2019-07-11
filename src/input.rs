@@ -122,6 +122,14 @@ impl Axis {
         }
     }
 
+    pub fn get_vertical(self) -> Axis {
+        match self {
+            Axis::UpLeft | Axis::Up | Axis::UpRight => Axis::Up ,
+            Axis::DownLeft | Axis::Down | Axis::DownRight => Axis::Down,
+            Axis::Left | Axis::Neutral | Axis::Right => Axis::Neutral,
+        }
+    }
+
     pub fn add(self, new: Axis) -> Self {
         match new {
             Axis::UpRight | Axis::UpLeft | Axis::DownRight | Axis::DownLeft => {
