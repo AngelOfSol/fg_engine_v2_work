@@ -1,3 +1,4 @@
+use super::ringbuffer::DirectionIter;
 use super::{Axis, Button, ButtonState, InputBuffer, MOTION_DIRECTION_SIZE};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -47,6 +48,8 @@ impl Input {
 
 pub fn read_inputs(buffer: &InputBuffer) -> Vec<Input> {
     [
+        read_dragon_punch(buffer),
+        read_quarter_circle(buffer),
         read_dash_macro(buffer),
         read_command_normal(buffer),
         read_normal(buffer),
@@ -88,11 +91,7 @@ fn read_dash_macro(buffer: &InputBuffer) -> Option<Input> {
 }
 
 fn read_dashing(buffer: &InputBuffer) -> Option<Input> {
-    let inputs = buffer
-        .iter()
-        .into_direction_iter()
-        .take(3)
-        .collect::<Vec<_>>();
+    let inputs = buffer.iter().into_direction_iter().collect::<Vec<_>>();
     let (time, axis) = inputs[0];
     if time > MOTION_DIRECTION_SIZE || !axis.is_horizontal() {
         return None;
@@ -131,6 +130,82 @@ fn read_command_normal(buffer: &InputBuffer) -> Option<Input> {
                         axis.get_direction().unwrap(),
                         Button::from_usize(id),
                     ));
+                }
+            }
+        }
+    }
+    None
+}
+
+fn read_quarter_circle_motion(iter: DirectionIter<'_>) -> Option<Direction> {
+    let inputs = iter.take(3).collect::<Vec<_>>();
+    let (time, axis) = inputs[0];
+    if time > MOTION_DIRECTION_SIZE || axis != Axis::Down {
+        return None;
+    }
+    let (time, axis) = inputs[1];
+    if time > MOTION_DIRECTION_SIZE || !(axis == Axis::DownLeft || axis == Axis::DownRight) {
+        return None;
+    }
+    let (_, axis) = inputs[2];
+    if axis.is_horizontal() {
+        axis.get_direction()
+    } else {
+        None
+    }
+}
+fn read_quarter_circle(buffer: &InputBuffer) -> Option<Input> {
+    let mut iter = buffer.iter();
+    let mut count = 0;
+    while let Some(state) = iter.next() {
+        if count >= 8 {
+            break;
+        }
+        count += 1;
+        for (id, state) in state.buttons.iter().enumerate() {
+            if *state == ButtonState::JustPressed {
+                if let Some(direction) =
+                    read_quarter_circle_motion(iter.clone().into_direction_iter())
+                {
+                    return Some(Input::QuarterCircle(direction, Button::from_usize(id)));
+                }
+            }
+        }
+    }
+    None
+}
+
+fn read_dragon_punch_motion(iter: DirectionIter<'_>) -> Option<Direction> {
+    let inputs = iter.take(3).collect::<Vec<_>>();
+    let (time, axis) = inputs[0];
+    if time > MOTION_DIRECTION_SIZE || !axis.is_horizontal() {
+        return None;
+    }
+    let (time, down_input) = inputs[1];
+    if time > MOTION_DIRECTION_SIZE || down_input != Axis::Down {
+        return None;
+    }
+    let (_, end_axis) = inputs[2];
+    if end_axis.get_direction() == axis.get_direction() {
+        axis.get_direction()
+    } else {
+        None
+    }
+}
+fn read_dragon_punch(buffer: &InputBuffer) -> Option<Input> {
+    let mut iter = buffer.iter();
+    let mut count = 0;
+    while let Some(state) = iter.next() {
+        if count >= 8 {
+            break;
+        }
+        count += 1;
+        for (id, state) in state.buttons.iter().enumerate() {
+            if *state == ButtonState::JustPressed {
+                if let Some(direction) =
+                    read_dragon_punch_motion(iter.clone().into_direction_iter())
+                {
+                    return Some(Input::DragonPunch(direction, Button::from_usize(id)));
                 }
             }
         }
