@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashMap;
-
 use ringbuffer::{RingBuffer, RingBufferIter};
 
 const MOTION_DIRECTION_SIZE: usize = 5;
@@ -17,7 +15,7 @@ mod ringbuffer;
 use std::ops::{Index, IndexMut};
 
 pub use control_scheme::PadControlScheme;
-pub use motion::{read_inputs, Input, Direction, Standing};
+pub use motion::{read_inputs, Direction, Input, Standing};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {

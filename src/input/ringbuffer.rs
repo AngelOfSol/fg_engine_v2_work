@@ -30,13 +30,6 @@ impl RingBuffer {
             index: 0,
         }
     }
-    pub fn direction_iter(&self) -> DirectionIter<'_> {
-        DirectionIter {
-            buffer: &self,
-            index: 0,
-            current_axis: self.buffer[0].axis,
-        }
-    }
 }
 
 impl Index<usize> for RingBuffer {

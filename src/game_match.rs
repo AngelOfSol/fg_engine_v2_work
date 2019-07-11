@@ -9,21 +9,17 @@ use crate::stage::Stage;
 
 use crate::roster::{Yuyuko, YuyukoState};
 
-use crate::assets::Assets;
-
 use ggez::timer;
 
 use std::path::PathBuf;
 
-use ggez::event::{KeyCode, KeyMods};
-
-use gilrs::{Button, EventType, Gilrs};
+use gilrs::{EventType, Gilrs};
 
 use crate::input::{InputBuffer, PadControlScheme};
 
-pub struct PlayArea {
+/*pub struct PlayArea {
     // play area is from -320_00 to 320_00, and from -225_00 to 0_00
-}
+}*/
 
 pub struct Match {
     resources: Yuyuko,
@@ -52,7 +48,7 @@ impl EventHandler for Match {
         while timer::check_update_time(ctx, 60) {
             let mut current_frame = self.control_scheme.update_frame(*self.input.top());
             while let Some(event) = self.pads_context.next_event() {
-                let id = event.id;
+                // let id = event.id;
                 let event = event.event;
                 match event {
                     EventType::ButtonPressed(button, _) => {

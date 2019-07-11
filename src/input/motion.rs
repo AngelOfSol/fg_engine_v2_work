@@ -46,24 +46,24 @@ impl Input {
 }
 
 pub fn read_inputs(buffer: &InputBuffer) -> Vec<Input> {
-    let mut ret = vec![
+    [
+        read_dash_macro(buffer),
         read_command_normal(buffer),
         read_normal(buffer),
         read_dashing(buffer),
         read_walk(buffer),
         read_idle(buffer),
-    ];
-
-    ret.into_iter()
-        .filter(|item| item.is_some())
-        .map(|item| item.unwrap())
-        .collect()
+    ]
+    .iter()
+    .filter(|item| item.is_some())
+    .map(|item| item.unwrap())
+    .collect()
 }
 
 fn read_idle(buffer: &InputBuffer) -> Option<Input> {
     match buffer.top().axis {
-        _ => Some(Input::Idle(Standing::Standing)),
         Axis::DownLeft | Axis::Down | Axis::DownRight => Some(Input::Idle(Standing::Crouching)),
+        _ => Some(Input::Idle(Standing::Standing)),
     }
 }
 
@@ -72,6 +72,18 @@ fn read_walk(buffer: &InputBuffer) -> Option<Input> {
         Axis::Left => Some(Input::Walking(Direction::Backward)),
         Axis::Right => Some(Input::Walking(Direction::Forward)),
         _ => None,
+    }
+}
+
+fn read_dash_macro(buffer: &InputBuffer) -> Option<Input> {
+    let top = buffer.top();
+    if top.axis.is_horizontal()
+        && top[Button::A] == ButtonState::JustPressed
+        && top[Button::B] == ButtonState::JustPressed
+    {
+        Some(Input::Dashing(top.axis.get_direction().unwrap()))
+    } else {
+        None
     }
 }
 

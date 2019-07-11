@@ -15,11 +15,18 @@ impl ControlScheme<GilButton> {
     pub fn new() -> Self {
         let mut ret = Self {
             axis: HashMap::new(),
-            buttons: [HashSet::new(),HashSet::new(),HashSet::new(),HashSet::new(),],
+            buttons: [
+                HashSet::new(),
+                HashSet::new(),
+                HashSet::new(),
+                HashSet::new(),
+            ],
         };
 
         ret.buttons[Button::A as usize].insert(GilButton::West);
+        ret.buttons[Button::A as usize].insert(GilButton::RightTrigger);
         ret.buttons[Button::B as usize].insert(GilButton::North);
+        ret.buttons[Button::B as usize].insert(GilButton::RightTrigger);
         ret.buttons[Button::C as usize].insert(GilButton::East);
         ret.buttons[Button::D as usize].insert(GilButton::South);
 
@@ -39,7 +46,6 @@ impl ControlScheme<GilButton> {
                 value => **value,
             }
         }
-       
         input
     }
 
