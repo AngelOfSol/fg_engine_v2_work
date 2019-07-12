@@ -45,23 +45,16 @@ impl Yuyuko {
             numpad!(6) => YuyukoMove::WalkForward,
             numpad!(4) => YuyukoMove::WalkBackward,
 
-            numpad!(1) => YuyukoMove::Crouch,
-            numpad!(2) => YuyukoMove::Crouch,
-            numpad!(3) => YuyukoMove::Crouch,
             numpad!(1) => YuyukoMove::ToCrouch,
             numpad!(2) => YuyukoMove::ToCrouch,
             numpad!(3) => YuyukoMove::ToCrouch,
+            numpad!(1) => YuyukoMove::Crouch,
+            numpad!(2) => YuyukoMove::Crouch,
+            numpad!(3) => YuyukoMove::Crouch,
 
-            numpad!(5) => YuyukoMove::Idle,
-            numpad!(5) => YuyukoMove::ToStand
+            numpad!(5) => YuyukoMove::ToStand,
+            numpad!(5) => YuyukoMove::Stand
         };
-        let mut expire_data = HashMap::new();
-        expire_data.insert(YuyukoMove::ToCrouch, YuyukoMove::Crouch);
-        expire_data.insert(YuyukoMove::Crouch, YuyukoMove::Crouch);
-        let mut disallow = HashMap::new();
-        disallow.insert(YuyukoMove::Crouch, YuyukoMove::ToCrouch);
-        disallow.insert(YuyukoMove::Crouch, YuyukoMove::Idle);
-        disallow.insert(YuyukoMove::Idle, YuyukoMove::ToStand);
         Ok(Yuyuko {
             assets,
             states: data.states,
@@ -73,7 +66,7 @@ impl Yuyuko {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum YuyukoMove {
-    Idle,
+    Stand,
     WalkBackward,
     WalkForward,
     #[serde(rename = "attack5a")]
@@ -85,7 +78,7 @@ pub enum YuyukoMove {
 
 impl Default for YuyukoMove {
     fn default() -> Self {
-        YuyukoMove::Idle
+        YuyukoMove::Stand
     }
 }
 
@@ -133,21 +126,14 @@ impl YuyukoState {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
-            current_state: (0, YuyukoMove::Idle),
+            current_state: (0, YuyukoMove::Stand),
         }
     }
     pub fn update_frame(&self, data: &Yuyuko, input: &InputBuffer) -> Self {
         let (frame, yuyu_move) = self.current_state;
         // if the next frame would be out of bounds
         let (frame, yuyu_move) = if frame >= data.states[&yuyu_move].duration() - 1 {
-            (
-                0,
-                /*data.expire_data
-                .get(&yuyu_move)
-                .copied()
-                .unwrap_or(YuyukoMove::Idle),*/
-                YuyukoMove::Idle,
-            )
+            (0, data.states[&yuyu_move].on_expire_state)
         } else {
             (frame + 1, yuyu_move)
         };
@@ -161,6 +147,7 @@ impl YuyukoState {
                 .filter(|new_move| {
                     *new_move != yuyu_move
                         && cancels.always.contains(&data.states[new_move].state_type)
+                        && !cancels.disallow.contains(new_move)
                     /*&& data
                     .disallow
                     .get(&yuyu_move)

@@ -74,6 +74,7 @@ where
     pub always: HashSet<MoveType>,
     pub hit: HashSet<MoveType>,
     pub block: HashSet<MoveType>,
+    #[serde(default)]
     pub disallow: HashSet<Id>,
 }
 

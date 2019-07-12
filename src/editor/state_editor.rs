@@ -97,10 +97,10 @@ impl StateEditor {
                     break;
                 }
             }
-            animation.name = temp_name;
             match mode {
                 Mode::Standalone => (),
                 Mode::New => {
+                    animation.name = temp_name;
                     self.resource.animations.push(AnimationData::new(animation));
                 }
                 Mode::Edit(name) => {
