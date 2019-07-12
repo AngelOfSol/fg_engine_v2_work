@@ -42,6 +42,7 @@ impl Yuyuko {
 
             numpad!(66) => YuyukoMove::StartForwardDash,
 
+            numpad!(9) => YuyukoMove::JumpForward,
             numpad!(8) => YuyukoMove::Jump,
 
             numpad!(6) => YuyukoMove::WalkForward,
@@ -79,6 +80,7 @@ pub enum YuyukoMove {
     StartForwardDash,
     ForwardDash,
     Jump,
+    JumpForward,
     AirIdle,
 }
 
@@ -174,7 +176,7 @@ impl YuyukoState {
             self.velocity
                 // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
                 + if flags.airborne {
-                    collision::Vec2::new(0_00, -0_20) // TODO: tune gravity
+                    collision::Vec2::new(0_00, -0_30) // TODO: tune gravity
                 } else {
                     collision::Vec2::zeros()
                 }
