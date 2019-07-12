@@ -1,5 +1,3 @@
-use crate::input::{Button, ButtonSet, DirectedAxis, Direction, Input};
-
 #[macro_export]
 macro_rules! numpad {
     (236$button:ident) => {

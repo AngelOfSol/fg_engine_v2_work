@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::BufReader;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::timeline::AtTime;
 
@@ -25,11 +25,9 @@ use crate::command_list::CommandList;
 
 use crate::{make_command_list, numpad, read_axis};
 
-use crate::typedefs::StateId;
-
 pub struct Yuyuko {
     assets: Assets,
-    pub states: YuyukoStateList,
+    states: YuyukoStateList,
     command_list: CommandList<YuyukoMove>,
 }
 

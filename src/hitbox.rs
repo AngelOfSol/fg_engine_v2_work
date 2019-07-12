@@ -34,14 +34,8 @@ impl Hitbox {
     pub fn left(&self) -> Int {
         self.center.x - self.half_size.x
     }
-    pub fn right(&self) -> Int {
-        self.center.x + self.half_size.x
-    }
     pub fn top(&self) -> Int {
         self.center.y - self.half_size.y
-    }
-    pub fn bottom(&self) -> Int {
-        self.center.y + self.half_size.y
     }
 
     pub fn size(&self) -> Vec2 {

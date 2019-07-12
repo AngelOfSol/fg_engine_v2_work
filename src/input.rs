@@ -99,29 +99,12 @@ impl Axis {
             _ => false,
         }
     }
-    pub fn is_command(self) -> bool {
-        !self.is_neutral()
-    }
-    pub fn is_neutral(self) -> bool {
-        match self {
-            Axis::Up | Axis::Neutral | Axis::Down => true,
-            _ => false,
-        }
-    }
 
     pub fn get_direction(self) -> Option<Direction> {
         match self {
             Axis::UpLeft | Axis::Left | Axis::DownLeft => Some(Direction::Backward),
             Axis::UpRight | Axis::Right | Axis::DownRight => Some(Direction::Forward),
             _ => None,
-        }
-    }
-
-    pub fn get_vertical(self) -> Axis {
-        match self {
-            Axis::UpLeft | Axis::Up | Axis::UpRight => Axis::Up,
-            Axis::DownLeft | Axis::Down | Axis::DownRight => Axis::Down,
-            Axis::Left | Axis::Neutral | Axis::Right => Axis::Neutral,
         }
     }
 
