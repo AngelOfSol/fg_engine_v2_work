@@ -9,7 +9,6 @@ use imgui::*;
 
 use crate::typedefs::HashId;
 
-
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
 pub enum MoveType {
     Idle,
@@ -68,7 +67,10 @@ impl Display for MoveType {
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct CancelSet<Id> where Id: HashId {
+pub struct CancelSet<Id>
+where
+    Id: HashId,
+{
     pub always: HashSet<MoveType>,
     pub hit: HashSet<MoveType>,
     pub block: HashSet<MoveType>,

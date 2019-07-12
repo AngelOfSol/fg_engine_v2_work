@@ -20,7 +20,7 @@ pub struct Runner {
 impl Runner {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let state = {
-            let mut state = None; 
+            let mut state = None;
             for arg in std::env::args() {
                 if arg == "--editor" {
                     state = Some(RunnerState::Editor(GameEditor::new(ctx).unwrap()));

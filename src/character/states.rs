@@ -19,7 +19,10 @@ use crate::editor::Mode;
 use crate::typedefs::HashId;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct States<Id> where Id: HashId {
+pub struct States<Id>
+where
+    Id: HashId,
+{
     #[serde(flatten)]
     pub rest: HashMap<String, CharacterState<Id>>,
     #[serde(skip)]

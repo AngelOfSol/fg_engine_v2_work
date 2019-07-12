@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::BufReader;
 
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 use crate::timeline::AtTime;
 
@@ -89,7 +89,6 @@ impl Default for YuyukoMove {
     }
 }
 
-
 impl YuyukoMove {
     pub fn to_string(self) -> String {
         serde_json::to_string(&self)
@@ -144,9 +143,10 @@ impl YuyukoState {
             (
                 0,
                 /*data.expire_data
-                    .get(&yuyu_move)
-                    .copied()
-                    .unwrap_or(YuyukoMove::Idle),*/ YuyukoMove::Idle,
+                .get(&yuyu_move)
+                .copied()
+                .unwrap_or(YuyukoMove::Idle),*/
+                YuyukoMove::Idle,
             )
         } else {
             (frame + 1, yuyu_move)
@@ -161,11 +161,11 @@ impl YuyukoState {
                 .filter(|new_move| {
                     *new_move != yuyu_move
                         && cancels.always.contains(&data.states[new_move].state_type)
-                        /*&& data
-                            .disallow
-                            .get(&yuyu_move)
-                            .map(|disallowed| disallowed != new_move)
-                            .unwrap_or(true)*/
+                    /*&& data
+                    .disallow
+                    .get(&yuyu_move)
+                    .map(|disallowed| disallowed != new_move)
+                    .unwrap_or(true)*/
                 })
                 .fold(None, |acc, item| acc.or(Some(item)))
                 .map(|new_move| (0, new_move))
