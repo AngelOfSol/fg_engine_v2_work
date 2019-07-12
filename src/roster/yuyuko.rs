@@ -40,18 +40,22 @@ impl Yuyuko {
         let command_list = make_command_list! {
             numpad!(5 A), numpad!(4 A), numpad!(6 A) => YuyukoMove::Attack5A,
 
+            numpad!(66) => YuyukoMove::StartForwardDash,
+
+            numpad!(8) => YuyukoMove::Jump,
+
             numpad!(6) => YuyukoMove::WalkForward,
             numpad!(4) => YuyukoMove::WalkBackward,
 
-            numpad!(1) => YuyukoMove::ToCrouch,
-            numpad!(2) => YuyukoMove::ToCrouch,
-            numpad!(3) => YuyukoMove::ToCrouch,
             numpad!(1) => YuyukoMove::Crouch,
             numpad!(2) => YuyukoMove::Crouch,
             numpad!(3) => YuyukoMove::Crouch,
+            numpad!(1) => YuyukoMove::ToCrouch,
+            numpad!(2) => YuyukoMove::ToCrouch,
+            numpad!(3) => YuyukoMove::ToCrouch,
 
-            numpad!(5) => YuyukoMove::ToStand,
-            numpad!(5) => YuyukoMove::Stand
+            numpad!(5) => YuyukoMove::Stand,
+            numpad!(5) => YuyukoMove::ToStand
         };
         Ok(Yuyuko {
             assets,
@@ -72,6 +76,10 @@ pub enum YuyukoMove {
     Crouch,
     ToCrouch,
     ToStand,
+    StartForwardDash,
+    ForwardDash,
+    Jump,
+    AirIdle,
 }
 
 impl Default for YuyukoMove {
@@ -137,7 +145,7 @@ impl YuyukoState {
         };
         let cancels = data.states[&yuyu_move].cancels.at_time(frame);
 
-        let (frame, yuyu_move) = {
+        let (frame, mut yuyu_move) = {
             data.command_list
                 .get_commands(&read_inputs(&input, true))
                 .into_iter()
@@ -172,11 +180,15 @@ impl YuyukoState {
                 }
         } + flags.accel;
         let new_position = self.position + new_velocity;
-        let new_position = if !flags.airborne {
-            collision::Vec2::new(new_position.x, hitboxes.collision.center.y)
-        } else {
-            new_position
-        };
+        let new_position =
+            if !flags.airborne || new_position.y - hitboxes.collision.half_size.y <= -4 {
+                if flags.airborne {
+                    yuyu_move = YuyukoMove::Stand;
+                }
+                collision::Vec2::new(new_position.x, hitboxes.collision.half_size.y)
+            } else {
+                new_position
+            };
 
         Self {
             velocity: new_velocity,
@@ -193,13 +205,79 @@ impl YuyukoState {
     ) -> GameResult<()> {
         let (frame, yuyu_move) = self.current_state;
         let collision = &data.states[&yuyu_move].hitboxes.at_time(frame).collision;
+
+        use ggez::graphics::Color;
+        use ggez::graphics::Mesh;
+
+        ggez::graphics::set_transform(ctx, world);
+        ggez::graphics::apply_transformations(ctx)?;
+        let line = Mesh::new_line(
+            ctx,
+            &[[-100.0, 0.0], [100.0, 0.0]],
+            1.0,
+            Color::new(0.0, 1.0, 1.0, 1.0),
+        )?;
+        ggez::graphics::draw(ctx, &line, ggez::graphics::DrawParam::default())?;
+
+        ggez::graphics::set_transform(
+            ctx,
+            world
+                * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                    (self.position).into_graphical(),
+                )),
+        );
+        ggez::graphics::apply_transformations(ctx)?;
+        let line = Mesh::new_line(
+            ctx,
+            &[[-100.0, 0.0], [100.0, 0.0]],
+            1.0,
+            Color::new(0.0, 1.0, 1.0, 1.0),
+        )?;
+        ggez::graphics::draw(ctx, &line, ggez::graphics::DrawParam::default())?;
+
+        ggez::graphics::set_transform(
+            ctx,
+            world
+                * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                    (self.position).into_graphical(),
+                )),
+        );
+        ggez::graphics::apply_transformations(ctx)?;
+        let line = Mesh::new_line(
+            ctx,
+            &[
+                [
+                    -collision.half_size.x.into_graphical(),
+                    -collision.half_size.y.into_graphical(),
+                ],
+                [
+                    -collision.half_size.x.into_graphical(),
+                    collision.half_size.y.into_graphical(),
+                ],
+                [
+                    collision.half_size.x.into_graphical(),
+                    collision.half_size.y.into_graphical(),
+                ],
+                [
+                    collision.half_size.x.into_graphical(),
+                    -collision.half_size.y.into_graphical(),
+                ],
+                [
+                    -collision.half_size.x.into_graphical(),
+                    -collision.half_size.y.into_graphical(),
+                ],
+            ],
+            1.0,
+            Color::new(1.0, 0.0, 1.0, 1.0),
+        )?;
+        ggez::graphics::draw(ctx, &line, ggez::graphics::DrawParam::default())?;
         data.states[&yuyu_move].draw_at_time(
             ctx,
             &data.assets,
             frame,
             world
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    (-collision.center + self.position).into_graphical(),
+                    (self.position - collision.center).into_graphical(),
                 )),
         )?;
         Ok(())

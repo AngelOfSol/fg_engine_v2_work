@@ -357,13 +357,42 @@ impl StateEditor {
             self.resource
                 .draw_at_time(ctx, assets, self.frame, offset)?;
         }
+
+        let offset = {
+            let mut offset = Vec3::new(600.0, 240.0, 0.0);
+            if self.draw_mode.show_travel {
+                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
+            }
+            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+                offset.x -= boxes.collision.center.x.into_graphical();
+                offset.y -= boxes.collision.half_size.y.into_graphical()
+                    - boxes.collision.center.y.into_graphical();
+            }
+
+            offset
+        };
+        let offset = Matrix4::new_translation(&offset);
         if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
             boxes.collision.draw(
                 ctx,
                 offset,
                 Color::new(1.0, 1.0, 1.0, self.draw_mode.collision_alpha),
             )?;
+        }
 
+        let offset = {
+            let mut offset = Vec3::new(600.0, 240.0, 0.0);
+            if self.draw_mode.show_travel {
+                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
+            }
+            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+                offset.y -= boxes.collision.half_size.y.into_graphical();
+            }
+
+            offset
+        };
+        let offset = Matrix4::new_translation(&offset);
+        if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(
                     ctx,

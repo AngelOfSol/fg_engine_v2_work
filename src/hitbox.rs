@@ -52,7 +52,7 @@ impl Hitbox {
     pub fn collision_graphic_recenter(&self) -> GraphicVec2 {
         GraphicVec2::new(
             self.center.x.into_graphical(),
-            self.half_size.y.into_graphical() + self.center.y.into_graphical(),
+            self.half_size.y.into_graphical() - self.center.y.into_graphical(),
         )
     }
 
@@ -95,23 +95,16 @@ impl Hitbox {
             ctx,
             DrawMode::Fill(FillOptions::default()),
             Rect::new(
-                0.0,
-                0.0,
+                -self.half_size.x.into_graphical() + self.center.x.into_graphical(),
+                // graphically -y is up/+y is down, but for the purpores of math, our center has +y as up/-y as down
+                -self.half_size.y.into_graphical() - self.center.y.into_graphical(),
                 self.width().into_graphical(),
                 self.height().into_graphical(),
             ),
             color,
         )?;
 
-        graphics::set_transform(
-            ctx,
-            world
-                * Matrix4::new_translation(&Vec3::new(
-                    self.left().into_graphical(),
-                    self.top().into_graphical(),
-                    0.0,
-                )),
-        );
+        graphics::set_transform(ctx, world);
         graphics::apply_transformations(ctx)?;
         graphics::draw(ctx, &rect, DrawParam::default())?;
 

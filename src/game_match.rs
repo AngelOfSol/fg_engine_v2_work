@@ -75,7 +75,7 @@ impl EventHandler for Match {
         self.background.draw(ctx, world)?;
 
         let world =
-            Matrix4::new_translation(&Vec3::new(640.0, 550.0, 0.0)) * Matrix4::new_scaling(2.0);
+            Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0)) * Matrix4::new_scaling(2.0);
 
         self.state.draw(ctx, &self.resources, world)?;
 

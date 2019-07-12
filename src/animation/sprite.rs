@@ -237,7 +237,12 @@ fn replace_asset<S: Into<String>>(
 }
 pub fn rename_sprite<S: Into<String>>(new_name: S, sprite: &mut Sprite, assets: &mut Assets) {
     let asset = assets.images.remove(&sprite.image);
-    let new_name = new_name.into();
+    let mut new_name = new_name.into();
+    let mut counter = 1;
+    while assets.images.contains_key(&new_name) {
+        new_name = format!("({}){}", counter, new_name);
+        counter += 1;
+    }
     if let Some(asset) = asset {
         assets.images.insert(new_name.clone(), asset);
     }
