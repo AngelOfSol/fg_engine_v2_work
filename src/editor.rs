@@ -59,7 +59,7 @@ pub enum Mode {
 
 pub enum MessageData {
     Animation(Animation),
-    State(CharacterState),
+    State(CharacterState<String>),
 }
 
 pub enum Transition {

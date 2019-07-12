@@ -20,30 +20,8 @@ use ggez::GameError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlayerCharacter {
-    pub states: States,
+    pub states: States<String>,
     pub properties: Properties,
-}
-
-macro_rules! _save_fields {
-    ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
-        $(
-            $path.push(format!("{}.json", stringify!($field)));
-            CharacterState::save($ctx, $assets, &$obj.$field, $path.clone())?;
-            $path.pop();
-        )*
-    };
-    () => {
-    };
-}
-#[macro_export]
-macro_rules! load_fields {
-    ($ctx:expr, $assets:expr, $path:expr, $obj:expr => [ $( $field:ident ),* ] ) => {
-        $(
-            CharacterState::load($ctx, $assets, &$obj.$field, stringify!($field), $path.clone())?;
-        )*
-    };
-    () => {
-    };
 }
 
 impl PlayerCharacter {
@@ -76,8 +54,6 @@ impl PlayerCharacter {
     ) -> GameResult<()> {
         path.push(&character_file_name);
 
-        load_fields!(ctx, assets, path, player_character.states => [idle]);
-
         for (name, state) in player_character.states.rest.iter() {
             CharacterState::load(ctx, assets, state, name, path.clone())?;
         }
@@ -102,8 +78,6 @@ impl PlayerCharacter {
             std::fs::remove_dir_all(&path)?;
         }
         std::fs::create_dir_all(&path)?;
-
-        _save_fields!(ctx, assets, path, player_character.states => [idle]);
 
         for (state_name, state) in player_character.states.rest.iter() {
             path.push(format!("{}.json", state_name));

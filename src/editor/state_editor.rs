@@ -27,7 +27,7 @@ use imgui::*;
 use std::path::PathBuf;
 
 pub struct StateEditor {
-    resource: CharacterState,
+    resource: CharacterState<String>,
     frame: usize,
     is_playing: bool,
     transition: Transition,
@@ -61,7 +61,7 @@ impl StateEditor {
             },
         }
     }
-    pub fn with_state(state: CharacterState) -> Self {
+    pub fn with_state(state: CharacterState<String>) -> Self {
         Self {
             resource: state,
             transition: Transition::None,

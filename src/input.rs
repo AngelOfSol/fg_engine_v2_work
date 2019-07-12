@@ -10,12 +10,13 @@ mod control_scheme;
 
 #[macro_use]
 mod motion;
+
 mod ringbuffer;
 
 use std::ops::{Index, IndexMut};
 
 pub use control_scheme::PadControlScheme;
-pub use motion::{read_inputs, Direction, Input, Standing};
+pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {
@@ -115,16 +116,10 @@ impl Axis {
             _ => None,
         }
     }
-    pub fn get_standing(self) -> Standing {
-        match self {
-            Axis::DownRight | Axis::Down | Axis::DownLeft => Standing::Crouching,
-            _ => Standing::Standing,
-        }
-    }
 
     pub fn get_vertical(self) -> Axis {
         match self {
-            Axis::UpLeft | Axis::Up | Axis::UpRight => Axis::Up ,
+            Axis::UpLeft | Axis::Up | Axis::UpRight => Axis::Up,
             Axis::DownLeft | Axis::Down | Axis::DownRight => Axis::Down,
             Axis::Left | Axis::Neutral | Axis::Right => Axis::Neutral,
         }

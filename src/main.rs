@@ -40,8 +40,13 @@ mod game_match;
 
 mod stage;
 
-#[macro_use]
 mod input;
+
+#[macro_use]
+mod command_list;
+
+#[macro_use]
+mod input_macros;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {

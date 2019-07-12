@@ -20,13 +20,13 @@ pub struct Runner {
 impl Runner {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let state = {
-            let mut state = RunnerState::Match(Match::new(ctx)?);
+            let mut state = None; 
             for arg in std::env::args() {
                 if arg == "--editor" {
-                    state = RunnerState::Editor(GameEditor::new(ctx)?);
+                    state = Some(RunnerState::Editor(GameEditor::new(ctx).unwrap()));
                 }
             }
-            state
+            state.unwrap_or_else(|| RunnerState::Match(Match::new(ctx).unwrap()))
         };
         Ok(Runner { state })
     }

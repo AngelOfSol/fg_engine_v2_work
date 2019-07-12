@@ -16,33 +16,31 @@ use crate::assets::Assets;
 
 use crate::editor::Mode;
 
+use crate::typedefs::HashId;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct States {
-    pub idle: CharacterState,
+pub struct States<Id> where Id: HashId {
     #[serde(flatten)]
-    pub rest: HashMap<String, CharacterState>,
+    pub rest: HashMap<String, CharacterState<Id>>,
     #[serde(skip)]
     _secret: (),
 }
 
-impl States {
+impl<Id: HashId> States<Id> {
     pub fn new() -> Self {
         Self {
-            idle: CharacterState::new(),
             rest: HashMap::new(),
             _secret: (),
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &CharacterState {
+    pub fn get_state(&self, key: &str) -> &CharacterState<Id> {
         match key {
-            "idle" => &self.idle,
             _ => &self.rest[key],
         }
     }
-    pub fn replace_state(&mut self, key: String, data: CharacterState) {
+    pub fn replace_state(&mut self, key: String, data: CharacterState<Id>) {
         match key.as_str() {
-            "idle" => self.idle = data,
             _ => {
                 self.rest.insert(key, data);
             }
@@ -75,15 +73,10 @@ impl StatesUi {
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        data: &mut States,
+        data: &mut States<String>,
     ) -> GameResult<Option<Mode>> {
         let mut ret = None;
-        ui.text(im_str!("Required States"));
-        ui.separator();
-        ret = _required_state_helper(ui, ctx, assets, "idle", &mut data.idle)?.or(ret);
-
-        ui.separator();
-        ui.text(im_str!("Extra States:"));
+        ui.text(im_str!("States:"));
         ui.same_line(0.0);
         if ui.small_button(im_str!("Load")) {
             if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
@@ -101,14 +94,15 @@ impl StatesUi {
                 CharacterState::new(),
             );
         }
+        ui.separator();
         let mut to_delete = None;
         let mut to_change = None;
 
         let mut state_list = data.rest.iter_mut().collect::<Vec<_>>();
-        state_list.sort_by(|lhs, rhs|  lhs.0.cmp(rhs.0));
+        state_list.sort_by(|lhs, rhs| lhs.0.cmp(rhs.0));
 
         for (idx, (name, value)) in state_list.into_iter().enumerate() {
-            ui.push_id(&format!("Rest {}", idx));
+            ui.push_id(&format!("Rest {} {}", idx, value.duration()));
             let mut buffer = name.clone();
             if ui.input_string(im_str!("Name"), &mut buffer) {
                 to_change = Some((name.clone(), buffer));
@@ -148,7 +142,7 @@ fn _required_state_helper(
     ctx: &mut Context,
     assets: &mut Assets,
     name: &str,
-    data: &mut CharacterState,
+    data: &mut CharacterState<String>,
 ) -> GameResult<Option<Mode>> {
     ui.push_id(name);
     let mut ret = None;

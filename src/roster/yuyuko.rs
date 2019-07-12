@@ -15,30 +15,57 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::BufReader;
 
-use std::collections::HashMap;
+use std::collections::{HashSet, HashMap};
 
 use crate::timeline::AtTime;
 
-use crate::character_state::cancel_set::MoveType;
+use crate::input::{read_inputs, Button, ButtonSet, DirectedAxis, Input, InputBuffer};
 
-use crate::input::{read_inputs, Button, Direction, Input, InputBuffer, Standing};
+use crate::command_list::CommandList;
 
-use crate::numpad_notation;
+use crate::{make_command_list, numpad, read_axis};
+
+use crate::typedefs::StateId;
 
 pub struct Yuyuko {
     assets: Assets,
     pub states: YuyukoStateList,
+    command_list: CommandList<YuyukoMove>,
 }
 
-type YuyukoStateList = HashMap<YuyukoMove, CharacterState>;
+type YuyukoStateList = HashMap<YuyukoMove, CharacterState<YuyukoMove>>;
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
         let mut assets = Assets::new();
         let data = YuyukoData::load_from_json(ctx, &mut assets, path)?;
+        let command_list = make_command_list! {
+            numpad!(5 A), numpad!(4 A), numpad!(6 A) => YuyukoMove::Attack5A,
+
+            numpad!(6) => YuyukoMove::WalkForward,
+            numpad!(4) => YuyukoMove::WalkBackward,
+
+            numpad!(1) => YuyukoMove::Crouch,
+            numpad!(2) => YuyukoMove::Crouch,
+            numpad!(3) => YuyukoMove::Crouch,
+            numpad!(1) => YuyukoMove::ToCrouch,
+            numpad!(2) => YuyukoMove::ToCrouch,
+            numpad!(3) => YuyukoMove::ToCrouch,
+
+            numpad!(5) => YuyukoMove::Idle,
+            numpad!(5) => YuyukoMove::ToStand
+        };
+        let mut expire_data = HashMap::new();
+        expire_data.insert(YuyukoMove::ToCrouch, YuyukoMove::Crouch);
+        expire_data.insert(YuyukoMove::Crouch, YuyukoMove::Crouch);
+        let mut disallow = HashMap::new();
+        disallow.insert(YuyukoMove::Crouch, YuyukoMove::ToCrouch);
+        disallow.insert(YuyukoMove::Crouch, YuyukoMove::Idle);
+        disallow.insert(YuyukoMove::Idle, YuyukoMove::ToStand);
         Ok(Yuyuko {
             assets,
             states: data.states,
+            command_list,
         })
     }
 }
@@ -49,9 +76,19 @@ pub enum YuyukoMove {
     Idle,
     WalkBackward,
     WalkForward,
-    #[serde(rename = "attack_5a")]
+    #[serde(rename = "attack5a")]
     Attack5A,
+    Crouch,
+    ToCrouch,
+    ToStand,
 }
+
+impl Default for YuyukoMove {
+    fn default() -> Self {
+        YuyukoMove::Idle
+    }
+}
+
 
 impl YuyukoMove {
     pub fn to_string(self) -> String {
@@ -104,42 +141,38 @@ impl YuyukoState {
         let (frame, yuyu_move) = self.current_state;
         // if the next frame would be out of bounds
         let (frame, yuyu_move) = if frame >= data.states[&yuyu_move].duration() - 1 {
-            (0, YuyukoMove::Idle)
+            (
+                0,
+                /*data.expire_data
+                    .get(&yuyu_move)
+                    .copied()
+                    .unwrap_or(YuyukoMove::Idle),*/ YuyukoMove::Idle,
+            )
         } else {
             (frame + 1, yuyu_move)
         };
         let cancels = data.states[&yuyu_move].cancels.at_time(frame);
 
         let (frame, yuyu_move) = {
-            let mut test_hash = HashMap::new();
-            test_hash.insert(numpad_notation!(5), (YuyukoMove::Idle, MoveType::Idle));
-            test_hash.insert(
-                numpad_notation!(6),
-                (YuyukoMove::WalkForward, MoveType::Walk),
-            );
-            test_hash.insert(
-                numpad_notation!(4),
-                (YuyukoMove::WalkBackward, MoveType::Walk),
-            );
-            test_hash.insert(
-                numpad_notation!(5 A),
-                (YuyukoMove::Attack5A, MoveType::Melee),
-            );
-            let (new_move, new_type) = read_inputs(&input, true)
+            data.command_list
+                .get_commands(&read_inputs(&input, true))
                 .into_iter()
-                .map(|move_input| test_hash.get(&move_input))
-                .fold(None, |acc, item| acc.or(item))
                 .copied()
-                .unwrap_or((YuyukoMove::Idle, MoveType::Idle));
-
-            if yuyu_move != new_move && cancels.always.contains(&new_type) {
-                (0, new_move)
-            } else {
-                (frame, yuyu_move)
-            }
+                .filter(|new_move| {
+                    *new_move != yuyu_move
+                        && cancels.always.contains(&data.states[new_move].state_type)
+                        /*&& data
+                            .disallow
+                            .get(&yuyu_move)
+                            .map(|disallowed| disallowed != new_move)
+                            .unwrap_or(true)*/
+                })
+                .fold(None, |acc, item| acc.or(Some(item)))
+                .map(|new_move| (0, new_move))
+                .unwrap_or((frame, yuyu_move))
         };
 
-        let _hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
+        let hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
         let flags = data.states[&yuyu_move].flags.at_time(frame);
 
         let new_velocity = if flags.reset_velocity {
@@ -153,10 +186,16 @@ impl YuyukoState {
                     collision::Vec2::zeros()
                 }
         } + flags.accel;
+        let new_position = self.position + new_velocity;
+        let new_position = if !flags.airborne {
+            collision::Vec2::new(new_position.x, hitboxes.collision.center.y)
+        } else {
+            new_position
+        };
 
         Self {
             velocity: new_velocity,
-            position: self.position + new_velocity,
+            position: new_position,
             current_state: (frame, yuyu_move),
         }
     }

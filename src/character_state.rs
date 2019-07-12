@@ -18,7 +18,7 @@ use std::cmp;
 use nfd::Response;
 
 pub use animation_data::{AnimationData, AnimationDataUi};
-pub use cancel_set::{CancelSet, CancelSetUi};
+pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
 pub use flags::{Flags, FlagsUi, MovementData};
 pub use hitbox_set::{HitboxSet, HitboxSetUi};
 
@@ -26,8 +26,9 @@ use crate::timeline::{AtTime, Timeline};
 
 use crate::typedefs::graphics::Matrix4;
 
-use crate::editor::Mode;
+use crate::typedefs::{HashId, StateId};
 
+use crate::editor::Mode;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -36,22 +37,32 @@ use std::path::PathBuf;
 use ggez::GameError;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct CharacterState {
+pub struct CharacterState<Id>
+where
+    Id: HashId,
+{
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
-    pub cancels: Timeline<CancelSet>,
+    pub cancels: Timeline<CancelSet<Id>>,
     pub hitboxes: Timeline<HitboxSet>,
+    #[serde(default = "default_move_type")]
+    pub state_type: MoveType,
+    #[serde(default)]
+    pub on_expire_state: Id,
+}
+fn default_move_type() -> MoveType {
+    MoveType::Idle
 }
 
-impl CharacterState {
+impl<Id: StateId> CharacterState<Id> {
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
         mut path: PathBuf,
-    ) -> GameResult<CharacterState> {
+    ) -> GameResult<Self> {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
-        let state = serde_json::from_reader::<_, CharacterState>(buf_read).unwrap();
+        let state = serde_json::from_reader::<_, Self>(buf_read).unwrap();
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
         CharacterState::load(ctx, assets, &state, &name, path)?;
@@ -60,7 +71,7 @@ impl CharacterState {
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
-        state: &CharacterState,
+        state: &Self,
         name: &str,
         mut path: PathBuf,
     ) -> GameResult<()> {
@@ -73,7 +84,7 @@ impl CharacterState {
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
-        state: &CharacterState,
+        state: &Self,
         mut path: PathBuf,
     ) -> GameResult<()> {
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
@@ -91,15 +102,6 @@ impl CharacterState {
             path.pop();
         }
         Ok(())
-    }
-
-    pub fn new() -> Self {
-        Self {
-            animations: vec![],
-            flags: vec![(Flags::new(), 1)],
-            cancels: vec![(CancelSet::new(), 1)],
-            hitboxes: vec![(HitboxSet::new(), 1)],
-        }
     }
 
     pub fn duration(&self) -> usize {
@@ -147,12 +149,26 @@ impl CharacterState {
     }
 }
 
+impl CharacterState<String> {
+    pub fn new() -> Self {
+        Self {
+            animations: vec![],
+            flags: vec![(Flags::new(), 1)],
+            cancels: vec![(CancelSet::new(), 1)],
+            hitboxes: vec![(HitboxSet::new(), 1)],
+            state_type: default_move_type(),
+            on_expire_state: "stand".to_owned(),
+        }
+    }
+}
+
 pub struct CharacterStateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
+    current_cancel_set_ui: Option<CancelSetUi>,
 }
 
 impl CharacterStateUi {
@@ -163,6 +179,7 @@ impl CharacterStateUi {
             current_cancels: None,
             current_hitboxes: None,
             current_hitbox_ui: None,
+            current_cancel_set_ui: None,
         }
     }
 
@@ -171,11 +188,31 @@ impl CharacterStateUi {
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        data: &mut CharacterState,
+        data: &mut CharacterState<String>,
     ) -> GameResult<Option<Mode>> {
         let mut ret = None;
 
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
+        let mut buffer = MoveType::all()
+            .iter()
+            .position(|item| *item == data.state_type)
+            .unwrap() as i32;
+        ui.combo(
+            im_str!("State Type"),
+            &mut buffer,
+            &MoveType::all()
+                .iter()
+                .map(|item| im_str!("{}", item))
+                .collect::<Vec<_>>()
+                .iter()
+                .collect::<Vec<_>>(),
+            5,
+        );
+        let _ = ui.input_string(im_str!("On Expire"), &mut data.on_expire_state);
+
+        if buffer >= 0 {
+            data.state_type = MoveType::all()[buffer as usize];
+        }
 
         if ui.collapsing_header(im_str!("Animations")).build() {
             ui.push_id("Animations");
@@ -216,7 +253,7 @@ impl CharacterStateUi {
                 ret = Some(Mode::New);
             }
             if let Some(animation) = self.current_animation {
-                if let Some(animation) = &mut data.animations.get_mut(animation) {                    
+                if let Some(animation) = &mut data.animations.get_mut(animation) {
                     ui.same_line(0.0);
                     if ui.small_button(im_str!("Edit")) {
                         ret = Some(Mode::Edit(animation.animation.name.clone()));
@@ -277,6 +314,9 @@ impl CharacterStateUi {
             );
 
             if let Some(ref mut idx) = self.current_cancels {
+                let ui_data = self
+                    .current_cancel_set_ui
+                    .get_or_insert_with(CancelSetUi::new);
                 ui.timeline_modify(idx, &mut data.cancels);
 
                 let (ref mut cancels, ref mut duration) = &mut data.cancels[*idx];
@@ -285,7 +325,7 @@ impl CharacterStateUi {
                 *duration = cmp::max(*duration, 1);
 
                 ui.separator();
-                CancelSetUi::new().draw_ui(ui, cancels);
+                ui_data.draw_ui(ui, cancels);
             }
             ui.separator();
             ui.pop_id();

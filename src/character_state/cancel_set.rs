@@ -7,6 +7,8 @@ use std::fmt::Display;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
+use crate::typedefs::HashId;
+
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
 pub enum MoveType {
@@ -21,8 +23,9 @@ pub enum MoveType {
     MeleeSpecial,
     MagicSpecial,
     Super,
+    Followup,
 }
-const ALL_MOVE_TYPES: [MoveType; 11] = [
+const ALL_MOVE_TYPES: [MoveType; 12] = [
     MoveType::Idle,
     MoveType::Walk,
     MoveType::Jump,
@@ -34,9 +37,10 @@ const ALL_MOVE_TYPES: [MoveType; 11] = [
     MoveType::MeleeSpecial,
     MoveType::MagicSpecial,
     MoveType::Super,
+    MoveType::Followup,
 ];
 impl MoveType {
-    pub fn all() -> &'static [MoveType; 11] {
+    pub fn all() -> &'static [MoveType; 12] {
         &ALL_MOVE_TYPES
     }
 }
@@ -57,35 +61,42 @@ impl Display for MoveType {
                 MoveType::MeleeSpecial => "Melee Special",
                 MoveType::MagicSpecial => "Magic Special",
                 MoveType::Super => "Super",
+                MoveType::Followup => "Follow Up",
             }
         )
     }
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct CancelSet {
+pub struct CancelSet<Id> where Id: HashId {
     pub always: HashSet<MoveType>,
     pub hit: HashSet<MoveType>,
     pub block: HashSet<MoveType>,
+    pub disallow: HashSet<Id>,
 }
 
-impl CancelSet {
+impl<Id: HashId> CancelSet<Id> {
     pub fn new() -> Self {
         Self {
             always: HashSet::new(),
             hit: HashSet::new(),
             block: HashSet::new(),
+            disallow: HashSet::new(),
         }
     }
 }
 
-pub struct CancelSetUi;
+pub struct CancelSetUi {
+    new_disallow: String,
+}
 
 impl CancelSetUi {
     pub fn new() -> CancelSetUi {
-        CancelSetUi
+        CancelSetUi {
+            new_disallow: "".to_owned(),
+        }
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
         if ui.collapsing_header(im_str!("Always")).build() {
             ui.push_id("Always");
             ui.checkbox_set(MoveType::all(), &mut data.always);
@@ -101,8 +112,28 @@ impl CancelSetUi {
             ui.checkbox_set(MoveType::all(), &mut data.hit);
             ui.pop_id();
         }
+        if ui.collapsing_header(im_str!("Disallowed")).build() {
+            let mut to_delete = None;
+            for item in data.disallow.iter() {
+                ui.text(im_str!("{}", item));
+                ui.same_line(0.0);
+                if ui.small_button(im_str!("Delete")) {
+                    to_delete = Some(item.clone());
+                }
+            }
+            if let Some(item) = to_delete {
+                data.disallow.remove(&item);
+            }
+
+            ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
+            ui.same_line(0.0);
+            if ui.small_button(im_str!("Add")) {
+                let new = std::mem::replace(&mut self.new_disallow, "".to_owned());
+                data.disallow.insert(new);
+            }
+        }
     }
-    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet) {
+    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet<String>) {
         if ui.collapsing_header(im_str!("Always")).build() {
             for move_type in data.always.iter() {
                 ui.text(im_str!("{}", move_type));
