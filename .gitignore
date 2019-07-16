@@ -1,5 +1,9 @@
 /target
 **/*.rs.bk
 *.tar
+<<<<<<< HEAD
 /yuyu
 /resources
+=======
+/yuyu
+>>>>>>> 412c23fa13575d119003ccc703667f772292bd2a

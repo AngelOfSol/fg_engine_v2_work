@@ -1,10 +1,10 @@
+mod particles;
 mod properties;
 mod states;
-mod particles;
 
+pub use particles::Particles;
 pub use properties::{Properties, PropertiesUi};
 pub use states::{States, StatesUi};
-pub use particles::{Particles};
 
 use crate::character_state::CharacterState;
 
@@ -71,7 +71,6 @@ impl PlayerCharacter {
         mut path: PathBuf,
     ) -> GameResult<()> {
         let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-
         let mut json = File::create(&path)?;
         serde_json::to_writer(&mut json, &player_character)
             .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
