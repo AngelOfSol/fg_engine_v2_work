@@ -1,4 +1,4 @@
-use crate::editor::{EditorState, MessageData, Mode, StateEditor, Transition};
+use crate::editor::{AnimationEditor, EditorState, MessageData, Mode, StateEditor, Transition};
 
 use ggez::{Context, GameResult};
 
@@ -9,26 +9,32 @@ use crate::character_state::CharacterState;
 
 use imgui::*;
 
-use crate::character::{PlayerCharacter, PropertiesUi, StatesUi};
+use crate::character::{ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
 
 use std::path::PathBuf;
+
+use crate::animation::Animation;
 
 pub struct CharacterEditor {
     resource: PlayerCharacter,
     transition: Transition,
+    particle_ui_data: ParticlesUi,
 }
-
+//ParticlesUi::new(&self.resource.particles)
 impl CharacterEditor {
     pub fn new() -> Self {
+        let resource = PlayerCharacter::new();
+        let particle_ui_data = ParticlesUi::new(&resource.particles);
         Self {
-            resource: PlayerCharacter::new(),
+            resource,
+            particle_ui_data,
             transition: Transition::None,
         }
     }
 
     pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        if let MessageData::State(state) = data {
-            match mode {
+        match data {
+            MessageData::State(state) => match mode {
                 Mode::Standalone => (),
                 Mode::New => {
                     self.resource.states.rest.insert(
@@ -39,7 +45,26 @@ impl CharacterEditor {
                 Mode::Edit(name) => {
                     self.resource.states.replace_state(name, state);
                 }
-            }
+            },
+            MessageData::Animation(animation) => match mode {
+                Mode::Standalone => (),
+                Mode::New => {
+                    let name = self
+                        .resource
+                        .particles
+                        .guarentee_unique_key(&animation.name);
+                    self.particle_ui_data.particle_keys.push(name.clone());
+                    self.resource.particles.particles.insert(name, animation);
+                }
+                Mode::Edit(name) => {
+                    self.resource.particles.particles.remove(&name);
+                    let name = self
+                        .resource
+                        .particles
+                        .guarentee_unique_key(&animation.name);
+                    self.resource.particles.particles.insert(name, animation);
+                }
+            },
         }
     }
 
@@ -88,6 +113,37 @@ impl CharacterEditor {
                         }
                         editor_result = edit_result.map(|_| ());
                     });
+                ui.window(im_str!("Particles"))
+                    .size([300.0, 526.0], Condition::Always)
+                    .position([600.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        let edit_change = self.particle_ui_data.draw_ui(
+                            ctx,
+                            assets,
+                            ui,
+                            &mut self.resource.particles,
+                        );
+                        if let Some(mode) = &edit_change {
+                            let animation = match &mode {
+                                Mode::Edit(name) => self
+                                    .resource
+                                    .particles
+                                    .particles
+                                    .values()
+                                    .find(|item| &item.name == name)
+                                    .cloned()
+                                    .unwrap(),
+                                _ => Animation::new("new"),
+                            };
+                            self.transition = Transition::Push(
+                                Box::new(AnimationEditor::with_animation(animation).into()),
+                                mode.clone(),
+                            );
+                        }
+                    });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Player Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
@@ -114,6 +170,8 @@ impl CharacterEditor {
                                 ) {
                                     Ok(character) => {
                                         self.resource = character;
+                                        self.particle_ui_data =
+                                            ParticlesUi::new(&self.resource.particles);
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }

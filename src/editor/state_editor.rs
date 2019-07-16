@@ -392,6 +392,40 @@ impl StateEditor {
             offset
         };
         let offset = Matrix4::new_translation(&offset);
+        let draw_cross = |ctx: &mut Context, origin: crate::typedefs::graphics::Vec2| {
+            let vertical = Mesh::new_line(
+                ctx,
+                &[[0.0, -10.0], [0.0, 10.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
+
+            let horizontal = Mesh::new_line(
+                ctx,
+                &[[-10.0, 0.0], [10.0, 0.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
+            graphics::draw(
+                ctx,
+                &vertical,
+                DrawParam::default().dest([origin.x, origin.y]),
+            )?;
+            graphics::draw(
+                ctx,
+                &horizontal,
+                DrawParam::default().dest([origin.x, origin.y]),
+            )
+        };
+        for particle_spawn in self
+            .resource
+            .particles
+            .iter()
+            .filter(|item| item.frame == self.frame)
+        {
+            let offset = particle_spawn.offset.into_graphical();
+            draw_cross(ctx, offset)?;
+        }
         if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(

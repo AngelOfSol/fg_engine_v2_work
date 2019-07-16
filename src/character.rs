@@ -2,7 +2,7 @@ mod particles;
 mod properties;
 mod states;
 
-pub use particles::Particles;
+pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
 pub use states::{States, StatesUi};
 
@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::assets::Assets;
 
 use ggez::{Context, GameResult};
+
+use crate::animation::Animation;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -62,6 +64,10 @@ impl PlayerCharacter {
         for (name, state) in player_character.states.rest.iter() {
             CharacterState::load(ctx, assets, state, name, path.clone())?;
         }
+        path.push("particles");
+        for (_, animation) in player_character.particles.particles.iter() {
+            Animation::load(ctx, assets, animation, path.clone())?;
+        }
         Ok(())
     }
     pub fn save(
@@ -86,6 +92,13 @@ impl PlayerCharacter {
         for (state_name, state) in player_character.states.rest.iter() {
             path.push(format!("{}.json", state_name));
             CharacterState::save(ctx, assets, state, path.clone())?;
+            path.pop();
+        }
+        path.push("particles");
+        std::fs::create_dir_all(&path)?;
+        for (name, animation) in player_character.particles.particles.iter() {
+            path.push(format!("{}.json", name));
+            Animation::save(ctx, assets, animation, path.clone())?;
             path.pop();
         }
         Ok(())

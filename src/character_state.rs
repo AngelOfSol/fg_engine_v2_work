@@ -2,6 +2,7 @@ pub mod animation_data;
 pub mod cancel_set;
 pub mod flags;
 pub mod hitbox_set;
+pub mod particle_spawn_data;
 
 use crate::animation::Animation;
 use crate::assets::Assets;
@@ -21,6 +22,7 @@ pub use animation_data::{AnimationData, AnimationDataUi};
 pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
 pub use flags::{Flags, FlagsUi, MovementData};
 pub use hitbox_set::{HitboxSet, HitboxSetUi};
+pub use particle_spawn_data::ParticleSpawn;
 
 use crate::timeline::{AtTime, Timeline};
 
@@ -45,6 +47,8 @@ where
     pub flags: Timeline<Flags>,
     pub cancels: Timeline<CancelSet<Id>>,
     pub hitboxes: Timeline<HitboxSet>,
+    #[serde(default)]
+    pub particles: Vec<ParticleSpawn>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
     #[serde(default)]
@@ -158,6 +162,7 @@ impl CharacterState<String> {
             hitboxes: vec![(HitboxSet::new(), 1)],
             state_type: default_move_type(),
             on_expire_state: "stand".to_owned(),
+            particles: Vec::new(),
         }
     }
 }
@@ -166,6 +171,7 @@ pub struct CharacterStateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
+    current_particle: Option<usize>,
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
@@ -177,6 +183,7 @@ impl CharacterStateUi {
             current_animation: None,
             current_flags: None,
             current_cancels: None,
+            current_particle: None,
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
@@ -265,6 +272,42 @@ impl CharacterStateUi {
             ui.pop_id();
         }
         data.fix_duration();
+
+        if ui.collapsing_header(im_str!("Particles")).build() {
+            ui.push_id("Particles");
+            ui.rearrangable_list_box(
+                im_str!("List"),
+                &mut self.current_particle,
+                &mut data.particles,
+                |item| im_str!("{}", item.particle_id.clone()),
+                5,
+            );
+            if ui.small_button(im_str!("New")) {
+                data.particles.push(ParticleSpawn::new());
+            }
+
+            if let Some(idx) = self.current_particle {
+                let particle = &mut data.particles[idx];
+
+                ui.input_string(im_str!("ID"), &mut particle.particle_id);
+
+                let _ = ui.input_whole(im_str!("Spawn Frame"), &mut particle.frame);
+                if ui
+                    .collapsing_header(im_str!("Offset"))
+                    .default_open(true)
+                    .build()
+                {
+                    particle.offset.x /= 100;
+                    particle.offset.y /= 100;
+                    let _ = ui.input_whole(im_str!("X##Offset"), &mut particle.offset.x);
+                    let _ = ui.input_whole(im_str!("Y##Offset"), &mut particle.offset.y);
+                    particle.offset.x *= 100;
+                    particle.offset.y *= 100;
+                }
+            }
+
+            ui.pop_id();
+        }
 
         if ui.collapsing_header(im_str!("Flags")).build() {
             ui.push_id("Flags");

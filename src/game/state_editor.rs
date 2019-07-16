@@ -358,6 +358,38 @@ impl StateEditor {
             self.resource
                 .draw_at_time(ctx, assets, self.frame, offset)?;
         }
+
+        let draw_cross = |ctx: &mut Context, origin: (f32, f32)| {
+            dbg!(origin);
+            let vertical = Mesh::new_line(
+                ctx,
+                &[[0.0, -10.0], [0.0, 10.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
+
+            let horizontal = Mesh::new_line(
+                ctx,
+                &[[-10.0, 0.0], [10.0, 0.0]],
+                1.0,
+                Color::new(0.0, 1.0, 0.0, 1.0),
+            )?;
+            graphics::draw(
+                ctx,
+                &vertical,
+                DrawParam::default(),
+            )?;
+            graphics::draw(
+                ctx,
+                &horizontal,
+                DrawParam::default(),
+            )
+        };
+        dbg!(&self.resource.particles);
+        for particle_spawn in self.resource.particles.iter().filter(|item| item.frame == self.frame) {
+            draw_cross(ctx, particle_spawn.offest.into_graphical());
+        }
+
         if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
             boxes.collision.draw(
                 ctx,
