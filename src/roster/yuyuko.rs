@@ -47,6 +47,10 @@ impl Yuyuko {
             numpad!(7) => YuyukoMove::JumpBackward,
 
 
+            numpad!(29) => YuyukoMove::SuperJumpForward,
+            numpad!(28) => YuyukoMove::SuperJump,
+            numpad!(27) => YuyukoMove::SuperJumpBackward,
+
             numpad!(6) => YuyukoMove::WalkForward,
             numpad!(4) => YuyukoMove::WalkBackward,
 
@@ -84,6 +88,9 @@ pub enum YuyukoMove {
     Jump,
     JumpForward,
     JumpBackward,
+    SuperJump,
+    SuperJumpForward,
+    SuperJumpBackward,
     AirIdle,
 }
 

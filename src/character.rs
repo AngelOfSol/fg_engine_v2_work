@@ -1,8 +1,10 @@
 mod properties;
 mod states;
+mod particles;
 
 pub use properties::{Properties, PropertiesUi};
 pub use states::{States, StatesUi};
+pub use particles::{Particles};
 
 use crate::character_state::CharacterState;
 
@@ -22,6 +24,8 @@ use ggez::GameError;
 pub struct PlayerCharacter {
     pub states: States<String>,
     pub properties: Properties,
+    #[serde(default)]
+    pub particles: Particles,
 }
 
 impl PlayerCharacter {
@@ -29,6 +33,7 @@ impl PlayerCharacter {
         PlayerCharacter {
             states: States::new(),
             properties: Properties::new(),
+            particles: Particles::new(),
         }
     }
 

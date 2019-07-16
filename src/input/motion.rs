@@ -71,6 +71,7 @@ pub enum Input {
     QuarterCircle(Direction, ButtonSet),
     DragonPunch(Direction, ButtonSet),
     DoubleTap(DirectedAxis),
+    SuperJump(DirectedAxis),
 }
 
 impl Input {
@@ -82,12 +83,14 @@ impl Input {
             Input::Holding(dir, button) => Input::Holding(dir.invert(), button),
             Input::QuarterCircle(dir, button) => Input::QuarterCircle(dir.invert(), button),
             Input::DragonPunch(dir, button) => Input::DragonPunch(dir.invert(), button),
+            Input::SuperJump(dir) => Input::SuperJump(dir.invert()),
         }
     }
 }
 
 pub fn read_inputs(buffer: &InputBuffer, facing_right: bool) -> Vec<Input> {
     [
+        read_super_jump(buffer),
         read_dragon_punch(buffer),
         read_quarter_circle(buffer),
         read_button(buffer),
@@ -118,6 +121,43 @@ fn read_double_tap(buffer: &InputBuffer) -> Option<Input> {
     }
     if inputs[2].1 == axis {
         Some(Input::DoubleTap(axis.into()))
+    } else {
+        None
+    }
+}
+
+fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
+    let inputs = buffer.iter().into_direction_iter().collect::<Vec<_>>();
+
+    if inputs.len() < 4 {
+        return None;
+    }
+
+    let (time, axis) = inputs[0];
+    if time > 1 && !axis.is_up() {
+        return None;
+    }
+    let time = inputs
+        .iter()
+        .skip(1)
+        .take(2)
+        .fold(Some(0), |acc, (time, axis)| match acc {
+            Some(acc_time) => {
+                if axis.is_down() {
+                    None
+                } else {
+                    Some(*time + acc_time)
+                }
+            }
+            None => None,
+        });
+    let (last_time, last_axis) = inputs[3];
+    if time.is_none()
+        || (time.unwrap() <= MOTION_DIRECTION_SIZE * 2
+            && last_axis.is_down()
+            && last_time <= MOTION_DIRECTION_SIZE)
+    {
+        Some(Input::SuperJump(axis.into()))
     } else {
         None
     }

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2, Vec3};
+use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2};
 
 use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
@@ -21,7 +21,7 @@ impl Hitbox {
     pub fn new() -> Self {
         Self {
             center: Vec2::zeros(),
-            half_size: Vec2::new(100, 100),
+            half_size: Vec2::new(1_00, 1_00),
         }
     }
     pub fn with_half_size(half_size: Vec2) -> Self {
@@ -29,13 +29,6 @@ impl Hitbox {
             center: Vec2::zeros(),
             half_size,
         }
-    }
-
-    pub fn left(&self) -> Int {
-        self.center.x - self.half_size.x
-    }
-    pub fn top(&self) -> Int {
-        self.center.y - self.half_size.y
     }
 
     pub fn size(&self) -> Vec2 {

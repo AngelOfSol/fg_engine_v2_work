@@ -99,6 +99,18 @@ impl Axis {
             _ => false,
         }
     }
+    pub fn is_up(self) -> bool {
+        match self {
+            Axis::Up | Axis::UpLeft | Axis::UpRight => true,
+            _ => false,
+        }
+    }
+    pub fn is_down(self) -> bool {
+        match self {
+            Axis::Down | Axis::DownLeft | Axis::DownRight => true,
+            _ => false,
+        }
+    }
 
     pub fn get_direction(self) -> Option<Direction> {
         match self {

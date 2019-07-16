@@ -27,6 +27,15 @@ macro_rules! numpad {
     (44) => {
         Input::DoubleTap(read_axis!(4))
     };
+    (29) => {
+        Input::SuperJump(read_axis!(9))
+    };
+    (28) => {
+        Input::SuperJump(read_axis!(8))
+    };
+    (27) => {
+        Input::SuperJump(read_axis!(7))
+    };
     ($dir:tt) => {
         Input::Idle(read_axis!($dir))
     };
