@@ -1,4 +1,4 @@
-use crate::animation::Sprite;
+use crate::graphics::Sprite;
 
 use crate::assets::Assets;
 

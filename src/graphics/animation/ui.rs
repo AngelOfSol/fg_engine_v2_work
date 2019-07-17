@@ -1,4 +1,4 @@
-use crate::animation::sprite::{Sprite, SpriteUi};
+use super::super::sprite::{Sprite, SpriteUi};
 
 use super::{Animation, BlendMode};
 

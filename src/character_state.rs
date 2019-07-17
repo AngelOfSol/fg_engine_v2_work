@@ -4,7 +4,7 @@ pub mod flags;
 pub mod hitbox_set;
 pub mod particle_spawn_data;
 
-use crate::animation::Animation;
+use crate::graphics::Animation;
 use crate::assets::Assets;
 
 use crate::imgui_extra::UiExtensions;

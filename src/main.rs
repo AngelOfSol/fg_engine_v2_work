@@ -16,7 +16,7 @@ mod attack;
 #[macro_use]
 mod imgui_extra;
 
-mod animation;
+mod graphics;
 mod assets;
 mod editor;
 mod timeline;

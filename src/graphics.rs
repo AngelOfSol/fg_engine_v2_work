@@ -1,4 +1,3 @@
-#[allow(clippy::module_inception)]
 mod animation;
 mod graphics;
 mod sprite;

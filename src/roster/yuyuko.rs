@@ -25,7 +25,7 @@ use crate::command_list::CommandList;
 
 use crate::{make_command_list, numpad, read_axis};
 
-use crate::animation::Animation;
+use crate::graphics::Animation;
 
 pub struct Yuyuko {
     assets: Assets,

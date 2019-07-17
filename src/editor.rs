@@ -17,7 +17,7 @@ pub use character_editor::CharacterEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
 
-use crate::animation::Animation;
+use crate::graphics::Animation;
 use crate::character_state::CharacterState;
 
 use crate::runner::{AppState, RunnerState};

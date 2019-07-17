@@ -13,7 +13,7 @@ use crate::character::{ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
 
 use std::path::PathBuf;
 
-use crate::animation::Animation;
+use crate::graphics::Animation;
 
 pub struct CharacterEditor {
     resource: PlayerCharacter,

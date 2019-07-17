@@ -1,4 +1,4 @@
-use crate::animation::Animation;
+use crate::graphics::Animation;
 use serde::{Deserialize, Serialize};
 
 use crate::assets::Assets;

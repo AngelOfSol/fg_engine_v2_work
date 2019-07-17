@@ -2,7 +2,7 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 
-use crate::animation::{Animation, AnimationUi};
+use crate::graphics::{Animation, AnimationUi};
 
 use crate::assets::Assets;
 use crate::editor::{EditorState, MessageData, Transition};

@@ -54,14 +54,6 @@ pub trait UiExtensions {
         height_in_items: i32,
     ) -> Option<&'items mut T>;
 
-    fn list_box_owned<'p>(
-        &self,
-        label: &'p ImStr,
-        current_item: &mut i32,
-        items: &'p [ImString],
-        height_in_items: i32,
-    ) -> bool;
-
     fn input_whole<I: Copy + TryInto<i32> + TryFrom<i32>>(
         &self,
         label: &ImStr,
@@ -215,22 +207,6 @@ impl<'a> UiExtensions for Ui<'a> {
         }
         changed
     }
-
-    fn list_box_owned<'p>(
-        &self,
-        label: &'p ImStr,
-        current_item: &mut i32,
-        items: &'p [ImString],
-        height_in_items: i32,
-    ) -> bool {
-        self.list_box(
-            label,
-            current_item,
-            &items.iter().collect::<Vec<_>>(),
-            height_in_items,
-        )
-    }
-
     fn new_delete_list_box<
         'items,
         T,

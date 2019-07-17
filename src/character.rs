@@ -14,7 +14,7 @@ use crate::assets::Assets;
 
 use ggez::{Context, GameResult};
 
-use crate::animation::Animation;
+use crate::graphics::Animation;
 
 use std::fs::File;
 use std::io::BufReader;
