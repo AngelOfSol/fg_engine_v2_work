@@ -10,7 +10,7 @@ use crate::assets::Assets;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
+use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
 
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
@@ -28,6 +28,12 @@ pub struct Sprite {
     pub offset: Vec2,
     pub image: String,
     pub rotation: f32,
+    #[serde(default = "default_scale")]
+    pub scale: Vec2,
+}
+
+fn default_scale() -> Vec2 {
+    Vec2::new(1.0, 1.0)
 }
 
 pub fn load_image<S: Into<String>, P: AsRef<Path>>(
@@ -99,6 +105,7 @@ impl Sprite {
             offset: nalgebra::zero(),
             image: path.into(),
             rotation: 0.0,
+            scale: default_scale(),
         }
     }
 
@@ -127,9 +134,11 @@ impl Sprite {
             0.0,
         ));
 
+        let sprite_scale = Matrix4::new_nonuniform_scaling(&up_dimension(self.scale));
+
         let sprite_offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
 
-        let transform = world * image_offset * sprite_offset;
+        let transform = world * sprite_scale * image_offset * sprite_offset;
 
         graphics::set_transform(ctx, transform);
         graphics::apply_transformations(ctx)?;
@@ -183,9 +192,22 @@ impl SpriteUi {
             .default_open(true)
             .build()
         {
+            ui.push_id("Offset");
             ui.input_float(im_str!("X"), &mut sprite.offset.x).build();
             ui.input_float(im_str!("Y"), &mut sprite.offset.y).build();
             ui.separator();
+            ui.pop_id();
+        }
+        if ui
+            .collapsing_header(im_str!("Scale"))
+            .default_open(true)
+            .build()
+        {
+            ui.push_id("Scale");
+            ui.input_float(im_str!("X"), &mut sprite.scale.x).build();
+            ui.input_float(im_str!("Y"), &mut sprite.scale.y).build();
+            ui.separator();
+            ui.pop_id();
         }
         ui.input_float(im_str!("Rotation"), &mut sprite.rotation)
             .build();

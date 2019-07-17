@@ -129,7 +129,7 @@ fn read_double_tap(buffer: &InputBuffer) -> Option<Input> {
 fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
     let inputs = buffer.iter().into_direction_iter().collect::<Vec<_>>();
 
-    if inputs.len() < 4 {
+    if inputs.len() < 5 {
         return None;
     }
 
@@ -140,7 +140,7 @@ fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
     let time = inputs
         .iter()
         .skip(1)
-        .take(2)
+        .take(3)
         .fold(Some(0), |acc, (time, axis)| match acc {
             Some(acc_time) => {
                 if axis.is_down() {
@@ -153,7 +153,7 @@ fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
         });
     let (last_time, last_axis) = inputs[3];
     if time.is_none()
-        || (time.unwrap() <= MOTION_DIRECTION_SIZE * 2
+        || (time.unwrap() <= MOTION_DIRECTION_SIZE * 3
             && last_axis.is_down()
             && last_time <= MOTION_DIRECTION_SIZE)
     {

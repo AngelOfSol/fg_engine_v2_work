@@ -16,30 +16,44 @@ pub enum MoveType {
     Jump,
     HiJump,
     Dash,
-    Fly,
     Melee,
     Magic,
     MeleeSpecial,
     MagicSpecial,
     Super,
     Followup,
+    Fly,
+    AirDash,
+    AirMelee,
+    AirMagic,
+    AirMeleeSpecial,
+    AirMagicSpecial,
+    AirSuper,
+    AirFollowup,
 }
-const ALL_MOVE_TYPES: [MoveType; 12] = [
+const ALL_MOVE_TYPES: [MoveType; 19] = [
     MoveType::Idle,
     MoveType::Walk,
     MoveType::Jump,
     MoveType::HiJump,
     MoveType::Dash,
-    MoveType::Fly,
     MoveType::Melee,
     MoveType::Magic,
     MoveType::MeleeSpecial,
     MoveType::MagicSpecial,
     MoveType::Super,
     MoveType::Followup,
+    MoveType::Fly,
+    MoveType::AirDash,
+    MoveType::AirMelee,
+    MoveType::AirMagic,
+    MoveType::AirMeleeSpecial,
+    MoveType::AirMagicSpecial,
+    MoveType::AirSuper,
+    MoveType::AirFollowup,
 ];
 impl MoveType {
-    pub fn all() -> &'static [MoveType; 12] {
+    pub fn all() -> &'static [MoveType; 19] {
         &ALL_MOVE_TYPES
     }
 }
@@ -61,6 +75,13 @@ impl Display for MoveType {
                 MoveType::MagicSpecial => "Magic Special",
                 MoveType::Super => "Super",
                 MoveType::Followup => "Follow Up",
+                MoveType::AirDash => "Air Dash",
+                MoveType::AirMelee => "Air Melee",
+                MoveType::AirMagic => "Air Magic",
+                MoveType::AirMeleeSpecial => "Air Melee Special",
+                MoveType::AirMagicSpecial => "Air Magic Special",
+                MoveType::AirSuper => "Air Super",
+                MoveType::AirFollowup => "Air Followup",
             }
         )
     }

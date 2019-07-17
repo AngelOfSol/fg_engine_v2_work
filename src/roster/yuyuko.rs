@@ -139,7 +139,7 @@ impl YuyukoData {
             CharacterState::load(ctx, assets, state, &name.to_string(), path.clone())?;
         }
         path.push("particles");
-        for (name, particle) in character.particles.iter() {
+        for (_name, particle) in character.particles.iter() {
             Animation::load(ctx, assets, particle, path.clone())?;
         }
         Ok(character)
@@ -189,25 +189,6 @@ impl YuyukoState {
 
         let hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
         let flags = data.states[&yuyu_move].flags.at_time(frame);
-        let mut particles = self.particles.clone();
-        for (ref mut frame, _, _) in particles.iter_mut() {
-            *frame += 1;
-        }
-        for particle in data.states[&yuyu_move]
-            .particles
-            .iter()
-            .filter(|item| item.frame == frame)
-        {
-            particles.push((
-                0,
-                particle.offset + self.position,
-                particle.particle_id.clone(),
-            ));
-        }
-        let particles = particles
-            .into_iter()
-            .filter(|item| item.0 < data.particles[&item.2].frames.duration())
-            .collect();
 
         let new_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
@@ -230,7 +211,25 @@ impl YuyukoState {
             } else {
                 new_position
             };
-
+        let mut particles = self.particles.clone();
+        for (ref mut frame, _, _) in particles.iter_mut() {
+            *frame += 1;
+        }
+        for particle in data.states[&yuyu_move]
+            .particles
+            .iter()
+            .filter(|item| item.frame == frame)
+        {
+            particles.push((
+                0,
+                particle.offset + self.position,
+                particle.particle_id.clone(),
+            ));
+        }
+        let particles: Vec<_> = particles
+            .into_iter()
+            .filter(|item| item.0 < data.particles[&item.2].frames.duration())
+            .collect();
         Self {
             velocity: new_velocity,
             position: new_position,
@@ -246,6 +245,7 @@ impl YuyukoState {
         world: graphics::Matrix4,
     ) -> GameResult<()> {
         let (frame, yuyu_move) = self.current_state;
+
         let collision = &data.states[&yuyu_move].hitboxes.at_time(frame).collision;
         let position = world
             * graphics::Matrix4::new_translation(&graphics::up_dimension(
