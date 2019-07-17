@@ -4,6 +4,8 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 use std::hash::Hash;
 
+use crate::typedefs::collision;
+use crate::typedefs::graphics;
 use imgui::*;
 
 #[macro_export]
@@ -22,6 +24,10 @@ pub trait UiExtensions {
         range: &[T],
         data: &mut HashSet<T>,
     );
+
+    fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool;
+    fn input_vec2_int(&self, label: &ImStr, data: &mut collision::Vec2);
+
     fn rearrangable_list_box<T, F: FnMut(&T) -> ImString>(
         &self,
         label: &ImStr,
@@ -48,7 +54,6 @@ pub trait UiExtensions {
         height_in_items: i32,
     ) -> Option<&'items mut T>;
 
-    fn input_text_left(&self, label: &ImStr, buf: &mut ImString);
     fn list_box_owned<'p>(
         &self,
         label: &'p ImStr,
@@ -201,14 +206,6 @@ impl<'a> UiExtensions for Ui<'a> {
         Ok(changed)
     }
 
-    fn input_text_left(&self, label: &ImStr, buf: &mut ImString) {
-        unsafe { imgui_sys::igAlignTextToFramePadding() };
-        self.text(label);
-        self.same_line(0.0);
-        self.push_id(label);
-        self.input_text(im_str!("###Input"), buf).build();
-        self.pop_id();
-    }
     fn input_string(&self, label: &ImStr, value: &mut String) -> bool {
         let mut buffer = im_str_owned!("{}", value.clone());
         buffer.reserve_exact(16);
@@ -233,6 +230,7 @@ impl<'a> UiExtensions for Ui<'a> {
             height_in_items,
         )
     }
+
     fn new_delete_list_box<
         'items,
         T,
@@ -262,5 +260,22 @@ impl<'a> UiExtensions for Ui<'a> {
         }
 
         idx.map(move |idx| &mut items[idx])
+    }
+
+    fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool {
+        self.push_id(label);
+        self.text(label);
+        let ret = self.input_float(im_str!("X"), &mut data.x).build()
+            || self.input_float(im_str!("Y"), &mut data.y).build();
+        self.pop_id();
+        ret
+    }
+
+    fn input_vec2_int(&self, label: &ImStr, data: &mut collision::Vec2) {
+        self.push_id(label);
+        self.text(label);
+        let _ = self.input_whole(im_str!("X"), &mut data.x);
+        let _ = self.input_whole(im_str!("Y"), &mut data.y);
+        self.pop_id();
     }
 }
