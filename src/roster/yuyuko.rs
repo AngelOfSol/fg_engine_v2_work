@@ -25,13 +25,17 @@ use crate::command_list::CommandList;
 
 use crate::{make_command_list, numpad, read_axis};
 
+use crate::animation::Animation;
+
 pub struct Yuyuko {
     assets: Assets,
     states: YuyukoStateList,
+    particles: YuyukoParticleList,
     command_list: CommandList<YuyukoMove>,
 }
 
 type YuyukoStateList = HashMap<YuyukoMove, CharacterState<YuyukoMove>>;
+type YuyukoParticleList = HashMap<String, Animation>;
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
@@ -45,6 +49,9 @@ impl Yuyuko {
             numpad!(9) => YuyukoMove::JumpForward,
             numpad!(8) => YuyukoMove::Jump,
             numpad!(7) => YuyukoMove::JumpBackward,
+            numpad!(9) => YuyukoMove::SuperJumpForward,
+            numpad!(8) => YuyukoMove::SuperJump,
+            numpad!(7) => YuyukoMove::SuperJumpBackward,
 
 
             numpad!(29) => YuyukoMove::SuperJumpForward,
@@ -67,6 +74,7 @@ impl Yuyuko {
         Ok(Yuyuko {
             assets,
             states: data.states,
+            particles: data.particles,
             command_list,
         })
     }
@@ -112,6 +120,7 @@ impl YuyukoMove {
 #[derive(Clone, Debug, Deserialize)]
 pub struct YuyukoData {
     states: YuyukoStateList,
+    particles: YuyukoParticleList,
 }
 
 impl YuyukoData {
@@ -129,6 +138,10 @@ impl YuyukoData {
         for (name, state) in character.states.iter() {
             CharacterState::load(ctx, assets, state, &name.to_string(), path.clone())?;
         }
+        path.push("particles");
+        for (name, particle) in character.particles.iter() {
+            Animation::load(ctx, assets, particle, path.clone())?;
+        }
         Ok(character)
     }
 }
@@ -137,6 +150,7 @@ pub struct YuyukoState {
     velocity: collision::Vec2,
     position: collision::Vec2,
     current_state: (usize, YuyukoMove),
+    particles: Vec<(usize, collision::Vec2, String)>,
 }
 
 impl YuyukoState {
@@ -145,6 +159,7 @@ impl YuyukoState {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
             current_state: (0, YuyukoMove::Stand),
+            particles: Vec::new(),
         }
     }
     pub fn update_frame(&self, data: &Yuyuko, input: &InputBuffer) -> Self {
@@ -166,11 +181,6 @@ impl YuyukoState {
                     *new_move != yuyu_move
                         && cancels.always.contains(&data.states[new_move].state_type)
                         && !cancels.disallow.contains(new_move)
-                    /*&& data
-                    .disallow
-                    .get(&yuyu_move)
-                    .map(|disallowed| disallowed != new_move)
-                    .unwrap_or(true)*/
                 })
                 .fold(None, |acc, item| acc.or(Some(item)))
                 .map(|new_move| (0, new_move))
@@ -179,6 +189,25 @@ impl YuyukoState {
 
         let hitboxes = data.states[&yuyu_move].hitboxes.at_time(frame);
         let flags = data.states[&yuyu_move].flags.at_time(frame);
+        let mut particles = self.particles.clone();
+        for (ref mut frame, _, _) in particles.iter_mut() {
+            *frame += 1;
+        }
+        for particle in data.states[&yuyu_move]
+            .particles
+            .iter()
+            .filter(|item| item.frame == frame)
+        {
+            particles.push((
+                0,
+                particle.offset + self.position,
+                particle.particle_id.clone(),
+            ));
+        }
+        let particles = particles
+            .into_iter()
+            .filter(|item| item.0 < data.particles[&item.2].frames.duration())
+            .collect();
 
         let new_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
@@ -186,7 +215,7 @@ impl YuyukoState {
             self.velocity
                 // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
                 + if flags.airborne {
-                    collision::Vec2::new(0_00, -0_30) // TODO: tune gravity
+                    collision::Vec2::new(0_00, -0_25) // TODO: tune gravity
                 } else {
                     collision::Vec2::zeros()
                 }
@@ -206,6 +235,7 @@ impl YuyukoState {
             velocity: new_velocity,
             position: new_position,
             current_state: (frame, yuyu_move),
+            particles,
         }
     }
 
@@ -217,16 +247,32 @@ impl YuyukoState {
     ) -> GameResult<()> {
         let (frame, yuyu_move) = self.current_state;
         let collision = &data.states[&yuyu_move].hitboxes.at_time(frame).collision;
+        let position = world
+            * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                self.position.into_graphical(),
+            ));
 
         data.states[&yuyu_move].draw_at_time(
             ctx,
             &data.assets,
             frame,
-            world
+            position
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    (self.position - collision.center).into_graphical(),
+                    -collision.center.into_graphical(),
                 )),
         )?;
+
+        for (frame, position, id) in &self.particles {
+            data.particles[id].draw_at_time(
+                ctx,
+                &data.assets,
+                *frame,
+                world
+                    * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                        position.into_graphical(),
+                    )),
+            )?;
+        }
         Ok(())
     }
 }

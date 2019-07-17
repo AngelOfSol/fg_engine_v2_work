@@ -30,6 +30,7 @@ pub trait UiExtensions {
         display: F,
         height_in_items: i32,
     ) -> bool;
+    #[allow(clippy::too_many_arguments)]
     fn new_delete_list_box<
         'items,
         T,
