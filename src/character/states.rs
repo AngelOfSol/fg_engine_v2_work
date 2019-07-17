@@ -65,11 +65,15 @@ impl<Id: HashId> States<Id> {
     }
 }
 
-pub struct StatesUi {}
+pub struct StatesUi {
+    state_name_keys: Vec<String>,
+}
 
 impl StatesUi {
-    pub fn new() -> Self {
-        StatesUi {}
+    pub fn new(state: &States<String>) -> Self {
+        let mut state_name_keys: Vec<_> = state.rest.keys().cloned().collect();
+        state_name_keys.sort();
+        StatesUi { state_name_keys }
     }
     pub fn draw_ui(
         &mut self,
@@ -92,19 +96,17 @@ impl StatesUi {
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            data.rest.insert(
-                data.guarentee_unique_key("new state"),
-                CharacterState::new(),
-            );
+            let key = data.guarentee_unique_key("new state");
+            data.rest.insert(key.clone(), CharacterState::new());
+            self.state_name_keys.insert(0, key);
         }
         ui.separator();
         let mut to_delete = None;
         let mut to_change = None;
 
-        let mut state_list = data.rest.iter_mut().collect::<Vec<_>>();
-        state_list.sort_by(|lhs, rhs| lhs.0.cmp(rhs.0));
+        for (idx, name) in self.state_name_keys.iter().enumerate() {
+            let value = data.rest.get_mut(name).unwrap();
 
-        for (idx, (name, value)) in state_list.into_iter().enumerate() {
             ui.push_id(&format!("Rest {} {}", idx, value.duration()));
             let mut buffer = name.clone();
             if ui.input_string(im_str!("Name"), &mut buffer) {
@@ -112,7 +114,7 @@ impl StatesUi {
             }
             ui.next_column();
             if ui.small_button(im_str!("Edit")) {
-                ret = Some(Mode::Edit(name.to_owned()));
+                ret = Some(Mode::Edit(name.clone()));
             }
             ui.same_line(0.0);
             if ui.small_button(im_str!("Load")) {
@@ -129,11 +131,19 @@ impl StatesUi {
         }
 
         if let Some(key) = to_delete {
-            data.rest.remove(&key);
+            if let Some(idx) = self.state_name_keys.iter().position(|item| item == &key) {
+                self.state_name_keys.remove(idx);
+                data.rest.remove(&key);
+            }
         }
         if let Some((old, new)) = to_change {
             let state = data.rest.remove(&old).unwrap();
-            data.rest.insert(data.guarentee_unique_key(new), state);
+            let new = data.guarentee_unique_key(new);
+            data.rest.insert(new.clone(), state.clone());
+            if let Some(idx) = self.state_name_keys.iter().position(|item| item == &old) {
+                self.state_name_keys.remove(idx);
+                self.state_name_keys.insert(idx, new);
+            }
         }
 
         Ok(ret)

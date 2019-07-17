@@ -30,6 +30,22 @@ pub trait UiExtensions {
         display: F,
         height_in_items: i32,
     ) -> bool;
+    fn new_delete_list_box<
+        'items,
+        T,
+        Display: FnMut(&T) -> ImString,
+        New: FnMut() -> T,
+        Delete: FnMut(T) -> (),
+    >(
+        &self,
+        label: &ImStr,
+        idx: &mut Option<usize>,
+        items: &'items mut Vec<T>,
+        display: Display,
+        new: New,
+        delete: Delete,
+        height_in_items: i32,
+    ) -> Option<&'items mut T>;
 
     fn input_text_left(&self, label: &ImStr, buf: &mut ImString);
     fn list_box_owned<'p>(
@@ -215,5 +231,35 @@ impl<'a> UiExtensions for Ui<'a> {
             &items.iter().collect::<Vec<_>>(),
             height_in_items,
         )
+    }
+    fn new_delete_list_box<
+        'items,
+        T,
+        Display: FnMut(&T) -> ImString,
+        New: FnMut() -> T,
+        Delete: FnMut(T) -> (),
+    >(
+        &self,
+        label: &ImStr,
+        idx: &mut Option<usize>,
+        items: &'items mut Vec<T>,
+        display: Display,
+        mut new: New,
+        mut delete: Delete,
+        height_in_items: i32,
+    ) -> Option<&'items mut T> {
+        self.rearrangable_list_box(label, idx, items, display, height_in_items);
+        if self.small_button(im_str!("New")) {
+            items.push(new());
+        }
+        self.same_line(0.0);
+        if self.small_button(im_str!("Delete")) {
+            if let Some(idx) = idx {
+                let item = items.remove(*idx);
+                delete(item);
+            }
+        }
+
+        idx.map(move |idx| &mut items[idx])
     }
 }

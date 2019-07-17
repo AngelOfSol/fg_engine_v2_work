@@ -19,15 +19,18 @@ pub struct CharacterEditor {
     resource: PlayerCharacter,
     transition: Transition,
     particle_ui_data: ParticlesUi,
+    states_ui_data: StatesUi,
 }
 //ParticlesUi::new(&self.resource.particles)
 impl CharacterEditor {
     pub fn new() -> Self {
         let resource = PlayerCharacter::new();
         let particle_ui_data = ParticlesUi::new(&resource.particles);
+        let states_ui_data = StatesUi::new(&resource.states);
         Self {
             resource,
             particle_ui_data,
+            states_ui_data,
             transition: Transition::None,
         }
     }
@@ -100,7 +103,8 @@ impl CharacterEditor {
                     .collapsible(false)
                     .build(|| {
                         let edit_result =
-                            StatesUi::new().draw_ui(ctx, assets, ui, &mut self.resource.states);
+                            self.states_ui_data
+                                .draw_ui(ctx, assets, ui, &mut self.resource.states);
                         if let Ok(Some(mode)) = &edit_result {
                             let state = match mode {
                                 Mode::Edit(key) => self.resource.states.get_state(key).clone(),
@@ -148,6 +152,8 @@ impl CharacterEditor {
                     ui.menu(im_str!("Player Editor")).build(|| {
                         if ui.menu_item(im_str!("New")).build() {
                             self.resource = PlayerCharacter::new();
+                            self.particle_ui_data = ParticlesUi::new(&self.resource.particles);
+                            self.states_ui_data = StatesUi::new(&self.resource.states)
                         }
                         if ui.menu_item(im_str!("Save")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
@@ -172,6 +178,7 @@ impl CharacterEditor {
                                         self.resource = character;
                                         self.particle_ui_data =
                                             ParticlesUi::new(&self.resource.particles);
+                                        self.states_ui_data = StatesUi::new(&self.resource.states)
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }

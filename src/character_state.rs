@@ -275,20 +275,15 @@ impl CharacterStateUi {
 
         if ui.collapsing_header(im_str!("Particles")).build() {
             ui.push_id("Particles");
-            ui.rearrangable_list_box(
+            if let Some(particle) = ui.new_delete_list_box(
                 im_str!("List"),
                 &mut self.current_particle,
                 &mut data.particles,
                 |item| im_str!("{}", item.particle_id.clone()),
+                ParticleSpawn::new,
+                |_| {},
                 5,
-            );
-            if ui.small_button(im_str!("New")) {
-                data.particles.push(ParticleSpawn::new());
-            }
-
-            if let Some(idx) = self.current_particle {
-                let particle = &mut data.particles[idx];
-
+            ) {
                 ui.input_string(im_str!("ID"), &mut particle.particle_id);
 
                 let _ = ui.input_whole(im_str!("Spawn Frame"), &mut particle.frame);
@@ -305,7 +300,6 @@ impl CharacterStateUi {
                     particle.offset.y *= 100;
                 }
             }
-
             ui.pop_id();
         }
 
