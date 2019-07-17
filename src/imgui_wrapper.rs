@@ -147,6 +147,11 @@ impl ImGuiWrapper {
             mouse_state: MouseState::default(),
         }
     }
+    pub fn resize(&mut self, ctx: &Context) {
+        let screen_size = graphics::drawable_size(ctx);
+        self.imgui.io_mut().display_size = [screen_size.0, screen_size.1];
+        self.imgui.io_mut().font_global_scale = 1.0 / graphics::hidpi_factor(ctx);
+    }
 
     pub fn frame(&mut self) -> ImguiFrameRunner<'_, '_, RunUi> {
         // Update mouse

@@ -24,6 +24,12 @@ pub trait UiExtensions {
         range: &[T],
         data: &mut HashSet<T>,
     );
+    fn checkbox_hash<T: Clone + Hash + PartialEq + Eq>(
+        &self,
+        label: &ImStr,
+        item: &T,
+        data: &mut HashSet<T>,
+    );
 
     fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool;
     fn input_vec2_int(&self, label: &ImStr, data: &mut collision::Vec2);
@@ -86,6 +92,21 @@ impl<'a> UiExtensions for Ui<'a> {
                 } else {
                     data.remove(item);
                 }
+            }
+        }
+    }
+    fn checkbox_hash<T: Clone + Hash + PartialEq + Eq>(
+        &self,
+        label: &ImStr,
+        item: &T,
+        data: &mut HashSet<T>,
+    ) {
+        let mut buffer = data.contains(&item);
+        if self.checkbox(label, &mut buffer) {
+            if buffer {
+                data.insert(item.clone());
+            } else {
+                data.remove(item);
             }
         }
     }

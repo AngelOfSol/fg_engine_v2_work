@@ -114,6 +114,10 @@ pub struct CancelSetUi {
     new_disallow: String,
 }
 
+const GREEN: [f32; 4] = [0.2, 1.0, 0.2, 1.0];
+const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
+const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
+
 impl CancelSetUi {
     pub fn new() -> CancelSetUi {
         CancelSetUi {
@@ -121,57 +125,59 @@ impl CancelSetUi {
         }
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
-        if ui.collapsing_header(im_str!("Always")).build() {
-            ui.push_id("Always");
-            ui.checkbox_set(MoveType::all(), &mut data.always);
-            ui.pop_id();
-        }
-        if ui.collapsing_header(im_str!("On Block")).build() {
-            ui.push_id("On Block");
-            ui.checkbox_set(MoveType::all(), &mut data.block);
-            ui.pop_id();
-        }
-        if ui.collapsing_header(im_str!("On Hit")).build() {
-            ui.push_id("On Hit");
-            ui.checkbox_set(MoveType::all(), &mut data.hit);
-            ui.pop_id();
-        }
-        if ui.collapsing_header(im_str!("Disallowed")).build() {
-            let mut to_delete = None;
-            for item in data.disallow.iter() {
-                ui.text(im_str!("{}", item));
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("Delete")) {
-                    to_delete = Some(item.clone());
-                }
-            }
-            if let Some(item) = to_delete {
-                data.disallow.remove(&item);
-            }
-
-            ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
+        for move_type in MoveType::all() {
+            ui.text(&im_str!("{}:", move_type));
+            let _token = ui.push_style_color(StyleColor::Text, GREEN);
+            ui.checkbox_hash(im_str!("Always"), move_type, &mut data.always);
+            let _token = ui.push_style_color(StyleColor::Text, BLUE);
             ui.same_line(0.0);
-            if ui.small_button(im_str!("Add")) {
-                let new = std::mem::replace(&mut self.new_disallow, "".to_owned());
-                data.disallow.insert(new);
+            ui.checkbox_hash(im_str!("Block"), move_type, &mut data.block);
+            let _token = ui.push_style_color(StyleColor::Text, RED);
+            ui.same_line(0.0);
+            ui.checkbox_hash(im_str!("Hit"), move_type, &mut data.hit);
+        }
+        ui.separator();
+
+        ui.text(im_str!("Disallowed"));
+        let mut to_delete = None;
+        for item in data.disallow.iter() {
+            {
+                let _token = ui.push_style_color(StyleColor::Text, RED);
+                ui.text(im_str!("{}", item));
             }
+            ui.same_line(0.0);
+            if ui.small_button(im_str!("Delete")) {
+                to_delete = Some(item.clone());
+            }
+        }
+        if let Some(item) = to_delete {
+            data.disallow.remove(&item);
+        }
+
+        ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
+        ui.same_line(0.0);
+        if ui.small_button(im_str!("Add")) && self.new_disallow != "" {
+            let new = std::mem::replace(&mut self.new_disallow, "".to_owned());
+            data.disallow.insert(new);
         }
     }
     pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet<String>) {
-        if ui.collapsing_header(im_str!("Always")).build() {
-            for move_type in data.always.iter() {
-                ui.text(im_str!("{}", move_type));
-            }
+        ui.text(im_str!("Always"));
+        for move_type in data.always.iter() {
+            let _token = ui.push_style_color(StyleColor::Text, GREEN);
+            ui.text(im_str!("{}", move_type));
         }
-        if ui.collapsing_header(im_str!("On Block")).build() {
-            for move_type in data.block.iter() {
-                ui.text(im_str!("{}", move_type));
-            }
+        ui.separator();
+        ui.text(im_str!("On Block"));
+        for move_type in data.block.iter() {
+            let _token = ui.push_style_color(StyleColor::Text, BLUE);
+            ui.text(im_str!("{}", move_type));
         }
-        if ui.collapsing_header(im_str!("On Hit")).build() {
-            for move_type in data.hit.iter() {
-                ui.text(im_str!("{}", move_type));
-            }
+        ui.separator();
+        ui.text(im_str!("On Hit"));
+        for move_type in data.hit.iter() {
+            let _token = ui.push_style_color(StyleColor::Text, RED);
+            ui.text(im_str!("{}", move_type));
         }
     }
 }

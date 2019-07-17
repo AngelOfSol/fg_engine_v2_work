@@ -39,7 +39,6 @@ struct DrawMode {
     hurtbox_alpha: f32,
     hitbox_alpha: f32,
     debug_animation: bool,
-    show_travel: bool,
     show_axes: bool,
 }
 
@@ -56,7 +55,6 @@ impl StateEditor {
                 hurtbox_alpha: 0.15,
                 hitbox_alpha: 0.15,
                 debug_animation: true,
-                show_travel: true,
                 show_axes: true,
             },
         }
@@ -73,7 +71,6 @@ impl StateEditor {
                 hurtbox_alpha: 0.15,
                 hitbox_alpha: 0.15,
                 debug_animation: true,
-                show_travel: true,
                 show_axes: true,
             },
         }
@@ -132,6 +129,26 @@ impl StateEditor {
         Ok(ret)
     }
 
+    fn handle_transition(&mut self, result: Option<Mode>) {
+        if let Some(mode) = &result {
+            let animation = match &mode {
+                Mode::Edit(name) => self
+                    .resource
+                    .animations
+                    .iter()
+                    .map(|item| &item.animation)
+                    .find(|item| &item.name == name)
+                    .cloned()
+                    .unwrap(),
+                _ => Animation::new("new"),
+            };
+            self.transition = Transition::Push(
+                Box::new(AnimationEditor::with_animation(animation).into()),
+                mode.clone(),
+            );
+        }
+    }
+
     pub fn draw(
         &mut self,
         ctx: &mut Context,
@@ -139,83 +156,44 @@ impl StateEditor {
         imgui: &mut ImGuiWrapper,
     ) -> GameResult<()> {
         let mut editor_result = Ok(());
-        let move_data = {
-            let mut move_data = MovementData::new();
-
-            for frame in 0..self.frame {
-                let flags = self.resource.flags.try_time(frame);
-                if let Some(flags) = flags {
-                    move_data = flags.apply_movement(move_data);
-                } else {
-                    move_data.vel += move_data.accel;
-                    move_data.pos += move_data.vel;
-                }
-            }
-            move_data
-        };
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Editor"))
-                    .size([300.0, 526.0], Condition::Always)
+                ui.window(im_str!("Properties"))
+                    .size([300.0, 100.0], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
                     .build(|| {
-                        let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
-                        if let Ok(Some(mode)) = &result {
-                            let animation = match &mode {
-                                Mode::Edit(name) => self
-                                    .resource
-                                    .animations
-                                    .iter()
-                                    .map(|item| &item.animation)
-                                    .find(|item| &item.name == name)
-                                    .cloned()
-                                    .unwrap(),
-                                _ => Animation::new("new"),
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(AnimationEditor::with_animation(animation).into()),
-                                mode.clone(),
-                            );
-                        }
-                        editor_result = result.map(|_| ());
+                        //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
+                        //self.handle_transition(result);
+                        self.ui_data.draw_header(ui, &mut self.resource);
                     });
-                ui.window(im_str!("Animation"))
-                    .size([600.0, 263.0], Condition::Always)
-                    .position([300.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {});
-                ui.window(im_str!("Current Flags"))
-                    .size([200.0, 263.0], Condition::Always)
-                    .position([300.0, 263.0 + 20.0], Condition::Always)
+                ui.window(im_str!("Animations"))
+                    .size([300.0, 345.0], Condition::Always)
+                    .position([0.0, 120.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
                     .build(|| {
-                        if let Some(data) = self.resource.flags.try_time(self.frame) {
-                            FlagsUi::draw_display_ui(ui, data, &move_data);
-                        }
-                    });
-                ui.window(im_str!("Current Cancels"))
-                    .size([200.0, 263.0], Condition::Always)
-                    .position([500.0, 263.0 + 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(|| {
-                        if let Some(data) = self.resource.cancels.try_time(self.frame) {
-                            CancelSetUi::draw_display_ui(ui, data);
-                        }
+                        //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
+                        //
+                        let result = self.ui_data.draw_animation_editor(
+                            ctx,
+                            assets,
+                            ui,
+                            &mut self.resource.animations,
+                        );
+                        self.resource.fix_duration();
+                        self.handle_transition(result);
                     });
                 ui.window(im_str!("Playback"))
-                    .size([300.0, 160.0], Condition::Always)
-                    .position([0.0, 546.0], Condition::Always)
+                    .size([300.0, 200.0], Condition::Always)
+                    .position([0.0, 465.0], Condition::Always)
                     .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
                     .build(|| {
                         if self.resource.duration() > 0 {
                             if ui
@@ -241,8 +219,6 @@ impl StateEditor {
                         ui.separator();
                         ui.checkbox(im_str!("Debug"), &mut self.draw_mode.debug_animation);
                         ui.same_line(0.0);
-                        ui.checkbox(im_str!("Movement"), &mut self.draw_mode.show_travel);
-                        ui.same_line(0.0);
                         ui.checkbox(im_str!("Axes"), &mut self.draw_mode.show_axes);
                         ui.text(im_str!("Alpha"));
                         ui.separator();
@@ -267,6 +243,88 @@ impl StateEditor {
                             1.0,
                         )
                         .build();
+                    });
+                ui.window(im_str!("Particles"))
+                    .size([300.0, 280.0], Condition::Always)
+                    .position([300.0, 283.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        self.ui_data
+                            .draw_particle_editor(ui, &mut self.resource.particles);
+                    });
+                ui.window(im_str!("Flags"))
+                    .size([300.0, 420.0], Condition::Always)
+                    .position([600.0, 283.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        self.ui_data.draw_flags_editor(ui, &mut self.resource.flags);
+                    });
+                ui.window(im_str!("Cancels"))
+                    .size([300.0, 420.0], Condition::Always)
+                    .position([900.0, 283.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        self.ui_data
+                            .draw_cancels_editor(ui, &mut self.resource.cancels);
+                    });
+                ui.window(im_str!("Hitboxes"))
+                    .size([300.0, 700.0], Condition::Always)
+                    .position([1200.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        self.ui_data
+                            .draw_hitbox_editor(ui, &mut self.resource.hitboxes);
+                    });
+                ui.window(im_str!("Animation"))
+                    .size([300.0, 263.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {});
+                ui.window(im_str!("Current Flags"))
+                    .size([300.0, 263.0], Condition::Always)
+                    .position([600.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        if let Some(data) = self.resource.flags.try_time(self.frame) {
+                            let move_data = {
+                                let mut move_data = MovementData::new();
+
+                                for frame in 0..self.frame {
+                                    let flags = self.resource.flags.try_time(frame);
+                                    if let Some(flags) = flags {
+                                        move_data = flags.apply_movement(move_data);
+                                    } else {
+                                        move_data.vel += move_data.accel;
+                                        move_data.pos += move_data.vel;
+                                    }
+                                }
+                                move_data
+                            };
+                            FlagsUi::draw_display_ui(ui, data, &move_data);
+                        }
+                    });
+                ui.window(im_str!("Current Cancels"))
+                    .size([300.0, 263.0], Condition::Always)
+                    .position([900.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(|| {
+                        if let Some(data) = self.resource.cancels.try_time(self.frame) {
+                            CancelSetUi::draw_display_ui(ui, data);
+                        }
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor")).build(|| {
@@ -313,13 +371,13 @@ impl StateEditor {
             })
             .render(ctx);
         editor_result?;
-
+        let animation_window_center = Matrix4::new_translation(&Vec3::new(450.0, 270.0, 0.0));
         if self.draw_mode.show_axes {
-            graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 240.0, 0.0)));
+            graphics::set_transform(ctx, animation_window_center);
             graphics::apply_transformations(ctx)?;
             let x_axis = Mesh::new_line(
                 ctx,
-                &[[-280.0, 0.0], [280.0, 0.0]],
+                &[[-140.0, 0.0], [140.0, 0.0]],
                 1.0,
                 Color::new(0.0, 0.0, 0.0, 1.0),
             )?;
@@ -333,12 +391,8 @@ impl StateEditor {
             graphics::draw(ctx, &y_axis, DrawParam::default())?;
         }
 
-        let movement_offset = move_data.pos.into_graphical();
         let offset = {
-            let mut offset = Vec3::new(600.0, 240.0, 0.0);
-            if self.draw_mode.show_travel {
-                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
-            }
+            let mut offset = Vec3::zeros();
 
             if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
                 let recenter = boxes.collision.collision_graphic_recenter();
@@ -348,7 +402,7 @@ impl StateEditor {
             offset
         };
 
-        let offset = Matrix4::new_translation(&offset);
+        let offset = animation_window_center * Matrix4::new_translation(&offset);
 
         if self.draw_mode.debug_animation {
             self.resource
@@ -359,10 +413,7 @@ impl StateEditor {
         }
 
         let offset = {
-            let mut offset = Vec3::new(600.0, 240.0, 0.0);
-            if self.draw_mode.show_travel {
-                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
-            }
+            let mut offset = Vec3::zeros();
             if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
                 offset.x -= boxes.collision.center.x.into_graphical();
                 offset.y -= boxes.collision.half_size.y.into_graphical()
@@ -371,7 +422,7 @@ impl StateEditor {
 
             offset
         };
-        let offset = Matrix4::new_translation(&offset);
+        let offset = animation_window_center * Matrix4::new_translation(&offset);
         if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
             boxes.collision.draw(
                 ctx,
@@ -381,17 +432,14 @@ impl StateEditor {
         }
 
         let offset = {
-            let mut offset = Vec3::new(600.0, 240.0, 0.0);
-            if self.draw_mode.show_travel {
-                offset += Vec3::new(movement_offset.x, movement_offset.y, 0.0);
-            }
+            let mut offset = Vec3::zeros();
             if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
                 offset.y -= boxes.collision.half_size.y.into_graphical();
             }
 
             offset
         };
-        let offset = Matrix4::new_translation(&offset);
+        let offset = animation_window_center * Matrix4::new_translation(&offset);
         let draw_cross = |ctx: &mut Context, origin: crate::typedefs::graphics::Vec2| {
             let vertical = Mesh::new_line(
                 ctx,

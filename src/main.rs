@@ -16,9 +16,9 @@ mod attack;
 #[macro_use]
 mod imgui_extra;
 
-mod graphics;
 mod assets;
 mod editor;
+mod graphics;
 mod timeline;
 
 mod character_state;
@@ -56,11 +56,18 @@ fn main() {
     } else {
         path::PathBuf::from("./resources")
     };
+
+    let mut mode = conf::WindowMode::default().dimensions(1280.0, 720.0);
+    for arg in std::env::args() {
+        if arg == "--editor" {
+            mode = conf::WindowMode::default().dimensions(1500.0, 720.0);
+        }
+    }
     // Make a Context and an EventLoop.
     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "angel")
         .add_resource_path(resource_dir)
         .window_setup(conf::WindowSetup::default().title("my_game").vsync(false))
-        .window_mode(conf::WindowMode::default().dimensions(1280.0, 720.0))
+        .window_mode(mode)
         .build()
         .expect("expected context");
 

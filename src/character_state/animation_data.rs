@@ -73,34 +73,11 @@ impl AnimationData {
 pub struct AnimationDataUi;
 
 impl AnimationDataUi {
-    pub fn new() -> Self {
-        Self
-    }
-
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut AnimationData) -> GameResult<()> {
+    pub fn draw_ui(ui: &Ui<'_>, data: &mut AnimationData) {
+        ui.label_text(im_str!("Name"), &im_str!("{}", data.animation.name.clone()));
         let _ = ui.input_whole(im_str!("Delay"), &mut data.delay);
 
-        if ui
-            .collapsing_header(im_str!("Offset"))
-            .default_open(true)
-            .build()
-        {
-            ui.input_float(im_str!("X##Offset"), &mut data.offset.x)
-                .build();
-            ui.input_float(im_str!("Y##Offset"), &mut data.offset.y)
-                .build();
-        }
-
-        if ui
-            .collapsing_header(im_str!("Scale"))
-            .default_open(true)
-            .build()
-        {
-            ui.input_float(im_str!("X##Scale"), &mut data.scale.x)
-                .build();
-            ui.input_float(im_str!("Y##Scale"), &mut data.scale.y)
-                .build();
-        }
-        Ok(())
+        ui.input_vec2_float(im_str!("Offset"), &mut data.offset);
+        ui.input_vec2_float(im_str!("Scale"), &mut data.scale);
     }
 }

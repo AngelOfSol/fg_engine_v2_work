@@ -30,8 +30,11 @@ impl AttackData {
         let _ = ui.input_whole(im_str!("ID"), &mut data.id);
 
         ui.radio_button(im_str!("A"), &mut data.attack_level, AttackLevel::A);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("B"), &mut data.attack_level, AttackLevel::B);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("C"), &mut data.attack_level, AttackLevel::C);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("D"), &mut data.attack_level, AttackLevel::D);
 
         let mut counter = 0;
@@ -100,62 +103,73 @@ impl HitboxSetUi {
     }
 
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut HitboxSet) {
-        ui.push_id("HitboxSet");
-        if ui.collapsing_header(im_str!("Collision")).build() {
-            Hitbox::draw_ui(ui, &mut data.collision);
-        }
-        if ui.collapsing_header(im_str!("Hurtboxes")).build() {
-            ui.push_id("Hurtboxes");
-            let mut counter = 0;
-            ui.rearrangable_list_box(
-                im_str!("List\n[Start, End]"),
-                &mut self.current_hurtbox,
-                &mut data.hurtbox,
-                |_| {
-                    counter += 1;
-                    im_str!("{}", counter)
-                },
-                5,
-            );
-            if ui.small_button(im_str!("Add")) {
-                data.hurtbox.push(Hitbox::new());
-            }
-            if let Some(current_hurtbox) = self.current_hurtbox {
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("Delete")) {
-                    data.hurtbox.remove(current_hurtbox);
-                    if data.hurtbox.is_empty() {
-                        self.current_hurtbox = None;
-                    } else {
-                        self.current_hurtbox =
-                            Some(std::cmp::min(data.hurtbox.len() - 1, current_hurtbox));
+        ui.push_id("Hitbox Set");
+        ui.text(im_str!("Collision"));
+
+        ui.push_id("Collision");
+        Hitbox::draw_ui(ui, &mut data.collision);
+        ui.pop_id();
+        ui.separator();
+
+        ui.child_frame(im_str!("child frame"), ui.get_content_region_avail())
+            .build(|| {
+                ui.text(im_str!("Hurtboxes"));
+                ui.push_id("Hurtboxes");
+                let mut counter = 0;
+                ui.rearrangable_list_box(
+                    im_str!("List\n[Start, End]"),
+                    &mut self.current_hurtbox,
+                    &mut data.hurtbox,
+                    |_| {
+                        counter += 1;
+                        im_str!("{}", counter)
+                    },
+                    5,
+                );
+                if ui.small_button(im_str!("Add")) {
+                    data.hurtbox.push(Hitbox::new());
+                }
+                if let Some(current_hurtbox) = self.current_hurtbox {
+                    ui.same_line(0.0);
+                    if ui.small_button(im_str!("Delete")) {
+                        data.hurtbox.remove(current_hurtbox);
+                        if data.hurtbox.is_empty() {
+                            self.current_hurtbox = None;
+                        } else {
+                            self.current_hurtbox =
+                                Some(std::cmp::min(data.hurtbox.len() - 1, current_hurtbox));
+                        }
                     }
                 }
-            }
 
-            if let Some(ref mut idx) = self.current_hurtbox {
-                let hurtbox = &mut data.hurtbox[*idx];
-                Hitbox::draw_ui(ui, hurtbox);
-            }
-            ui.pop_id();
-        }
-
-        if ui.collapsing_header(im_str!("Hitboxes")).build() {
-            let value = data.hitbox.take();
-            data.hitbox = if let Some(mut hitboxes) = value {
-                if ui.small_button(im_str!("Remove Attack")) {
-                    self.current_attack = None;
-                    None
-                } else {
-                    AttackData::draw_ui(ui, &mut hitboxes, &mut self.current_attack);
-                    Some(hitboxes)
+                if let Some(ref mut idx) = self.current_hurtbox {
+                    let hurtbox = &mut data.hurtbox[*idx];
+                    Hitbox::draw_ui(ui, hurtbox);
                 }
-            } else if ui.small_button(im_str!("Create Attack")) {
-                Some(AttackData::new())
-            } else {
-                None
-            };
-        }
+                ui.pop_id();
+
+                ui.separator();
+
+                ui.push_id("Hitboxes");
+                ui.text(im_str!("Hitboxes"));
+                {
+                    let value = data.hitbox.take();
+                    data.hitbox = if let Some(mut hitboxes) = value {
+                        if ui.small_button(im_str!("Remove Attack")) {
+                            self.current_attack = None;
+                            None
+                        } else {
+                            AttackData::draw_ui(ui, &mut hitboxes, &mut self.current_attack);
+                            Some(hitboxes)
+                        }
+                    } else if ui.small_button(im_str!("Create Attack")) {
+                        Some(AttackData::new())
+                    } else {
+                        None
+                    };
+                }
+                ui.pop_id();
+            });
         ui.pop_id();
     }
 }

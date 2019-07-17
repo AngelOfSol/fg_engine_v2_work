@@ -50,36 +50,14 @@ impl Hitbox {
     }
 
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Hitbox) {
-        if ui
-            .collapsing_header(im_str!("Center"))
-            .default_open(true)
-            .build()
-        {
-            ui.push_id("Center");
-            data.center.x /= 100;
-            let _ = ui.input_whole(im_str!("X"), &mut data.center.x);
-            data.center.x *= 100;
-            data.center.y /= 100;
-            let _ = ui.input_whole(im_str!("Y"), &mut data.center.y);
-            data.center.y *= 100;
-            ui.pop_id();
-        }
-        if ui
-            .collapsing_header(im_str!("Half Size"))
-            .default_open(true)
-            .build()
-        {
-            ui.push_id("Size");
-            data.half_size.x /= 100;
-            let _ = ui.input_whole(im_str!("X"), &mut data.half_size.x);
-            data.half_size.x = std::cmp::max(data.half_size.x, 1);
-            data.half_size.x *= 100;
-            data.half_size.y /= 100;
-            let _ = ui.input_whole(im_str!("Y"), &mut data.half_size.y);
-            data.half_size.y = std::cmp::max(data.half_size.y, 1);
-            data.half_size.y *= 100;
-            ui.pop_id();
-        }
+        data.center /= 100;
+        ui.input_vec2_int(im_str!("Center"), &mut data.center);
+        data.center *= 100;
+        data.half_size /= 100;
+        ui.input_vec2_int(im_str!("Half Size"), &mut data.half_size);
+        data.half_size.x = std::cmp::max(data.half_size.x, 1);
+        data.half_size.y = std::cmp::max(data.half_size.y, 1);
+        data.half_size *= 100;
     }
 
     pub fn draw(&self, ctx: &mut Context, world: Matrix4, color: Color) -> GameResult<()> {

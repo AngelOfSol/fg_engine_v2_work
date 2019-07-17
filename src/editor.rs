@@ -17,8 +17,8 @@ pub use character_editor::CharacterEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
 
-use crate::graphics::Animation;
 use crate::character_state::CharacterState;
+use crate::graphics::Animation;
 
 use crate::runner::{AppState, RunnerState};
 
@@ -204,5 +204,9 @@ impl EventHandler for GameEditor {
     }
     fn text_input_event(&mut self, _ctx: &mut Context, character: char) {
         self.imgui.handle_text_input(character);
+    }
+
+    fn resize_event(&mut self, ctx: &mut Context, _width: f32, _height: f32) {
+        self.imgui.resize(ctx);
     }
 }
