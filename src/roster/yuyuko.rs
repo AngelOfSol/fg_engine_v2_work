@@ -34,8 +34,8 @@ pub struct Yuyuko {
     command_list: CommandList<YuyukoMove>,
 }
 
-type YuyukoStateList = HashMap<YuyukoMove, CharacterState<YuyukoMove>>;
-type YuyukoParticleList = HashMap<String, Animation>;
+type YuyukoStateList = HashMap<YuyukoMove, CharacterState<YuyukoMove, YuyukoParticle>>;
+type YuyukoParticleList = HashMap<YuyukoParticle, Animation>;
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
@@ -117,6 +117,18 @@ impl YuyukoMove {
     }
 }
 
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum YuyukoParticle {
+    SuperJumpParticle,
+}
+
+impl Default for YuyukoParticle {
+    fn default() -> Self {
+        YuyukoParticle::SuperJumpParticle
+    }
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct YuyukoData {
     states: YuyukoStateList,
@@ -150,7 +162,7 @@ pub struct YuyukoState {
     velocity: collision::Vec2,
     position: collision::Vec2,
     current_state: (usize, YuyukoMove),
-    particles: Vec<(usize, collision::Vec2, String)>,
+    particles: Vec<(usize, collision::Vec2, YuyukoParticle)>,
 }
 
 impl YuyukoState {
@@ -223,7 +235,7 @@ impl YuyukoState {
             particles.push((
                 0,
                 particle.offset + self.position,
-                particle.particle_id.clone(),
+                particle.particle_id,
             ));
         }
         let particles: Vec<_> = particles
@@ -263,7 +275,7 @@ impl YuyukoState {
         )?;
 
         for (frame, position, id) in &self.particles {
-            data.particles[id].draw_at_time(
+            data.particles[&id].draw_at_time(
                 ctx,
                 &data.assets,
                 *frame,

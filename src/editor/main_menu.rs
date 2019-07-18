@@ -4,8 +4,13 @@ use imgui::*;
 
 use crate::imgui_wrapper::ImGuiWrapper;
 
-use super::{AnimationEditor, CharacterEditor, StateEditor};
-use crate::editor::{EditorState, Mode, Transition};
+use crate::editor::{CharacterEditor, EditorState, Mode, Transition};
+
+use crate::assets::Assets;
+
+use std::path::PathBuf;
+
+use crate::character::PlayerCharacter;
 
 pub struct MainMenu {
     next: Transition,
@@ -23,31 +28,42 @@ impl MainMenu {
         Ok(next)
     }
 
-    pub fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    pub fn draw(
+        &mut self,
+        ctx: &mut Context,
+        assets: &mut Assets,
+        imgui: &mut ImGuiWrapper,
+    ) -> GameResult<()> {
         imgui
             .frame()
             .run(|ui| {
                 // Window
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Main Menu")).build(|| {
-                        if ui.menu_item(im_str!("Edit Animations")).build() {
+                        if ui.menu_item(im_str!("New Character")).build() {
                             self.next = Transition::Push(
-                                Box::new(AnimationEditor::new().into()),
+                                Box::new(CharacterEditor::new(PlayerCharacter::new()).into()),
                                 Mode::Standalone,
                             );
                         }
-
-                        if ui.menu_item(im_str!("Edit States")).build() {
-                            self.next = Transition::Push(
-                                Box::new(StateEditor::new().into()),
-                                Mode::Standalone,
-                            );
-                        }
-                        if ui.menu_item(im_str!("Edit Character")).build() {
-                            self.next = Transition::Push(
-                                Box::new(CharacterEditor::new().into()),
-                                Mode::Standalone,
-                            );
+                        if ui.menu_item(im_str!("Open Character")).build() {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_file_dialog(Some("json"), None)
+                            {
+                                match PlayerCharacter::load_from_json(
+                                    ctx,
+                                    assets,
+                                    PathBuf::from(path),
+                                ) {
+                                    Ok(character) => {
+                                        self.next = Transition::Push(
+                                            Box::new(CharacterEditor::new(character).into()),
+                                            Mode::Standalone,
+                                        );
+                                    }
+                                    Err(_) => (),
+                                }
+                            }
                         }
                         ui.separator();
                         if ui.menu_item(im_str!("Quit")).build() {

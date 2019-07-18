@@ -30,14 +30,6 @@ pub struct AnimationEditor {
 }
 
 impl AnimationEditor {
-    pub fn new() -> Self {
-        Self {
-            frame: 0,
-            resource: Animation::new("new_animation"),
-            ui_data: AnimationUi::new(),
-            done: Status::NotDone,
-        }
-    }
     pub fn with_animation(data: Animation) -> Self {
         Self {
             frame: 0,

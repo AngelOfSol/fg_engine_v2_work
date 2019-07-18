@@ -13,23 +13,23 @@ use ggez::GameError;
 
 use super::CharacterState;
 
-pub fn load_from_json<Id: StateId>(
+pub fn load_from_json<Id: StateId, ParticleId: StateId>(
     ctx: &mut Context,
     assets: &mut Assets,
     mut path: PathBuf,
-) -> GameResult<CharacterState<Id>> {
+) -> GameResult<CharacterState<Id, ParticleId>> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let state = serde_json::from_reader::<_, CharacterState<_>>(buf_read).unwrap();
+    let state = serde_json::from_reader::<_, CharacterState<_, _>>(buf_read).unwrap();
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     path.pop();
     CharacterState::load(ctx, assets, &state, &name, path)?;
     Ok(state)
 }
-pub fn load<Id: StateId>(
+pub fn load<Id: StateId, ParticleId: StateId>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &CharacterState<Id>,
+    state: &CharacterState<Id, ParticleId>,
     name: &str,
     mut path: PathBuf,
 ) -> GameResult<()> {
@@ -39,10 +39,10 @@ pub fn load<Id: StateId>(
     }
     Ok(())
 }
-pub fn save<Id: StateId>(
+pub fn save<Id: StateId, ParticleId: StateId>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &CharacterState<Id>,
+    state: &CharacterState<Id, ParticleId>,
     mut path: PathBuf,
 ) -> GameResult<()> {
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();

@@ -30,9 +30,8 @@ use crate::typedefs::{HashId, StateId};
 
 use std::path::PathBuf;
 
-
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct CharacterState<Id>
+pub struct CharacterState<Id, ParticleId>
 where
     Id: HashId,
 {
@@ -41,7 +40,7 @@ where
     pub cancels: Timeline<CancelSet<Id>>,
     pub hitboxes: Timeline<HitboxSet>,
     #[serde(default)]
-    pub particles: Vec<ParticleSpawn>,
+    pub particles: Vec<ParticleSpawn<ParticleId>>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
     #[serde(default)]
@@ -51,7 +50,7 @@ fn default_move_type() -> MoveType {
     MoveType::Idle
 }
 
-impl<Id: StateId> CharacterState<Id> {
+impl<Id: StateId, ParticleId: StateId> CharacterState<Id, ParticleId> {
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -122,7 +121,7 @@ impl<Id: StateId> CharacterState<Id> {
     }
 }
 
-impl CharacterState<String> {
+impl CharacterState<String, String> {
     pub fn new() -> Self {
         Self {
             animations: vec![],

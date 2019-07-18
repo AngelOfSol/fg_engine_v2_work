@@ -22,8 +22,7 @@ pub struct CharacterEditor {
     states_ui_data: StatesUi,
 }
 impl CharacterEditor {
-    pub fn new() -> Self {
-        let resource = PlayerCharacter::new();
+    pub fn new(resource: PlayerCharacter) -> Self {
         let particle_ui_data = ParticlesUi::new(&resource.particles);
         let states_ui_data = StatesUi::new(&resource.states);
         Self {
@@ -110,7 +109,13 @@ impl CharacterEditor {
                                 _ => CharacterState::new(),
                             };
                             self.transition = Transition::Push(
-                                Box::new(StateEditor::with_state(state).into()),
+                                Box::new(
+                                    StateEditor::with_state(
+                                        state,
+                                        self.resource.particles.particles.keys().cloned().collect(),
+                                    )
+                                    .into(),
+                                ),
                                 mode.clone(),
                             );
                         }
@@ -185,7 +190,7 @@ impl CharacterEditor {
                         }
                         ui.separator();
 
-                        if ui.menu_item(im_str!("Back")).build() {
+                        if ui.menu_item(im_str!("Main Menu")).build() {
                             self.transition = Transition::Pop(None);
                         }
                     });

@@ -59,7 +59,7 @@ pub enum Mode {
 
 pub enum MessageData {
     Animation(Animation),
-    State(CharacterState<String>),
+    State(CharacterState<String, String>),
 }
 
 pub enum Transition {
@@ -138,7 +138,9 @@ impl EventHandler for GameEditor {
             EditorState::Animating(ref mut editor) => {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }
-            EditorState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.imgui),
+            EditorState::MainMenu(ref mut menu) => {
+                menu.draw(ctx, &mut self.assets, &mut self.imgui)
+            }
             EditorState::StateEditor(ref mut editor) => {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }

@@ -27,7 +27,7 @@ use imgui::*;
 use std::path::PathBuf;
 
 pub struct StateEditor {
-    resource: CharacterState<String>,
+    resource: CharacterState<String, String>,
     frame: usize,
     is_playing: bool,
     transition: Transition,
@@ -43,29 +43,13 @@ struct DrawMode {
 }
 
 impl StateEditor {
-    pub fn new() -> Self {
-        Self {
-            resource: CharacterState::new(),
-            transition: Transition::None,
-            frame: 0,
-            is_playing: true,
-            ui_data: CharacterStateUi::new(),
-            draw_mode: DrawMode {
-                collision_alpha: 0.15,
-                hurtbox_alpha: 0.15,
-                hitbox_alpha: 0.15,
-                debug_animation: true,
-                show_axes: true,
-            },
-        }
-    }
-    pub fn with_state(state: CharacterState<String>) -> Self {
+    pub fn with_state(state: CharacterState<String, String>, particle_list: Vec<String>) -> Self {
         Self {
             resource: state,
             transition: Transition::None,
             frame: 0,
             is_playing: true,
-            ui_data: CharacterStateUi::new(),
+            ui_data: CharacterStateUi::new(particle_list),
             draw_mode: DrawMode {
                 collision_alpha: 0.15,
                 hurtbox_alpha: 0.15,
@@ -330,7 +314,8 @@ impl StateEditor {
                     ui.menu(im_str!("State Editor")).build(|| {
                         if ui.menu_item(im_str!("Reset")).build() {
                             self.resource = CharacterState::new();
-                            self.ui_data = CharacterStateUi::new();
+                            self.ui_data =
+                                CharacterStateUi::new(self.ui_data.particle_list.clone());
                         }
                         if ui.menu_item(im_str!("Save to file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
@@ -353,7 +338,9 @@ impl StateEditor {
                                 ) {
                                     Ok(state) => {
                                         self.resource = state;
-                                        self.ui_data = CharacterStateUi::new();
+                                        self.ui_data = CharacterStateUi::new(
+                                            self.ui_data.particle_list.clone(),
+                                        );
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }
@@ -363,7 +350,8 @@ impl StateEditor {
 
                         if ui.menu_item(im_str!("Save and back")).build() {
                             let ret = std::mem::replace(&mut self.resource, CharacterState::new());
-                            self.ui_data = CharacterStateUi::new();
+                            self.ui_data =
+                                CharacterStateUi::new(self.ui_data.particle_list.clone());
                             self.transition = Transition::Pop(Some(MessageData::State(ret)));
                         }
                         if ui.menu_item(im_str!("Back without saving")).build() {

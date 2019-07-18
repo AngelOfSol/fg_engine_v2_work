@@ -30,10 +30,12 @@ pub struct CharacterStateUi {
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
+    pub particle_list: Vec<String>,
+    particle_ui_data: ParticleSpawnUi,
 }
 
 impl CharacterStateUi {
-    pub fn new() -> Self {
+    pub fn new(particle_list: Vec<String>) -> Self {
         Self {
             current_animation: None,
             current_flags: None,
@@ -42,10 +44,12 @@ impl CharacterStateUi {
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
+            particle_ui_data: ParticleSpawnUi::new(particle_list.clone()),
+            particle_list,
         }
     }
 
-    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String>) {
+    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String, String>) {
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         let mut move_type_idx = MoveType::all()
@@ -119,20 +123,23 @@ impl CharacterStateUi {
         ret
     }
 
-    pub fn draw_particle_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<ParticleSpawn>) {
-        ui.push_id("Particles");
-        if let Some(particle) = ui.new_delete_list_box(
-            im_str!("List"),
-            &mut self.current_particle,
-            data,
-            |item| im_str!("{}", item.particle_id.clone()),
-            ParticleSpawn::new,
-            |_| {},
-            5,
-        ) {
-            ParticleSpawnUi::draw_ui(ui, particle);
+    pub fn draw_particle_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<ParticleSpawn<String>>) {
+        if !self.particle_list.is_empty() {
+            ui.push_id("Particles");
+            let default_particle = self.particle_list[0].clone();
+            if let Some(particle) = ui.new_delete_list_box(
+                im_str!("List"),
+                &mut self.current_particle,
+                data,
+                |item| im_str!("{}", item.particle_id.clone()),
+                || ParticleSpawn::new(default_particle.clone()),
+                |_| {},
+                5,
+            ) {
+                self.particle_ui_data.draw_ui(ui, particle);
+            }
+            ui.pop_id();
         }
-        ui.pop_id();
     }
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
         ui.push_id("Flags");
