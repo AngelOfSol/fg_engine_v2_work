@@ -46,17 +46,16 @@ impl Yuyuko {
 
             numpad!(66) => YuyukoMove::StartForwardDash,
 
+            numpad!(29) => YuyukoMove::SuperJumpForward,
+            numpad!(28) => YuyukoMove::SuperJump,
+            numpad!(27) => YuyukoMove::SuperJumpBackward,
+
             numpad!(9) => YuyukoMove::JumpForward,
             numpad!(8) => YuyukoMove::Jump,
             numpad!(7) => YuyukoMove::JumpBackward,
             numpad!(9) => YuyukoMove::SuperJumpForward,
             numpad!(8) => YuyukoMove::SuperJump,
             numpad!(7) => YuyukoMove::SuperJumpBackward,
-
-
-            numpad!(29) => YuyukoMove::SuperJumpForward,
-            numpad!(28) => YuyukoMove::SuperJump,
-            numpad!(27) => YuyukoMove::SuperJumpBackward,
 
             numpad!(6) => YuyukoMove::WalkForward,
             numpad!(4) => YuyukoMove::WalkBackward,
@@ -232,11 +231,7 @@ impl YuyukoState {
             .iter()
             .filter(|item| item.frame == frame)
         {
-            particles.push((
-                0,
-                particle.offset + self.position,
-                particle.particle_id,
-            ));
+            particles.push((0, particle.offset + self.position, particle.particle_id));
         }
         let particles: Vec<_> = particles
             .into_iter()

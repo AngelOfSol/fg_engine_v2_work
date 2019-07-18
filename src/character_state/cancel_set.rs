@@ -127,6 +127,7 @@ impl CancelSetUi {
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
         for move_type in MoveType::all() {
             ui.text(&im_str!("{}:", move_type));
+            ui.push_id(&format!("{}", move_type));
             let _token = ui.push_style_color(StyleColor::Text, GREEN);
             ui.checkbox_hash(im_str!("Always"), move_type, &mut data.always);
             let _token = ui.push_style_color(StyleColor::Text, BLUE);
@@ -135,6 +136,7 @@ impl CancelSetUi {
             let _token = ui.push_style_color(StyleColor::Text, RED);
             ui.same_line(0.0);
             ui.checkbox_hash(im_str!("Hit"), move_type, &mut data.hit);
+            ui.pop_id();
         }
         ui.separator();
 

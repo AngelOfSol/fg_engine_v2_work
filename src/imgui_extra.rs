@@ -103,6 +103,7 @@ impl<'a> UiExtensions for Ui<'a> {
     ) {
         let mut buffer = data.contains(&item);
         if self.checkbox(label, &mut buffer) {
+            dbg!(buffer);
             if buffer {
                 data.insert(item.clone());
             } else {

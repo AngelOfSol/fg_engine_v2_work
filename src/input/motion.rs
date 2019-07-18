@@ -91,6 +91,7 @@ impl Input {
 pub fn read_inputs(buffer: &InputBuffer, facing_right: bool) -> Vec<Input> {
     [
         read_super_jump(buffer),
+        read_super_jump_macro(buffer),
         read_dragon_punch(buffer),
         read_quarter_circle(buffer),
         read_button(buffer),
@@ -126,38 +127,45 @@ fn read_double_tap(buffer: &InputBuffer) -> Option<Input> {
     }
 }
 
+enum SuperJumpReaderState {
+    Start,
+    JumpRead(usize, Axis),
+}
+
 fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
-    let inputs = buffer.iter().into_direction_iter().collect::<Vec<_>>();
-
-    if inputs.len() < 5 {
-        return None;
-    }
-
-    let (time, axis) = inputs[0];
-    if time > 1 && !axis.is_up() {
-        return None;
-    }
-    let time = inputs
-        .iter()
-        .skip(1)
-        .take(3)
-        .fold(Some(0), |acc, (time, axis)| match acc {
-            Some(acc_time) => {
-                if axis.is_down() {
-                    None
+    let mut ret = None;
+    let mut state = SuperJumpReaderState::Start;
+    for (duration, axis) in buffer.iter().into_direction_iter() {
+        state = match state {
+            SuperJumpReaderState::Start => {
+                if duration <= 2 && axis.is_up() {
+                    SuperJumpReaderState::JumpRead(0, axis)
                 } else {
-                    Some(*time + acc_time)
+                    break;
                 }
             }
-            None => None,
-        });
-    let (last_time, last_axis) = inputs[3];
-    if time.is_none()
-        || (time.unwrap() <= MOTION_DIRECTION_SIZE * 3
-            && last_axis.is_down()
-            && last_time <= MOTION_DIRECTION_SIZE)
-    {
-        Some(Input::SuperJump(axis.into()))
+            SuperJumpReaderState::JumpRead(total_duration, jump_axis) => {
+                if axis.is_down() {
+                    ret = if duration <= MOTION_DIRECTION_SIZE * 3 {
+                        Some(Input::SuperJump(jump_axis.into()))
+                    } else {
+                        None
+                    };
+                    break;
+                } else if total_duration + duration < MOTION_DIRECTION_SIZE * 3 {
+                    SuperJumpReaderState::JumpRead(total_duration + duration, jump_axis)
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+    ret
+}
+
+fn read_super_jump_macro(buffer: &InputBuffer) -> Option<Input> {
+    if buffer.top().buttons[0].is_pressed() && buffer.top().buttons[1].is_pressed() {
+        Some(Input::SuperJump(buffer.top().axis.into()))
     } else {
         None
     }
