@@ -59,15 +59,9 @@ pub enum ButtonState {
 }
 
 impl ButtonState {
-    pub fn is_pressed(&self) -> bool {
+    pub fn is_pressed(self) -> bool {
         match self {
             ButtonState::Pressed | ButtonState::JustPressed => true,
-            _ => false,
-        }
-    }
-    pub fn is_released(&self) -> bool {
-        match self {
-            ButtonState::Released | ButtonState::JustReleased => true,
             _ => false,
         }
     }
