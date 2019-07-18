@@ -21,7 +21,6 @@ pub struct CharacterEditor {
     particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
 }
-//ParticlesUi::new(&self.resource.particles)
 impl CharacterEditor {
     pub fn new() -> Self {
         let resource = PlayerCharacter::new();
@@ -150,12 +149,12 @@ impl CharacterEditor {
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Player Editor")).build(|| {
-                        if ui.menu_item(im_str!("New")).build() {
+                        if ui.menu_item(im_str!("Reset")).build() {
                             self.resource = PlayerCharacter::new();
                             self.particle_ui_data = ParticlesUi::new(&self.resource.particles);
                             self.states_ui_data = StatesUi::new(&self.resource.states)
                         }
-                        if ui.menu_item(im_str!("Save")).build() {
+                        if ui.menu_item(im_str!("Save to file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -165,7 +164,7 @@ impl CharacterEditor {
                                     PlayerCharacter::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Open")).build() {
+                        if ui.menu_item(im_str!("Load from file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {

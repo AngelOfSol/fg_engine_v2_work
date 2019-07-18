@@ -328,11 +328,11 @@ impl StateEditor {
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor")).build(|| {
-                        if ui.menu_item(im_str!("New")).build() {
+                        if ui.menu_item(im_str!("Reset")).build() {
                             self.resource = CharacterState::new();
                             self.ui_data = CharacterStateUi::new();
                         }
-                        if ui.menu_item(im_str!("Save")).build() {
+                        if ui.menu_item(im_str!("Save to file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -342,7 +342,7 @@ impl StateEditor {
                                     CharacterState::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Open")).build() {
+                        if ui.menu_item(im_str!("Load from file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -361,10 +361,13 @@ impl StateEditor {
                         }
                         ui.separator();
 
-                        if ui.menu_item(im_str!("Back")).build() {
+                        if ui.menu_item(im_str!("Save and back")).build() {
                             let ret = std::mem::replace(&mut self.resource, CharacterState::new());
                             self.ui_data = CharacterStateUi::new();
                             self.transition = Transition::Pop(Some(MessageData::State(ret)));
+                        }
+                        if ui.menu_item(im_str!("Back without saving")).build() {
+                            self.transition = Transition::Pop(None);
                         }
                     });
                 });

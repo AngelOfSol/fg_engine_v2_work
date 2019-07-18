@@ -16,11 +16,17 @@ use imgui::*;
 
 use std::path::PathBuf;
 
+enum Status {
+    DoneAndSave,
+    DoneAndQuit,
+    NotDone,
+}
+
 pub struct AnimationEditor {
     frame: usize,
     resource: Animation,
     ui_data: AnimationUi,
-    done: bool,
+    done: Status,
 }
 
 impl AnimationEditor {
@@ -29,7 +35,7 @@ impl AnimationEditor {
             frame: 0,
             resource: Animation::new("new_animation"),
             ui_data: AnimationUi::new(),
-            done: false,
+            done: Status::NotDone,
         }
     }
     pub fn with_animation(data: Animation) -> Self {
@@ -37,18 +43,20 @@ impl AnimationEditor {
             frame: 0,
             resource: data,
             ui_data: AnimationUi::new(),
-            done: false,
+            done: Status::NotDone,
         }
     }
 
     pub fn update(&mut self) -> GameResult<Transition> {
         self.frame = self.frame.wrapping_add(1);
 
-        if self.done {
-            let ret = std::mem::replace(&mut self.resource, Animation::new("none"));
-            Ok(Transition::Pop(Some(MessageData::Animation(ret))))
-        } else {
-            Ok(Transition::None)
+        match self.done {
+            Status::NotDone => Ok(Transition::None),
+            Status::DoneAndSave => {
+                let ret = std::mem::replace(&mut self.resource, Animation::new("none"));
+                Ok(Transition::Pop(Some(MessageData::Animation(ret))))
+            }
+            Status::DoneAndQuit => Ok(Transition::Pop(None)),
         }
     }
 
@@ -68,7 +76,6 @@ impl AnimationEditor {
         imgui
             .frame()
             .run(|ui| {
-                // Window
                 ui.window(im_str!("Editor"))
                     .size([300.0, editor_height], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
@@ -105,11 +112,11 @@ impl AnimationEditor {
                 }
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Animation Editor")).build(|| {
-                        if ui.menu_item(im_str!("New")).build() {
+                        if ui.menu_item(im_str!("Reset")).build() {
                             self.resource = Animation::new("new animation");
                             self.ui_data = AnimationUi::new();
                         }
-                        if ui.menu_item(im_str!("Save")).build() {
+                        if ui.menu_item(im_str!("Save to file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -118,7 +125,7 @@ impl AnimationEditor {
                                 editor_result = Animation::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Open")).build() {
+                        if ui.menu_item(im_str!("Load from file")).build() {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -132,8 +139,11 @@ impl AnimationEditor {
                             }
                         }
                         ui.separator();
-                        if ui.menu_item(im_str!("Back")).build() {
-                            self.done = true;
+                        if ui.menu_item(im_str!("Save and back")).build() {
+                            self.done = Status::DoneAndSave;
+                        }
+                        if ui.menu_item(im_str!("Back without save")).build() {
+                            self.done = Status::DoneAndQuit;
                         }
                     });
                 });

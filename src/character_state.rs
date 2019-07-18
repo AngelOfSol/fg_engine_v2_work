@@ -4,10 +4,10 @@ pub mod flags;
 pub mod hitbox_set;
 pub mod particle_spawn_data;
 
+mod file;
 mod ui;
 
 use crate::assets::Assets;
-use crate::graphics::Animation;
 
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
@@ -28,11 +28,8 @@ use crate::typedefs::graphics::Matrix4;
 
 use crate::typedefs::{HashId, StateId};
 
-use std::fs::File;
-use std::io::BufReader;
 use std::path::PathBuf;
 
-use ggez::GameError;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState<Id>
@@ -58,50 +55,26 @@ impl<Id: StateId> CharacterState<Id> {
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
-        mut path: PathBuf,
+        path: PathBuf,
     ) -> GameResult<Self> {
-        let file = File::open(&path).unwrap();
-        let buf_read = BufReader::new(file);
-        let state = serde_json::from_reader::<_, Self>(buf_read).unwrap();
-        let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-        path.pop();
-        CharacterState::load(ctx, assets, &state, &name, path)?;
-        Ok(state)
+        file::load_from_json(ctx, assets, path)
     }
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
         state: &Self,
         name: &str,
-        mut path: PathBuf,
+        path: PathBuf,
     ) -> GameResult<()> {
-        path.push(name);
-        for animation in &state.animations {
-            Animation::load(ctx, assets, &animation.animation, path.clone())?;
-        }
-        Ok(())
+        file::load(ctx, assets, state, name, path)
     }
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
         state: &Self,
-        mut path: PathBuf,
+        path: PathBuf,
     ) -> GameResult<()> {
-        let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-
-        let mut json = File::create(&path)?;
-        serde_json::to_writer(&mut json, &state)
-            .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
-
-        path.pop();
-        path.push(&name);
-        std::fs::create_dir_all(&path)?;
-        for animation in &state.animations {
-            path.push(&format!("{}.json", &animation.animation.name));
-            Animation::save(ctx, assets, &animation.animation, path.clone())?;
-            path.pop();
-        }
-        Ok(())
+        file::save(ctx, assets, state, path)
     }
 
     pub fn duration(&self) -> usize {
