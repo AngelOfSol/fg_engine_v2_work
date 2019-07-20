@@ -37,22 +37,13 @@ impl ParticleSpawnUi {
         }
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut ParticleSpawn<String>) {
-        let mut buffer_idx = self
-            .particle_list_ids
-            .iter()
-            .position(|item| &data.particle_id == item)
-            .map(|item| item as i32);
-        if let Some(ref mut buffer_idx) = buffer_idx {
-            ui.combo(
-                im_str!("ID"),
-                buffer_idx,
-                &self.particle_list_ui.iter().collect::<Vec<_>>(),
-                5,
-            );
-            if *buffer_idx >= 0 {
-                data.particle_id = self.particle_list_ids[*buffer_idx as usize].clone();
-            }
-        }
+        ui.combo_items(
+            im_str!("ID"),
+            &self.particle_list_ids,
+            &self.particle_list_ui,
+            &mut data.particle_id,
+            5,
+        );
 
         let _ = ui.input_whole(im_str!("Spawn Frame"), &mut data.frame);
         data.offset /= 100;

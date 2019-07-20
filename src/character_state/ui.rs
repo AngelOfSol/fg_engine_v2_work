@@ -30,12 +30,14 @@ pub struct CharacterStateUi {
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
+    pub state_list: Vec<String>,
+    state_list_ui_data: Vec<ImString>,
     pub particle_list: Vec<String>,
     particle_ui_data: ParticleSpawnUi,
 }
 
 impl CharacterStateUi {
-    pub fn new(particle_list: Vec<String>) -> Self {
+    pub fn new(particle_list: Vec<String>, state_list: Vec<String>) -> Self {
         Self {
             current_animation: None,
             current_flags: None,
@@ -44,6 +46,8 @@ impl CharacterStateUi {
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
+            state_list_ui_data: state_list.iter().map(|item| im_str!("{}", item)).collect(),
+            state_list,
             particle_ui_data: ParticleSpawnUi::new(particle_list.clone()),
             particle_list,
         }
@@ -71,7 +75,13 @@ impl CharacterStateUi {
             data.state_type = MoveType::all()[move_type_idx as usize];
         }
 
-        let _ = ui.input_string(im_str!("On Expire"), &mut data.on_expire_state);
+        ui.combo_items(
+            im_str!("On Expire"),
+            &self.state_list,
+            &self.state_list_ui_data,
+            &mut data.on_expire_state,
+            5,
+        );
     }
     pub fn draw_animation_editor(
         &mut self,

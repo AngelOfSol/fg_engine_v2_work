@@ -76,9 +76,43 @@ pub trait UiExtensions {
     fn input_string(&self, label: &ImStr, value: &mut String) -> bool;
 
     fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>);
+
+    fn combo_items<T: Eq + Clone>(
+        &self,
+        label: &ImStr,
+        list_values: &[T],
+        list_labels: &[ImString],
+        value: &mut T,
+        height_in_items: i32,
+    );
 }
 
 impl<'a> UiExtensions for Ui<'a> {
+    fn combo_items<T: Eq + Clone>(
+        &self,
+        label: &ImStr,
+        list_values: &[T],
+        list_labels: &[ImString],
+        value: &mut T,
+        height_in_items: i32,
+    ) {
+        let mut buffer_idx = list_values
+            .iter()
+            .position(|item| value == item)
+            .map(|item| item as i32);
+        if let Some(ref mut buffer_idx) = buffer_idx {
+            self.combo(
+                label,
+                buffer_idx,
+                &list_labels.iter().collect::<Vec<_>>(),
+                height_in_items,
+            );
+            if *buffer_idx >= 0 {
+                *value = list_values[*buffer_idx as usize].clone();
+            }
+        }
+    }
+
     fn checkbox_set<T: Clone + Hash + PartialEq + Eq + Display>(
         &self,
         range: &[T],
@@ -103,7 +137,6 @@ impl<'a> UiExtensions for Ui<'a> {
     ) {
         let mut buffer = data.contains(&item);
         if self.checkbox(label, &mut buffer) {
-            dbg!(buffer);
             if buffer {
                 data.insert(item.clone());
             } else {

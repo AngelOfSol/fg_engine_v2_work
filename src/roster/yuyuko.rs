@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+mod command_list;
+mod moves;
+mod particles;
+
+use serde::Deserialize;
 
 use crate::character_state::CharacterState;
 
@@ -19,13 +23,14 @@ use std::collections::HashMap;
 
 use crate::timeline::AtTime;
 
-use crate::input::{read_inputs, Button, ButtonSet, DirectedAxis, Input, InputBuffer};
+use crate::input::{read_inputs, InputBuffer};
 
 use crate::command_list::CommandList;
 
-use crate::{make_command_list, numpad, read_axis};
-
 use crate::graphics::Animation;
+
+use moves::YuyukoMove;
+use particles::YuyukoParticle;
 
 pub struct Yuyuko {
     assets: Assets,
@@ -41,90 +46,12 @@ impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
         let mut assets = Assets::new();
         let data = YuyukoData::load_from_json(ctx, &mut assets, path)?;
-        let command_list = make_command_list! {
-            numpad!(5 A), numpad!(4 A), numpad!(6 A) => YuyukoMove::Attack5A,
-
-            numpad!(66) => YuyukoMove::StartForwardDash,
-
-            numpad!(29) => YuyukoMove::SuperJumpForward,
-            numpad!(28) => YuyukoMove::SuperJump,
-            numpad!(27) => YuyukoMove::SuperJumpBackward,
-
-            numpad!(9) => YuyukoMove::JumpForward,
-            numpad!(8) => YuyukoMove::Jump,
-            numpad!(7) => YuyukoMove::JumpBackward,
-            numpad!(9) => YuyukoMove::SuperJumpForward,
-            numpad!(8) => YuyukoMove::SuperJump,
-            numpad!(7) => YuyukoMove::SuperJumpBackward,
-
-            numpad!(6) => YuyukoMove::WalkForward,
-            numpad!(4) => YuyukoMove::WalkBackward,
-
-            numpad!(1) => YuyukoMove::Crouch,
-            numpad!(2) => YuyukoMove::Crouch,
-            numpad!(3) => YuyukoMove::Crouch,
-            numpad!(1) => YuyukoMove::ToCrouch,
-            numpad!(2) => YuyukoMove::ToCrouch,
-            numpad!(3) => YuyukoMove::ToCrouch,
-
-            numpad!(5) => YuyukoMove::Stand,
-            numpad!(5) => YuyukoMove::ToStand
-        };
         Ok(Yuyuko {
             assets,
             states: data.states,
             particles: data.particles,
-            command_list,
+            command_list: command_list::generate_command_list(),
         })
-    }
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum YuyukoMove {
-    Stand,
-    WalkBackward,
-    WalkForward,
-    #[serde(rename = "attack5a")]
-    Attack5A,
-    Crouch,
-    ToCrouch,
-    ToStand,
-    StartForwardDash,
-    ForwardDash,
-    Jump,
-    JumpForward,
-    JumpBackward,
-    SuperJump,
-    SuperJumpForward,
-    SuperJumpBackward,
-    AirIdle,
-}
-
-impl Default for YuyukoMove {
-    fn default() -> Self {
-        YuyukoMove::Stand
-    }
-}
-
-impl YuyukoMove {
-    pub fn to_string(self) -> String {
-        serde_json::to_string(&self)
-            .unwrap()
-            .trim_matches('\"')
-            .to_owned()
-    }
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum YuyukoParticle {
-    SuperJumpParticle,
-}
-
-impl Default for YuyukoParticle {
-    fn default() -> Self {
-        YuyukoParticle::SuperJumpParticle
     }
 }
 
