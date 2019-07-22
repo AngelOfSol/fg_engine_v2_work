@@ -13,20 +13,29 @@ macro_rules! numpad {
         Input::DragonPunch(Direction::Backward, Button::$button)
     };
 
+
+    (release $button:ident) => {
+        Input::ReleaseButton(ButtonSet::Single(Button::$button))
+    };
+    (release $button:ident $button2:ident) => {
+        Input::ReleaseButton(ButtonSet::Double(Button::$button, Button::$button2))
+    };
+
+    (press $button:ident) => {
+        Input::PressButton(DirectedAxis::Neutral, ButtonSet::Single(Button::$button))
+    };
+    (press $button:ident $button2:ident) => {
+        Input::PressButton(DirectedAxis::Neutral, ButtonSet::Double(Button::$button, Button::$button2))
+    };
+
     ($dir:tt $button:ident) => {
         Input::PressButton(read_axis!($dir), ButtonSet::Single(Button::$button))
     };
-    (rel $dir:tt $button:ident) => {
-        Input::ReleaseButton(read_axis!($dir), ButtonSet::Single(Button::$button))
-    };
-
-    
-
     ($dir:tt $button:ident $button2:ident) => {
-        Input::PressButton(read_axis!($dir), ButtonSet::Double(Button::$button, Button::$button2))
-    };
-    (rel $dir:tt $button:ident $button2:ident) => {
-        Input::ReleaseButton(read_axis!($dir), ButtonSet::Double(Button::$button, Button::$button2))
+        Input::PressButton(
+            read_axis!($dir),
+            ButtonSet::Double(Button::$button, Button::$button2),
+        )
     };
 
     (66) => {

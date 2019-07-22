@@ -77,7 +77,7 @@ pub enum ButtonSet {
 pub enum Input {
     Idle(DirectedAxis),
     PressButton(DirectedAxis, ButtonSet),
-    ReleaseButton(DirectedAxis, ButtonSet),
+    ReleaseButton(ButtonSet),
     QuarterCircle(Direction, ButtonSet),
     DragonPunch(Direction, ButtonSet),
     DoubleTap(DirectedAxis),
@@ -90,7 +90,7 @@ impl Input {
             Input::Idle(dir) => Input::Idle(dir.invert()),
             Input::DoubleTap(dir) => Input::DoubleTap(dir.invert()),
             Input::PressButton(dir, button) => Input::PressButton(dir.invert(), button),
-            Input::ReleaseButton(dir, button) => Input::ReleaseButton(dir.invert(), button),
+            Input::ReleaseButton(button) => Input::ReleaseButton(button),
             Input::QuarterCircle(dir, button) => Input::QuarterCircle(dir.invert(), button),
             Input::DragonPunch(dir, button) => Input::DragonPunch(dir.invert(), button),
             Input::SuperJump(dir) => Input::SuperJump(dir.invert()),
@@ -105,6 +105,7 @@ pub fn read_inputs(buffer: &InputBuffer, facing_right: bool) -> Vec<Input> {
         read_dragon_punch(buffer),
         read_quarter_circle(buffer),
         read_button_press(buffer),
+        read_button_press_neutral(buffer),
         read_button_release(buffer),
         read_double_tap(buffer),
         read_idle(buffer),
@@ -209,10 +210,19 @@ fn read_button_press(buffer: &InputBuffer) -> Option<Input> {
     None
 }
 
+fn read_button_press_neutral(buffer: &InputBuffer) -> Option<Input> {
+    for input_state in buffer.iter().take(1) {
+        if let Some(buttons) = read_button_set(input_state.buttons, ButtonState::JustPressed) {
+            return Some(Input::PressButton(DirectedAxis::Neutral, buttons));
+        }
+    }
+    None
+}
+
 fn read_button_release(buffer: &InputBuffer) -> Option<Input> {
     for input_state in buffer.iter().take(1) {
         if let Some(buttons) = read_button_set(input_state.buttons, ButtonState::JustReleased) {
-            return Some(Input::ReleaseButton(input_state.axis.into(), buttons));
+            return Some(Input::ReleaseButton(buttons));
         }
     }
     None

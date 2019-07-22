@@ -23,7 +23,7 @@ use std::collections::HashMap;
 
 use crate::timeline::AtTime;
 
-use crate::input::{read_inputs, DirectedAxis, InputBuffer};
+use crate::input::{read_inputs, Button, DirectedAxis, InputBuffer};
 
 use crate::command_list::CommandList;
 
@@ -100,6 +100,7 @@ impl YuyukoData {
 #[derive(Debug, Clone, Copy)]
 enum ExtraData {
     JumpDirection(DirectedAxis),
+    FlyDirection(DirectedAxis),
     None,
 }
 
@@ -108,6 +109,12 @@ impl ExtraData {
         match self {
             ExtraData::JumpDirection(dir) => dir,
             value => panic!("Expected JumpDirection, found {:?}.", value),
+        }
+    }
+    fn unwrap_fly_direction(self) -> DirectedAxis {
+        match self {
+            ExtraData::FlyDirection(dir) => dir,
+            value => panic!("Expected FlyDirection, found {:?}.", value),
         }
     }
 }
@@ -143,25 +150,41 @@ impl YuyukoState {
 
         let (frame, mut move_id) = {
             let inputs = read_inputs(&input, true);
-            data.command_list
-                .get_commands(&inputs)
-                .into_iter()
-                .copied()
-                .filter(|new_move_id| {
-                    *new_move_id != move_id
-                        && cancels
-                            .always
-                            .contains(&data.states[new_move_id].state_type)
-                        && !cancels.disallow.contains(new_move_id)
-                })
-                .fold(None, |acc, item| acc.or(Some(item)))
-                .map(|new_move| (0, new_move))
-                .unwrap_or((frame, move_id))
+            if move_id == MoveId::Fly {
+                if input.top()[Button::A].is_pressed() && input.top()[Button::B].is_pressed() {
+                    (frame, move_id)
+                } else {
+                    (0, MoveId::FlyEnd)
+                }
+            } else {
+                data.command_list
+                    .get_commands(&inputs)
+                    .into_iter()
+                    .copied()
+                    .filter(|new_move_id| {
+                        *new_move_id != move_id
+                            && cancels
+                                .always
+                                .contains(&data.states[new_move_id].state_type)
+                            && !cancels.disallow.contains(new_move_id)
+                    })
+                    .fold(None, |acc, item| acc.or(Some(item)))
+                    .map(|new_move| (0, new_move))
+                    .unwrap_or((frame, move_id))
+            }
         };
 
         let mut new_extra_data =
             if frame == 0 && (move_id == MoveId::Jump || move_id == MoveId::SuperJump) {
                 ExtraData::JumpDirection(input.top().axis.into())
+            } else if frame == 0 && (move_id == MoveId::FlyStart) {
+                ExtraData::FlyDirection(
+                    if DirectedAxis::from(input.top().axis) == DirectedAxis::Neutral {
+                        DirectedAxis::Forward
+                    } else {
+                        input.top().axis.into()
+                    },
+                )
             } else {
                 self.extra_data
             };
@@ -205,12 +228,29 @@ impl YuyukoState {
                 self.velocity.component_div(&collision::Vec2::new(2, 1))
             };
             // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
-            vel + if flags.airborne {
+            vel + if flags.airborne && move_id != MoveId::FlyStart && move_id != MoveId::Fly {
                 collision::Vec2::new(0_00, -0_25)
             } else {
                 collision::Vec2::zeros()
             }
-        } + flags.accel;
+        } + flags.accel
+            + if move_id == MoveId::FlyStart {
+                let fly_dir = new_extra_data.unwrap_fly_direction();
+                new_extra_data = ExtraData::FlyDirection(fly_dir);
+                match fly_dir {
+                    DirectedAxis::Forward => collision::Vec2::new(1_00, 0_00),
+                    DirectedAxis::UpForward => collision::Vec2::new(0_71, 0_71),
+                    DirectedAxis::DownForward => collision::Vec2::new(0_71, -0_71),
+                    DirectedAxis::Backward => collision::Vec2::new(-1_00, 0_00),
+                    DirectedAxis::UpBackward => collision::Vec2::new(-0_71, 0_71),
+                    DirectedAxis::DownBackward => collision::Vec2::new(-0_71, -0_71),
+                    DirectedAxis::Up => collision::Vec2::new(0_00, 1_00),
+                    DirectedAxis::Down => collision::Vec2::new(0_00, -1_00),
+                    _ => unreachable!(),
+                }
+            } else {
+                collision::Vec2::zeros()
+            };
 
         let new_position = self.position + new_velocity;
         let new_position =

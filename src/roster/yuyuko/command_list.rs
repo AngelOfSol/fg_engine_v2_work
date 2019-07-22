@@ -5,6 +5,8 @@ use crate::input::{Button, ButtonSet, DirectedAxis, Input};
 use crate::{make_command_list, numpad, read_axis};
 pub fn generate_command_list() -> CommandList<MoveId> {
     make_command_list! {
+        numpad!(press A B) => MoveId::FlyStart,
+        numpad!(release A), numpad!(release B), numpad!(release A B) => MoveId::FlyEnd,
 
         numpad!(6 A B), numpad!(66) => MoveId::ForwardDashStart,
         numpad!(4 A B), numpad!(44) => MoveId::BackDash,
