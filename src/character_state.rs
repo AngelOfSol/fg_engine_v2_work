@@ -61,7 +61,7 @@ impl<Id: StateId, ParticleId: StateId> CharacterState<Id, ParticleId> {
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
-        state: &Self,
+        state: &mut Self,
         name: &str,
         path: PathBuf,
     ) -> GameResult<()> {

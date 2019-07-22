@@ -16,7 +16,7 @@ use crate::timeline::AtTime;
 pub struct AnimationUi {
     pub current_sprite: Option<usize>,
 }
-
+//sprite.rename(format!("{}-{:03}.png", animation.name, idx), assets)
 impl AnimationUi {
     pub fn new() -> Self {
         Self {
@@ -49,38 +49,34 @@ impl AnimationUi {
         ui.radio_button(im_str!("Add"), &mut animation.blend_mode, BlendMode::Add);
         ui.separator();
 
+        let mut counter = 0;
         ui.rearrangable_list_box(
             im_str!("Frame List"),
             &mut self.current_sprite,
             &mut animation.frames,
-            |item| im_str!("{}", item.0.image.clone()),
+            |_| {
+                let ret = counter;
+                counter += 1;
+                im_str!("Frame {}", ret)
+            },
             5,
         );
-
-        if ui.small_button(im_str!("Normalize All Names")) {
-            for (idx, ref mut sprite) in animation
-                .frames
-                .iter_mut()
-                .map(|item| &mut item.0)
-                .enumerate()
-            {
-                sprite.rename(format!("{}-{:03}.png", animation.name, idx), assets)
-            }
-        }
         if ui.small_button(im_str!("From Files")) {
             let result = nfd::open_file_multiple_dialog(Some("png"), None);
             if let Ok(response) = result {
                 match response {
                     Response::Cancel => (),
                     Response::Okay(path) => {
-                        animation.frames.push((Sprite::new(path), 1));
-                        animation.load_images(ctx, assets)?;
+                        animation
+                            .frames
+                            .push((Sprite::load_new(ctx, assets, path)?, 1));
                     }
                     Response::OkayMultiple(paths) => {
                         for path in paths {
-                            animation.frames.push((Sprite::new(path), 1));
+                            animation
+                                .frames
+                                .push((Sprite::load_new(ctx, assets, path)?, 1));
                         }
-                        animation.load_images(ctx, assets)?;
                     }
                 }
             }

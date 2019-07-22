@@ -16,15 +16,13 @@ use std::io::BufWriter;
 
 use super::Sprite;
 
-pub fn load_image<S: Into<String>, P: AsRef<Path>>(
-    key: S,
+fn load_image_data<P: AsRef<Path>>(
     path: P,
     ctx: &mut Context,
-    assets: &mut Assets,
-) -> GameResult<()> {
-    let key = key.into();
-    let image = match graphics::Image::new(ctx, &path) {
-        Ok(result) => result,
+    _assets: &mut Assets,
+) -> GameResult<graphics::Image> {
+    match graphics::Image::new(ctx, &path) {
+        Ok(result) => Ok(result),
         Err(GameError::ResourceNotFound(_, _)) => {
             let img = {
                 let mut buf = Vec::new();
@@ -34,32 +32,30 @@ pub fn load_image<S: Into<String>, P: AsRef<Path>>(
             };
             let (width, height) = img.dimensions();
 
-            graphics::Image::from_rgba8(ctx, width as u16, height as u16, &img)?
+            graphics::Image::from_rgba8(ctx, width as u16, height as u16, &img)
         }
-        Err(err) => return Err(err),
-    };
-    assets.images.insert(key, image);
-    Ok(())
+        Err(err) => Err(err),
+    }
 }
 
 pub fn load(
     ctx: &mut Context,
     assets: &mut Assets,
-    sprite: &Sprite,
-    mut path: PathBuf,
+    sprite: &mut Sprite,
+    path: PathBuf,
 ) -> GameResult<()> {
-    path.push(&sprite.image);
-    load_image(sprite.image.clone(), &path, ctx, assets)?;
+    let image = load_image_data(path, ctx, assets)?;
+    sprite.image = Some(image);
     Ok(())
 }
+
 pub fn save(
     ctx: &mut Context,
-    assets: &mut Assets,
+    _assets: &mut Assets,
     sprite: &Sprite,
-    mut path: PathBuf,
+    path: PathBuf,
 ) -> GameResult<()> {
-    path.push(&sprite.image);
-    let image = &assets.images[&sprite.image];
+    let image = sprite.image.as_ref().unwrap();
     let output = File::create(&path)?;
     let writer = BufWriter::new(output);
     let png_writer = PNGEncoder::new(writer);

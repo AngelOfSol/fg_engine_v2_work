@@ -18,6 +18,7 @@ pub enum MoveId {
     Jump,
     SuperJump,
     AirIdle,
+    Fly,
 }
 
 impl Default for MoveId {

@@ -46,26 +46,26 @@ impl PlayerCharacter {
     ) -> GameResult<Self> {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
-        let player_character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
+        let mut player_character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
         let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
-        Self::load(ctx, assets, &player_character, &character_file_name, path)?;
+        Self::load(ctx, assets, &mut player_character, &character_file_name, path)?;
         Ok(player_character)
     }
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
-        player_character: &Self,
+        player_character: &mut Self,
         character_file_name: &str,
         mut path: PathBuf,
     ) -> GameResult<()> {
         path.push(&character_file_name);
 
-        for (name, state) in player_character.states.rest.iter() {
+        for (name, state) in player_character.states.rest.iter_mut() {
             CharacterState::load(ctx, assets, state, name, path.clone())?;
         }
         path.push("particles");
-        for (_, animation) in player_character.particles.particles.iter() {
+        for (_, animation) in player_character.particles.particles.iter_mut() {
             Animation::load(ctx, assets, animation, path.clone())?;
         }
         Ok(())

@@ -1,26 +1,26 @@
 mod file;
 mod ui;
 
-use ggez::error::GameError;
 use ggez::graphics;
-use ggez::graphics::{Color, DrawMode, DrawParam, Mesh, Rect};
+use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
 
 use serde::{Deserialize, Serialize};
 
 use crate::assets::Assets;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
 
-pub use file::load_image;
 pub use ui::SpriteUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
     pub offset: Vec2,
-    pub image: String,
+    #[serde(default)]
+    #[serde(skip)]
+    pub image: Option<Image>,
     pub rotation: f32,
     #[serde(default = "default_scale")]
     pub scale: Vec2,
@@ -31,49 +31,37 @@ fn default_scale() -> Vec2 {
 }
 
 impl Sprite {
-    pub fn load(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        sprite: &Sprite,
-        path: PathBuf,
-    ) -> GameResult<()> {
-        file::load(ctx, assets, sprite, path)
-    }
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
-        sprite: &Sprite,
+        sprite: &Self,
         path: PathBuf,
     ) -> GameResult<()> {
         file::save(ctx, assets, sprite, path)
     }
 
-    pub fn load_image(&self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
-        if assets.images.contains_key(&self.image) {
-            return Ok(());
-        }
-        file::load_image(self.image.clone(), &self.image, ctx, assets)
-    }
-    pub fn new<S: Into<String>>(path: S) -> Self {
-        Self {
-            offset: nalgebra::zero(),
-            image: path.into(),
-            rotation: 0.0,
-            scale: default_scale(),
-        }
+    pub fn load_new<P: AsRef<Path>>(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        path: P,
+    ) -> GameResult<Self> {
+        let mut sprite = Sprite::new();
+        Sprite::load(ctx, assets, &mut sprite, path)?;
+        Ok(sprite)
     }
 
     pub fn draw_ex(
         &self,
         ctx: &mut Context,
-        assets: &Assets,
+        _assets: &Assets,
         world: Matrix4,
         debug: bool,
     ) -> GameResult<()> {
-        let image = assets
-            .images
-            .get(&self.image)
-            .ok_or_else(|| GameError::ResourceNotFound(self.image.clone(), Vec::new()))?;
+        /*let image = assets
+        .images
+        .get(&self.image)
+        .ok_or_else(|| GameError::ResourceNotFound(format!("{}", self.image), Vec::new()))?;*/
+        let image = self.image.as_ref().unwrap();
 
         let image_offset = Matrix4::new_translation(&Vec3::new(
             -f32::from(image.width()) / 2.0,
@@ -118,8 +106,21 @@ impl Sprite {
     pub fn draw(&self, ctx: &mut Context, assets: &Assets, world: Matrix4) -> GameResult<()> {
         self.draw_ex(ctx, assets, world, false)
     }
+    pub fn new() -> Self {
+        Self {
+            offset: nalgebra::zero(),
+            image: None,
+            rotation: 0.0,
+            scale: default_scale(),
+        }
+    }
 
-    pub fn rename<S: Into<String>>(&mut self, new_name: S, assets: &mut Assets) {
-        ui::rename(self, new_name, assets)
+    pub fn load<P: AsRef<Path>>(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        sprite: &mut Sprite,
+        path: P,
+    ) -> GameResult<()> {
+        file::load(ctx, assets, sprite, PathBuf::from(path.as_ref()))
     }
 }

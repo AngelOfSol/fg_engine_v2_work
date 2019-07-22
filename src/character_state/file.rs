@@ -20,22 +20,22 @@ pub fn load_from_json<Id: StateId, ParticleId: StateId>(
 ) -> GameResult<CharacterState<Id, ParticleId>> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let state = serde_json::from_reader::<_, CharacterState<_, _>>(buf_read).unwrap();
+    let mut state = serde_json::from_reader::<_, CharacterState<_, _>>(buf_read).unwrap();
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     path.pop();
-    CharacterState::load(ctx, assets, &state, &name, path)?;
+    CharacterState::load(ctx, assets, &mut state, &name, path)?;
     Ok(state)
 }
 pub fn load<Id: StateId, ParticleId: StateId>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &CharacterState<Id, ParticleId>,
+    state: &mut CharacterState<Id, ParticleId>,
     name: &str,
     mut path: PathBuf,
 ) -> GameResult<()> {
     path.push(name);
-    for animation in &state.animations {
-        Animation::load(ctx, assets, &animation.animation, path.clone())?;
+    for animation in state.animations.iter_mut() {
+        Animation::load(ctx, assets, &mut animation.animation, path.clone())?;
     }
     Ok(())
 }

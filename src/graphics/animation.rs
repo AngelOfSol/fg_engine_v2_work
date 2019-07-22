@@ -18,7 +18,7 @@ use std::path::PathBuf;
 pub use ui::AnimationUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Animation {
+pub struct Animation{
     pub name: String,
     pub frames: Timeline<Sprite>,
     #[serde(default = "default_blend_mode")]
@@ -30,6 +30,9 @@ fn default_blend_mode() -> BlendMode {
 }
 
 impl Animation {
+    pub fn get_path_to_image(&self, idx: usize) -> String {
+        format!("{}-{:03}.png", &self.name, idx)
+    }
     pub fn new<S: Into<String>>(name: S) -> Self {
         Self {
             name: name.into(),
@@ -41,18 +44,9 @@ impl Animation {
         ctx: &mut Context,
         assets: &mut Assets,
         path: PathBuf,
-    ) -> GameResult<Animation> {
+    ) -> GameResult<Self> {
         file::load_from_json(ctx, assets, path)
     }
-    pub fn load(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        animation: &Animation,
-        path: PathBuf,
-    ) -> GameResult<()> {
-        file::load(ctx, assets, animation, path)
-    }
-
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -60,13 +54,6 @@ impl Animation {
         path: PathBuf,
     ) -> GameResult<()> {
         file::save(ctx, assets, animation, path)
-    }
-
-    pub fn load_images(&self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
-        for (sprite, _) in &self.frames {
-            sprite.load_image(ctx, assets)?
-        }
-        Ok(())
     }
 
     pub fn draw_frame(
@@ -120,5 +107,14 @@ impl Animation {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
         let image = self.frames.at_time(time);
         image.draw_debug(ctx, assets, world)
+    }
+
+    pub fn load(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        animation: &mut Animation,
+        path: PathBuf,
+    ) -> GameResult<()> {
+        file::load(ctx, assets, animation, path)
     }
 }

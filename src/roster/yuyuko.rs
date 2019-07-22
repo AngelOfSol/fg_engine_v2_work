@@ -82,15 +82,15 @@ impl YuyukoData {
     ) -> GameResult<YuyukoData> {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
-        let character = serde_json::from_reader::<_, YuyukoData>(buf_read).unwrap();
+        let mut character = serde_json::from_reader::<_, YuyukoData>(buf_read).unwrap();
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
         path.push(&name);
-        for (name, state) in character.states.iter() {
+        for (name, state) in character.states.iter_mut() {
             CharacterState::load(ctx, assets, state, &name.to_string(), path.clone())?;
         }
         path.push("particles");
-        for (_name, particle) in character.particles.iter() {
+        for (_name, particle) in character.particles.iter_mut() {
             Animation::load(ctx, assets, particle, path.clone())?;
         }
         Ok(character)
@@ -143,9 +143,6 @@ impl YuyukoState {
 
         let (frame, mut move_id) = {
             let inputs = read_inputs(&input, true);
-            if inputs.len() > 1 {
-                dbg!(&inputs);
-            }
             data.command_list
                 .get_commands(&inputs)
                 .into_iter()

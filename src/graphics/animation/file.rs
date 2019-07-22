@@ -1,10 +1,10 @@
-use crate::graphics::Sprite;
+use crate::graphics::{Sprite};
 
 use crate::assets::Assets;
 
 use ggez::{Context, GameError, GameResult};
 
-use super::Animation;
+use super::{Animation};
 
 use std::fs::File;
 use std::io::BufReader;
@@ -17,21 +17,26 @@ pub fn load_from_json(
 ) -> GameResult<Animation> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
+    let mut animation = serde_json::from_reader::<_, Animation>(buf_read).unwrap();
     path.pop();
-    Animation::load(ctx, assets, &animation, path)?;
+    load(ctx, assets, &mut animation, path)?;
     Ok(animation)
 }
+
 pub fn load(
     ctx: &mut Context,
     assets: &mut Assets,
-    animation: &Animation,
+    animation: &mut Animation,
     mut path: PathBuf,
 ) -> GameResult<()> {
     path.push(&animation.name);
-    for (sprite, _) in &animation.frames {
+    let paths: Vec<_> = animation.frames.iter().enumerate().map(|(idx, _)| animation.get_path_to_image(idx)).collect();
+    for (file_name, (sprite, _)) in paths.iter().zip(animation.frames.iter_mut()) {
+        path.push(file_name, );
         Sprite::load(ctx, assets, sprite, path.clone())?;
+        path.pop();
     }
+
     Ok(())
 }
 
@@ -47,8 +52,10 @@ pub fn save(
     path.pop();
     path.push(&animation.name);
     std::fs::create_dir_all(&path)?;
-    for (sprite, _) in &animation.frames {
+    for (idx, (sprite, _)) in animation.frames.iter().enumerate() {
+        path.push(animation.get_path_to_image(idx));
         Sprite::save(ctx, assets, sprite, path.clone())?;
+        path.pop();
     }
     Ok(())
 }

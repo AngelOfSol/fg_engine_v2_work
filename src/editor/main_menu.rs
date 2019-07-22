@@ -50,11 +50,15 @@ impl MainMenu {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
-                                if let Ok(character) = PlayerCharacter::load_from_json(
+                                let result = PlayerCharacter::load_from_json(
                                     ctx,
                                     assets,
                                     PathBuf::from(path),
-                                ) {
+                                );
+                                if result.is_err() {
+                                    dbg!(result.as_ref().unwrap_err());
+                                }
+                                if let Ok(character) = result {
                                     self.next = Transition::Push(
                                         Box::new(CharacterEditor::new(character).into()),
                                         Mode::Standalone,
