@@ -14,11 +14,19 @@ macro_rules! numpad {
     };
 
     ($dir:tt $button:ident) => {
-        Input::Button(read_axis!($dir), ButtonSet::Single(Button::$button))
+        Input::PressButton(read_axis!($dir), ButtonSet::Single(Button::$button))
+    };
+    (rel $dir:tt $button:ident) => {
+        Input::ReleaseButton(read_axis!($dir), ButtonSet::Single(Button::$button))
     };
 
-    ($dir:tt [$button:ident] ) => {
-        Input::Holding(read_axis!($dir), ButtonSet::Single(Button::$button))
+    
+
+    ($dir:tt $button:ident $button2:ident) => {
+        Input::PressButton(read_axis!($dir), ButtonSet::Double(Button::$button, Button::$button2))
+    };
+    (rel $dir:tt $button:ident $button2:ident) => {
+        Input::ReleaseButton(read_axis!($dir), ButtonSet::Double(Button::$button, Button::$button2))
     };
 
     (66) => {

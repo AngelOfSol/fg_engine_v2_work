@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum YuyukoParticle {
+pub enum Particle {
     SuperJumpParticle,
 }
 
-impl Default for YuyukoParticle {
+impl Default for Particle {
     fn default() -> Self {
-        YuyukoParticle::SuperJumpParticle
+        Particle::SuperJumpParticle
     }
 }

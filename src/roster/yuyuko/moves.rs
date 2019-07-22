@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum YuyukoMove {
+pub enum MoveId {
     Stand,
     WalkBackward,
     WalkForward,
@@ -11,24 +11,22 @@ pub enum YuyukoMove {
     Crouch,
     ToCrouch,
     ToStand,
-    StartForwardDash,
+    ForwardDashStart,
     ForwardDash,
+    ForwardDashEnd,
+    BackDash,
     Jump,
-    JumpForward,
-    JumpBackward,
     SuperJump,
-    SuperJumpForward,
-    SuperJumpBackward,
     AirIdle,
 }
 
-impl Default for YuyukoMove {
+impl Default for MoveId {
     fn default() -> Self {
-        YuyukoMove::Stand
+        MoveId::Stand
     }
 }
 
-impl YuyukoMove {
+impl MoveId {
     pub fn to_string(self) -> String {
         serde_json::to_string(&self)
             .unwrap()

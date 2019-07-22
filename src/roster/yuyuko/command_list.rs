@@ -1,37 +1,28 @@
-use super::moves::YuyukoMove;
+use super::moves::MoveId;
 use crate::command_list::CommandList;
 use crate::input::{Button, ButtonSet, DirectedAxis, Input};
 
 use crate::{make_command_list, numpad, read_axis};
-pub fn generate_command_list() ->
-    CommandList<YuyukoMove> {
+pub fn generate_command_list() -> CommandList<MoveId> {
     make_command_list! {
-        numpad!(5 A), numpad!(4 A), numpad!(6 A) => YuyukoMove::Attack5A,
 
-        numpad!(66) => YuyukoMove::StartForwardDash,
+        numpad!(6 A B), numpad!(66) => MoveId::ForwardDashStart,
+        numpad!(4 A B), numpad!(44) => MoveId::BackDash,
 
-        numpad!(29) => YuyukoMove::SuperJumpForward,
-        numpad!(28) => YuyukoMove::SuperJump,
-        numpad!(27) => YuyukoMove::SuperJumpBackward,
+        numpad!(5 A), numpad!(4 A), numpad!(6 A) => MoveId::Attack5A,
 
-        numpad!(9) => YuyukoMove::JumpForward,
-        numpad!(8) => YuyukoMove::Jump,
-        numpad!(7) => YuyukoMove::JumpBackward,
-        numpad!(9) => YuyukoMove::SuperJumpForward,
-        numpad!(8) => YuyukoMove::SuperJump,
-        numpad!(7) => YuyukoMove::SuperJumpBackward,
+        numpad!(27), numpad!(28), numpad!(29) => MoveId::SuperJump,
+        numpad!(7), numpad!(8), numpad!(9) => MoveId::Jump,
+        numpad!(7), numpad!(8), numpad!(9) => MoveId::SuperJump,
 
-        numpad!(6) => YuyukoMove::WalkForward,
-        numpad!(4) => YuyukoMove::WalkBackward,
+        numpad!(6) => MoveId::WalkForward,
+        numpad!(4) => MoveId::WalkBackward,
 
-        numpad!(1) => YuyukoMove::Crouch,
-        numpad!(2) => YuyukoMove::Crouch,
-        numpad!(3) => YuyukoMove::Crouch,
-        numpad!(1) => YuyukoMove::ToCrouch,
-        numpad!(2) => YuyukoMove::ToCrouch,
-        numpad!(3) => YuyukoMove::ToCrouch,
+        numpad!(1), numpad!(2), numpad!(3) => MoveId::Crouch,
+        numpad!(1), numpad!(2), numpad!(3) => MoveId::ToCrouch,
 
-        numpad!(5) => YuyukoMove::Stand,
-        numpad!(5) => YuyukoMove::ToStand
+        numpad!(5) => MoveId::Stand,
+        numpad!(5) => MoveId::ToStand,
+        numpad!(5) => MoveId::ForwardDashEnd
     }
 }

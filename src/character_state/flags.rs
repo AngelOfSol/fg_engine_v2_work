@@ -24,6 +24,8 @@ pub struct Flags {
     pub can_block: bool,
     pub airborne: bool,
     pub reset_velocity: bool,
+    #[serde(default)]
+    pub jump_start: bool,
     pub accel: Vec2,
 }
 
@@ -50,6 +52,7 @@ impl Flags {
             bullet: MagicHittable::Hit,
             can_block: false,
             airborne: false,
+            jump_start: false,
             reset_velocity: true,
             accel: Vec2::zeros(),
         }
@@ -72,6 +75,7 @@ impl FlagsUi {
         ui.checkbox(im_str!("Can Block"), &mut data.can_block);
         ui.checkbox(im_str!("Airborne"), &mut data.airborne);
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
+        ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
 
         ui.separator();
 
