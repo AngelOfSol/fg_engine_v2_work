@@ -57,10 +57,6 @@ impl Sprite {
         world: Matrix4,
         debug: bool,
     ) -> GameResult<()> {
-        /*let image = assets
-        .images
-        .get(&self.image)
-        .ok_or_else(|| GameError::ResourceNotFound(format!("{}", self.image), Vec::new()))?;*/
         let image = self.image.as_ref().unwrap();
 
         let image_offset = Matrix4::new_translation(&Vec3::new(
