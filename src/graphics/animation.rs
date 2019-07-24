@@ -18,7 +18,7 @@ use std::path::PathBuf;
 pub use ui::AnimationUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Animation{
+pub struct Animation {
     pub name: String,
     pub frames: Timeline<Sprite>,
     #[serde(default = "default_blend_mode")]

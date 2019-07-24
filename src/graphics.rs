@@ -5,4 +5,4 @@ mod sprite;
 
 pub use animation::{Animation, AnimationUi};
 pub use graphics::BlendMode;
-pub use sprite::{Sprite};
+pub use sprite::Sprite;

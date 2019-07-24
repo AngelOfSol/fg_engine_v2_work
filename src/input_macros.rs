@@ -13,7 +13,6 @@ macro_rules! numpad {
         Input::DragonPunch(Direction::Backward, Button::$button)
     };
 
-
     (release $button:ident) => {
         Input::ReleaseButton(ButtonSet::Single(Button::$button))
     };
@@ -25,7 +24,10 @@ macro_rules! numpad {
         Input::PressButton(DirectedAxis::Neutral, ButtonSet::Single(Button::$button))
     };
     (press $button:ident $button2:ident) => {
-        Input::PressButton(DirectedAxis::Neutral, ButtonSet::Double(Button::$button, Button::$button2))
+        Input::PressButton(
+            DirectedAxis::Neutral,
+            ButtonSet::Double(Button::$button, Button::$button2),
+        )
     };
 
     ($dir:tt $button:ident) => {

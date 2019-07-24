@@ -1,10 +1,10 @@
-use crate::graphics::{Sprite};
+use crate::graphics::Sprite;
 
 use crate::assets::Assets;
 
 use ggez::{Context, GameError, GameResult};
 
-use super::{Animation};
+use super::Animation;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -30,9 +30,14 @@ pub fn load(
     mut path: PathBuf,
 ) -> GameResult<()> {
     path.push(&animation.name);
-    let paths: Vec<_> = animation.frames.iter().enumerate().map(|(idx, _)| animation.get_path_to_image(idx)).collect();
+    let paths: Vec<_> = animation
+        .frames
+        .iter()
+        .enumerate()
+        .map(|(idx, _)| animation.get_path_to_image(idx))
+        .collect();
     for (file_name, (sprite, _)) in paths.iter().zip(animation.frames.iter_mut()) {
-        path.push(file_name, );
+        path.push(file_name);
         Sprite::load(ctx, assets, sprite, path.clone())?;
         path.pop();
     }

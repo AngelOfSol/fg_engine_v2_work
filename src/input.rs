@@ -18,10 +18,45 @@ use std::ops::{Index, IndexMut};
 pub use control_scheme::PadControlScheme;
 pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
 
+use crate::typedefs::{collision, graphics};
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {
     pub axis: Axis,
     buttons: [ButtonState; 4],
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Facing {
+    Left,
+    Right,
+}
+
+impl Facing {
+    pub fn fix_graphics(self, data: graphics::Vec2) -> graphics::Vec2 {
+        data.component_mul(&self.graphics_multiplier())
+    }
+    pub fn graphics_multiplier(self) -> graphics::Vec2 {
+        graphics::Vec2::new(
+            match self {
+                Facing::Left => -1.0,
+                Facing::Right => 1.0,
+            },
+            1.0,
+        )
+    }
+    pub fn fix_collision(self, data: collision::Vec2) -> collision::Vec2 {
+        data.component_mul(&self.collision_multiplier())
+    }
+    pub fn collision_multiplier(self) -> collision::Vec2 {
+        collision::Vec2::new(
+            match self {
+                Facing::Left => -1,
+                Facing::Right => 1,
+            },
+            1,
+        )
+    }
 }
 
 impl Index<Button> for InputState {

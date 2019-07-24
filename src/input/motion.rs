@@ -1,5 +1,5 @@
 use super::ringbuffer::DirectionIter;
-use super::{Axis, Button, ButtonState, InputBuffer, MOTION_DIRECTION_SIZE};
+use super::{Axis, Button, ButtonState, Facing, InputBuffer, MOTION_DIRECTION_SIZE};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Direction {
@@ -98,7 +98,7 @@ impl Input {
     }
 }
 
-pub fn read_inputs(buffer: &InputBuffer, facing_right: bool) -> Vec<Input> {
+pub fn read_inputs(buffer: &InputBuffer, facing: Facing) -> Vec<Input> {
     [
         read_super_jump(buffer),
         read_super_jump_macro(buffer),
@@ -113,7 +113,13 @@ pub fn read_inputs(buffer: &InputBuffer, facing_right: bool) -> Vec<Input> {
     .iter()
     .filter(|item| item.is_some())
     .map(|item| item.unwrap())
-    .map(|item| if facing_right { item } else { item.invert() })
+    .map(|item| {
+        if facing == Facing::Right {
+            item
+        } else {
+            item.invert()
+        }
+    })
     .collect()
 }
 

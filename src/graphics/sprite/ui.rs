@@ -6,7 +6,7 @@ use crate::imgui_extra::UiExtensions;
 use imgui::*;
 use nfd::Response;
 
-use super::{Sprite};
+use super::Sprite;
 
 pub struct SpriteUi;
 

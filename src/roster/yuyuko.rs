@@ -23,7 +23,7 @@ use std::collections::HashMap;
 
 use crate::timeline::AtTime;
 
-use crate::input::{read_inputs, Button, DirectedAxis, InputBuffer};
+use crate::input::{read_inputs, Button, DirectedAxis, Facing, InputBuffer};
 
 use crate::command_list::CommandList;
 
@@ -31,6 +31,8 @@ use crate::graphics::Animation;
 
 use moves::MoveId;
 use particles::Particle;
+
+use crate::character_state::Flags;
 
 pub struct Yuyuko {
     assets: Assets,
@@ -126,6 +128,7 @@ pub struct YuyukoState {
     current_state: (usize, MoveId),
     extra_data: ExtraData,
     particles: Vec<(usize, collision::Vec2, Particle)>,
+    facing: Facing,
 }
 
 impl YuyukoState {
@@ -136,8 +139,70 @@ impl YuyukoState {
             current_state: (0, MoveId::Stand),
             extra_data: ExtraData::None,
             particles: Vec::new(),
+            facing: Facing::Right,
         }
     }
+
+    fn handle_fly(move_id: MoveId, extra_data: &mut ExtraData) -> collision::Vec2 {
+        if move_id == MoveId::FlyStart {
+            let fly_dir = extra_data.unwrap_fly_direction();
+            *extra_data = ExtraData::FlyDirection(fly_dir);
+            let speed = match fly_dir {
+                DirectedAxis::Forward => collision::Vec2::new(1_00, 0_00),
+                DirectedAxis::UpForward => collision::Vec2::new(0_71, 0_71),
+                DirectedAxis::DownForward => collision::Vec2::new(0_71, -0_71),
+                DirectedAxis::Backward => collision::Vec2::new(-1_00, 0_00),
+                DirectedAxis::UpBackward => collision::Vec2::new(-0_71, 0_71),
+                DirectedAxis::DownBackward => collision::Vec2::new(-0_71, -0_71),
+                DirectedAxis::Up => collision::Vec2::new(0_00, 1_00),
+                DirectedAxis::Down => collision::Vec2::new(0_00, -1_00),
+                _ => unreachable!(),
+            };
+            3 * speed / 4
+        } else {
+            collision::Vec2::zeros()
+        }
+    }
+
+    fn handle_jump(
+        flags: &Flags,
+        data: &Properties,
+        move_id: MoveId,
+        extra_data: &mut ExtraData,
+    ) -> collision::Vec2 {
+        if flags.jump_start {
+            let axis = extra_data.unwrap_jump_direction();
+            *extra_data = ExtraData::None;
+            match move_id {
+                MoveId::Jump => {
+                    if axis == DirectedAxis::Up {
+                        data.neutral_jump_accel
+                    } else {
+                        data.directed_jump_accel
+                            .component_mul(&collision::Vec2::new(
+                                axis.direction_multiplier(true),
+                                1,
+                            ))
+                    }
+                }
+                MoveId::SuperJump => {
+                    if axis == DirectedAxis::Up {
+                        data.neutral_super_jump_accel
+                    } else {
+                        data.directed_super_jump_accel
+                            .component_mul(&collision::Vec2::new(
+                                axis.direction_multiplier(true),
+                                1,
+                            ))
+                    }
+                }
+                _ => panic!("jump_start not allowed on non jump moves"),
+            }
+        } else {
+            collision::Vec2::zeros()
+        }
+    }
+
     pub fn update_frame(&self, data: &Yuyuko, input: &InputBuffer) -> Self {
         let (frame, move_id) = self.current_state;
         // if the next frame would be out of bounds
@@ -149,7 +214,7 @@ impl YuyukoState {
         let cancels = data.states[&move_id].cancels.at_time(frame);
 
         let (frame, mut move_id) = {
-            let inputs = read_inputs(&input, true);
+            let inputs = read_inputs(&input, self.facing);
             if move_id == MoveId::Fly {
                 if input.top()[Button::A].is_pressed() && input.top()[Button::B].is_pressed() {
                     (frame, move_id)
@@ -197,33 +262,12 @@ impl YuyukoState {
         } else {
             let vel = if flags.airborne {
                 self.velocity
-                    + if flags.jump_start {
-                        let axis = new_extra_data.unwrap_jump_direction();
-                        new_extra_data = ExtraData::None;
-                        match move_id {
-                            MoveId::Jump => {
-                                if axis == DirectedAxis::Up {
-                                    data.properties.neutral_jump_accel
-                                } else {
-                                    data.properties.directed_jump_accel.component_mul(
-                                        &collision::Vec2::new(axis.direction_multiplier(true), 1),
-                                    )
-                                }
-                            }
-                            MoveId::SuperJump => {
-                                if axis == DirectedAxis::Up {
-                                    data.properties.neutral_super_jump_accel
-                                } else {
-                                    data.properties.directed_super_jump_accel.component_mul(
-                                        &collision::Vec2::new(axis.direction_multiplier(true), 1),
-                                    )
-                                }
-                            }
-                            _ => panic!("jump_start not allowed on non jump moves"),
-                        }
-                    } else {
-                        collision::Vec2::zeros()
-                    }
+                    + YuyukoState::handle_jump(
+                        flags,
+                        &data.properties,
+                        move_id,
+                        &mut new_extra_data,
+                    )
             } else {
                 self.velocity.component_div(&collision::Vec2::new(2, 1))
             };
@@ -233,24 +277,8 @@ impl YuyukoState {
             } else {
                 collision::Vec2::zeros()
             }
-        } + flags.accel
-            + if move_id == MoveId::FlyStart {
-                let fly_dir = new_extra_data.unwrap_fly_direction();
-                new_extra_data = ExtraData::FlyDirection(fly_dir);
-                match fly_dir {
-                    DirectedAxis::Forward => collision::Vec2::new(1_00, 0_00),
-                    DirectedAxis::UpForward => collision::Vec2::new(0_71, 0_71),
-                    DirectedAxis::DownForward => collision::Vec2::new(0_71, -0_71),
-                    DirectedAxis::Backward => collision::Vec2::new(-1_00, 0_00),
-                    DirectedAxis::UpBackward => collision::Vec2::new(-0_71, 0_71),
-                    DirectedAxis::DownBackward => collision::Vec2::new(-0_71, -0_71),
-                    DirectedAxis::Up => collision::Vec2::new(0_00, 1_00),
-                    DirectedAxis::Down => collision::Vec2::new(0_00, -1_00),
-                    _ => unreachable!(),
-                }
-            } else {
-                collision::Vec2::zeros()
-            };
+        } + self.facing.fix_collision(flags.accel)
+            + YuyukoState::handle_fly(move_id, &mut new_extra_data);
 
         let new_position = self.position + new_velocity;
         let new_position =
@@ -284,6 +312,7 @@ impl YuyukoState {
             current_state: (frame, move_id),
             extra_data: new_extra_data,
             particles,
+            facing: self.facing,
         }
     }
 
@@ -306,8 +335,11 @@ impl YuyukoState {
             &data.assets,
             frame,
             position
+                * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
+                    self.facing.graphics_multiplier(),
+                ))
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    -collision.center.into_graphical(),
+                    self.facing.fix_graphics(-collision.center.into_graphical()),
                 )),
         )?;
 

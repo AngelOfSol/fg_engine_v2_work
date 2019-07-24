@@ -49,7 +49,13 @@ impl PlayerCharacter {
         let mut player_character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
         let character_file_name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
-        Self::load(ctx, assets, &mut player_character, &character_file_name, path)?;
+        Self::load(
+            ctx,
+            assets,
+            &mut player_character,
+            &character_file_name,
+            path,
+        )?;
         Ok(player_character)
     }
     pub fn load(
