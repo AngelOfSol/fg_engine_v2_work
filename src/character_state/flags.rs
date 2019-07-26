@@ -26,6 +26,8 @@ pub struct Flags {
     pub reset_velocity: bool,
     #[serde(default)]
     pub jump_start: bool,
+    #[serde(default)]
+    pub allow_reface: bool,
     pub accel: Vec2,
 }
 
@@ -54,6 +56,7 @@ impl Flags {
             airborne: false,
             jump_start: false,
             reset_velocity: true,
+            allow_reface: false,
             accel: Vec2::zeros(),
         }
     }
@@ -76,6 +79,7 @@ impl FlagsUi {
         ui.checkbox(im_str!("Airborne"), &mut data.airborne);
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
         ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
+        ui.checkbox(im_str!("Allow Reface"), &mut data.allow_reface);
 
         ui.separator();
 

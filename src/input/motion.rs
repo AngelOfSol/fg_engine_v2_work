@@ -39,7 +39,15 @@ impl DirectedAxis {
         };
         facing * self_value
     }
-    fn invert(self) -> Self {
+
+    pub fn is_backward(self) -> bool {
+        match self {
+            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward => true,
+            _ => false,
+        }
+    }
+
+    pub fn invert(self) -> Self {
         match self {
             DirectedAxis::Forward => DirectedAxis::Backward,
             DirectedAxis::DownForward => DirectedAxis::DownBackward,
@@ -48,6 +56,25 @@ impl DirectedAxis {
             DirectedAxis::DownBackward => DirectedAxis::DownForward,
             DirectedAxis::UpBackward => DirectedAxis::UpForward,
             value => value,
+        }
+    }
+    pub fn from_facing(item: Axis, facing: Facing) -> Self {
+        let ret = match item {
+            Axis::Up => DirectedAxis::Up,
+            Axis::Down => DirectedAxis::Down,
+            Axis::Right => DirectedAxis::Forward,
+            Axis::Left => DirectedAxis::Backward,
+            Axis::Neutral => DirectedAxis::Neutral,
+            Axis::UpRight => DirectedAxis::UpForward,
+            Axis::UpLeft => DirectedAxis::UpBackward,
+            Axis::DownRight => DirectedAxis::DownForward,
+            Axis::DownLeft => DirectedAxis::DownBackward,
+        };
+
+        if facing == Facing::Left {
+            ret.invert()
+        } else {
+            ret
         }
     }
 }

@@ -238,21 +238,27 @@ impl YuyukoState {
                     .unwrap_or((frame, move_id))
             }
         };
+        let mut new_facing = self.facing;
 
         let mut new_extra_data =
             if frame == 0 && (move_id == MoveId::Jump || move_id == MoveId::SuperJump) {
-                ExtraData::JumpDirection(input.top().axis.into())
+                ExtraData::JumpDirection(DirectedAxis::from_facing(input.top().axis, self.facing))
             } else if frame == 0 && (move_id == MoveId::FlyStart) {
-                ExtraData::FlyDirection(
-                    if DirectedAxis::from(input.top().axis) == DirectedAxis::Neutral {
-                        DirectedAxis::Forward
-                    } else {
-                        input.top().axis.into()
-                    },
-                )
+                let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
+                if dir.is_backward() {
+                    new_facing = new_facing.invert();
+                    dir = dir.invert();
+                }
+                ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
+                    DirectedAxis::Forward
+                } else {
+                    dir
+                })
             } else {
                 self.extra_data
             };
+
+        let new_facing = new_facing;
 
         let hitboxes = data.states[&move_id].hitboxes.at_time(frame);
         let flags = data.states[&move_id].flags.at_time(frame);
@@ -262,12 +268,12 @@ impl YuyukoState {
         } else {
             let vel = if flags.airborne {
                 self.velocity
-                    + YuyukoState::handle_jump(
+                    + self.facing.fix_collision(YuyukoState::handle_jump(
                         flags,
                         &data.properties,
                         move_id,
                         &mut new_extra_data,
-                    )
+                    ))
             } else {
                 self.velocity.component_div(&collision::Vec2::new(2, 1))
             };
@@ -278,7 +284,9 @@ impl YuyukoState {
                 collision::Vec2::zeros()
             }
         } + self.facing.fix_collision(flags.accel)
-            + YuyukoState::handle_fly(move_id, &mut new_extra_data);
+            + self
+                .facing
+                .fix_collision(YuyukoState::handle_fly(move_id, &mut new_extra_data));
 
         let new_position = self.position + new_velocity;
         let new_position =
@@ -306,13 +314,24 @@ impl YuyukoState {
             .into_iter()
             .filter(|item| item.0 < data.particles[&item.2].frames.duration())
             .collect();
+
+        let new_facing = if flags.allow_reface {
+            if new_position.x > 100 {
+                Facing::Left
+            } else {
+                Facing::Right
+            }
+        } else {
+            new_facing
+        };
+
         Self {
             velocity: new_velocity,
             position: new_position,
             current_state: (frame, move_id),
             extra_data: new_extra_data,
             particles,
-            facing: self.facing,
+            facing: new_facing,
         }
     }
 
