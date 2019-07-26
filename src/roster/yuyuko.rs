@@ -203,17 +203,20 @@ impl YuyukoState {
         }
     }
 
-    pub fn update_frame(&self, data: &Yuyuko, input: &InputBuffer) -> Self {
+    fn handle_expire(&mut self, data: &Yuyuko) {
         let (frame, move_id) = self.current_state;
         // if the next frame would be out of bounds
-        let (frame, move_id) = if frame >= data.states[&move_id].duration() - 1 {
+        self.current_state = if frame >= data.states[&move_id].duration() - 1 {
             (0, data.states[&move_id].on_expire_state)
         } else {
             (frame + 1, move_id)
         };
+    }
+    fn handle_input(&mut self, data: &Yuyuko, input: &InputBuffer) {
+        let (frame, move_id) = self.current_state;
         let cancels = data.states[&move_id].cancels.at_time(frame);
 
-        let (frame, mut move_id) = {
+        self.current_state = {
             let inputs = read_inputs(&input, self.facing);
             if move_id == MoveId::Fly {
                 if input.top()[Button::A].is_pressed() && input.top()[Button::B].is_pressed() {
@@ -238,101 +241,119 @@ impl YuyukoState {
                     .unwrap_or((frame, move_id))
             }
         };
-        let mut new_facing = self.facing;
+    }
 
-        let mut new_extra_data =
-            if frame == 0 && (move_id == MoveId::Jump || move_id == MoveId::SuperJump) {
-                ExtraData::JumpDirection(DirectedAxis::from_facing(input.top().axis, self.facing))
-            } else if frame == 0 && (move_id == MoveId::FlyStart) {
+    fn update_extra_data(&mut self, input: &InputBuffer) {
+        let (frame, move_id) = self.current_state;
+        if frame == 0 {
+            if move_id == MoveId::Jump || move_id == MoveId::SuperJump {
+                self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    input.top().axis,
+                    self.facing,
+                ));
+            } else if move_id == MoveId::FlyStart {
                 let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
                 if dir.is_backward() {
-                    new_facing = new_facing.invert();
+                    self.facing = self.facing.invert();
                     dir = dir.invert();
                 }
-                ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
+                self.extra_data = ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
                     DirectedAxis::Forward
                 } else {
                     dir
-                })
-            } else {
-                self.extra_data
-            };
+                });
+            }
+        }
+    }
 
-        let new_facing = new_facing;
-
-        let hitboxes = data.states[&move_id].hitboxes.at_time(frame);
+    fn update_velocity(&mut self, data: &Yuyuko) {
+        let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
 
-        let mut new_velocity = if flags.reset_velocity {
+        let base_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
+        } else if flags.airborne {
+            self.velocity
         } else {
-            let vel = if flags.airborne {
-                self.velocity
-                    + self.facing.fix_collision(YuyukoState::handle_jump(
-                        flags,
-                        &data.properties,
-                        move_id,
-                        &mut new_extra_data,
-                    ))
-            } else {
-                self.velocity.component_div(&collision::Vec2::new(2, 1))
-            };
-            // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
-            vel + if flags.airborne && move_id != MoveId::FlyStart && move_id != MoveId::Fly {
-                collision::Vec2::new(0_00, -0_25)
-            } else {
-                collision::Vec2::zeros()
-            }
-        } + self.facing.fix_collision(flags.accel)
+            // runs friction on non-airborne, non-reset movement
+            self.velocity.component_div(&collision::Vec2::new(2, 1))
+        };
+
+        // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
+        let gravity = if flags.airborne && move_id != MoveId::FlyStart && move_id != MoveId::Fly {
+            collision::Vec2::new(0_00, -0_25)
+        } else {
+            collision::Vec2::zeros()
+        };
+
+        let accel = self.facing.fix_collision(flags.accel)
             + self
                 .facing
-                .fix_collision(YuyukoState::handle_fly(move_id, &mut new_extra_data));
+                .fix_collision(YuyukoState::handle_fly(move_id, &mut self.extra_data))
+            + self.facing.fix_collision(YuyukoState::handle_jump(
+                flags,
+                &data.properties,
+                move_id,
+                &mut self.extra_data,
+            ));
+        self.velocity = base_velocity + accel + gravity;
+    }
 
-        let new_position = self.position + new_velocity;
-        let new_position =
-            if !flags.airborne || new_position.y - hitboxes.collision.half_size.y <= -4 {
-                if flags.airborne {
-                    new_velocity = collision::Vec2::zeros();
-                    move_id = MoveId::Stand;
-                }
-                collision::Vec2::new(new_position.x, hitboxes.collision.half_size.y)
-            } else {
-                new_position
-            };
-        let mut particles = self.particles.clone();
-        for (ref mut frame, _, _) in particles.iter_mut() {
+    fn update_position(&mut self, data: &Yuyuko) {
+        let (frame, move_id) = self.current_state;
+        let flags = data.states[&move_id].flags.at_time(frame);
+        let hitboxes = data.states[&move_id].hitboxes.at_time(frame);
+
+        self.position += self.velocity;
+
+        // handle landing
+        if flags.airborne && self.position.y - hitboxes.collision.half_size.y <= -4 {
+            self.velocity = collision::Vec2::zeros();
+            self.current_state.1 = MoveId::Stand;
+            self.position.y = hitboxes.collision.half_size.y;
+        }
+
+        // if not airborne, make sure the character is locked to the ground properly
+        if !flags.airborne {
+            self.position.y = hitboxes.collision.half_size.y;
+        }
+    }
+
+    fn update_particles(&mut self, data: &Yuyuko) {
+        let (frame, move_id) = self.current_state;
+        let state_particles = &data.states[&move_id].particles;
+
+        for (ref mut frame, _, _) in self.particles.iter_mut() {
             *frame += 1;
         }
-        for particle in data.states[&move_id]
-            .particles
-            .iter()
-            .filter(|item| item.frame == frame)
-        {
-            particles.push((0, particle.offset + self.position, particle.particle_id));
+        for particle in state_particles.iter().filter(|item| item.frame == frame) {
+            self.particles
+                .push((0, particle.offset + self.position, particle.particle_id));
         }
-        let particles: Vec<_> = particles
-            .into_iter()
-            .filter(|item| item.0 < data.particles[&item.2].frames.duration())
-            .collect();
+        self.particles
+            .retain(|item| item.0 < data.particles[&item.2].frames.duration());
+    }
 
-        let new_facing = if flags.allow_reface {
-            if new_position.x > 100 {
+    fn handle_refacing(&mut self, data: &Yuyuko) {
+        let (frame, move_id) = self.current_state;
+        let flags = data.states[&move_id].flags.at_time(frame);
+        if flags.allow_reface {
+            self.facing = if self.position.x > 100 {
                 Facing::Left
             } else {
                 Facing::Right
             }
-        } else {
-            new_facing
-        };
-
-        Self {
-            velocity: new_velocity,
-            position: new_position,
-            current_state: (frame, move_id),
-            extra_data: new_extra_data,
-            particles,
-            facing: new_facing,
         }
+    }
+
+    pub fn update_frame_mut(&mut self, data: &Yuyuko, input: &InputBuffer) {
+        self.handle_expire(data);
+        self.handle_input(data, input);
+        self.update_extra_data(input);
+        self.update_velocity(data);
+        self.update_position(data);
+        self.update_particles(data);
+        self.handle_refacing(data);
     }
 
     pub fn draw(

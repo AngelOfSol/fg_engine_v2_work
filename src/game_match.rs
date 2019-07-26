@@ -62,7 +62,7 @@ impl EventHandler for Match {
             }
             self.input.push(current_frame);
 
-            self.state = self.state.update_frame(&self.resources, &self.input);
+            self.state.update_frame_mut(&self.resources, &self.input);
         }
         Ok(())
     }
