@@ -375,11 +375,11 @@ impl YuyukoState {
             &data.assets,
             frame,
             position
-                * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
-                    self.facing.graphics_multiplier(),
-                ))
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
                     self.facing.fix_graphics(-collision.center.into_graphical()),
+                ))
+                * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
+                    self.facing.graphics_multiplier(),
                 )),
         )?;
 

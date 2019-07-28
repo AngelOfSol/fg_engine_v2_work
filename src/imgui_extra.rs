@@ -288,6 +288,7 @@ impl<'a> UiExtensions for Ui<'a> {
                 let item = items.remove(*idx);
                 delete(item);
             }
+            *idx = None;
         }
 
         idx.map(move |idx| &mut items[idx])
