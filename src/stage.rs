@@ -16,17 +16,18 @@ impl Stage {
             image: Image::new(ctx, path)?,
         })
     }
+    pub fn width(&self) -> f32 {
+        f32::from(self.image.width())
+    }
+    pub fn give(&self, ctx: &Context) -> f32 {
+        let draw_size = graphics::drawable_size(ctx);
+        (self.width() - draw_size.0) / 2.0
+    }
 
     pub fn draw(&self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
-        let draw_size = graphics::drawable_size(ctx);
         graphics::set_transform(
             ctx,
-            world
-                * Matrix4::new_translation(&Vec3::new(
-                    draw_size.0 / 2.0 - f32::from(self.image.width()) / 2.0,
-                    -200.0,
-                    0.0,
-                )),
+            world * Matrix4::new_translation(&Vec3::new(-self.give(ctx) * 0.0, -200.0, 0.0)),
         );
         graphics::apply_transformations(ctx)?;
         graphics::draw(ctx, &self.image, DrawParam::default())?;

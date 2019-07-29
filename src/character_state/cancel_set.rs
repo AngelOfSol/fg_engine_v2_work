@@ -123,7 +123,7 @@ const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 impl CancelSetUi {
     pub fn new(state_list: Vec<String>, state_list_ui_data: Vec<ImString>) -> CancelSetUi {
         CancelSetUi {
-            new_disallow: state_list.get(0).cloned().unwrap_or("".to_owned()),
+            new_disallow: state_list.get(0).cloned().unwrap_or_else(|| "".to_owned()),
             state_list_ui_data,
             state_list,
         }

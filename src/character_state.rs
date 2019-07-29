@@ -105,6 +105,24 @@ impl<Id: StateId, ParticleId: StateId> CharacterState<Id, ParticleId> {
         }
         Ok(())
     }
+    pub fn draw_shadow_at_time(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        time: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        if time < self.duration() {
+            for animation in self
+                .animations
+                .iter()
+                .filter(|item| item.animation.blend_mode == crate::graphics::BlendMode::Alpha)
+            {
+                animation.draw_at_time(ctx, assets, time, world)?
+            }
+        }
+        Ok(())
+    }
     pub fn draw_at_time_debug(
         &self,
         ctx: &mut Context,

@@ -124,7 +124,7 @@ impl ExtraData {
 #[derive(Debug, Clone)]
 pub struct YuyukoState {
     velocity: collision::Vec2,
-    position: collision::Vec2,
+    pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
     extra_data: ExtraData,
     particles: Vec<(usize, collision::Vec2, Particle)>,
@@ -400,6 +400,34 @@ impl YuyukoState {
                     )),
             )?;
         }
+        Ok(())
+    }
+    pub fn draw_shadow(
+        &self,
+        ctx: &mut Context,
+        data: &Yuyuko,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
+        let (frame, move_id) = self.current_state;
+
+        let collision = &data.states[&move_id].hitboxes.at_time(frame).collision;
+        let position = world
+            * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                self.position.into_graphical(),
+            ));
+
+        data.states[&move_id].draw_shadow_at_time(
+            ctx,
+            &data.assets,
+            frame,
+            position
+                * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                    self.facing.fix_graphics(-collision.center.into_graphical()),
+                ))
+                * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
+                    self.facing.graphics_multiplier(),
+                )),
+        )?;
         Ok(())
     }
 }
