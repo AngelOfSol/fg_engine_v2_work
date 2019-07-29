@@ -111,6 +111,8 @@ impl<Id: HashId> CancelSet<Id> {
 }
 
 pub struct CancelSetUi {
+    state_list: Vec<String>,
+    state_list_ui_data: Vec<ImString>,
     new_disallow: String,
 }
 
@@ -119,9 +121,11 @@ const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 
 impl CancelSetUi {
-    pub fn new() -> CancelSetUi {
+    pub fn new(state_list: Vec<String>, state_list_ui_data: Vec<ImString>) -> CancelSetUi {
         CancelSetUi {
-            new_disallow: "".to_owned(),
+            new_disallow: state_list.get(0).cloned().unwrap_or("".to_owned()),
+            state_list_ui_data,
+            state_list,
         }
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
@@ -156,8 +160,16 @@ impl CancelSetUi {
             data.disallow.remove(&item);
         }
 
-        ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
-        ui.same_line(0.0);
+        ui.combo_items(
+            im_str!("##Combo"),
+            &self.state_list,
+            &self.state_list_ui_data,
+            &mut self.new_disallow,
+            5,
+        );
+
+        //ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
+
         if ui.small_button(im_str!("Add")) && self.new_disallow != "" {
             let new = std::mem::replace(&mut self.new_disallow, "".to_owned());
             data.disallow.insert(new);

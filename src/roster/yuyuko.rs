@@ -125,7 +125,7 @@ impl ExtraData {
 pub struct YuyukoState {
     velocity: collision::Vec2,
     position: collision::Vec2,
-    current_state: (usize, MoveId),
+    pub current_state: (usize, MoveId),
     extra_data: ExtraData,
     particles: Vec<(usize, collision::Vec2, Particle)>,
     facing: Facing,
@@ -272,16 +272,22 @@ impl YuyukoState {
 
         let base_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
-        } else if flags.airborne {
-            self.velocity
         } else {
-            // runs friction on non-airborne, non-reset movement
-            self.velocity.component_div(&collision::Vec2::new(2, 1))
+            self.velocity
         };
 
         // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
-        let gravity = if flags.airborne && move_id != MoveId::FlyStart && move_id != MoveId::Fly {
-            collision::Vec2::new(0_00, -0_25)
+        let gravity = if !flags.reset_velocity
+            && flags.airborne
+            && move_id != MoveId::FlyStart
+            && move_id != MoveId::Fly
+        {
+            collision::Vec2::new(0_00, -0_20)
+        } else {
+            collision::Vec2::zeros()
+        };
+        let friction = if !flags.airborne {
+            collision::Vec2::new(-0_20 * i32::signum(base_velocity.x), 0_00)
         } else {
             collision::Vec2::zeros()
         };
@@ -296,7 +302,7 @@ impl YuyukoState {
                 move_id,
                 &mut self.extra_data,
             ));
-        self.velocity = base_velocity + accel + gravity;
+        self.velocity = base_velocity + accel + friction + gravity;
     }
 
     fn update_position(&mut self, data: &Yuyuko) {

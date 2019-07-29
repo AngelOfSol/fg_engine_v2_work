@@ -198,9 +198,13 @@ impl CharacterStateUi {
         );
 
         if let Some(ref mut idx) = self.current_cancels {
-            let ui_data = self
-                .current_cancel_set_ui
-                .get_or_insert_with(CancelSetUi::new);
+            if self.current_cancel_set_ui.is_none() {
+                self.current_cancel_set_ui = Some(CancelSetUi::new(
+                    self.state_list.clone(),
+                    self.state_list_ui_data.clone(),
+                ));
+            }
+            let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
             ui.timeline_modify(idx, data);
 
             let (ref mut cancels, ref mut duration) = &mut data[*idx];

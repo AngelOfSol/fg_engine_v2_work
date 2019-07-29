@@ -45,7 +45,7 @@ impl Match {
 
 impl EventHandler for Match {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        while timer::check_update_time(ctx, 60) {
+        while timer::check_update_time(ctx, 10) {
             let mut current_frame = self.control_scheme.update_frame(*self.input.top());
             while let Some(event) = self.pads_context.next_event() {
                 // let id = event.id;
@@ -78,6 +78,18 @@ impl EventHandler for Match {
             Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0)) * Matrix4::new_scaling(1.0);
 
         self.state.draw(ctx, &self.resources, world)?;
+
+        graphics::set_transform(ctx, Matrix4::identity());
+        graphics::apply_transformations(ctx)?;
+
+        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+
+        let text = graphics::Text::new(format!(
+            "Frame: {}, State: {}",
+            self.state.current_state.0,
+            self.state.current_state.1.to_string()
+        ));
+        graphics::draw(ctx, &text, graphics::DrawParam::default())?;
 
         graphics::present(ctx)?;
         Ok(())
