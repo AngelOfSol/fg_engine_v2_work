@@ -28,7 +28,7 @@ fn load_image_data<P: AsRef<Path>>(
                 let mut buf = Vec::new();
                 let mut reader = std::fs::File::open(&path)?;
                 let _ = reader.read_to_end(&mut buf)?;
-                image::load_from_memory(&buf)?.to_rgba()
+                image::load_from_memory(&buf).unwrap().to_rgba()
             };
             let (width, height) = img.dimensions();
 

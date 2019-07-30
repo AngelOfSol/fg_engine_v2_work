@@ -115,7 +115,7 @@ impl EventHandler for GameEditor {
             }
 
             if self.game_state.is_empty() {
-                ggez::quit(ctx);
+                ggez::event::quit(ctx);
             }
         }
         Ok(())

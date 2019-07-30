@@ -27,7 +27,7 @@ impl Stage {
     pub fn draw(&self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
         graphics::set_transform(
             ctx,
-            world * Matrix4::new_translation(&Vec3::new(-self.give(ctx) * 0.0, -200.0, 0.0)),
+            world * Matrix4::new_translation(&Vec3::new(-self.give(ctx), -200.0, 0.0)),
         );
         graphics::apply_transformations(ctx)?;
         graphics::draw(ctx, &self.image, DrawParam::default())?;

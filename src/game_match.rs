@@ -21,9 +21,9 @@ use crate::typedefs::collision::IntoGraphical;
 
 use gfx::{self, *};
 
-/*pub struct PlayArea {
-    // play area is from -320_00 to 320_00, and from -225_00 to 0_00
-}*/
+pub struct PlayArea {
+    pub width: i32,
+}
 
 gfx_defines! {
     constant Shadow {
@@ -40,18 +40,23 @@ pub struct Match {
     background: Stage,
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
+    play_area: PlayArea,
 }
 
 impl Match {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        let background = Stage::new(ctx, "\\bg_14.png")?;
         Ok(Self {
             resources: Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?,
             state: YuyukoState::new(),
             pads_context: Gilrs::new()?,
             control_scheme: PadControlScheme::new(),
             input: InputBuffer::new(),
-            background: Stage::new(ctx, "\\bg_14.png")?,
             debug_text: graphics::Text::new(""),
+            play_area: PlayArea {
+                width: background.width() as i32 * 100,
+            },
+            background,
             shader: graphics::Shader::new(
                 ctx,
                 "/shaders/vertex.glslv",
@@ -83,41 +88,38 @@ impl EventHandler for Match {
             }
             self.input.push(current_frame);
 
-            self.state.update_frame_mut(&self.resources, &self.input);
+            self.state
+                .update_frame_mut(&self.resources, &self.input, &self.play_area);
         }
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-        let char_position = (self.state.position.x.into_graphical() + 100.0) / 2.0 * 2.0;
+
+        let game_offset = Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0));
+
+        let char_position = (self.state.position.x.into_graphical() + 100.0) / 2.0;
+
         let translate = f32::min(
             self.background.give(ctx),
             f32::max(char_position, -self.background.give(ctx)),
         );
-        let translate = 0.0;
 
-        let world = Matrix4::new_scaling(
-            (self.background.width() - self.background.give(ctx) * 2.0) / self.background.width(),
-        ) * Matrix4::new_translation(&Vec3::new(-(translate), 0.0, 0.0));
+        let world = Matrix4::new_translation(&Vec3::new(-(translate), 0.0, 0.0));
 
         self.background.draw(ctx, world)?;
 
+        let world = world * game_offset * Matrix4::new_scaling(1.0);
         {
             let _lock = graphics::use_shader(ctx, &self.shader);
-            let world = world
-                * Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0))
-                * Matrix4::new(
-                    1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                )
-                * Matrix4::new_nonuniform_scaling(&Vec3::new(2.0, -0.8, 1.0));
+            let skew = Matrix4::new(
+                1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            );
+            let world = world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.8, 1.0));
 
             self.state.draw_shadow(ctx, &self.resources, world)?;
         }
-
-        let world = world
-            * Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0))
-            * Matrix4::new_scaling(2.0);
 
         self.state.draw(ctx, &self.resources, world)?;
 
@@ -125,14 +127,14 @@ impl EventHandler for Match {
         graphics::apply_transformations(ctx)?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-
-        self.debug_text.fragments_mut()[0].text = format!(
-            "Frame: {}, State: {}",
-            self.state.current_state.0,
-            self.state.current_state.1.to_string()
-        );
-        graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
-
+        /*
+                self.debug_text.fragments_mut()[0].text = format!(
+                    "Frame: {}, State: {}",
+                    self.state.current_state.0,
+                    self.state.current_state.1.to_string()
+                );
+                graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
+        */
         graphics::present(ctx)?;
         Ok(())
     }

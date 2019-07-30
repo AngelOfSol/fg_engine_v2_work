@@ -12,7 +12,7 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use std::marker::PhantomData;
 use std::time::Instant;
 
-type RendererType = GfxRenderer<gfx::format::Rgba8, gfx_device_gl::Resources>;
+type RendererType = imgui_gfx_renderer::Renderer<gfx::format::Rgba8, gfx_device_gl::Resources>;
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
@@ -61,9 +61,8 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, RunUi> {
 
 impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
     pub fn render(self, ctx: &mut Context) {
-        let render_target = graphics::screen_render_target(ctx);
 
-        let (factory, _, encoder, _, _) = graphics::gfx_objects(ctx);
+        let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
         self.renderer
             .render(
                 &mut *factory,
@@ -102,7 +101,9 @@ impl ImGuiWrapper {
         io.key_map[Key::Z as usize] = KeyCode::Z as u32;
         // Shaders
         let shaders = {
-            let version = graphics::device(ctx).get_info().shading_language;
+            let (_, device, _, _, _) = graphics::gfx_objects(ctx);
+
+            let version = device.get_info().shading_language;
             if version.is_embedded {
                 if version.major >= 3 {
                     Shaders::GlSlEs300
@@ -123,13 +124,13 @@ impl ImGuiWrapper {
         };
 
         // Renderer
-        let factory = graphics::factory(ctx);
+        let (factory, _, _, _, _) = graphics::gfx_objects(ctx);
 
         let renderer = RendererType::init(&mut imgui, &mut *factory, shaders).unwrap();
 
         let screen_size = graphics::drawable_size(ctx);
         imgui.io_mut().display_size = [screen_size.0, screen_size.1];
-        imgui.io_mut().font_global_scale = 1.0 / graphics::hidpi_factor(ctx);
+        imgui.io_mut().font_global_scale = 1.0;
         // Create new frame
 
         /*let frame_size = FrameSize {
@@ -150,7 +151,7 @@ impl ImGuiWrapper {
     pub fn resize(&mut self, ctx: &Context) {
         let screen_size = graphics::drawable_size(ctx);
         self.imgui.io_mut().display_size = [screen_size.0, screen_size.1];
-        self.imgui.io_mut().font_global_scale = 1.0 / graphics::hidpi_factor(ctx);
+        self.imgui.io_mut().font_global_scale = 1.0;
     }
 
     pub fn frame(&mut self) -> ImguiFrameRunner<'_, '_, RunUi> {

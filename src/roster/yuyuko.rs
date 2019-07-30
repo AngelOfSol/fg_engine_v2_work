@@ -34,6 +34,8 @@ use particles::Particle;
 
 use crate::character_state::Flags;
 
+use crate::game_match::PlayArea;
+
 pub struct Yuyuko {
     assets: Assets,
     states: StateList,
@@ -305,18 +307,25 @@ impl YuyukoState {
         self.velocity = base_velocity + accel + friction + gravity;
     }
 
-    fn update_position(&mut self, data: &Yuyuko) {
+    fn update_position(&mut self, data: &Yuyuko, play_area: &PlayArea) {
         let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
         let hitboxes = data.states[&move_id].hitboxes.at_time(frame);
+        let collision = &hitboxes.collision;
 
         self.position += self.velocity;
 
         // handle landing
-        if flags.airborne && self.position.y - hitboxes.collision.half_size.y <= -4 {
+        if flags.airborne && self.position.y - collision.half_size.y <= -4 {
             self.velocity = collision::Vec2::zeros();
             self.current_state.1 = MoveId::Stand;
             self.position.y = hitboxes.collision.half_size.y;
+        }
+
+        // handle stage sides
+        if i32::abs(self.position.x) > play_area.width / 2 - collision.half_size.x {
+            self.position.x =
+                i32::signum(self.position.x) * (play_area.width / 2 - collision.half_size.x);
         }
 
         // if not airborne, make sure the character is locked to the ground properly
@@ -352,12 +361,12 @@ impl YuyukoState {
         }
     }
 
-    pub fn update_frame_mut(&mut self, data: &Yuyuko, input: &InputBuffer) {
+    pub fn update_frame_mut(&mut self, data: &Yuyuko, input: &InputBuffer, play_area: &PlayArea) {
         self.handle_expire(data);
         self.handle_input(data, input);
         self.update_extra_data(input);
         self.update_velocity(data);
-        self.update_position(data);
+        self.update_position(data, play_area);
         self.update_particles(data);
         self.handle_refacing(data);
     }
