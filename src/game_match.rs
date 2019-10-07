@@ -13,9 +13,10 @@ use ggez::timer;
 
 use std::path::PathBuf;
 
-use gilrs::{EventType, Gilrs};
+use gilrs::{Event, EventType, Gilrs};
 
-use crate::input::{InputBuffer, PadControlScheme};
+use crate::input::control_scheme::PadControlScheme;
+use crate::input::InputBuffer;
 
 use crate::typedefs::collision::IntoGraphical;
 
@@ -44,13 +45,13 @@ pub struct Match {
 }
 
 impl Match {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context, control_scheme: PadControlScheme) -> GameResult<Self> {
         let background = Stage::new(ctx, "\\bg_14.png")?;
         Ok(Self {
             resources: Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?,
             state: YuyukoState::new(),
             pads_context: Gilrs::new()?,
-            control_scheme: PadControlScheme::new(),
+            control_scheme,
             input: InputBuffer::new(),
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
@@ -75,15 +76,18 @@ impl EventHandler for Match {
             let mut current_frame = self.control_scheme.update_frame(*self.input.top());
             while let Some(event) = self.pads_context.next_event() {
                 // let id = event.id;
-                let event = event.event;
-                match event {
-                    EventType::ButtonPressed(button, _) => {
-                        current_frame = self.control_scheme.handle_press(button, current_frame);
+                let Event { id, event, .. } = event;
+                if id == self.control_scheme.gamepad {
+                    match event {
+                        EventType::ButtonPressed(button, _) => {
+                            current_frame = self.control_scheme.handle_press(button, current_frame);
+                        }
+                        EventType::ButtonReleased(button, _) => {
+                            current_frame =
+                                self.control_scheme.handle_release(button, current_frame);
+                        }
+                        _ => (),
                     }
-                    EventType::ButtonReleased(button, _) => {
-                        current_frame = self.control_scheme.handle_release(button, current_frame);
-                    }
-                    _ => (),
                 }
             }
             self.input.push(current_frame);
@@ -116,7 +120,7 @@ impl EventHandler for Match {
             let skew = Matrix4::new(
                 1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
             );
-            let world = world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.8, 1.0));
+            let world = world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
             self.state.draw_shadow(ctx, &self.resources, world)?;
         }

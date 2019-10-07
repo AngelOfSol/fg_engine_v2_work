@@ -79,7 +79,7 @@ impl GameEditor {
 }
 
 impl AppState for GameEditor {
-    fn next_appstate(&self) -> Option<RunnerState> {
+    fn next_appstate(&mut self, _: &mut Context) -> Option<RunnerState> {
         None
     }
 }

@@ -6,7 +6,7 @@ const MOTION_DIRECTION_SIZE: usize = 5;
 const MOTION_LENGTH: usize = 5 * MOTION_DIRECTION_SIZE;
 const BUFFER_LENGTH: usize = MOTION_LENGTH + MOTION_DIRECTION_SIZE;
 
-mod control_scheme;
+pub mod control_scheme;
 
 #[macro_use]
 mod motion;
@@ -15,7 +15,6 @@ mod ringbuffer;
 
 use std::ops::{Index, IndexMut};
 
-pub use control_scheme::PadControlScheme;
 pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
 
 use crate::typedefs::{collision, graphics};

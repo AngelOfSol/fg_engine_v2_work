@@ -3,16 +3,58 @@ use super::{Axis, Button, ButtonState, InputState};
 use std::collections::{HashMap, HashSet};
 
 use gilrs::ev::Button as GilButton;
+use gilrs::GamepadId;
 
 pub type PadControlScheme = ControlScheme<GilButton>;
 
+#[derive(Clone)]
 pub struct ControlScheme<ButtonCode> {
     axis: HashMap<ButtonCode, Axis>,
-    buttons: [HashSet<ButtonCode>; 4],
+    pub buttons: [HashSet<ButtonCode>; 4],
+    pub gamepad: GamepadId,
+}
+
+pub fn is_valid_input_button(button: GilButton) -> bool {
+    match button {
+        GilButton::South
+        | GilButton::East
+        | GilButton::West
+        | GilButton::North
+        | GilButton::RightTrigger
+        | GilButton::RightTrigger2
+        | GilButton::LeftTrigger
+        | GilButton::LeftTrigger2 => true,
+        _ => false,
+    }
+}
+
+pub fn render_button_list(list: &HashSet<GilButton>) -> String {
+    let mut ret = "".to_owned();
+
+    for value in list.iter() {
+        let string_value = match value {
+            GilButton::South => "A",
+            GilButton::East => "B",
+            GilButton::West => "X",
+            GilButton::North => "Y",
+            GilButton::RightTrigger => "R1",
+            GilButton::RightTrigger2 => "R2",
+            GilButton::LeftTrigger => "L1",
+            GilButton::LeftTrigger2 => "L2",
+            _ => "invalid",
+        };
+        if ret == "" {
+            ret = string_value.to_owned();
+        } else {
+            ret = format!("{}, {}", ret, string_value);
+        }
+    }
+
+    ret
 }
 
 impl ControlScheme<GilButton> {
-    pub fn new() -> Self {
+    pub fn new(id: GamepadId) -> Self {
         let mut ret = Self {
             axis: HashMap::new(),
             buttons: [
@@ -21,6 +63,7 @@ impl ControlScheme<GilButton> {
                 HashSet::new(),
                 HashSet::new(),
             ],
+            gamepad: id,
         };
 
         ret.buttons[Button::A as usize].insert(GilButton::West);

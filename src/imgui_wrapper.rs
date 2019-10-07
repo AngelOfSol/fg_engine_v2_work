@@ -61,7 +61,6 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, RunUi> {
 
 impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
     pub fn render(self, ctx: &mut Context) {
-
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
         self.renderer
             .render(
