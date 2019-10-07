@@ -1,10 +1,12 @@
 mod particles;
 mod properties;
 mod states;
+mod bullets;
 
 pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
 pub use states::{States, StatesUi};
+pub use bullets::{Bullets};
 
 use crate::character_state::CharacterState;
 
@@ -28,6 +30,8 @@ pub struct PlayerCharacter {
     pub properties: Properties,
     #[serde(default)]
     pub particles: Particles,
+    #[serde(default)]
+    pub bullets: Bullets,
 }
 
 impl PlayerCharacter {
@@ -36,6 +40,7 @@ impl PlayerCharacter {
             states: States::new(),
             properties: Properties::new(),
             particles: Particles::new(),
+            bullets: Bullets::new(),
         }
     }
 
