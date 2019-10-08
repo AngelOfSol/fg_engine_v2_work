@@ -39,14 +39,14 @@ impl MainMenu {
             .run(|ui| {
                 // Window
                 ui.main_menu_bar(|| {
-                    ui.menu(im_str!("Main Menu")).build(|| {
-                        if ui.menu_item(im_str!("New Character")).build() {
+                    ui.menu(im_str!("Main Menu"), true, || {
+                        if imgui::MenuItem::new(im_str!("New Character")).build(ui) {
                             self.next = Transition::Push(
                                 Box::new(CharacterEditor::new(PlayerCharacter::new()).into()),
                                 Mode::Standalone,
                             );
                         }
-                        if ui.menu_item(im_str!("Open Character")).build() {
+                        if imgui::MenuItem::new(im_str!("Open Character")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -67,7 +67,7 @@ impl MainMenu {
                             }
                         }
                         ui.separator();
-                        if ui.menu_item(im_str!("Quit")).build() {
+                        if imgui::MenuItem::new(im_str!("Quit")).build(ui) {
                             self.next = Transition::Pop(None);
                         }
                     });

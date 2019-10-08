@@ -31,7 +31,6 @@ pub struct CharacterStateUi {
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
     pub state_list: Vec<String>,
-    state_list_ui_data: Vec<ImString>,
     pub particle_list: Vec<String>,
     particle_ui_data: ParticleSpawnUi,
 }
@@ -46,7 +45,6 @@ impl CharacterStateUi {
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
-            state_list_ui_data: state_list.iter().map(|item| im_str!("{}", item)).collect(),
             state_list,
             particle_ui_data: ParticleSpawnUi::new(particle_list.clone()),
             particle_list,
@@ -56,31 +54,18 @@ impl CharacterStateUi {
     pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String, String>) {
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
-        let mut move_type_idx = MoveType::all()
-            .iter()
-            .position(|item| *item == data.state_type)
-            .unwrap() as i32;
-        ui.combo(
-            im_str!("State Type"),
-            &mut move_type_idx,
-            &MoveType::all()
-                .iter()
-                .map(|item| im_str!("{}", item))
-                .collect::<Vec<_>>()
-                .iter()
-                .collect::<Vec<_>>(),
-            5,
+        ui.combo_items(
+            im_str!("On Expire"),
+            &mut data.state_type,
+            MoveType::all(),
+            &|item| im_str!("{}", item).into(),
         );
-        if move_type_idx >= 0 {
-            data.state_type = MoveType::all()[move_type_idx as usize];
-        }
 
         ui.combo_items(
             im_str!("On Expire"),
-            &self.state_list,
-            &self.state_list_ui_data,
             &mut data.on_expire_state,
-            5,
+            &self.state_list,
+            &|item| im_str!("{}", item).into(),
         );
     }
     pub fn draw_animation_editor(
@@ -92,7 +77,7 @@ impl CharacterStateUi {
     ) -> Option<Mode> {
         let mut ret = None;
 
-        ui.push_id("Animations");
+        let id = ui.push_id("Animations");
         ui.rearrangable_list_box(
             im_str!("List"),
             &mut self.current_animation,
@@ -128,14 +113,14 @@ impl CharacterStateUi {
                 AnimationDataUi::draw_ui(ui, animation);
             }
         }
-        ui.pop_id();
+        id.pop(ui);
 
         ret
     }
 
     pub fn draw_particle_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<ParticleSpawn<String>>) {
         if !self.particle_list.is_empty() {
-            ui.push_id("Particles");
+            let id = ui.push_id("Particles");
             let default_particle = self.particle_list[0].clone();
             if let Some(particle) = ui.new_delete_list_box(
                 im_str!("List"),
@@ -148,11 +133,11 @@ impl CharacterStateUi {
             ) {
                 self.particle_ui_data.draw_ui(ui, particle);
             }
-            ui.pop_id();
+            id.pop(ui);
         }
     }
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
-        ui.push_id("Flags");
+        let id = ui.push_id("Flags");
         let mut counter = 0;
         ui.rearrangable_list_box(
             im_str!("List\n[Start, End]"),
@@ -179,10 +164,10 @@ impl CharacterStateUi {
             FlagsUi::draw_ui(ui, flags);
         }
 
-        ui.pop_id();
+        id.pop(ui);
     }
     pub fn draw_cancels_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<CancelSet<String>>) {
-        ui.push_id("Cancels");
+        let id = ui.push_id("Cancels");
         let mut counter = 0;
         ui.rearrangable_list_box(
             im_str!("List\n[Start, End]"),
@@ -199,10 +184,7 @@ impl CharacterStateUi {
 
         if let Some(ref mut idx) = self.current_cancels {
             if self.current_cancel_set_ui.is_none() {
-                self.current_cancel_set_ui = Some(CancelSetUi::new(
-                    self.state_list.clone(),
-                    self.state_list_ui_data.clone(),
-                ));
+                self.current_cancel_set_ui = Some(CancelSetUi::new(self.state_list.clone()));
             }
             let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
             ui.timeline_modify(idx, data);
@@ -213,16 +195,17 @@ impl CharacterStateUi {
             *duration = cmp::max(*duration, 1);
 
             ui.separator();
-            ui.child_frame(im_str!("child frame"), ui.get_content_region_avail())
-                .build(|| {
+            imgui::ChildWindow::new(im_str!("child frame"))
+                .size([0.0, 0.0])
+                .build(ui, || {
                     ui_data.draw_ui(ui, cancels);
                 });
         }
-        ui.pop_id();
+        id.pop(ui);
     }
 
     pub fn draw_hitbox_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<HitboxSet>) {
-        ui.push_id("Hitboxes");
+        let id = ui.push_id("Hitboxes");
         let mut counter = 0;
         let format_entry = |(_, duration): &(_, usize)| {
             let start = counter;
@@ -254,6 +237,6 @@ impl CharacterStateUi {
             ui_data.draw_ui(ui, hitboxes);
         }
 
-        ui.pop_id();
+        id.pop(ui);
     }
 }

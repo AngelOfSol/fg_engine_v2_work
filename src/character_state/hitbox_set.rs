@@ -25,7 +25,7 @@ impl AttackData {
         }
     }
     fn draw_ui(ui: &Ui<'_>, data: &mut AttackData, current_attack: &mut Option<usize>) {
-        ui.push_id("Hitboxes");
+        let id = ui.push_id("Hitboxes");
 
         let _ = ui.input_whole(im_str!("ID"), &mut data.id);
 
@@ -68,7 +68,7 @@ impl AttackData {
             let hitbox = &mut data.boxes[*idx];
             Hitbox::draw_ui(ui, hitbox);
         }
-        ui.pop_id();
+        id.pop(ui);
     }
 }
 
@@ -103,18 +103,20 @@ impl HitboxSetUi {
     }
 
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut HitboxSet) {
-        ui.push_id("Hitbox Set");
+        let id = ui.push_id("Hitbox Set");
         ui.text(im_str!("Collision"));
+        {
+            let id = ui.push_id("Collision");
+            Hitbox::draw_ui(ui, &mut data.collision);
+            id.pop(ui);
+            ui.separator();
+        }
 
-        ui.push_id("Collision");
-        Hitbox::draw_ui(ui, &mut data.collision);
-        ui.pop_id();
-        ui.separator();
-
-        ui.child_frame(im_str!("child frame"), ui.get_content_region_avail())
-            .build(|| {
+        imgui::ChildWindow::new(im_str!("child frame"))
+            .size([0.0, 0.0])
+            .build(ui, || {
                 ui.text(im_str!("Hurtboxes"));
-                ui.push_id("Hurtboxes");
+                let id = ui.push_id("Hurtboxes");
                 let mut counter = 0;
                 ui.rearrangable_list_box(
                     im_str!("List\n[Start, End]"),
@@ -146,11 +148,11 @@ impl HitboxSetUi {
                     let hurtbox = &mut data.hurtbox[*idx];
                     Hitbox::draw_ui(ui, hurtbox);
                 }
-                ui.pop_id();
+                id.pop(ui);
 
                 ui.separator();
 
-                ui.push_id("Hitboxes");
+                let id = ui.push_id("Hitboxes");
                 ui.text(im_str!("Hitboxes"));
                 {
                     let value = data.hitbox.take();
@@ -168,8 +170,8 @@ impl HitboxSetUi {
                         None
                     };
                 }
-                ui.pop_id();
+                id.pop(ui);
             });
-        ui.pop_id();
+        id.pop(ui);
     }
 }

@@ -96,40 +96,39 @@ impl EventHandler for ButtonCheck {
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Button Check"))
-                    .build(|| match control_scheme {
-                        Some(ref mut control_scheme) => {
-                            ui.text(format!("Gamepad: {}", control_scheme.gamepad));
-                            ui.columns(2, im_str!("Columns"), true);
-                            for index in 0..4 {
-                                let _token = if index == *selected {
-                                    Some(ui.push_style_color(StyleColor::Text, GREEN))
-                                } else {
-                                    None
-                                };
-
-                                ui.text(match index {
-                                    0 => "A",
-                                    1 => "B",
-                                    2 => "C",
-                                    3 => "D",
-                                    _ => unreachable!(),
-                                });
-                                ui.next_column();
-                                ui.text(render_button_list(&control_scheme.buttons[index]));
-                                ui.next_column();
-                            }
-                            ui.columns(1, im_str!("Columns##End"), false);
-
-                            let _token = if 4 == *selected {
+                imgui::Window::new(im_str!("Button Check")).build(ui, || match control_scheme {
+                    Some(ref mut control_scheme) => {
+                        ui.text(format!("Gamepad: {}", control_scheme.gamepad));
+                        ui.columns(2, im_str!("Columns"), true);
+                        for index in 0..4 {
+                            let _token = if index == *selected {
                                 Some(ui.push_style_color(StyleColor::Text, GREEN))
                             } else {
                                 None
                             };
-                            ui.text("Finish")
+
+                            ui.text(match index {
+                                0 => "A",
+                                1 => "B",
+                                2 => "C",
+                                3 => "D",
+                                _ => unreachable!(),
+                            });
+                            ui.next_column();
+                            ui.text(render_button_list(&control_scheme.buttons[index]));
+                            ui.next_column();
                         }
-                        None => ui.text("Press Start to select a controller."),
-                    });
+                        ui.columns(1, im_str!("Columns##End"), false);
+
+                        let _token = if 4 == *selected {
+                            Some(ui.push_style_color(StyleColor::Text, GREEN))
+                        } else {
+                            None
+                        };
+                        ui.text("Finish")
+                    }
+                    None => ui.text("Press Start to select a controller."),
+                });
             })
             .render(ctx);
 

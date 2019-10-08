@@ -84,22 +84,22 @@ impl CharacterEditor {
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Fields"))
+                imgui::Window::new(im_str!("Fields"))
                     .size([300.0, 526.0], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         PropertiesUi::draw_ui(ui, &mut self.resource.properties);
                     });
-                ui.window(im_str!("States"))
+                imgui::Window::new(im_str!("States"))
                     .size([300.0, 526.0], Condition::Always)
                     .position([300.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         let edit_result =
                             self.states_ui_data
                                 .draw_ui(ctx, assets, ui, &mut self.resource.states);
@@ -122,13 +122,13 @@ impl CharacterEditor {
                         }
                         editor_result = edit_result.map(|_| ());
                     });
-                ui.window(im_str!("Particles"))
+                imgui::Window::new(im_str!("Particles"))
                     .size([300.0, 526.0], Condition::Always)
                     .position([600.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         let edit_change = self.particle_ui_data.draw_ui(
                             ctx,
                             assets,
@@ -154,13 +154,13 @@ impl CharacterEditor {
                         }
                     });
                 ui.main_menu_bar(|| {
-                    ui.menu(im_str!("Player Editor")).build(|| {
-                        if ui.menu_item(im_str!("Reset")).build() {
+                    ui.menu(im_str!("Player Editor"), true, || {
+                        if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             self.resource = PlayerCharacter::new();
                             self.particle_ui_data = ParticlesUi::new(&self.resource.particles);
                             self.states_ui_data = StatesUi::new(&self.resource.states)
                         }
-                        if ui.menu_item(im_str!("Save to file")).build() {
+                        if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -170,7 +170,7 @@ impl CharacterEditor {
                                     PlayerCharacter::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Load from file")).build() {
+                        if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -191,7 +191,7 @@ impl CharacterEditor {
                         }
                         ui.separator();
 
-                        if ui.menu_item(im_str!("Main Menu")).build() {
+                        if imgui::MenuItem::new(im_str!("Main Menu")).build(ui) {
                             self.transition = Transition::Pop(None);
                         }
                     });

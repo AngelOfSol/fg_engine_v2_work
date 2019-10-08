@@ -108,7 +108,7 @@ impl StatesUi {
         for (idx, name) in self.state_name_keys.iter().enumerate() {
             let value = data.rest.get_mut(name).unwrap();
 
-            ui.push_id(&format!("Rest {} {}", idx, value.duration()));
+            let id = ui.push_id(&format!("Rest {} {}", idx, value.duration()));
             let mut buffer = name.clone();
             if ui.input_string(im_str!("Name"), &mut buffer) {
                 to_change = Some((name.clone(), buffer));
@@ -128,7 +128,7 @@ impl StatesUi {
                 to_delete = Some(name.clone());
             }
             ui.separator();
-            ui.pop_id();
+            id.pop(ui);
         }
 
         if let Some(key) = to_delete {
@@ -158,7 +158,7 @@ fn _required_state_helper(
     name: &str,
     data: &mut CharacterState<String, String>,
 ) -> GameResult<Option<Mode>> {
-    ui.push_id(name);
+    let id = ui.push_id(name);
     let mut ret = None;
     ui.text(im_str!("{}", name));
     ui.same_line(0.0);
@@ -171,7 +171,7 @@ fn _required_state_helper(
             *data = CharacterState::load_from_json(ctx, assets, PathBuf::from(path))?;
         }
     }
-    ui.pop_id();
+    id.pop(ui);
 
     Ok(ret)
 }

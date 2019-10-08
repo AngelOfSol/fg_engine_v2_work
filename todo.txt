@@ -1,0 +1,64 @@
+
+7) make button check
+
+
+/*
+test out A+B macro AND E button to fly
+allow disallowing of the A+B macro
+*/
+
+TODO LATWER) rework input buffer again
+    > each type reads as if the button presses were in the past 3 frames
+    > run it for the last 8 frames and only give out the most recent for each category
+    > kara canceling
+
+2) refactor UI
+    >encapsulate different tools better
+    >try the inspector-rs crate
+
+3) add bullets
+    >single animation
+    >hitbox
+    >list properties
+
+4) add bullet spawners to moves
+    >reference list of bullets provided earlier
+    >ask for values for each property asked for by the bullet
+
+5) add 5c to yuyuko
+    >spawns 4 that fly outwards
+    >can be jump canceled after bullets come out
+    >bullets expire when they leave the screen
+
+each bullet has its own type
+    contians methods:
+        >onStart
+        >onFrame
+        >render
+        >getHitbox
+
+there is a max zoom, there is no min zoom
+
+
+
+
+
+
+5a jab (high)
+2a jab (low)
+5b poke (mid) (low - on rebeat)
+6b overhead <groundslams?> (high) (hard - on rebeat)
+2b poke (low) (low - on rebeat)
+3b antiair <juggles> (mid)
+
+5b swipe that sends a spread of butterflies outward in a spiral (up to down)
+2b reverse swipe (down to up) of 5b
+5c spawns a butterfly that explodes into another butterfly (repeat 3 times) (high off the ground, hits standers and airdashers)
+2c spawns a butterfly that explodes into another butterfly (repeat 3 times) (low to the ground, hits crouchers)
+
+623a/623b melee/bullet invuln DP
+
+236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/upforward)
+
+214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
+

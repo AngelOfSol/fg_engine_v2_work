@@ -2,18 +2,6 @@ use crate::graphics::Animation;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::assets::Assets;
-use ggez::Context;
-
-use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
-use crate::editor::Mode;
-
-use std::path::PathBuf;
-
-use nfd::Response;
-
 use crate::hitbox::Hitbox;
 
 #[derive(Debug, Serialize, Deserialize)]
