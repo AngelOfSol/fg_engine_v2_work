@@ -15,7 +15,7 @@ TODO LATWER) rework input buffer again
 2) refactor UI
     >encapsulate different tools better
     >try the inspector-rs crate
-
+        >its too new needs things for vectors and other container types
 3) add bullets
     >single animation
     >hitbox
@@ -39,11 +39,6 @@ each bullet has its own type
 
 there is a max zoom, there is no min zoom
 
-
-
-
-
-
 5a jab (high)
 2a jab (low)
 5b poke (mid) (low - on rebeat)
@@ -51,14 +46,22 @@ there is a max zoom, there is no min zoom
 2b poke (low) (low - on rebeat)
 3b antiair <juggles> (mid)
 
-5b swipe that sends a spread of butterflies outward in a spiral (up to down)
-2b reverse swipe (down to up) of 5b
-5c spawns a butterfly that explodes into another butterfly (repeat 3 times) (high off the ground, hits standers and airdashers)
-2c spawns a butterfly that explodes into another butterfly (repeat 3 times) (low to the ground, hits crouchers)
+j5a air jab (high)
+j5b jump in (high)
+
+5c swipe that sends a spread of butterflies outward in a spiral (up to down)
+2c reverse swipe (down to up) of 5b
+5d spawns a butterfly that explodes into another butterfly (repeat 3 times) (high off the ground, hits standers and airdashers)
+2d spawns a butterfly that explodes into another butterfly (repeat 3 times) (low to the ground, hits crouchers)
+
+j5c spin around, like 5c but goes both sides
+j5d yuyu j5b
 
 623a/623b melee/bullet invuln DP
 
 236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/upforward)
+j236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/downforward)
+
 
 214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
 
