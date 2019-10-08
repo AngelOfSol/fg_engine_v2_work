@@ -82,24 +82,26 @@ impl FlagsUi {
         ui.checkbox(im_str!("Allow Reface"), &mut data.allow_reface);
 
         ui.separator();
+        {
+            ui.text(im_str!("Melee"));
+            let id = ui.push_id("Melee");
+            ui.radio_button(im_str!("Hit"), &mut data.melee, MeleeHittable::Hit);
+            ui.same_line(0.0);
+            ui.radio_button(im_str!("Invuln"), &mut data.melee, MeleeHittable::Invuln);
 
-        ui.text(im_str!("Melee"));
-        ui.push_id("Melee");
-        ui.radio_button(im_str!("Hit"), &mut data.melee, MeleeHittable::Hit);
-        ui.same_line(0.0);
-        ui.radio_button(im_str!("Invuln"), &mut data.melee, MeleeHittable::Invuln);
-        ui.pop_id();
-
+            id.pop(ui);
+        }
         ui.separator();
-
-        ui.text(im_str!("Magic"));
-        ui.push_id("Magic");
-        ui.radio_button(im_str!("Hit"), &mut data.bullet, MagicHittable::Hit);
-        ui.same_line(0.0);
-        ui.radio_button(im_str!("Graze"), &mut data.bullet, MagicHittable::Graze);
-        ui.same_line(0.0);
-        ui.radio_button(im_str!("Invuln"), &mut data.bullet, MagicHittable::Invuln);
-        ui.pop_id();
+        {
+            ui.text(im_str!("Magic"));
+            let id = ui.push_id("Magic");
+            ui.radio_button(im_str!("Hit"), &mut data.bullet, MagicHittable::Hit);
+            ui.same_line(0.0);
+            ui.radio_button(im_str!("Graze"), &mut data.bullet, MagicHittable::Graze);
+            ui.same_line(0.0);
+            ui.radio_button(im_str!("Invuln"), &mut data.bullet, MagicHittable::Invuln);
+            id.pop(ui);
+        }
 
         ui.separator();
 
@@ -107,7 +109,7 @@ impl FlagsUi {
     }
 
     pub fn draw_display_ui(ui: &Ui<'_>, data: &Flags, movement: &MovementData) {
-        ui.push_id("Display");
+        let id = ui.push_id("Display");
 
         ui.text(&im_str!("Can Block: {}", data.can_block));
         ui.text(&im_str!("Airborne: {}", data.airborne));
@@ -133,6 +135,6 @@ impl FlagsUi {
             movement.pos.x,
             movement.pos.y
         ));
-        ui.pop_id();
+        id.pop(ui);
     }
 }

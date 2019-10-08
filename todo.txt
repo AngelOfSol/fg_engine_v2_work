@@ -16,8 +16,6 @@ TODO LATWER) rework input buffer again
     >encapsulate different tools better
     >try the inspector-rs crate
         >its too new needs things for vectors and other container types
-    
-
 3) add bullets
     >single animation
     >hitbox
@@ -63,6 +61,7 @@ j5d yuyu j5b
 
 236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/upforward)
 j236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/downforward)
+
 
 214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
 

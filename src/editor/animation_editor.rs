@@ -68,47 +68,47 @@ impl AnimationEditor {
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Editor"))
+                imgui::Window::new(im_str!("Editor"))
                     .size([300.0, editor_height], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         editor_result = self.ui_data.draw_ui(&ui, ctx, assets, &mut self.resource);
                     });
 
                 if self.resource.frames.duration() > 0 {
-                    ui.window(im_str!("Animation"))
+                    imgui::Window::new(im_str!("Animation"))
                         .size(dim, Condition::Always)
                         .position(pos, Condition::Always)
                         .resizable(false)
                         .movable(false)
                         .collapsible(false)
-                        .build(|| {});
-                    ui.window(im_str!("Current Frame"))
+                        .build(ui, || {});
+                    imgui::Window::new(im_str!("Current Frame"))
                         .size(dim, Condition::Always)
                         .position([x + width, y], Condition::Always)
                         .resizable(false)
                         .movable(false)
                         .collapsible(false)
-                        .build(|| {});
+                        .build(ui, || {});
 
-                    ui.window(im_str!("Every Frame"))
+                    imgui::Window::new(im_str!("Every Frame"))
                         .size(dim, Condition::Always)
                         .position([x, y + height], Condition::Always)
                         .resizable(false)
                         .movable(false)
                         .collapsible(false)
-                        .build(|| {});
+                        .build(ui, || {});
                 }
                 ui.main_menu_bar(|| {
-                    ui.menu(im_str!("Animation Editor")).build(|| {
-                        if ui.menu_item(im_str!("Reset")).build() {
+                    ui.menu(im_str!("Animation Editor"), true, || {
+                        if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             self.resource = Animation::new("new animation");
                             self.ui_data = AnimationUi::new();
                         }
-                        if ui.menu_item(im_str!("Save to file")).build() {
+                        if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -117,7 +117,7 @@ impl AnimationEditor {
                                 editor_result = Animation::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Load from file")).build() {
+                        if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -131,10 +131,10 @@ impl AnimationEditor {
                             }
                         }
                         ui.separator();
-                        if ui.menu_item(im_str!("Save and back")).build() {
+                        if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
                             self.done = Status::DoneAndSave;
                         }
-                        if ui.menu_item(im_str!("Back without save")).build() {
+                        if imgui::MenuItem::new(im_str!("Back without save")).build(ui) {
                             self.done = Status::DoneAndQuit;
                         }
                     });

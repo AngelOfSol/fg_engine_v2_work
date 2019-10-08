@@ -69,7 +69,7 @@ impl ParticlesUi {
         data: &mut Particles,
     ) -> Option<Mode> {
         let mut ret = None;
-        ui.push_id("Particles");
+        let id = ui.push_id("Particles");
         ui.rearrangable_list_box(
             im_str!("List"),
             &mut self.current_particle,
@@ -126,7 +126,7 @@ impl ParticlesUi {
                 self.particle_keys[particle] = new_key;
             }
         }
-        ui.pop_id();
+        id.pop(ui);
         ret
     }
 }

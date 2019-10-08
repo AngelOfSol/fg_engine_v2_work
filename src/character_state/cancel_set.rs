@@ -112,7 +112,6 @@ impl<Id: HashId> CancelSet<Id> {
 
 pub struct CancelSetUi {
     state_list: Vec<String>,
-    state_list_ui_data: Vec<ImString>,
     new_disallow: String,
 }
 
@@ -121,26 +120,28 @@ const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 
 impl CancelSetUi {
-    pub fn new(state_list: Vec<String>, state_list_ui_data: Vec<ImString>) -> CancelSetUi {
+    pub fn new(state_list: Vec<String>) -> CancelSetUi {
         CancelSetUi {
             new_disallow: state_list.get(0).cloned().unwrap_or_else(|| "".to_owned()),
-            state_list_ui_data,
             state_list,
         }
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
         for move_type in MoveType::all() {
             ui.text(&im_str!("{}:", move_type));
-            ui.push_id(&format!("{}", move_type));
-            let _token = ui.push_style_color(StyleColor::Text, GREEN);
+            let id = ui.push_id(&format!("{}", move_type));
+            let token = ui.push_style_color(StyleColor::Text, GREEN);
             ui.checkbox_hash(im_str!("Always"), move_type, &mut data.always);
-            let _token = ui.push_style_color(StyleColor::Text, BLUE);
+            token.pop(ui);
+            let token = ui.push_style_color(StyleColor::Text, BLUE);
             ui.same_line(0.0);
             ui.checkbox_hash(im_str!("Block"), move_type, &mut data.block);
-            let _token = ui.push_style_color(StyleColor::Text, RED);
+            token.pop(ui);
+            let token = ui.push_style_color(StyleColor::Text, RED);
             ui.same_line(0.0);
             ui.checkbox_hash(im_str!("Hit"), move_type, &mut data.hit);
-            ui.pop_id();
+            token.pop(ui);
+            id.pop(ui);
         }
         ui.separator();
 
@@ -148,8 +149,9 @@ impl CancelSetUi {
         let mut to_delete = None;
         for item in data.disallow.iter() {
             {
-                let _token = ui.push_style_color(StyleColor::Text, RED);
+                let token = ui.push_style_color(StyleColor::Text, RED);
                 ui.text(im_str!("{}", item));
+                token.pop(ui);
             }
             ui.same_line(0.0);
             if ui.small_button(im_str!("Delete")) {
@@ -159,16 +161,12 @@ impl CancelSetUi {
         if let Some(item) = to_delete {
             data.disallow.remove(&item);
         }
-
         ui.combo_items(
             im_str!("##Combo"),
-            &self.state_list,
-            &self.state_list_ui_data,
             &mut self.new_disallow,
-            5,
+            &self.state_list,
+            &|item| im_str!("{}", item).into(),
         );
-
-        //ui.input_string(im_str!("##Disallowed"), &mut self.new_disallow);
 
         if ui.small_button(im_str!("Add")) && self.new_disallow != "" {
             let new = std::mem::replace(&mut self.new_disallow, "".to_owned());
@@ -178,20 +176,23 @@ impl CancelSetUi {
     pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet<String>) {
         ui.text(im_str!("Always"));
         for move_type in data.always.iter() {
-            let _token = ui.push_style_color(StyleColor::Text, GREEN);
+            let token = ui.push_style_color(StyleColor::Text, GREEN);
             ui.text(im_str!("{}", move_type));
+            token.pop(ui);
         }
         ui.separator();
         ui.text(im_str!("On Block"));
         for move_type in data.block.iter() {
-            let _token = ui.push_style_color(StyleColor::Text, BLUE);
+            let token = ui.push_style_color(StyleColor::Text, BLUE);
             ui.text(im_str!("{}", move_type));
+            token.pop(ui);
         }
         ui.separator();
         ui.text(im_str!("On Hit"));
         for move_type in data.hit.iter() {
-            let _token = ui.push_style_color(StyleColor::Text, RED);
+            let token = ui.push_style_color(StyleColor::Text, RED);
             ui.text(im_str!("{}", move_type));
+            token.pop(ui);
         }
     }
 }

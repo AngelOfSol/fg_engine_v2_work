@@ -149,24 +149,24 @@ impl StateEditor {
         imgui
             .frame()
             .run(|ui| {
-                ui.window(im_str!("Properties"))
+                imgui::Window::new(im_str!("Properties"))
                     .size([300.0, 100.0], Condition::Always)
                     .position([0.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         //self.handle_transition(result);
                         self.ui_data.draw_header(ui, &mut self.resource);
                     });
-                ui.window(im_str!("Animations"))
+                imgui::Window::new(im_str!("Animations"))
                     .size([300.0, 345.0], Condition::Always)
                     .position([0.0, 120.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         //
                         let result = self.ui_data.draw_animation_editor(
@@ -178,13 +178,13 @@ impl StateEditor {
                         self.resource.fix_duration();
                         self.handle_transition(result);
                     });
-                ui.window(im_str!("Playback"))
+                imgui::Window::new(im_str!("Playback"))
                     .size([300.0, 200.0], Condition::Always)
                     .position([0.0, 465.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         if self.resource.duration() > 0 {
                             if ui
                                 .slider_whole(
@@ -211,82 +211,69 @@ impl StateEditor {
                         ui.same_line(0.0);
                         ui.checkbox(im_str!("Axes"), &mut self.draw_mode.show_axes);
                         ui.text(im_str!("Alpha"));
+
                         ui.separator();
-                        ui.slider_float(
-                            im_str!("Collision"),
-                            &mut self.draw_mode.collision_alpha,
-                            0.0,
-                            1.0,
-                        )
-                        .build();
-                        ui.slider_float(
-                            im_str!("Hurtbox"),
-                            &mut self.draw_mode.hurtbox_alpha,
-                            0.0,
-                            1.0,
-                        )
-                        .build();
-                        ui.slider_float(
-                            im_str!("Hitbox"),
-                            &mut self.draw_mode.hitbox_alpha,
-                            0.0,
-                            1.0,
-                        )
-                        .build();
+
+                        imgui::Slider::new(im_str!("Collision"), 0.0..=1.0)
+                            .build(ui, &mut self.draw_mode.collision_alpha);
+                        imgui::Slider::new(im_str!("Hurtbox"), 0.0..=1.0)
+                            .build(ui, &mut self.draw_mode.hurtbox_alpha);
+                        imgui::Slider::new(im_str!("Hitbox"), 0.0..=1.0)
+                            .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
-                ui.window(im_str!("Particles"))
+                imgui::Window::new(im_str!("Particles"))
                     .size([300.0, 280.0], Condition::Always)
                     .position([300.0, 283.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         self.ui_data
                             .draw_particle_editor(ui, &mut self.resource.particles);
                     });
-                ui.window(im_str!("Flags"))
+                imgui::Window::new(im_str!("Flags"))
                     .size([300.0, 420.0], Condition::Always)
                     .position([600.0, 283.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         self.ui_data.draw_flags_editor(ui, &mut self.resource.flags);
                     });
-                ui.window(im_str!("Cancels"))
+                imgui::Window::new(im_str!("Cancels"))
                     .size([300.0, 420.0], Condition::Always)
                     .position([900.0, 283.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         self.ui_data
                             .draw_cancels_editor(ui, &mut self.resource.cancels);
                     });
-                ui.window(im_str!("Hitboxes"))
+                imgui::Window::new(im_str!("Hitboxes"))
                     .size([300.0, 700.0], Condition::Always)
                     .position([1200.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         self.ui_data
                             .draw_hitbox_editor(ui, &mut self.resource.hitboxes);
                     });
-                ui.window(im_str!("Animation"))
+                imgui::Window::new(im_str!("Animation"))
                     .size([300.0, 263.0], Condition::Always)
                     .position([300.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {});
-                ui.window(im_str!("Current Flags"))
+                    .build(ui, || {});
+                imgui::Window::new(im_str!("Current Flags"))
                     .size([300.0, 263.0], Condition::Always)
                     .position([600.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         if let Some(data) = self.resource.flags.try_time(self.frame) {
                             let move_data = {
                                 let mut move_data = MovementData::new();
@@ -305,27 +292,27 @@ impl StateEditor {
                             FlagsUi::draw_display_ui(ui, data, &move_data);
                         }
                     });
-                ui.window(im_str!("Current Cancels"))
+                imgui::Window::new(im_str!("Current Cancels"))
                     .size([300.0, 263.0], Condition::Always)
                     .position([900.0, 20.0], Condition::Always)
                     .resizable(false)
                     .movable(false)
                     .collapsible(false)
-                    .build(|| {
+                    .build(ui, || {
                         if let Some(data) = self.resource.cancels.try_time(self.frame) {
                             CancelSetUi::draw_display_ui(ui, data);
                         }
                     });
                 ui.main_menu_bar(|| {
-                    ui.menu(im_str!("State Editor")).build(|| {
-                        if ui.menu_item(im_str!("Reset")).build() {
+                    ui.menu(im_str!("State Editor"), true, || {
+                        if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             self.resource = CharacterState::new();
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
                             );
                         }
-                        if ui.menu_item(im_str!("Save to file")).build() {
+                        if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_save_dialog(Some("json"), None)
                             {
@@ -335,7 +322,7 @@ impl StateEditor {
                                     CharacterState::save(ctx, assets, &self.resource, path);
                             }
                         }
-                        if ui.menu_item(im_str!("Load from file")).build() {
+                        if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
@@ -357,7 +344,7 @@ impl StateEditor {
                         }
                         ui.separator();
 
-                        if ui.menu_item(im_str!("Save and back")).build() {
+                        if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
                             let ret = std::mem::replace(&mut self.resource, CharacterState::new());
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
@@ -365,7 +352,7 @@ impl StateEditor {
                             );
                             self.transition = Transition::Pop(Some(MessageData::State(ret)));
                         }
-                        if ui.menu_item(im_str!("Back without saving")).build() {
+                        if imgui::MenuItem::new(im_str!("Back without saving")).build(ui) {
                             self.transition = Transition::Pop(None);
                         }
                     });

@@ -77,40 +77,21 @@ pub trait UiExtensions {
 
     fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>);
 
-    fn combo_items<T: Eq + Clone>(
-        &self,
-        label: &ImStr,
-        list_values: &[T],
-        list_labels: &[ImString],
-        value: &mut T,
-        height_in_items: i32,
-    );
+    fn combo_items<T: Eq + Clone, L>(&self, label: &ImStr, value: &mut T, items: &[T], f: &L)
+    where
+        for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>;
 }
 
 impl<'a> UiExtensions for Ui<'a> {
-    fn combo_items<T: Eq + Clone>(
-        &self,
-        label: &ImStr,
-        list_values: &[T],
-        list_labels: &[ImString],
-        value: &mut T,
-        height_in_items: i32,
-    ) {
-        let mut buffer_idx = list_values
-            .iter()
-            .position(|item| value == item)
-            .map(|item| item as i32);
-        if let Some(ref mut buffer_idx) = buffer_idx {
-            self.combo(
-                label,
-                buffer_idx,
-                &list_labels.iter().collect::<Vec<_>>(),
-                height_in_items,
-            );
-            if *buffer_idx >= 0 {
-                *value = list_values[*buffer_idx as usize].clone();
-            }
-        }
+    fn combo_items<T: Eq + Clone, L>(&self, label: &ImStr, value: &mut T, items: &[T], f: &L)
+    where
+        for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>,
+    {
+        let mut idx = items.iter().position(|item| *item == *value).unwrap();
+
+        imgui::ComboBox::new(label).build_simple(self, &mut idx, &items, f);
+
+        *value = items[idx].clone();
     }
 
     fn checkbox_set<T: Clone + Hash + PartialEq + Eq + Display>(
@@ -246,7 +227,8 @@ impl<'a> UiExtensions for Ui<'a> {
         let mut buffer = (*value)
             .try_into()
             .map_err(|_| "something happened".to_owned())?;
-        let changed = self.slider_int(label, &mut buffer, min, max).build();
+        let changed = imgui::Slider::new(label, min..=max).build(self, &mut buffer);
+        //self.slider_int(label, &mut buffer, min, max).build();
         if changed {
             *value = I::try_from(buffer).map_err(|_| "something happened".to_owned())?;
         }
@@ -295,19 +277,19 @@ impl<'a> UiExtensions for Ui<'a> {
     }
 
     fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool {
-        self.push_id(label);
+        let id = self.push_id(label);
         self.text(label);
         let ret = self.input_float(im_str!("X"), &mut data.x).build()
             || self.input_float(im_str!("Y"), &mut data.y).build();
-        self.pop_id();
+        id.pop(self);
         ret
     }
 
     fn input_vec2_int(&self, label: &ImStr, data: &mut collision::Vec2) {
-        self.push_id(label);
+        let id = self.push_id(label);
         self.text(label);
         let _ = self.input_whole(im_str!("X"), &mut data.x);
         let _ = self.input_whole(im_str!("Y"), &mut data.y);
-        self.pop_id();
+        id.pop(self);
     }
 }
