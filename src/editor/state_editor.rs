@@ -27,7 +27,7 @@ use imgui::*;
 use std::path::PathBuf;
 
 pub struct StateEditor {
-    resource: CharacterState<String, String>,
+    resource: CharacterState<String, String, String>,
     frame: usize,
     is_playing: bool,
     transition: Transition,
@@ -44,7 +44,7 @@ struct DrawMode {
 
 impl StateEditor {
     pub fn with_state(
-        state: CharacterState<String, String>,
+        state: CharacterState<String, String, String>,
         mut particle_list: Vec<String>,
         mut state_list: Vec<String>,
     ) -> Self {

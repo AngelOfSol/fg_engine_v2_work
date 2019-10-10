@@ -19,18 +19,19 @@ use crate::editor::Mode;
 use crate::typedefs::HashId;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct States<Id, ParticleId>
+pub struct States<Id, ParticleId, BulletId>
 where
     Id: HashId,
     ParticleId: HashId,
+    BulletId: HashId,
 {
     #[serde(flatten)]
-    pub rest: HashMap<String, CharacterState<Id, ParticleId>>,
+    pub rest: HashMap<String, CharacterState<Id, ParticleId, BulletId>>,
     #[serde(skip)]
     _secret: (),
 }
 
-impl<Id: HashId, ParticleId: HashId> States<Id, ParticleId> {
+impl<Id: HashId, ParticleId: HashId, BulletId: HashId> States<Id, ParticleId, BulletId> {
     pub fn new() -> Self {
         Self {
             rest: HashMap::new(),
@@ -38,12 +39,12 @@ impl<Id: HashId, ParticleId: HashId> States<Id, ParticleId> {
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &CharacterState<Id, ParticleId> {
+    pub fn get_state(&self, key: &str) -> &CharacterState<Id, ParticleId, BulletId> {
         match key {
             _ => &self.rest[key],
         }
     }
-    pub fn replace_state(&mut self, key: String, data: CharacterState<Id, ParticleId>) {
+    pub fn replace_state(&mut self, key: String, data: CharacterState<Id, ParticleId, BulletId>) {
         match key.as_str() {
             _ => {
                 self.rest.insert(key, data);
@@ -71,7 +72,7 @@ pub struct StatesUi {
 }
 
 impl StatesUi {
-    pub fn new(state: &States<String, String>) -> Self {
+    pub fn new(state: &States<String, String, String>) -> Self {
         let mut state_name_keys: Vec<_> = state.rest.keys().cloned().collect();
         state_name_keys.sort();
         StatesUi { state_name_keys }
@@ -81,7 +82,7 @@ impl StatesUi {
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        data: &mut States<String, String>,
+        data: &mut States<String, String, String>,
     ) -> GameResult<Option<Mode>> {
         let mut ret = None;
         ui.text(im_str!("States:"));
@@ -156,7 +157,7 @@ fn _required_state_helper(
     ctx: &mut Context,
     assets: &mut Assets,
     name: &str,
-    data: &mut CharacterState<String, String>,
+    data: &mut CharacterState<String, String, String>,
 ) -> GameResult<Option<Mode>> {
     let id = ui.push_id(name);
     let mut ret = None;

@@ -7,7 +7,6 @@ use crate::assets::Assets;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use image::imageops::flip_vertical;
 use image::png::PNGEncoder;
 use image::{ColorType, ImageBuffer, Rgba};
 
@@ -66,9 +65,6 @@ pub fn save(
         image.to_rgba8(ctx)?.to_vec(),
     )
     .unwrap();
-
-    // image buffers are flipped in memory for ggez/OpenGL/gfx, so we have to unflip them
-    //let image = flip_vertical(&image);
 
     png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
 

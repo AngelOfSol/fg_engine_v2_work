@@ -26,7 +26,7 @@ use ggez::GameError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlayerCharacter {
-    pub states: States<String, String>,
+    pub states: States<String, String, String>,
     pub properties: Properties,
     #[serde(default)]
     pub particles: Particles,

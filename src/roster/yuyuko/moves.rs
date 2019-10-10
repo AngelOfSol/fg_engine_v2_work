@@ -31,6 +31,7 @@ impl Default for MoveId {
     }
 }
 
+#[allow(clippy::inherent_to_string)]
 impl MoveId {
     pub fn to_string(self) -> String {
         serde_json::to_string(&self)

@@ -45,8 +45,8 @@ impl BulletInfoEditor {
     }
 
     pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        match data {
-            MessageData::Animation(animation) => match mode {
+        if let MessageData::Animation(animation) = data {
+            match mode {
                 Mode::Standalone => (),
                 Mode::New => {
                     self.resource.animation = animation;
@@ -54,8 +54,7 @@ impl BulletInfoEditor {
                 Mode::Edit(_) => {
                     self.resource.animation = animation;
                 }
-            },
-            _ => (),
+            }
         }
     }
     pub fn update(&mut self) -> GameResult<Transition> {

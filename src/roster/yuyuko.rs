@@ -1,3 +1,4 @@
+mod bullets;
 mod command_list;
 mod moves;
 mod particles;
@@ -29,6 +30,7 @@ use crate::command_list::CommandList;
 
 use crate::graphics::Animation;
 
+use bullets::BulletId;
 use moves::MoveId;
 use particles::Particle;
 
@@ -58,7 +60,7 @@ pub struct Yuyuko {
     command_list: CommandList<MoveId>,
 }
 
-type StateList = HashMap<MoveId, CharacterState<MoveId, Particle>>;
+type StateList = HashMap<MoveId, CharacterState<MoveId, Particle, BulletId>>;
 type ParticleList = HashMap<Particle, Animation>;
 
 impl Yuyuko {

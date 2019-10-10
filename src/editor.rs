@@ -66,7 +66,7 @@ pub enum Mode {
 
 pub enum MessageData {
     Animation(Animation),
-    State(CharacterState<String, String>),
+    State(CharacterState<String, String, String>),
     BulletInfo(BulletInfo),
 }
 

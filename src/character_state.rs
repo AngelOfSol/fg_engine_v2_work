@@ -1,4 +1,5 @@
 pub mod animation_data;
+pub mod bullet_spawn_data;
 pub mod cancel_set;
 pub mod flags;
 pub mod hitbox_set;
@@ -15,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::cmp;
 
 pub use animation_data::{AnimationData, AnimationDataUi};
+pub use bullet_spawn_data::BulletSpawn;
 pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
 pub use flags::{Flags, FlagsUi, MovementData};
 pub use hitbox_set::{HitboxSet, HitboxSetUi};
@@ -31,7 +33,7 @@ use crate::typedefs::{HashId, StateId};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct CharacterState<Id, ParticleId>
+pub struct CharacterState<Id, ParticleId, BulletId>
 where
     Id: HashId,
 {
@@ -41,6 +43,8 @@ where
     pub hitboxes: Timeline<HitboxSet>,
     #[serde(default)]
     pub particles: Vec<ParticleSpawn<ParticleId>>,
+    #[serde(default)]
+    pub bullets: Vec<BulletSpawn<BulletId>>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
     #[serde(default)]
@@ -50,7 +54,7 @@ fn default_move_type() -> MoveType {
     MoveType::Idle
 }
 
-impl<Id: StateId, ParticleId: StateId> CharacterState<Id, ParticleId> {
+impl<Id: StateId, ParticleId: StateId, BulletId: StateId> CharacterState<Id, ParticleId, BulletId> {
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -139,7 +143,7 @@ impl<Id: StateId, ParticleId: StateId> CharacterState<Id, ParticleId> {
     }
 }
 
-impl CharacterState<String, String> {
+impl CharacterState<String, String, String> {
     pub fn new() -> Self {
         Self {
             animations: vec![],
@@ -149,6 +153,7 @@ impl CharacterState<String, String> {
             state_type: default_move_type(),
             on_expire_state: "stand".to_owned(),
             particles: Vec::new(),
+            bullets: Vec::new(),
         }
     }
 }

@@ -1,4 +1,8 @@
-#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping)]
+#![allow(
+    clippy::type_repetition_in_bounds,
+    clippy::zero_prefixed_literal,
+    clippy::inconsistent_digit_grouping
+)]
 
 use ggez::conf;
 

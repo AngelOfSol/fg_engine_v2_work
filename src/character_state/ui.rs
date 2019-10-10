@@ -51,7 +51,7 @@ impl CharacterStateUi {
         }
     }
 
-    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String, String>) {
+    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String, String, String>) {
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         ui.combo_items(
