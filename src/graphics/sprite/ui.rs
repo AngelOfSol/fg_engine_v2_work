@@ -1,12 +1,9 @@
-use ggez::{Context, GameResult};
-
+use super::Sprite;
 use crate::assets::Assets;
-
 use crate::imgui_extra::UiExtensions;
+use ggez::{Context, GameResult};
 use imgui::*;
 use nfd::Response;
-
-use super::Sprite;
 
 pub struct SpriteUi;
 

@@ -3,18 +3,13 @@ mod ui;
 
 use super::sprite::Sprite;
 use super::BlendMode;
-
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
-
 use ggez::graphics;
 use ggez::{Context, GameResult};
-
 use serde::{Deserialize, Serialize};
-
 use std::path::PathBuf;
-
 pub use ui::AnimationUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

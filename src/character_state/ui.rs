@@ -1,15 +1,10 @@
 use crate::assets::Assets;
 use crate::graphics::Animation;
-
 use crate::imgui_extra::UiExtensions;
-
-use imgui::*;
-
 use ggez::Context;
-
-use std::cmp;
-
+use imgui::*;
 use nfd::Response;
+use std::cmp;
 
 use super::{
     AnimationData, AnimationDataUi, CancelSet, CancelSetUi, Flags, FlagsUi, HitboxSet, HitboxSetUi,

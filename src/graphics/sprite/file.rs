@@ -1,19 +1,14 @@
+use super::Sprite;
+use crate::assets::Assets;
 use ggez::error::GameError;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-
-use crate::assets::Assets;
-
-use std::io::Read;
-use std::path::{Path, PathBuf};
-
 use image::png::PNGEncoder;
 use image::{ColorType, ImageBuffer, Rgba};
-
 use std::fs::File;
 use std::io::BufWriter;
-
-use super::Sprite;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 fn load_image_data<P: AsRef<Path>>(
     path: P,

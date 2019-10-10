@@ -1,23 +1,17 @@
-use serde::{Deserialize, Serialize};
+pub mod control_scheme;
+#[macro_use]
+mod motion;
+mod ringbuffer;
 
+use crate::typedefs::{collision, graphics};
+pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
 use ringbuffer::{RingBuffer, RingBufferIter};
+use serde::{Deserialize, Serialize};
+use std::ops::{Index, IndexMut};
 
 const MOTION_DIRECTION_SIZE: usize = 5;
 const MOTION_LENGTH: usize = 5 * MOTION_DIRECTION_SIZE;
 const BUFFER_LENGTH: usize = MOTION_LENGTH + MOTION_DIRECTION_SIZE;
-
-pub mod control_scheme;
-
-#[macro_use]
-mod motion;
-
-mod ringbuffer;
-
-use std::ops::{Index, IndexMut};
-
-pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
-
-use crate::typedefs::{collision, graphics};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {

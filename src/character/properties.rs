@@ -1,7 +1,6 @@
 use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
 use crate::typedefs::collision::Vec2;
+use imgui::*;
 
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]

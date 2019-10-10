@@ -1,19 +1,14 @@
 use crate::imgui_wrapper::ImGuiWrapper;
 
+use crate::game_match::Match;
+use crate::input::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
+use crate::runner::{AppState, RunnerState};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
 use ggez::input::mouse::MouseButton;
 use ggez::timer;
 use ggez::{Context, GameResult};
-
-use crate::runner::{AppState, RunnerState};
-
-use crate::game_match::Match;
-
-use crate::input::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
-
 use gilrs::{Button, Event, EventType, Gilrs};
-
 use imgui::*;
 
 pub struct ButtonCheck {

@@ -1,19 +1,13 @@
+use crate::assets::Assets;
+use crate::editor::{EditorState, MessageData, Transition};
+use crate::graphics::{Animation, AnimationUi};
+use crate::imgui_wrapper::ImGuiWrapper;
+use crate::timeline::AtTime;
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
-
-use crate::graphics::{Animation, AnimationUi};
-
-use crate::assets::Assets;
-use crate::editor::{EditorState, MessageData, Transition};
-use crate::timeline::AtTime;
-
-use crate::imgui_wrapper::ImGuiWrapper;
-
-use crate::typedefs::graphics::{Matrix4, Vec3};
-
 use imgui::*;
-
 use std::path::PathBuf;
 
 enum Status {

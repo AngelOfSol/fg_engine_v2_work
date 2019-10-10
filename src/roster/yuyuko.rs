@@ -3,54 +3,37 @@ mod command_list;
 mod moves;
 mod particles;
 
-use serde::Deserialize;
-
+use crate::assets::Assets;
 use crate::character_state::CharacterState;
-
+use crate::character_state::Flags;
+use crate::command_list::CommandList;
+use crate::game_match::PlayArea;
+use crate::graphics::Animation;
+use crate::hitbox::Hitbox;
+use crate::input::{read_inputs, Button, DirectedAxis, Facing, InputBuffer};
+use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics;
-
-use crate::assets::Assets;
-
-use ggez::{Context, GameResult};
-
-use std::path::PathBuf;
-
-use std::fs::File;
-use std::io::BufReader;
-
-use std::collections::HashMap;
-
-use crate::timeline::AtTime;
-
-use crate::input::{read_inputs, Button, DirectedAxis, Facing, InputBuffer};
-
-use crate::command_list::CommandList;
-
-use crate::graphics::Animation;
-
 use bullets::BulletId;
+use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
-
-use crate::character_state::Flags;
-
-use crate::game_match::PlayArea;
-
-use crate::hitbox::Hitbox;
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletData {
     pub animation: Animation,
     pub hitbox: Hitbox,
 }
-
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletList {
     pub butterfly: BulletData,
 }
-
 pub struct Yuyuko {
     assets: Assets,
     states: StateList,

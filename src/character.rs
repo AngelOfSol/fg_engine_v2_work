@@ -3,26 +3,19 @@ mod particles;
 mod properties;
 mod states;
 
+use crate::assets::Assets;
+use crate::character_state::CharacterState;
+use crate::graphics::Animation;
 pub use bullets::{BulletInfo, BulletInfoUi, Bullets, BulletsUi};
+use ggez::GameError;
+use ggez::{Context, GameResult};
 pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
-pub use states::{EditorStates, States, StatesUi};
-
-use crate::character_state::CharacterState;
-
 use serde::{Deserialize, Serialize};
-
-use crate::assets::Assets;
-
-use ggez::{Context, GameResult};
-
-use crate::graphics::Animation;
-
+pub use states::{EditorStates, States, StatesUi};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-
-use ggez::GameError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlayerCharacter {

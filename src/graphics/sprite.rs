@@ -1,18 +1,13 @@
 mod file;
 mod ui;
 
+use crate::assets::Assets;
+use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
-
 use serde::{Deserialize, Serialize};
-
-use crate::assets::Assets;
-
 use std::path::{Path, PathBuf};
-
-use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
-
 pub use ui::SpriteUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

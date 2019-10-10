@@ -1,15 +1,11 @@
 mod bullet_info;
 
+use crate::editor::Mode;
+use crate::imgui_extra::UiExtensions;
+pub use bullet_info::{BulletInfo, BulletInfoUi};
+use imgui::{im_str, Ui};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::editor::Mode;
-
-use imgui::{im_str, Ui};
-
-use crate::imgui_extra::UiExtensions;
-
-pub use bullet_info::{BulletInfo, BulletInfoUi};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Bullets {

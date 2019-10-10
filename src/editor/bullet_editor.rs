@@ -1,23 +1,15 @@
+use crate::assets::Assets;
+use crate::character::{BulletInfo, BulletInfoUi};
+use crate::editor::Mode;
+use crate::editor::{AnimationEditor, EditorState, MessageData, Transition};
+use crate::graphics::Animation;
+use crate::imgui_wrapper::ImGuiWrapper;
+use crate::timeline::AtTime;
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
-
-use crate::character::{BulletInfo, BulletInfoUi};
-
-use crate::assets::Assets;
-use crate::editor::{AnimationEditor, EditorState, MessageData, Transition};
-
-use crate::imgui_wrapper::ImGuiWrapper;
-
-use crate::typedefs::graphics::{Matrix4, Vec3};
-
 use imgui::*;
-
-use crate::graphics::Animation;
-
-use crate::timeline::AtTime;
-
-use crate::editor::Mode;
 
 enum Status {
     DoneAndSave,

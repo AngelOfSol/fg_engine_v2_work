@@ -1,8 +1,7 @@
-use ggez::{Context, GameResult};
-
 use crate::button_check::ButtonCheck;
 use crate::editor::GameEditor;
 use crate::game_match::Match;
+use ggez::{Context, GameResult};
 
 pub trait AppState {
     fn next_appstate(&mut self, ctx: &mut Context) -> Option<RunnerState>;

@@ -1,12 +1,11 @@
 use crate::timeline::Timeline;
+use crate::typedefs::collision;
+use crate::typedefs::graphics;
+use imgui::*;
 use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 use std::hash::Hash;
-
-use crate::typedefs::collision;
-use crate::typedefs::graphics;
-use imgui::*;
 
 #[macro_export]
 macro_rules! im_str_owned {

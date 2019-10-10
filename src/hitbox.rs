@@ -1,15 +1,11 @@
-use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
-
-use serde::{Deserialize, Serialize};
-
 use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
+use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
 use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2};
-
 use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
 use ggez::{Context, GameResult};
+use imgui::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct Hitbox {

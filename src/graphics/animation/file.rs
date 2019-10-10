@@ -1,11 +1,7 @@
-use crate::graphics::Sprite;
-
-use crate::assets::Assets;
-
-use ggez::{Context, GameError, GameResult};
-
 use super::Animation;
-
+use crate::assets::Assets;
+use crate::graphics::Sprite;
+use ggez::{Context, GameError, GameResult};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;

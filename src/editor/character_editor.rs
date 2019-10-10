@@ -1,21 +1,14 @@
+use crate::assets::Assets;
+use crate::character::{BulletsUi, ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
+use crate::character_state::CharacterState;
 use crate::editor::{
     AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
 };
-
-use ggez::{Context, GameResult};
-
-use crate::assets::Assets;
-use crate::imgui_wrapper::ImGuiWrapper;
-
-use crate::character_state::CharacterState;
-
-use imgui::*;
-
-use crate::character::{BulletsUi, ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
-
-use std::path::PathBuf;
-
 use crate::graphics::Animation;
+use crate::imgui_wrapper::ImGuiWrapper;
+use ggez::{Context, GameResult};
+use imgui::*;
+use std::path::PathBuf;
 
 pub struct CharacterEditor {
     resource: PlayerCharacter,

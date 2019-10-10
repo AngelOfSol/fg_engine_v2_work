@@ -1,9 +1,7 @@
 use super::{Axis, Button, ButtonState, InputState};
-
-use std::collections::{HashMap, HashSet};
-
 use gilrs::ev::Button as GilButton;
 use gilrs::GamepadId;
+use std::collections::{HashMap, HashSet};
 
 pub type PadControlScheme = ControlScheme<GilButton>;
 

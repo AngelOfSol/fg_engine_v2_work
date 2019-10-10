@@ -9,29 +9,21 @@ mod file;
 mod ui;
 
 use crate::assets::Assets;
-
+use crate::timeline::{AtTime, Timeline};
+use crate::typedefs::graphics::Matrix4;
 use crate::typedefs::FgSerializable;
-use ggez::{Context, GameResult};
-use serde::{Deserialize, Serialize};
-
-use std::cmp;
-
+use crate::typedefs::{HashId, StateId};
 pub use animation_data::{AnimationData, AnimationDataUi};
 pub use bullet_spawn_data::BulletSpawn;
 pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
 pub use flags::{Flags, FlagsUi, MovementData};
+use ggez::{Context, GameResult};
 pub use hitbox_set::{HitboxSet, HitboxSetUi};
 pub use particle_spawn_data::{ParticleSpawn, ParticleSpawnUi};
-
-pub use ui::CharacterStateUi;
-
-use crate::timeline::{AtTime, Timeline};
-
-use crate::typedefs::graphics::Matrix4;
-
-use crate::typedefs::{HashId, StateId};
-
+use serde::{Deserialize, Serialize};
+use std::cmp;
 use std::path::PathBuf;
+pub use ui::CharacterStateUi;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState<Id, ParticleId, BulletSpawnInfo>
@@ -52,11 +44,9 @@ where
     pub on_expire_state: Id,
 }
 pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
-
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
-
 impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
     CharacterState<Id, ParticleId, BulletSpawnInfo>
 {

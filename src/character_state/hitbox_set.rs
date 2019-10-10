@@ -1,14 +1,9 @@
-use crate::hitbox::Hitbox;
-
-use serde::{Deserialize, Serialize};
-
-use crate::typedefs::collision::Vec2;
-
-use crate::imgui_extra::UiExtensions;
-
 use crate::attack::AttackLevel;
-
+use crate::hitbox::Hitbox;
+use crate::imgui_extra::UiExtensions;
+use crate::typedefs::collision::Vec2;
 use imgui::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct AttackData {

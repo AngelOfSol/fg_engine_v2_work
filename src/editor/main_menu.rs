@@ -1,16 +1,10 @@
-use ggez::{Context, GameResult};
-
-use imgui::*;
-
-use crate::imgui_wrapper::ImGuiWrapper;
-
-use crate::editor::{CharacterEditor, EditorState, Mode, Transition};
-
 use crate::assets::Assets;
-
-use std::path::PathBuf;
-
 use crate::character::PlayerCharacter;
+use crate::editor::{CharacterEditor, EditorState, Mode, Transition};
+use crate::imgui_wrapper::ImGuiWrapper;
+use ggez::{Context, GameResult};
+use imgui::*;
+use std::path::PathBuf;
 
 pub struct MainMenu {
     next: Transition,

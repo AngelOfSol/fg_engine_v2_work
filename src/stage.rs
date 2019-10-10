@@ -1,10 +1,8 @@
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{DrawParam, Image};
 use ggez::{Context, GameResult};
-
 use std::path::Path;
-
-use crate::typedefs::graphics::{Matrix4, Vec3};
 
 pub struct Stage {
     image: Image,

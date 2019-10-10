@@ -1,18 +1,13 @@
+use crate::assets::Assets;
+use crate::editor::Mode;
 use crate::graphics::Animation;
+use crate::imgui_extra::UiExtensions;
+use ggez::Context;
+use imgui::*;
+use nfd::Response;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::assets::Assets;
-use ggez::Context;
-
-use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
-use crate::editor::Mode;
-
 use std::path::PathBuf;
-
-use nfd::Response;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Particles {

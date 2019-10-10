@@ -1,8 +1,7 @@
-use crate::typedefs::collision::Vec2;
-use serde::{Deserialize, Serialize};
-
 use crate::imgui_extra::UiExtensions;
+use crate::typedefs::collision::Vec2;
 use imgui::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone)]
 pub struct ParticleSpawn<Id> {

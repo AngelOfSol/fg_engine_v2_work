@@ -1,31 +1,20 @@
-use crate::editor::{EditorState, MessageData, Mode, Transition};
-
-use ggez::graphics;
-use ggez::graphics::{Color, DrawParam, Mesh};
-use ggez::{Context, GameResult};
-
 use crate::assets::Assets;
-use crate::timeline::AtTime;
-
-use crate::imgui_wrapper::ImGuiWrapper;
-
-use crate::typedefs::graphics::{Matrix4, Vec3};
-
-use crate::typedefs::collision::IntoGraphical;
-
+use crate::character_state::EditorCharacterState;
 use crate::character_state::{
     AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
 };
-
 use crate::editor::AnimationEditor;
-
-use crate::character_state::EditorCharacterState;
-
+use crate::editor::{EditorState, MessageData, Mode, Transition};
 use crate::graphics::Animation;
-
 use crate::imgui_extra::UiExtensions;
+use crate::imgui_wrapper::ImGuiWrapper;
+use crate::timeline::AtTime;
+use crate::typedefs::collision::IntoGraphical;
+use crate::typedefs::graphics::{Matrix4, Vec3};
+use ggez::graphics;
+use ggez::graphics::{Color, DrawParam, Mesh};
+use ggez::{Context, GameResult};
 use imgui::*;
-
 use std::path::PathBuf;
 
 pub struct StateEditor {
@@ -43,7 +32,6 @@ struct DrawMode {
     debug_animation: bool,
     show_axes: bool,
 }
-
 impl StateEditor {
     pub fn with_state(
         state: EditorCharacterState,

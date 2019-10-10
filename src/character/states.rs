@@ -1,24 +1,14 @@
-use std::collections::HashMap;
-
-use crate::character_state::CharacterState;
-
-use serde::{Deserialize, Serialize};
-
-use imgui::*;
-
-use crate::imgui_extra::UiExtensions;
-
-use std::path::PathBuf;
-
-use ggez::{Context, GameResult};
-
 use crate::assets::Assets;
-
-use crate::editor::Mode;
-
-use crate::typedefs::HashId;
-
 use crate::character_state::BulletSpawn;
+use crate::character_state::CharacterState;
+use crate::editor::Mode;
+use crate::imgui_extra::UiExtensions;
+use crate::typedefs::HashId;
+use ggez::{Context, GameResult};
+use imgui::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct States<Id, ParticleId, BulletInfo>

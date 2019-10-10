@@ -1,15 +1,11 @@
-use crate::graphics::Animation;
-use serde::{Deserialize, Serialize};
-
 use crate::assets::Assets;
-use crate::timeline::AtTime;
-
-use ggez::{Context, GameResult};
-
-use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
-
+use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
+use crate::timeline::AtTime;
+use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
+use ggez::{Context, GameResult};
 use imgui::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct AnimationData {

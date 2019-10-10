@@ -5,53 +5,33 @@
 )]
 
 use ggez::conf;
-
 use ggez::ContextBuilder;
-
-use std::error::Error;
-
-use std::env;
-use std::path;
-
 use runner::Runner;
-
+use std::env;
+use std::error::Error;
+use std::path;
 mod attack;
-
 #[macro_use]
 mod imgui_extra;
-
 mod assets;
+mod character_state;
 mod editor;
 mod graphics;
-mod timeline;
-
-mod character_state;
-
-mod imgui_wrapper;
-
-mod typedefs;
-
 mod hitbox;
-
+mod imgui_wrapper;
+mod timeline;
+mod typedefs;
 #[macro_use]
 mod character;
-
-mod roster;
-
-mod runner;
-
 mod game_match;
-
-mod stage;
-
 mod input;
-
+mod roster;
+mod runner;
+mod stage;
 #[macro_use]
 mod command_list;
-
 #[macro_use]
 mod input_macros;
-
 mod button_check;
 
 fn main() {
@@ -62,7 +42,6 @@ fn main() {
     } else {
         path::PathBuf::from("./resources")
     };
-
     let mut mode = conf::WindowMode::default().dimensions(1280.0, 720.0);
     for arg in std::env::args() {
         if arg == "--editor" {

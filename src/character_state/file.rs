@@ -1,17 +1,12 @@
+use super::CharacterState;
 use crate::assets::Assets;
 use crate::graphics::Animation;
-
-use ggez::{Context, GameResult};
-
 use crate::typedefs::{FgSerializable, StateId};
-
+use ggez::GameError;
+use ggez::{Context, GameResult};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
-
-use ggez::GameError;
-
-use super::CharacterState;
 
 pub fn load_from_json<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
     ctx: &mut Context,

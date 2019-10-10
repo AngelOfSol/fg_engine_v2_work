@@ -1,17 +1,11 @@
 use super::super::sprite::{Sprite, SpriteUi};
-
 use super::{Animation, BlendMode};
-
 use crate::assets::Assets;
 use crate::imgui_extra::UiExtensions;
-
-use imgui::im_str;
-
-use ggez::{Context, GameResult};
-
-use nfd::Response;
-
 use crate::timeline::AtTime;
+use ggez::{Context, GameResult};
+use imgui::im_str;
+use nfd::Response;
 
 pub struct AnimationUi {
     pub current_sprite: Option<usize>,

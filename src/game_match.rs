@@ -1,37 +1,21 @@
-use ggez::event::EventHandler;
-use ggez::{Context, GameResult};
-
-use ggez::graphics;
-
-use crate::typedefs::graphics::{Matrix4, Vec3};
-
-use crate::stage::Stage;
-
-use crate::roster::{Yuyuko, YuyukoState};
-
-use ggez::timer;
-
-use std::path::PathBuf;
-
-use gilrs::{Event, EventType, Gilrs};
-
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
-
+use crate::roster::{Yuyuko, YuyukoState};
+use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
-
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use gfx::{self, *};
+use ggez::event::EventHandler;
+use ggez::graphics;
+use ggez::timer;
+use ggez::{Context, GameResult};
+use gilrs::{Event, EventType, Gilrs};
+use std::path::PathBuf;
 
 pub struct PlayArea {
     pub width: i32,
 }
-
-gfx_defines! {
-    constant Shadow {
-        rate: f32 = "u_Rate",
-    }
-}
-
+gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 pub struct Match {
     resources: Yuyuko,
     state: YuyukoState,

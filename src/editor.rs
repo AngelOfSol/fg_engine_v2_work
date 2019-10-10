@@ -5,33 +5,27 @@ mod main_menu;
 mod state_editor;
 
 use crate::assets::Assets;
+use crate::character::BulletInfo;
+use crate::character_state::EditorCharacterState;
+use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
-
+use crate::runner::{AppState, RunnerState};
+pub use animation_editor::AnimationEditor;
+pub use bullet_editor::BulletInfoEditor;
+pub use character_editor::CharacterEditor;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::graphics;
 use ggez::input::mouse::MouseButton;
 use ggez::timer;
 use ggez::{Context, GameResult};
-
-pub use animation_editor::AnimationEditor;
-pub use bullet_editor::BulletInfoEditor;
-pub use character_editor::CharacterEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
-
-use crate::character::BulletInfo;
-use crate::character_state::EditorCharacterState;
-
-use crate::graphics::Animation;
-
-use crate::runner::{AppState, RunnerState};
 
 pub struct GameEditor {
     game_state: Vec<(EditorState, Mode)>,
     assets: Assets,
     imgui: ImGuiWrapper,
 }
-
 #[allow(clippy::large_enum_variant)]
 pub enum EditorState {
     Animating(AnimationEditor),
@@ -40,7 +34,6 @@ pub enum EditorState {
     CharacterEditor(CharacterEditor),
     BulletInfoEditor(BulletInfoEditor),
 }
-
 impl EditorState {
     fn handle_event(&mut self, passed_data: MessageData, mode: Mode) {
         match self {

@@ -1,13 +1,10 @@
+use crate::imgui_extra::UiExtensions;
+use crate::typedefs::HashId;
+use imgui::*;
 use serde::{Deserialize, Serialize};
-
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Display;
-
-use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
-use crate::typedefs::HashId;
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
 pub enum MoveType {

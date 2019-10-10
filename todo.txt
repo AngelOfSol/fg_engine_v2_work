@@ -16,6 +16,13 @@ TODO LATWER) rework input buffer again
     >encapsulate different tools better
     >try the inspector-rs crate
         >its too new needs things for vectors and other container types
+    >remove UI state, and just list things out
+        >no idea how to handle animation, because its inherently stateful
+    >idea:
+        >have things for each window
+        >sub elements have an edit button which pops up the windowed-editor
+        >a list of path to each element is what is used to show each window (which can also ID the element)
+        >how to handle animation?
 3) add bullets
     >single animation
     >hitbox
