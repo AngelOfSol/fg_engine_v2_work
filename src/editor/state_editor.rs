@@ -223,6 +223,13 @@ impl StateEditor {
                         self.ui_data
                             .draw_particle_editor(ui, &mut self.resource.particles);
                     });
+                imgui::Window::new(im_str!("Bullets"))
+                    .size([300.0, 280.0], Condition::Always)
+                    .position([300.0, 283.0], Condition::Always)
+                    .build(ui, || {
+                        self.ui_data
+                            .draw_bullet_editor(ui, &mut self.resource.bullets);
+                    });
                 imgui::Window::new(im_str!("Flags"))
                     .size([300.0, 420.0], Condition::Always)
                     .position([600.0, 283.0], Condition::Always)

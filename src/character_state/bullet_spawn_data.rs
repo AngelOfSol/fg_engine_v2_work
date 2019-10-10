@@ -12,11 +12,11 @@ pub struct BulletSpawn {
 }
 
 impl BulletSpawn {
-    pub fn new(bullet_id: String) -> Self {
+    pub fn new(bullet_id: String, properties: &HashSet<String>) -> Self {
         Self {
             bullet_id,
             frame: 0,
-            properties: HashMap::new(),
+            properties: properties.iter().map(|key| (key.clone(), 0)).collect(),
         }
     }
 }
