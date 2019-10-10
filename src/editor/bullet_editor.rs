@@ -75,11 +75,8 @@ impl BulletInfoEditor {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Always)
-                    .position([0.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, editor_height], Condition::Once)
+                    .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
                         let edit_change =
                             self.ui_data.draw_ui(ctx, assets, &ui, &mut self.resource);
@@ -95,7 +92,7 @@ impl BulletInfoEditor {
                         }
                     });
 
-                imgui::Window::new(im_str!("Bullet Info"))
+                imgui::Window::new(im_str!("Animation"))
                     .size(dim, Condition::Always)
                     .position(pos, Condition::Always)
                     .resizable(false)

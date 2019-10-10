@@ -142,22 +142,16 @@ impl StateEditor {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Properties"))
-                    .size([300.0, 100.0], Condition::Always)
-                    .position([0.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 100.0], Condition::Once)
+                    .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         //self.handle_transition(result);
                         self.ui_data.draw_header(ui, &mut self.resource);
                     });
                 imgui::Window::new(im_str!("Animations"))
-                    .size([300.0, 345.0], Condition::Always)
-                    .position([0.0, 120.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 345.0], Condition::Once)
+                    .position([0.0, 120.0], Condition::Once)
                     .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         //
@@ -171,11 +165,8 @@ impl StateEditor {
                         self.handle_transition(result);
                     });
                 imgui::Window::new(im_str!("Playback"))
-                    .size([300.0, 200.0], Condition::Always)
-                    .position([0.0, 465.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 200.0], Condition::Once)
+                    .position([0.0, 465.0], Condition::Once)
                     .build(ui, || {
                         if self.resource.duration() > 0 {
                             if ui
@@ -213,48 +204,38 @@ impl StateEditor {
                         imgui::Slider::new(im_str!("Hitbox"), 0.0..=1.0)
                             .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
-                imgui::Window::new(im_str!("Particles"))
-                    .size([300.0, 280.0], Condition::Always)
-                    .position([300.0, 283.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                imgui::Window::new(im_str!("Particles##State"))
+                    .size([300.0, 280.0], Condition::Once)
+                    .position([300.0, 283.0], Condition::Once)
+                    .collapsed(true, Condition::Once)
                     .build(ui, || {
                         self.ui_data
                             .draw_particle_editor(ui, &mut self.resource.particles);
                     });
-                imgui::Window::new(im_str!("Bullets"))
-                    .size([300.0, 280.0], Condition::Always)
-                    .position([300.0, 283.0], Condition::Always)
+                imgui::Window::new(im_str!("Bullets##State"))
+                    .size([300.0, 280.0], Condition::Once)
+                    .position([300.0, 303.0], Condition::Once)
+                    .collapsed(true, Condition::Once)
                     .build(ui, || {
                         self.ui_data
                             .draw_bullet_editor(ui, &mut self.resource.bullets);
                     });
                 imgui::Window::new(im_str!("Flags"))
-                    .size([300.0, 420.0], Condition::Always)
-                    .position([600.0, 283.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 420.0], Condition::Once)
+                    .position([600.0, 283.0], Condition::Once)
                     .build(ui, || {
                         self.ui_data.draw_flags_editor(ui, &mut self.resource.flags);
                     });
                 imgui::Window::new(im_str!("Cancels"))
-                    .size([300.0, 420.0], Condition::Always)
-                    .position([900.0, 283.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 420.0], Condition::Once)
+                    .position([900.0, 283.0], Condition::Once)
                     .build(ui, || {
                         self.ui_data
                             .draw_cancels_editor(ui, &mut self.resource.cancels);
                     });
                 imgui::Window::new(im_str!("Hitboxes"))
-                    .size([300.0, 700.0], Condition::Always)
-                    .position([1200.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 700.0], Condition::Once)
+                    .position([1200.0, 20.0], Condition::Once)
                     .build(ui, || {
                         self.ui_data
                             .draw_hitbox_editor(ui, &mut self.resource.hitboxes);
@@ -267,11 +248,8 @@ impl StateEditor {
                     .collapsible(false)
                     .build(ui, || {});
                 imgui::Window::new(im_str!("Current Flags"))
-                    .size([300.0, 263.0], Condition::Always)
-                    .position([600.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 263.0], Condition::Once)
+                    .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
                         if let Some(data) = self.resource.flags.try_time(self.frame) {
                             let move_data = {
@@ -292,11 +270,8 @@ impl StateEditor {
                         }
                     });
                 imgui::Window::new(im_str!("Current Cancels"))
-                    .size([300.0, 263.0], Condition::Always)
-                    .position([900.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 263.0], Condition::Once)
+                    .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
                         if let Some(data) = self.resource.cancels.try_time(self.frame) {
                             CancelSetUi::draw_display_ui(ui, data);

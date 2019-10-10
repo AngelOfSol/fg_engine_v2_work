@@ -95,20 +95,14 @@ impl CharacterEditor {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Fields"))
-                    .size([300.0, 526.0], Condition::Always)
-                    .position([0.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
                         PropertiesUi::draw_ui(ui, &mut self.resource.properties);
                     });
                 imgui::Window::new(im_str!("States"))
-                    .size([300.0, 526.0], Condition::Always)
-                    .position([300.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([300.0, 20.0], Condition::Once)
                     .build(ui, || {
                         let edit_result =
                             self.states_ui_data
@@ -141,11 +135,8 @@ impl CharacterEditor {
                         editor_result = edit_result.map(|_| ());
                     });
                 imgui::Window::new(im_str!("Particles"))
-                    .size([300.0, 526.0], Condition::Always)
-                    .position([600.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
                         let edit_change = self.particle_ui_data.draw_ui(
                             ctx,
@@ -172,11 +163,8 @@ impl CharacterEditor {
                         }
                     });
                 imgui::Window::new(im_str!("Bullets"))
-                    .size([300.0, 526.0], Condition::Always)
-                    .position([900.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
                         let edit_change =
                             self.bullet_ui_data.draw_ui(ui, &mut self.resource.bullets);

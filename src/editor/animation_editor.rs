@@ -63,11 +63,8 @@ impl AnimationEditor {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Always)
-                    .position([0.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
+                    .size([300.0, editor_height], Condition::Once)
+                    .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
                         editor_result = self.ui_data.draw_ui(&ui, ctx, assets, &mut self.resource);
                     });
