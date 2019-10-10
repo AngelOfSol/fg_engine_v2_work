@@ -51,6 +51,8 @@ where
     #[serde(default)]
     pub on_expire_state: Id,
 }
+pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
+
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }

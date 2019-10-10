@@ -34,7 +34,6 @@ where
 }
 
 pub type EditorStates = States<String, String, BulletSpawn>;
-pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
 
 impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default> States<Id, ParticleId, BulletInfo> {
     pub fn new() -> Self {
@@ -155,29 +154,4 @@ impl StatesUi {
 
         Ok(ret)
     }
-}
-
-fn _required_state_helper(
-    ui: &Ui<'_>,
-    ctx: &mut Context,
-    assets: &mut Assets,
-    name: &str,
-    data: &mut CharacterState<String, String, String>,
-) -> GameResult<Option<Mode>> {
-    let id = ui.push_id(name);
-    let mut ret = None;
-    ui.text(im_str!("{}", name));
-    ui.same_line(0.0);
-    if ui.small_button(im_str!("Edit")) {
-        ret = Some(Mode::Edit(name.to_owned()));
-    }
-    ui.same_line(0.0);
-    if ui.small_button(im_str!("Load")) {
-        if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
-            *data = CharacterState::load_from_json(ctx, assets, PathBuf::from(path))?;
-        }
-    }
-    id.pop(ui);
-
-    Ok(ret)
 }

@@ -19,7 +19,7 @@ use crate::character_state::{
 
 use crate::editor::AnimationEditor;
 
-use crate::character::EditorCharacterState;
+use crate::character_state::EditorCharacterState;
 
 use crate::graphics::Animation;
 

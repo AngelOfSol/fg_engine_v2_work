@@ -6,7 +6,7 @@ mod states;
 pub use bullets::{BulletInfo, BulletInfoUi, Bullets, BulletsUi};
 pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
-pub use states::{EditorCharacterState, EditorStates, States, StatesUi};
+pub use states::{EditorStates, States, StatesUi};
 
 use crate::character_state::CharacterState;
 

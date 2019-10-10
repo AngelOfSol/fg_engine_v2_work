@@ -16,7 +16,7 @@ use super::{
     MoveType, ParticleSpawn, ParticleSpawnUi,
 };
 
-use crate::character::EditorCharacterState;
+use crate::character_state::EditorCharacterState;
 
 use std::path::PathBuf;
 
