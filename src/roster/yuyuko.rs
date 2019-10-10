@@ -303,7 +303,7 @@ impl YuyukoState {
             self.velocity
         };
 
-        // we only run gravity if the move doesn't want to reset velocity, because that means the move has a trajectory in mind
+        // we only run gravity if the move doesn't want to reset velocity, because that [resetting velocity] means the move has a trajectory in mind
         let gravity = if !flags.reset_velocity
             && flags.airborne
             && move_id != MoveId::FlyStart
@@ -343,6 +343,7 @@ impl YuyukoState {
         // handle landing
         if flags.airborne && self.position.y - collision.half_size.y <= -4 {
             self.velocity = collision::Vec2::zeros();
+            self.current_state.0 = 0;
             self.current_state.1 = MoveId::Stand;
             self.position.y = hitboxes.collision.half_size.y;
         }
