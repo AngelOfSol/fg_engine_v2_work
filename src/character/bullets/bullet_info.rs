@@ -81,11 +81,13 @@ impl BulletInfoUi {
         ui.text(im_str!("Properties"));
         let mut to_delete = None;
         for item in data.properties.iter() {
+            let id = ui.push_id(&item);
             ui.text(im_str!("{}", item));
             ui.same_line(0.0);
             if ui.small_button(im_str!("Delete")) {
                 to_delete = Some(item.clone());
             }
+            id.pop(ui);
         }
         if let Some(item) = to_delete {
             data.properties.remove(&item);
