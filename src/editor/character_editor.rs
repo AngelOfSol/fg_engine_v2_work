@@ -1,4 +1,6 @@
-use crate::editor::{AnimationEditor, EditorState, MessageData, Mode, StateEditor, Transition};
+use crate::editor::{
+    AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
+};
 
 use ggez::{Context, GameResult};
 
@@ -9,7 +11,7 @@ use crate::character_state::CharacterState;
 
 use imgui::*;
 
-use crate::character::{ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
+use crate::character::{BulletsUi, ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
 
 use std::path::PathBuf;
 
@@ -20,21 +22,36 @@ pub struct CharacterEditor {
     transition: Transition,
     particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
+    bullet_ui_data: BulletsUi,
 }
 impl CharacterEditor {
     pub fn new(resource: PlayerCharacter) -> Self {
         let particle_ui_data = ParticlesUi::new(&resource.particles);
         let states_ui_data = StatesUi::new(&resource.states);
+        let bullet_ui_data = BulletsUi::new(&resource.bullets);
         Self {
             resource,
             particle_ui_data,
             states_ui_data,
+            bullet_ui_data,
             transition: Transition::None,
         }
     }
 
     pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
         match data {
+            MessageData::BulletInfo(bullet) => match mode {
+                Mode::Standalone => (),
+                Mode::New => {
+                    self.resource.bullets.bullets.insert(
+                        self.resource.bullets.guarentee_unique_key("new bullet"),
+                        bullet,
+                    );
+                }
+                Mode::Edit(name) => {
+                    self.resource.bullets.bullets.insert(name, bullet);
+                }
+            },
             MessageData::State(state) => match mode {
                 Mode::Standalone => (),
                 Mode::New => {
@@ -149,6 +166,26 @@ impl CharacterEditor {
                             };
                             self.transition = Transition::Push(
                                 Box::new(AnimationEditor::with_animation(animation).into()),
+                                mode.clone(),
+                            );
+                        }
+                    });
+                imgui::Window::new(im_str!("Bullets"))
+                    .size([300.0, 526.0], Condition::Always)
+                    .position([900.0, 20.0], Condition::Always)
+                    .resizable(false)
+                    .movable(false)
+                    .collapsible(false)
+                    .build(ui, || {
+                        let edit_change =
+                            self.bullet_ui_data.draw_ui(ui, &mut self.resource.bullets);
+                        if let Some(mode) = &edit_change {
+                            let bullet = match &mode {
+                                Mode::Edit(name) => self.resource.bullets.bullets[name].clone(),
+                                _ => panic!("Attempting to edit bullet with no name."),
+                            };
+                            self.transition = Transition::Push(
+                                Box::new(BulletInfoEditor::with_bullet(bullet).into()),
                                 mode.clone(),
                             );
                         }

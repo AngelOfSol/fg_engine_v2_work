@@ -1,12 +1,12 @@
+mod bullets;
 mod particles;
 mod properties;
 mod states;
-mod bullets;
 
+pub use bullets::{BulletInfo, BulletInfoUi, Bullets, BulletsUi};
 pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
 pub use states::{States, StatesUi};
-pub use bullets::{Bullets};
 
 use crate::character_state::CharacterState;
 
@@ -79,6 +79,11 @@ impl PlayerCharacter {
         for (_, animation) in player_character.particles.particles.iter_mut() {
             Animation::load(ctx, assets, animation, path.clone())?;
         }
+        path.pop();
+        path.push("bullets");
+        for (_, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter_mut() {
+            Animation::load(ctx, assets, animation, path.clone())?;
+        }
         Ok(())
     }
     pub fn save(
@@ -109,6 +114,14 @@ impl PlayerCharacter {
         std::fs::create_dir_all(&path)?;
         for (name, animation) in player_character.particles.particles.iter() {
             path.push(format!("{}.json", name));
+            Animation::save(ctx, assets, animation, path.clone())?;
+            path.pop();
+        }
+        path.pop();
+        path.push("bullets");
+        std::fs::create_dir_all(&path)?;
+        for (key, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter() {
+            path.push(format!("{}.json", key));
             Animation::save(ctx, assets, animation, path.clone())?;
             path.pop();
         }

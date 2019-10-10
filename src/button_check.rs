@@ -101,7 +101,7 @@ impl EventHandler for ButtonCheck {
                         ui.text(format!("Gamepad: {}", control_scheme.gamepad));
                         ui.columns(2, im_str!("Columns"), true);
                         for index in 0..4 {
-                            let _token = if index == *selected {
+                            let token = if index == *selected {
                                 Some(ui.push_style_color(StyleColor::Text, GREEN))
                             } else {
                                 None
@@ -117,15 +117,22 @@ impl EventHandler for ButtonCheck {
                             ui.next_column();
                             ui.text(render_button_list(&control_scheme.buttons[index]));
                             ui.next_column();
+
+                            if let Some(token) = token {
+                                token.pop(ui);
+                            }
                         }
                         ui.columns(1, im_str!("Columns##End"), false);
 
-                        let _token = if 4 == *selected {
+                        let token = if 4 == *selected {
                             Some(ui.push_style_color(StyleColor::Text, GREEN))
                         } else {
                             None
                         };
-                        ui.text("Finish")
+                        ui.text("Finish");
+                        if let Some(token) = token {
+                            token.pop(ui);
+                        }
                     }
                     None => ui.text("Press Start to select a controller."),
                 });

@@ -36,10 +36,24 @@ use crate::character_state::Flags;
 
 use crate::game_match::PlayArea;
 
+use crate::hitbox::Hitbox;
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct BulletData {
+    pub animation: Animation,
+    pub hitbox: Hitbox,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct BulletList {
+    pub butterfly: BulletData,
+}
+
 pub struct Yuyuko {
     assets: Assets,
     states: StateList,
     particles: ParticleList,
+    bullets: BulletList,
     properties: Properties,
     command_list: CommandList<MoveId>,
 }
@@ -56,6 +70,7 @@ impl Yuyuko {
             states: data.states,
             particles: data.particles,
             properties: data.properties,
+            bullets: data.bullets,
             command_list: command_list::generate_command_list(),
         })
     }
@@ -65,6 +80,7 @@ impl Yuyuko {
 pub struct YuyukoData {
     states: StateList,
     particles: ParticleList,
+    bullets: BulletList,
     properties: Properties,
 }
 
@@ -97,6 +113,15 @@ impl YuyukoData {
         for (_name, particle) in character.particles.iter_mut() {
             Animation::load(ctx, assets, particle, path.clone())?;
         }
+        path.pop();
+        path.push("bullets");
+        Animation::load(
+            ctx,
+            assets,
+            &mut character.bullets.butterfly.animation,
+            path.clone(),
+        )?;
+
         Ok(character)
     }
 }
@@ -409,6 +434,7 @@ impl YuyukoState {
                     )),
             )?;
         }
+
         Ok(())
     }
     pub fn draw_shadow(

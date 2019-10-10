@@ -68,7 +68,7 @@ pub fn save(
     .unwrap();
 
     // image buffers are flipped in memory for ggez/OpenGL/gfx, so we have to unflip them
-    let image = flip_vertical(&image);
+    //let image = flip_vertical(&image);
 
     png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
 

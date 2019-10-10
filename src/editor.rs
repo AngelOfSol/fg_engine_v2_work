@@ -1,4 +1,5 @@
 mod animation_editor;
+mod bullet_editor;
 mod character_editor;
 mod main_menu;
 mod state_editor;
@@ -13,10 +14,12 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 
 pub use animation_editor::AnimationEditor;
+pub use bullet_editor::BulletInfoEditor;
 pub use character_editor::CharacterEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
 
+use crate::character::BulletInfo;
 use crate::character_state::CharacterState;
 use crate::graphics::Animation;
 
@@ -34,6 +37,7 @@ pub enum EditorState {
     MainMenu(MainMenu),
     StateEditor(StateEditor),
     CharacterEditor(CharacterEditor),
+    BulletInfoEditor(BulletInfoEditor),
 }
 
 impl EditorState {
@@ -43,6 +47,9 @@ impl EditorState {
                 editor.handle_message(passed_data, mode);
             }
             EditorState::CharacterEditor(ref mut editor) => {
+                editor.handle_message(passed_data, mode);
+            }
+            EditorState::BulletInfoEditor(ref mut editor) => {
                 editor.handle_message(passed_data, mode);
             }
             _ => (),
@@ -60,6 +67,7 @@ pub enum Mode {
 pub enum MessageData {
     Animation(Animation),
     State(CharacterState<String, String>),
+    BulletInfo(BulletInfo),
 }
 
 pub enum Transition {
@@ -97,6 +105,7 @@ impl EventHandler for GameEditor {
                 EditorState::MainMenu(ref mut menu) => menu.update(),
                 EditorState::StateEditor(ref mut editor) => editor.update(),
                 EditorState::CharacterEditor(ref mut editor) => editor.update(),
+                EditorState::BulletInfoEditor(ref mut editor) => editor.update(),
             }?;
             match transition {
                 Transition::None => (),
@@ -145,6 +154,9 @@ impl EventHandler for GameEditor {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }
             EditorState::CharacterEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, &mut self.imgui)
+            }
+            EditorState::BulletInfoEditor(ref mut editor) => {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }
         }?;
