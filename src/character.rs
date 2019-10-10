@@ -6,7 +6,7 @@ mod states;
 pub use bullets::{BulletInfo, BulletInfoUi, Bullets, BulletsUi};
 pub use particles::{Particles, ParticlesUi};
 pub use properties::{Properties, PropertiesUi};
-pub use states::{States, StatesUi};
+pub use states::{EditorCharacterState, EditorStates, States, StatesUi};
 
 use crate::character_state::CharacterState;
 
@@ -26,7 +26,7 @@ use ggez::GameError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlayerCharacter {
-    pub states: States<String, String, String>,
+    pub states: EditorStates,
     pub properties: Properties,
     #[serde(default)]
     pub particles: Particles,

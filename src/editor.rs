@@ -19,8 +19,7 @@ pub use character_editor::CharacterEditor;
 pub use main_menu::MainMenu;
 pub use state_editor::StateEditor;
 
-use crate::character::BulletInfo;
-use crate::character_state::CharacterState;
+use crate::character::{BulletInfo, EditorCharacterState};
 use crate::graphics::Animation;
 
 use crate::runner::{AppState, RunnerState};
@@ -66,7 +65,7 @@ pub enum Mode {
 
 pub enum MessageData {
     Animation(Animation),
-    State(CharacterState<String, String, String>),
+    State(EditorCharacterState),
     BulletInfo(BulletInfo),
 }
 

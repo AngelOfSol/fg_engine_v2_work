@@ -18,20 +18,25 @@ use crate::editor::Mode;
 
 use crate::typedefs::HashId;
 
+use crate::character_state::BulletSpawn;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct States<Id, ParticleId, BulletId>
+pub struct States<Id, ParticleId, BulletInfo>
 where
     Id: HashId,
     ParticleId: HashId,
-    BulletId: HashId,
+    BulletInfo: Default,
 {
     #[serde(flatten)]
-    pub rest: HashMap<String, CharacterState<Id, ParticleId, BulletId>>,
+    pub rest: HashMap<String, CharacterState<Id, ParticleId, BulletInfo>>,
     #[serde(skip)]
     _secret: (),
 }
 
-impl<Id: HashId, ParticleId: HashId, BulletId: HashId> States<Id, ParticleId, BulletId> {
+pub type EditorStates = States<String, String, BulletSpawn>;
+pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
+
+impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default> States<Id, ParticleId, BulletInfo> {
     pub fn new() -> Self {
         Self {
             rest: HashMap::new(),
@@ -39,12 +44,12 @@ impl<Id: HashId, ParticleId: HashId, BulletId: HashId> States<Id, ParticleId, Bu
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &CharacterState<Id, ParticleId, BulletId> {
+    pub fn get_state(&self, key: &str) -> &CharacterState<Id, ParticleId, BulletInfo> {
         match key {
             _ => &self.rest[key],
         }
     }
-    pub fn replace_state(&mut self, key: String, data: CharacterState<Id, ParticleId, BulletId>) {
+    pub fn replace_state(&mut self, key: String, data: CharacterState<Id, ParticleId, BulletInfo>) {
         match key.as_str() {
             _ => {
                 self.rest.insert(key, data);
@@ -72,7 +77,7 @@ pub struct StatesUi {
 }
 
 impl StatesUi {
-    pub fn new(state: &States<String, String, String>) -> Self {
+    pub fn new(state: &EditorStates) -> Self {
         let mut state_name_keys: Vec<_> = state.rest.keys().cloned().collect();
         state_name_keys.sort();
         StatesUi { state_name_keys }
@@ -82,7 +87,7 @@ impl StatesUi {
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        data: &mut States<String, String, String>,
+        data: &mut EditorStates,
     ) -> GameResult<Option<Mode>> {
         let mut ret = None;
         ui.text(im_str!("States:"));

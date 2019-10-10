@@ -19,6 +19,8 @@ use crate::character_state::{
 
 use crate::editor::AnimationEditor;
 
+use crate::character::EditorCharacterState;
+
 use crate::graphics::Animation;
 
 use crate::imgui_extra::UiExtensions;
@@ -27,7 +29,7 @@ use imgui::*;
 use std::path::PathBuf;
 
 pub struct StateEditor {
-    resource: CharacterState<String, String, String>,
+    resource: EditorCharacterState,
     frame: usize,
     is_playing: bool,
     transition: Transition,
@@ -44,7 +46,7 @@ struct DrawMode {
 
 impl StateEditor {
     pub fn with_state(
-        state: CharacterState<String, String, String>,
+        state: EditorCharacterState,
         mut particle_list: Vec<String>,
         mut state_list: Vec<String>,
     ) -> Self {

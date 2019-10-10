@@ -10,6 +10,7 @@ mod ui;
 
 use crate::assets::Assets;
 
+use crate::typedefs::FgSerializable;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +34,7 @@ use crate::typedefs::{HashId, StateId};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct CharacterState<Id, ParticleId, BulletId>
+pub struct CharacterState<Id, ParticleId, BulletSpawnInfo>
 where
     Id: HashId,
 {
@@ -44,7 +45,7 @@ where
     #[serde(default)]
     pub particles: Vec<ParticleSpawn<ParticleId>>,
     #[serde(default)]
-    pub bullets: Vec<BulletSpawn<BulletId>>,
+    pub bullets: Vec<BulletSpawnInfo>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
     #[serde(default)]
@@ -54,7 +55,9 @@ fn default_move_type() -> MoveType {
     MoveType::Idle
 }
 
-impl<Id: StateId, ParticleId: StateId, BulletId: StateId> CharacterState<Id, ParticleId, BulletId> {
+impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
+    CharacterState<Id, ParticleId, BulletSpawnInfo>
+{
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -143,7 +146,7 @@ impl<Id: StateId, ParticleId: StateId, BulletId: StateId> CharacterState<Id, Par
     }
 }
 
-impl CharacterState<String, String, String> {
+impl CharacterState<String, String, BulletSpawn> {
     pub fn new() -> Self {
         Self {
             animations: vec![],

@@ -12,9 +12,11 @@ use std::cmp;
 use nfd::Response;
 
 use super::{
-    AnimationData, AnimationDataUi, CancelSet, CancelSetUi, CharacterState, Flags, FlagsUi,
-    HitboxSet, HitboxSetUi, MoveType, ParticleSpawn, ParticleSpawnUi,
+    AnimationData, AnimationDataUi, CancelSet, CancelSetUi, Flags, FlagsUi, HitboxSet, HitboxSetUi,
+    MoveType, ParticleSpawn, ParticleSpawnUi,
 };
+
+use crate::character::EditorCharacterState;
 
 use std::path::PathBuf;
 
@@ -51,7 +53,7 @@ impl CharacterStateUi {
         }
     }
 
-    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut CharacterState<String, String, String>) {
+    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut EditorCharacterState) {
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         ui.combo_items(
