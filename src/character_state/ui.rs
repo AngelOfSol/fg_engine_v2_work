@@ -1,50 +1,54 @@
+use super::{
+    AnimationData, AnimationDataUi, BulletSpawn, BulletSpawnUi, CancelSet, CancelSetUi, Flags,
+    FlagsUi, HitboxSet, HitboxSetUi, MoveType, ParticleSpawn, ParticleSpawnUi,
+};
 use crate::assets::Assets;
+use crate::character_state::EditorCharacterState;
+use crate::editor::Mode;
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
+use crate::timeline::Timeline;
 use ggez::Context;
 use imgui::*;
 use nfd::Response;
 use std::cmp;
-
-use super::{
-    AnimationData, AnimationDataUi, CancelSet, CancelSetUi, Flags, FlagsUi, HitboxSet, HitboxSetUi,
-    MoveType, ParticleSpawn, ParticleSpawnUi,
-};
-
-use crate::character_state::EditorCharacterState;
-
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-
-use crate::editor::Mode;
-
-use crate::timeline::Timeline;
 
 pub struct CharacterStateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
     current_particle: Option<usize>,
+    current_bullet: Option<usize>,
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
     pub state_list: Vec<String>,
     pub particle_list: Vec<String>,
+    pub bullet_list: HashMap<String, HashSet<String>>,
     particle_ui_data: ParticleSpawnUi,
 }
 
 impl CharacterStateUi {
-    pub fn new(particle_list: Vec<String>, state_list: Vec<String>) -> Self {
+    pub fn new(
+        particle_list: Vec<String>,
+        state_list: Vec<String>,
+        bullet_list: HashMap<String, HashSet<String>>,
+    ) -> Self {
         Self {
             current_animation: None,
             current_flags: None,
             current_cancels: None,
             current_particle: None,
+            current_bullet: None,
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
             state_list,
             particle_ui_data: ParticleSpawnUi::new(particle_list.clone()),
             particle_list,
+            bullet_list,
         }
     }
 
@@ -133,6 +137,25 @@ impl CharacterStateUi {
             id.pop(ui);
         }
     }
+    pub fn draw_bullet_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<BulletSpawn>) {
+        if !self.bullet_list.is_empty() {
+            let id = ui.push_id("Bullets");
+            let default_bullet = self.bullet_list.keys().next().cloned().unwrap();
+            if let Some(bullet) = ui.new_delete_list_box(
+                im_str!("List"),
+                &mut self.current_bullet,
+                data,
+                |item| im_str!("{}", item.bullet_id.clone()),
+                || BulletSpawn::new(default_bullet.clone()),
+                |_| {},
+                5,
+            ) {
+                BulletSpawnUi::draw_ui(ui, bullet, &self.bullet_list);
+            }
+            id.pop(ui);
+        }
+    }
+
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
         let id = ui.push_id("Flags");
         let mut counter = 0;

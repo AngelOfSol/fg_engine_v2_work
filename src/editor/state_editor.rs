@@ -15,6 +15,7 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 pub struct StateEditor {
@@ -37,6 +38,7 @@ impl StateEditor {
         state: EditorCharacterState,
         mut particle_list: Vec<String>,
         mut state_list: Vec<String>,
+        bullet_list: HashMap<String, HashSet<String>>,
     ) -> Self {
         particle_list.sort();
         state_list.sort();
@@ -45,7 +47,7 @@ impl StateEditor {
             transition: Transition::None,
             frame: 0,
             is_playing: true,
-            ui_data: CharacterStateUi::new(particle_list, state_list),
+            ui_data: CharacterStateUi::new(particle_list, state_list, bullet_list),
             draw_mode: DrawMode {
                 collision_alpha: 0.15,
                 hurtbox_alpha: 0.15,
@@ -300,6 +302,7 @@ impl StateEditor {
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
+                                self.ui_data.bullet_list.clone(),
                             );
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
@@ -326,6 +329,7 @@ impl StateEditor {
                                         self.ui_data = CharacterStateUi::new(
                                             self.ui_data.particle_list.clone(),
                                             self.ui_data.state_list.clone(),
+                                            self.ui_data.bullet_list.clone(),
                                         );
                                     }
                                     Err(err) => editor_result = Err(err),
@@ -339,6 +343,7 @@ impl StateEditor {
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
+                                self.ui_data.bullet_list.clone(),
                             );
                             self.transition = Transition::Pop(Some(MessageData::State(ret)));
                         }

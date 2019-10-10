@@ -76,21 +76,36 @@ pub trait UiExtensions {
 
     fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>);
 
-    fn combo_items<T: Eq + Clone, L>(&self, label: &ImStr, value: &mut T, items: &[T], f: &L)
+    fn combo_items<T: Eq + Clone, L>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+        items: &[T],
+        f: &L,
+    ) -> bool
     where
         for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>;
 }
 
 impl<'a> UiExtensions for Ui<'a> {
-    fn combo_items<T: Eq + Clone, L>(&self, label: &ImStr, value: &mut T, items: &[T], f: &L)
+    fn combo_items<T: Eq + Clone, L>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+        items: &[T],
+        f: &L,
+    ) -> bool
     where
         for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>,
     {
         let mut idx = items.iter().position(|item| *item == *value).unwrap();
 
-        imgui::ComboBox::new(label).build_simple(self, &mut idx, &items, f);
-
-        *value = items[idx].clone();
+        if imgui::ComboBox::new(label).build_simple(self, &mut idx, &items, f) {
+            *value = items[idx].clone();
+            true
+        } else {
+            false
+        }
     }
 
     fn checkbox_set<T: Clone + Hash + PartialEq + Eq + Display>(

@@ -14,7 +14,7 @@ use crate::typedefs::graphics::Matrix4;
 use crate::typedefs::FgSerializable;
 use crate::typedefs::{HashId, StateId};
 pub use animation_data::{AnimationData, AnimationDataUi};
-pub use bullet_spawn_data::BulletSpawn;
+pub use bullet_spawn_data::{BulletSpawn, BulletSpawnUi};
 pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
 pub use flags::{Flags, FlagsUi, MovementData};
 use ggez::{Context, GameResult};

@@ -124,6 +124,14 @@ impl CharacterEditor {
                                         state,
                                         self.resource.particles.particles.keys().cloned().collect(),
                                         self.resource.states.rest.keys().cloned().collect(),
+                                        self.resource
+                                            .bullets
+                                            .bullets
+                                            .iter()
+                                            .map(|(key, value)| {
+                                                (key.clone(), value.properties.clone())
+                                            })
+                                            .collect(),
                                     )
                                     .into(),
                                 ),
