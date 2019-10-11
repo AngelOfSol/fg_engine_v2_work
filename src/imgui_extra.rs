@@ -57,7 +57,7 @@ pub trait UiExtensions {
         new: New,
         delete: Delete,
         height_in_items: i32,
-    ) -> Option<&'items mut T>;
+    ) -> (bool, Option<&'items mut T>);
 
     fn input_whole<I: Copy + TryInto<i32> + TryFrom<i32>>(
         &self,
@@ -273,10 +273,12 @@ impl<'a> UiExtensions for Ui<'a> {
         mut new: New,
         mut delete: Delete,
         height_in_items: i32,
-    ) -> Option<&'items mut T> {
-        self.rearrangable_list_box(label, idx, items, display, height_in_items);
+    ) -> (bool, Option<&'items mut T>) {
+        let mut ret = self.rearrangable_list_box(label, idx, items, display, height_in_items);;
         if self.small_button(im_str!("New")) {
+            ret = true;
             items.push(new());
+            *idx = Some(items.len() - 1);
         }
         self.same_line(0.0);
         if self.small_button(im_str!("Delete")) {
@@ -287,7 +289,7 @@ impl<'a> UiExtensions for Ui<'a> {
             *idx = None;
         }
 
-        idx.map(move |idx| &mut items[idx])
+        (ret, idx.map(move |idx| &mut items[idx]))
     }
 
     fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool {

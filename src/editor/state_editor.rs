@@ -32,6 +32,7 @@ struct DrawMode {
     hitbox_alpha: f32,
     debug_animation: bool,
     show_axes: bool,
+    show_all_bullets: bool,
 }
 impl StateEditor {
     pub fn with_state(
@@ -54,6 +55,7 @@ impl StateEditor {
                 hitbox_alpha: 0.15,
                 debug_animation: true,
                 show_axes: true,
+                show_all_bullets: false,
             },
         }
     }
@@ -193,6 +195,8 @@ impl StateEditor {
                         ui.checkbox(im_str!("Debug"), &mut self.draw_mode.debug_animation);
                         ui.same_line(0.0);
                         ui.checkbox(im_str!("Axes"), &mut self.draw_mode.show_axes);
+                        ui.same_line(0.0);
+                        ui.checkbox(im_str!("All Bullets"), &mut self.draw_mode.show_all_bullets);
                         ui.text(im_str!("Alpha"));
 
                         ui.separator();
@@ -205,7 +209,7 @@ impl StateEditor {
                             .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
                 imgui::Window::new(im_str!("Particles##State"))
-                    .size([300.0, 280.0], Condition::Once)
+                    .size([300.0, 420.0], Condition::Once)
                     .position([300.0, 283.0], Condition::Once)
                     .collapsed(true, Condition::Once)
                     .build(ui, || {
@@ -213,7 +217,7 @@ impl StateEditor {
                             .draw_particle_editor(ui, &mut self.resource.particles);
                     });
                 imgui::Window::new(im_str!("Bullets##State"))
-                    .size([300.0, 280.0], Condition::Once)
+                    .size([300.0, 400.0], Condition::Once)
                     .position([300.0, 303.0], Condition::Once)
                     .collapsed(true, Condition::Once)
                     .build(ui, || {
@@ -438,6 +442,15 @@ impl StateEditor {
             .filter(|item| item.frame == self.frame)
         {
             let offset = particle_spawn.offset.into_graphical();
+            draw_cross(ctx, offset)?;
+        }
+        for bullet_spawn in self
+            .resource
+            .bullets
+            .iter()
+            .filter(|item| item.frame == self.frame || self.draw_mode.show_all_bullets)
+        {
+            let offset = bullet_spawn.offset.into_graphical();
             draw_cross(ctx, offset)?;
         }
         if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {

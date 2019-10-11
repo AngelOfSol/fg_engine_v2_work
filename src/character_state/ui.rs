@@ -123,7 +123,7 @@ impl CharacterStateUi {
         if !self.particle_list.is_empty() {
             let id = ui.push_id("Particles");
             let default_particle = self.particle_list[0].clone();
-            if let Some(particle) = ui.new_delete_list_box(
+            if let (_, Some(particle)) = ui.new_delete_list_box(
                 im_str!("List"),
                 &mut self.current_particle,
                 data,
@@ -142,11 +142,11 @@ impl CharacterStateUi {
             let id = ui.push_id("Bullets");
             let default_bullet = self.bullet_list.keys().next().cloned().unwrap();
             let default_properties = self.bullet_list[&default_bullet].clone();
-            if let Some(bullet) = ui.new_delete_list_box(
+            if let (_, Some(bullet)) = ui.new_delete_list_box(
                 im_str!("List"),
                 &mut self.current_bullet,
                 data,
-                |item| im_str!("{}", item.bullet_id.clone()),
+                |item| im_str!("{} (frame {})", item.bullet_id.clone(), item.frame),
                 || BulletSpawn::new(default_bullet.clone(), &default_properties),
                 |_| {},
                 5,

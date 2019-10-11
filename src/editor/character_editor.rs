@@ -42,6 +42,13 @@ impl CharacterEditor {
                     );
                 }
                 Mode::Edit(name) => {
+                    for (_, state) in self.resource.states.rest.iter_mut() {
+                        for spawn in state.bullets.iter_mut() {
+                            if spawn.bullet_id == name {
+                                spawn.fix_properties(&bullet.properties);
+                            }
+                        }
+                    }
                     self.resource.bullets.bullets.insert(name, bullet);
                 }
             },
