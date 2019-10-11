@@ -25,8 +25,11 @@ TODO LATWER) rework input buffer again
         >how to handle animation?
     >move all the ui stuff into a single folder, and keep the data structures solo
 
+
+
 5) add 5c to yuyuko
     >spawns 4 that fly outwards
+        > WORK ON THIS NEXT
     >can be jump canceled after bullets come out
     >bullets expire when they leave the screen
 

@@ -26,6 +26,15 @@ pub enum Facing {
 }
 
 impl Facing {
+    pub fn fix_rotation(self, value: f32) -> f32 {
+        match self {
+            Facing::Left => {
+                std::f32::consts::PI / 2.0
+                    - value.signum() * (std::f32::consts::PI / 2.0 - value).abs()
+            }
+            Facing::Right => value,
+        }
+    }
     pub fn invert(self) -> Self {
         match self {
             Facing::Left => Facing::Right,

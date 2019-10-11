@@ -15,7 +15,7 @@ use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics;
-use bullets::BulletId;
+use bullets::{BulletSpawn, BulletState};
 use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
@@ -43,7 +43,7 @@ pub struct Yuyuko {
     command_list: CommandList<MoveId>,
 }
 
-type StateList = HashMap<MoveId, CharacterState<MoveId, Particle, BulletId>>;
+type StateList = HashMap<MoveId, CharacterState<MoveId, Particle, BulletSpawn>>;
 type ParticleList = HashMap<Particle, Animation>;
 
 impl Yuyuko {
@@ -140,6 +140,7 @@ pub struct YuyukoState {
     pub current_state: (usize, MoveId),
     extra_data: ExtraData,
     particles: Vec<(usize, collision::Vec2, Particle)>,
+    bullets: Vec<BulletState>,
     facing: Facing,
 }
 
@@ -151,6 +152,7 @@ impl YuyukoState {
             current_state: (0, MoveId::Stand),
             extra_data: ExtraData::None,
             particles: Vec::new(),
+            bullets: Vec::new(),
             facing: Facing::Right,
         }
     }
@@ -360,6 +362,31 @@ impl YuyukoState {
             .retain(|item| item.0 < data.particles[&item.2].frames.duration());
     }
 
+    fn update_bullets(&mut self, data: &Yuyuko) {
+        // first update all active bullets
+        for bullet in self.bullets.iter_mut() {
+            match bullet {
+                BulletState::Butterfly {
+                    ref mut position,
+                    velocity,
+                    ..
+                } => {
+                    *position += *velocity;
+                }
+            }
+        }
+        // then spawn bullets
+        let (frame, move_id) = self.current_state;
+        for spawn in data.states[&move_id]
+            .bullets
+            .iter()
+            .filter(|item| item.get_spawn_frame() == frame)
+        {
+            self.bullets
+                .push(spawn.instantiate(self.position, self.facing));
+        }
+    }
+
     fn handle_refacing(&mut self, data: &Yuyuko) {
         let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
@@ -379,6 +406,7 @@ impl YuyukoState {
         self.update_velocity(data);
         self.update_position(data, play_area);
         self.update_particles(data);
+        self.update_bullets(data);
         self.handle_refacing(data);
     }
 
@@ -419,6 +447,26 @@ impl YuyukoState {
                         position.into_graphical(),
                     )),
             )?;
+        }
+        for bullet in &self.bullets {
+            match bullet {
+                BulletState::Butterfly {
+                    position, rotation, ..
+                } => {
+                    data.bullets.butterfly.animation.draw_at_time(
+                        ctx,
+                        &data.assets,
+                        0,
+                        world
+                            * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                                position.into_graphical(),
+                            ))
+                            * graphics::Matrix4::new_rotation(
+                                nalgebra::Vector3::new(0.0, 0.0, 1.0) * *rotation,
+                            ),
+                    )?;
+                }
+            }
         }
 
         Ok(())

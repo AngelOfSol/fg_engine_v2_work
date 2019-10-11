@@ -8,6 +8,8 @@ pub enum MoveId {
     WalkForward,
     #[serde(rename = "attack5a")]
     Attack5A,
+    #[serde(rename = "attack5c")]
+    Attack5C,
     #[serde(rename = "air5a")]
     Air5A,
     Crouch,

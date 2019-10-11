@@ -8,8 +8,9 @@ use std::collections::{HashMap, HashSet};
 pub struct BulletSpawn {
     pub bullet_id: String,
     pub frame: usize,
-    pub properties: HashMap<String, Int>,
     pub offset: Vec2,
+    #[serde(flatten)]
+    pub properties: HashMap<String, Int>,
 }
 
 impl Default for BulletSpawn {
