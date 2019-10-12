@@ -71,6 +71,8 @@ impl PropertiesUi {
 
         ui.input_whole(im_str!("Max Air Actions"), &mut data.max_air_actions)
             .unwrap();
+        ui.input_whole(im_str!("Max Spirit Gauge"), &mut data.max_spirit_gauge)
+            .unwrap();
 
         ui.separator();
 

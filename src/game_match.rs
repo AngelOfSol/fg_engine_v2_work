@@ -120,6 +120,10 @@ impl EventHandler for Match {
         self.debug_text.fragments_mut()[0].text =
             format!("bullet count: {}", self.state.bullets.len());
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
+
+        self.state
+            .draw_ui(ctx, &self.resources, Matrix4::identity())?;
+
         graphics::present(ctx)?;
         Ok(())
     }

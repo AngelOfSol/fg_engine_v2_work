@@ -6,6 +6,7 @@ mod particles;
 use crate::assets::Assets;
 use crate::character_state::CharacterState;
 use crate::character_state::Flags;
+use crate::character_state::MoveType;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;
@@ -413,6 +414,23 @@ impl YuyukoState {
         }
     }
 
+    fn update_spirit(&mut self, data: &Yuyuko) {
+        let (ref mut frame, ref mut move_id) = &mut self.current_state;
+
+        if data.states[move_id].state_type == MoveType::Fly {
+            self.spirit_gauge = std::cmp::max(self.spirit_gauge, 10);
+            self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
+            if self.spirit_gauge == 0 {
+                *move_id = MoveId::FlyEnd;
+                *frame = 0;
+            }
+        } else {
+            self.spirit_gauge =
+                std::cmp::min(self.spirit_gauge, data.properties.max_spirit_gauge - 5);
+            self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+        }
+    }
+
     fn handle_refacing(&mut self, data: &Yuyuko) {
         let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
@@ -431,9 +449,60 @@ impl YuyukoState {
         self.update_extra_data(input);
         self.update_velocity(data);
         self.update_position(data, play_area);
+        self.update_spirit(data);
         self.update_particles(data);
         self.update_bullets(data, play_area);
         self.handle_refacing(data);
+    }
+    pub fn draw_ui(
+        &self,
+        ctx: &mut Context,
+        data: &Yuyuko,
+        bottom_line: graphics::Matrix4,
+    ) -> GameResult<()> {
+        let hp_current = ggez::graphics::Rect::new(
+            0.0,
+            0.0,
+            100.0 * self.spirit_gauge as f32 / data.properties.max_spirit_gauge as f32,
+            20.0,
+        );
+        let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
+        let hp_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            hp_max,
+            ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
+        )?;
+
+        ggez::graphics::set_transform(ctx, bottom_line);
+        ggez::graphics::apply_transformations(ctx)?;
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            hp_backdrop,
+            ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
+        )?;
+
+        ggez::graphics::set_transform(ctx, bottom_line);
+        ggez::graphics::apply_transformations(ctx)?;
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            hp_current,
+            ggez::graphics::Color::new(0.0, 0.0, 1.0, 1.0),
+        )?;
+
+        ggez::graphics::set_transform(ctx, bottom_line);
+        ggez::graphics::apply_transformations(ctx)?;
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        Ok(())
     }
 
     pub fn draw(
