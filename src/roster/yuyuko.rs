@@ -77,6 +77,8 @@ struct Properties {
     neutral_super_jump_accel: collision::Vec2,
     directed_jump_accel: collision::Vec2,
     directed_super_jump_accel: collision::Vec2,
+    max_air_actions: usize,
+    max_spirit_gauge: usize,
 }
 
 impl YuyukoData {
@@ -142,10 +144,12 @@ pub struct YuyukoState {
     pub particles: Vec<(usize, collision::Vec2, Particle)>,
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
+    pub air_actions: usize,
+    pub spirit_gauge: usize,
 }
 
 impl YuyukoState {
-    pub fn new() -> Self {
+    pub fn new(data: &Yuyuko) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
@@ -153,6 +157,8 @@ impl YuyukoState {
             extra_data: ExtraData::None,
             particles: Vec::new(),
             bullets: Vec::new(),
+            air_actions: data.properties.max_air_actions,
+            spirit_gauge: data.properties.max_spirit_gauge,
             facing: Facing::Right,
         }
     }
@@ -249,6 +255,8 @@ impl YuyukoState {
                                 .always
                                 .contains(&data.states[new_move_id].state_type)
                             && !cancels.disallow.contains(new_move_id)
+                            // not ideal way to handle disallowing fly, consider separating out from cancel checking
+                            && !(*new_move_id == MoveId::FlyStart && self.air_actions == 0)
                     })
                     .fold(None, |acc, item| acc.or(Some(item)))
                     .map(|new_move| (0, new_move))
@@ -266,6 +274,9 @@ impl YuyukoState {
                     self.facing,
                 ));
             } else if move_id == MoveId::FlyStart {
+                if frame == 0 {
+                    self.air_actions -= 1;
+                }
                 let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
                 if dir.is_backward() {
                     self.facing = self.facing.invert();
@@ -333,6 +344,7 @@ impl YuyukoState {
             self.current_state.0 = 0;
             self.current_state.1 = MoveId::Stand;
             self.position.y = hitboxes.collision.half_size.y;
+            self.air_actions = data.properties.max_air_actions;
         }
 
         // handle stage sides

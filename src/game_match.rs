@@ -31,9 +31,10 @@ pub struct Match {
 impl Match {
     pub fn new(ctx: &mut Context, control_scheme: PadControlScheme) -> GameResult<Self> {
         let background = Stage::new(ctx, "\\bg_14.png")?;
+        let resources = Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?;
         Ok(Self {
-            resources: Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?,
-            state: YuyukoState::new(),
+            state: YuyukoState::new(&resources),
+            resources,
             pads_context: Gilrs::new()?,
             control_scheme,
             input: InputBuffer::new(),

@@ -18,6 +18,11 @@ pub struct Properties {
     #[serde(default = "default_directed_super_jump_accel")]
     pub directed_super_jump_accel: Vec2,
 
+    #[serde(default = "default_max_air_actions")]
+    pub max_air_actions: usize,
+    #[serde(default = "default_max_spirit_gauge")]
+    pub max_spirit_gauge: usize,
+
     #[serde(skip)]
     _secret: (),
 }
@@ -34,6 +39,12 @@ fn default_directed_jump_accel() -> Vec2 {
 fn default_directed_super_jump_accel() -> Vec2 {
     Vec2::new(4_00, 8_80)
 }
+fn default_max_air_actions() -> usize {
+    2
+}
+fn default_max_spirit_gauge() -> usize {
+    500
+}
 
 impl Properties {
     pub fn new() -> Self {
@@ -45,6 +56,8 @@ impl Properties {
 
             directed_jump_accel: default_directed_jump_accel(),
             directed_super_jump_accel: default_directed_super_jump_accel(),
+            max_air_actions: default_max_air_actions(),
+            max_spirit_gauge: default_max_spirit_gauge(),
             _secret: (),
         }
     }
@@ -55,6 +68,11 @@ impl PropertiesUi {
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Properties) {
         let _ = ui.input_whole(im_str!("Health"), &mut data.health);
         ui.input_string(im_str!("Name"), &mut data.name);
+
+        ui.input_whole(im_str!("Max Air Actions"), &mut data.max_air_actions)
+            .unwrap();
+
+        ui.separator();
 
         ui.input_vec2_int(im_str!("Neutral Jump"), &mut data.neutral_jump_accel);
         ui.input_vec2_int(
