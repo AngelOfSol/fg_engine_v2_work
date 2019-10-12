@@ -115,14 +115,10 @@ impl EventHandler for Match {
         graphics::apply_transformations(ctx)?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        /*
-                self.debug_text.fragments_mut()[0].text = format!(
-                    "Frame: {}, State: {}",
-                    self.state.current_state.0,
-                    self.state.current_state.1.to_string()
-                );
-                graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
-        */
+
+        self.debug_text.fragments_mut()[0].text =
+            format!("bullet count: {}", self.state.bullets.len());
+        graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
         graphics::present(ctx)?;
         Ok(())
     }

@@ -135,13 +135,13 @@ impl ExtraData {
 
 #[derive(Debug, Clone)]
 pub struct YuyukoState {
-    velocity: collision::Vec2,
+    pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
     extra_data: ExtraData,
-    particles: Vec<(usize, collision::Vec2, Particle)>,
-    bullets: Vec<BulletState>,
-    facing: Facing,
+    pub particles: Vec<(usize, collision::Vec2, Particle)>,
+    pub bullets: Vec<BulletState>,
+    pub facing: Facing,
 }
 
 impl YuyukoState {
@@ -362,7 +362,7 @@ impl YuyukoState {
             .retain(|item| item.0 < data.particles[&item.2].frames.duration());
     }
 
-    fn update_bullets(&mut self, data: &Yuyuko) {
+    fn update_bullets(&mut self, data: &Yuyuko, play_area: &PlayArea) {
         // first update all active bullets
         for bullet in self.bullets.iter_mut() {
             match bullet {
@@ -375,6 +375,20 @@ impl YuyukoState {
                 }
             }
         }
+        // then remove offscreen bullets
+        self.bullets = self
+            .bullets
+            .drain(..)
+            .filter(|bullet| match bullet {
+                BulletState::Butterfly { position, .. } => {
+                    !(i32::abs(position.x)
+                        > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.x
+                        || i32::abs(position.y)
+                            > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.y)
+                }
+            })
+            .collect();
+
         // then spawn bullets
         let (frame, move_id) = self.current_state;
         for spawn in data.states[&move_id]
@@ -406,7 +420,7 @@ impl YuyukoState {
         self.update_velocity(data);
         self.update_position(data, play_area);
         self.update_particles(data);
-        self.update_bullets(data);
+        self.update_bullets(data, play_area);
         self.handle_refacing(data);
     }
 

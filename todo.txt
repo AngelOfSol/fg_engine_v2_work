@@ -29,16 +29,15 @@ TODO LATWER) rework input buffer again
 
 5) add 5c to yuyuko
     >spawns 4 that fly outwards
-        > WORK ON THIS NEXT
-    >can be jump canceled after bullets come out
-    >bullets expire when they leave the screen
+        > WORK ON THIS NEXT [ DONE ]
+        > make bullets reflect angle properly [done]
+    >can be jump canceled after bullets come out [done]
+    >bullets expire when they leave the screen [done]
 
-each bullet has its own type
-    contians methods:
-        >onStart
-        >onFrame
-        >render
-        >getHitbox
+
+NOTE: create id's for attack data, so it can be edited outside of the state editor (reduce clutter), also helps for resuse, and being clear about the data 
+
+
 
 there is a max zoom, there is no min zoom
 
