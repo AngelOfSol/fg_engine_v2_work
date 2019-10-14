@@ -79,7 +79,7 @@ struct Properties {
     directed_jump_accel: collision::Vec2,
     directed_super_jump_accel: collision::Vec2,
     max_air_actions: usize,
-    max_spirit_gauge: usize,
+    max_spirit_gauge: i32,
 }
 
 impl YuyukoData {
@@ -146,7 +146,7 @@ pub struct YuyukoState {
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
-    pub spirit_gauge: usize, //TODO consider changing to i32
+    pub spirit_gauge: i32, //TODO consider changing to i32
 }
 
 impl YuyukoState {
@@ -416,18 +416,19 @@ impl YuyukoState {
 
     fn update_spirit(&mut self, data: &Yuyuko) {
         let (ref mut frame, ref mut move_id) = &mut self.current_state;
+        let move_data = &data.states[move_id];
 
-        if data.states[move_id].state_type == MoveType::Fly {
-            self.spirit_gauge = std::cmp::max(self.spirit_gauge, 10);
+        if move_data.state_type == MoveType::Fly {
             self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
+            self.spirit_gauge = std::cmp::max(self.spirit_gauge, 0);
             if self.spirit_gauge == 0 {
                 *move_id = MoveId::FlyEnd;
                 *frame = 0;
             }
         } else {
-            self.spirit_gauge =
-                std::cmp::min(self.spirit_gauge, data.properties.max_spirit_gauge - 5);
+            self.spirit_gauge -= move_data.flags.at_time(*frame).spirit_cost;
             self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+            self.spirit_gauge = std::cmp::min(self.spirit_gauge, data.properties.max_spirit_gauge);
         }
     }
 

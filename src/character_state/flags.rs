@@ -24,6 +24,8 @@ pub struct Flags {
     pub airborne: bool,
     pub reset_velocity: bool,
     #[serde(default)]
+    pub spirit_cost: i32,
+    #[serde(default)]
     pub jump_start: bool,
     #[serde(default)]
     pub allow_reface: bool,
@@ -51,6 +53,7 @@ impl Flags {
         Self {
             melee: MeleeHittable::Hit,
             bullet: MagicHittable::Hit,
+            spirit_cost: 0,
             can_block: false,
             airborne: false,
             jump_start: false,
@@ -79,6 +82,10 @@ impl FlagsUi {
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
         ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
         ui.checkbox(im_str!("Allow Reface"), &mut data.allow_reface);
+        ui.separator();
+
+        ui.input_whole(im_str!("Spirit Cost"), &mut data.spirit_cost)
+            .unwrap();
 
         ui.separator();
         {
