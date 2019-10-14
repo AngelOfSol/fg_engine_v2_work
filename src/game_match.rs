@@ -118,11 +118,14 @@ impl EventHandler for Match {
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
         self.debug_text.fragments_mut()[0].text =
-            format!("bullet count: {}", self.state.bullets.len());
+            format!("size: {} bytes", std::mem::size_of::<YuyukoState>());
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
-        self.state
-            .draw_ui(ctx, &self.resources, Matrix4::identity())?;
+        self.state.draw_ui(
+            ctx,
+            &self.resources,
+            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
+        )?;
 
         graphics::present(ctx)?;
         Ok(())

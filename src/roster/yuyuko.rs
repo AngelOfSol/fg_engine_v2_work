@@ -146,7 +146,7 @@ pub struct YuyukoState {
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
-    pub spirit_gauge: usize,
+    pub spirit_gauge: usize, //TODO consider changing to i32
 }
 
 impl YuyukoState {
@@ -460,6 +460,9 @@ impl YuyukoState {
         data: &Yuyuko,
         bottom_line: graphics::Matrix4,
     ) -> GameResult<()> {
+        ggez::graphics::set_transform(ctx, bottom_line);
+        ggez::graphics::apply_transformations(ctx)?;
+
         let hp_current = ggez::graphics::Rect::new(
             0.0,
             0.0,
@@ -473,22 +476,18 @@ impl YuyukoState {
             ctx,
             ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
             hp_max,
-            ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
+            ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
         )?;
 
-        ggez::graphics::set_transform(ctx, bottom_line);
-        ggez::graphics::apply_transformations(ctx)?;
         ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
         let rect = ggez::graphics::Mesh::new_rectangle(
             ctx,
             ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
             hp_backdrop,
-            ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
+            ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
         )?;
 
-        ggez::graphics::set_transform(ctx, bottom_line);
-        ggez::graphics::apply_transformations(ctx)?;
         ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
         let rect = ggez::graphics::Mesh::new_rectangle(
@@ -498,8 +497,6 @@ impl YuyukoState {
             ggez::graphics::Color::new(0.0, 0.0, 1.0, 1.0),
         )?;
 
-        ggez::graphics::set_transform(ctx, bottom_line);
-        ggez::graphics::apply_transformations(ctx)?;
         ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
         Ok(())
