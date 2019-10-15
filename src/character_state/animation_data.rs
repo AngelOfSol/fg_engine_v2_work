@@ -1,10 +1,8 @@
 use crate::assets::Assets;
 use crate::graphics::Animation;
-use crate::imgui_extra::UiExtensions;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 use ggez::{Context, GameResult};
-use imgui::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -64,16 +62,5 @@ impl AnimationData {
         } else {
             Ok(())
         }
-    }
-}
-pub struct AnimationDataUi;
-
-impl AnimationDataUi {
-    pub fn draw_ui(ui: &Ui<'_>, data: &mut AnimationData) {
-        ui.label_text(im_str!("Name"), &im_str!("{}", data.animation.name.clone()));
-        let _ = ui.input_whole(im_str!("Delay"), &mut data.delay);
-
-        ui.input_vec2_float(im_str!("Offset"), &mut data.offset);
-        ui.input_vec2_float(im_str!("Scale"), &mut data.scale);
     }
 }

@@ -1,8 +1,11 @@
 use crate::assets::Assets;
 use crate::character_state::EditorCharacterState;
-use crate::character_state::{
-    AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
-};
+use crate::character_state::{AnimationData, CharacterState, MovementData};
+
+use crate::ui::character_state::cancel_set::CancelSetUi;
+use crate::ui::character_state::flags::FlagsUi;
+use crate::ui::character_state::state::CharacterStateUi;
+
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::imgui_wrapper::ImGuiWrapper;

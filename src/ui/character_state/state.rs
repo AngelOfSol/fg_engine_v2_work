@@ -1,7 +1,13 @@
-use super::{
-    AnimationData, AnimationDataUi, BulletSpawn, BulletSpawnUi, CancelSet, CancelSetUi, Flags,
-    FlagsUi, HitboxSet, HitboxSetUi, MoveType, ParticleSpawn, ParticleSpawnUi,
+use super::animation_data::AnimationDataUi;
+use super::bullet_spawn_data::BulletSpawnUi;
+use super::cancel_set::CancelSetUi;
+use super::flags::FlagsUi;
+use super::hitbox_set::HitboxSetUi;
+use super::particle_spawn_data::ParticleSpawnUi;
+use crate::character_state::{
+    AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn,
 };
+
 use crate::assets::Assets;
 use crate::character_state::EditorCharacterState;
 use crate::graphics::Animation;

@@ -6,24 +6,22 @@ pub mod hitbox_set;
 pub mod particle_spawn_data;
 
 mod file;
-mod ui;
 
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use crate::typedefs::FgSerializable;
 use crate::typedefs::{HashId, StateId};
-pub use animation_data::{AnimationData, AnimationDataUi};
-pub use bullet_spawn_data::{BulletSpawn, BulletSpawnUi};
-pub use cancel_set::{CancelSet, CancelSetUi, MoveType};
-pub use flags::{Flags, FlagsUi, MovementData};
+pub use animation_data::AnimationData;
+pub use bullet_spawn_data::BulletSpawn;
+pub use cancel_set::{CancelSet, MoveType};
+pub use flags::{Flags, MagicHittable, MeleeHittable, MovementData};
 use ggez::{Context, GameResult};
-pub use hitbox_set::{HitboxSet, HitboxSetUi};
-pub use particle_spawn_data::{ParticleSpawn, ParticleSpawnUi};
+pub use hitbox_set::{AttackData, HitboxSet};
+pub use particle_spawn_data::ParticleSpawn;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::path::PathBuf;
-pub use ui::CharacterStateUi;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct CharacterState<Id, ParticleId, BulletSpawnInfo>
