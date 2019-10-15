@@ -1,24 +1,33 @@
-pub mod animation_data;
-pub mod bullet_spawn_data;
-pub mod cancel_set;
-pub mod flags;
-pub mod hitbox_set;
-pub mod particle_spawn_data;
+mod animation_data;
+mod bullet_spawn_data;
+mod cancel_set;
+mod flags;
+mod hitbox_set;
+mod particle_spawn_data;
 
 mod file;
+
+pub mod components {
+    pub use super::animation_data::*;
+    pub use super::bullet_spawn_data::*;
+    pub use super::cancel_set::*;
+    pub use super::flags::*;
+    pub use super::hitbox_set::*;
+    pub use super::particle_spawn_data::*;
+}
 
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use crate::typedefs::FgSerializable;
 use crate::typedefs::{HashId, StateId};
-pub use animation_data::AnimationData;
-pub use bullet_spawn_data::BulletSpawn;
-pub use cancel_set::{CancelSet, MoveType};
-pub use flags::{Flags, MagicHittable, MeleeHittable, MovementData};
+use animation_data::AnimationData;
+use bullet_spawn_data::BulletSpawn;
+use cancel_set::{CancelSet, MoveType};
+use flags::Flags;
 use ggez::{Context, GameResult};
-pub use hitbox_set::{AttackData, HitboxSet};
-pub use particle_spawn_data::ParticleSpawn;
+use hitbox_set::HitboxSet;
+use particle_spawn_data::ParticleSpawn;
 use serde::{Deserialize, Serialize};
 use std::cmp;
 use std::path::PathBuf;

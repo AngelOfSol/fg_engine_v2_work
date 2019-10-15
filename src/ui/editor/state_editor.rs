@@ -1,6 +1,6 @@
 use crate::assets::Assets;
-use crate::character::state::EditorCharacterState;
-use crate::character::state::{AnimationData, State, MovementData};
+use crate::character::state::components::{AnimationData, MovementData};
+use crate::character::state::{EditorCharacterState, State};
 
 use crate::ui::character_state::cancel_set::CancelSetUi;
 use crate::ui::character_state::flags::FlagsUi;
@@ -296,19 +296,14 @@ impl StateEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                editor_result =
-                                    State::save(ctx, assets, &self.resource, path);
+                                editor_result = State::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
-                                match State::load_from_json(
-                                    ctx,
-                                    assets,
-                                    PathBuf::from(path),
-                                ) {
+                                match State::load_from_json(ctx, assets, PathBuf::from(path)) {
                                     Ok(state) => {
                                         self.resource = state;
                                         self.ui_data = CharacterStateUi::new(

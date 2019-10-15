@@ -1,5 +1,5 @@
 use crate::attack::AttackLevel;
-use crate::character::state::{AttackData, HitboxSet};
+use crate::character::state::components::{AttackData, HitboxSet};
 use crate::hitbox::Hitbox;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;

@@ -2,7 +2,7 @@ use crate::imgui_extra::UiExtensions;
 use imgui::{im_str, Ui};
 use std::collections::{HashMap, HashSet};
 
-use crate::character::state::BulletSpawn;
+use crate::character::state::components::BulletSpawn;
 
 pub struct BulletSpawnUi;
 

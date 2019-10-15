@@ -4,7 +4,7 @@ use super::cancel_set::CancelSetUi;
 use super::flags::FlagsUi;
 use super::hitbox_set::HitboxSetUi;
 use super::particle_spawn_data::ParticleSpawnUi;
-use crate::character::state::{
+use crate::character::state::components::{
     AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn,
 };
 

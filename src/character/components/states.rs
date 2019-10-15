@@ -1,5 +1,5 @@
 use crate::assets::Assets;
-use crate::character::state::BulletSpawn;
+use crate::character::state::components::BulletSpawn;
 use crate::character::state::State;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::HashId;
