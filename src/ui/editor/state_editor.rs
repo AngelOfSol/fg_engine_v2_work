@@ -7,7 +7,7 @@ use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
-use crate::ui::character::state::{CancelSetUi, CharacterStateUi, FlagsUi};
+use crate::ui::character::state::{CancelSetUi, FlagsUi, StateUi};
 use crate::ui::editor::{AnimationEditor, EditorState, MessageData, Mode, Transition};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
@@ -21,7 +21,7 @@ pub struct StateEditor {
     frame: usize,
     is_playing: bool,
     transition: Transition,
-    ui_data: CharacterStateUi,
+    ui_data: StateUi,
     draw_mode: DrawMode,
 }
 struct DrawMode {
@@ -46,7 +46,7 @@ impl StateEditor {
             transition: Transition::None,
             frame: 0,
             is_playing: true,
-            ui_data: CharacterStateUi::new(particle_list, state_list, bullet_list),
+            ui_data: StateUi::new(particle_list, state_list, bullet_list),
             draw_mode: DrawMode {
                 collision_alpha: 0.15,
                 hurtbox_alpha: 0.15,
@@ -279,7 +279,7 @@ impl StateEditor {
                     ui.menu(im_str!("State Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             self.resource = State::new();
-                            self.ui_data = CharacterStateUi::new(
+                            self.ui_data = StateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
                                 self.ui_data.bullet_list.clone(),
@@ -301,7 +301,7 @@ impl StateEditor {
                                 match State::load_from_json(ctx, assets, PathBuf::from(path)) {
                                     Ok(state) => {
                                         self.resource = state;
-                                        self.ui_data = CharacterStateUi::new(
+                                        self.ui_data = StateUi::new(
                                             self.ui_data.particle_list.clone(),
                                             self.ui_data.state_list.clone(),
                                             self.ui_data.bullet_list.clone(),
@@ -315,7 +315,7 @@ impl StateEditor {
 
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
                             let ret = std::mem::replace(&mut self.resource, State::new());
-                            self.ui_data = CharacterStateUi::new(
+                            self.ui_data = StateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
                                 self.ui_data.bullet_list.clone(),

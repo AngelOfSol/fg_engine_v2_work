@@ -16,7 +16,7 @@ use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
-pub struct CharacterStateUi {
+pub struct StateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
@@ -31,7 +31,7 @@ pub struct CharacterStateUi {
     particle_ui_data: ParticleSpawnUi,
 }
 
-impl CharacterStateUi {
+impl StateUi {
     pub fn new(
         particle_list: Vec<String>,
         state_list: Vec<String>,
