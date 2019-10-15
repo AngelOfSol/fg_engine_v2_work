@@ -147,16 +147,12 @@ impl StateEditor {
                     .size([300.0, 140.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
-                        //self.handle_transition(result);
                         self.ui_data.draw_header(ui, &mut self.resource);
                     });
                 imgui::Window::new(im_str!("Animations"))
                     .size([300.0, 345.0], Condition::Once)
                     .position([0.0, 160.0], Condition::Once)
                     .build(ui, || {
-                        //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
-                        //
                         let result = self.ui_data.draw_animation_editor(
                             ctx,
                             assets,

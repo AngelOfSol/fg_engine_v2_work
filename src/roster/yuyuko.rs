@@ -260,6 +260,7 @@ impl YuyukoState {
                             && !cancels.disallow.contains(new_move_id)
                             // not ideal way to handle disallowing fly, consider separating out from cancel checking
                             && !(*new_move_id == MoveId::FlyStart && self.air_actions == 0)
+                            && self.spirit_gauge >= data.states[&new_move_id].minimum_spirit_required
                     })
                     .fold(None, |acc, item| acc.or(Some(item)))
                     .map(|new_move| (0, new_move))
