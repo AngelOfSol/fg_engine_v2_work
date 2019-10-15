@@ -64,11 +64,15 @@ impl EventHandler for ButtonCheck {
                                 Button::DPadUp => {
                                     if self.selected_cell > 0 {
                                         self.selected_cell -= 1;
+                                    } else {
+                                        self.selected_cell = 4;
                                     }
                                 }
                                 Button::DPadDown => {
                                     if self.selected_cell < 4 {
                                         self.selected_cell += 1
+                                    } else {
+                                        self.selected_cell = 0;
                                     }
                                 }
                                 _ => (),
@@ -83,17 +87,21 @@ impl EventHandler for ButtonCheck {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-        let (control_scheme, imgui, selected) = (
+        let (control_scheme, imgui, selected, pads_context) = (
             &mut self.control_scheme,
             &mut self.imgui,
             &mut self.selected_cell,
+            &self.pads_context,
         );
         imgui
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Button Check")).build(ui, || match control_scheme {
                     Some(ref mut control_scheme) => {
-                        ui.text(format!("Gamepad: {}", control_scheme.gamepad));
+                        let gamepad = pads_context.gamepad(control_scheme.gamepad);
+
+                        ui.text(format!("Gamepad: {}", gamepad.name()));
+
                         ui.columns(2, im_str!("Columns"), true);
                         for index in 0..4 {
                             let token = if index == *selected {
