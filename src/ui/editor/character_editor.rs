@@ -1,12 +1,12 @@
 use crate::assets::Assets;
-use crate::character::components::BulletsUi;
-use crate::character::components::ParticlesUi;
-use crate::character::components::PropertiesUi;
-use crate::character::components::StatesUi;
 use crate::character::state::State;
 use crate::character::PlayerCharacter;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
+use crate::ui::character::components::BulletsUi;
+use crate::ui::character::components::ParticlesUi;
+use crate::ui::character::components::PropertiesUi;
+use crate::ui::character::components::StatesUi;
 use crate::ui::editor::{
     AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
 };

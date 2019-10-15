@@ -1,9 +1,10 @@
 use crate::assets::Assets;
-use crate::character::components::{BulletInfo, BulletInfoUi};
+use crate::character::components::BulletInfo;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
+use crate::ui::character::components::BulletInfoUi;
 use crate::ui::editor::{AnimationEditor, EditorState, MessageData, Mode, Transition};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};

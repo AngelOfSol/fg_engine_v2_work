@@ -1,6 +1,4 @@
-use crate::imgui_extra::UiExtensions;
 use crate::typedefs::collision::Vec2;
-use imgui::*;
 
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,31 +58,5 @@ impl Properties {
             max_spirit_gauge: default_max_spirit_gauge(),
             _secret: (),
         }
-    }
-}
-
-pub struct PropertiesUi {}
-impl PropertiesUi {
-    pub fn draw_ui(ui: &Ui<'_>, data: &mut Properties) {
-        let _ = ui.input_whole(im_str!("Health"), &mut data.health);
-        ui.input_string(im_str!("Name"), &mut data.name);
-
-        ui.input_whole(im_str!("Max Air Actions"), &mut data.max_air_actions)
-            .unwrap();
-        ui.input_whole(im_str!("Max Spirit Gauge"), &mut data.max_spirit_gauge)
-            .unwrap();
-
-        ui.separator();
-
-        ui.input_vec2_int(im_str!("Neutral Jump"), &mut data.neutral_jump_accel);
-        ui.input_vec2_int(
-            im_str!("Neutral Super Jump"),
-            &mut data.neutral_super_jump_accel,
-        );
-        ui.input_vec2_int(im_str!("Directed Jump"), &mut data.directed_jump_accel);
-        ui.input_vec2_int(
-            im_str!("Directed Super Jump"),
-            &mut data.directed_super_jump_accel,
-        );
     }
 }
