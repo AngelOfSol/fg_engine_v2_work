@@ -1,6 +1,6 @@
 use crate::typedefs::collision::Vec2;
-
 use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Properties {
     pub health: u32,

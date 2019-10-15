@@ -1,7 +1,6 @@
+use crate::character::state::components::{Flags, MagicHittable, MeleeHittable, MovementData};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
-
-use crate::character::state::components::{Flags, MagicHittable, MeleeHittable, MovementData};
 
 pub struct FlagsUi;
 

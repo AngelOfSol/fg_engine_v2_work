@@ -1,8 +1,8 @@
 use super::moves::MoveId;
 use crate::command_list::CommandList;
 use crate::input::{Button, ButtonSet, DirectedAxis, Input};
-
 use crate::{make_command_list, numpad, read_axis};
+
 pub fn generate_command_list() -> CommandList<MoveId> {
     make_command_list! {
         numpad!(press A B) => MoveId::FlyStart,

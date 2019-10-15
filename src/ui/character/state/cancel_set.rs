@@ -1,7 +1,6 @@
+use crate::character::state::components::{CancelSet, MoveType};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
-
-use crate::character::state::components::{CancelSet, MoveType};
 
 pub struct CancelSetUi {
     state_list: Vec<String>,

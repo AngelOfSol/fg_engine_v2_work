@@ -1,7 +1,6 @@
+use crate::character::state::components::ParticleSpawn;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
-
-use crate::character::state::components::ParticleSpawn;
 
 pub struct ParticleSpawnUi {
     particle_list_ids: Vec<String>,

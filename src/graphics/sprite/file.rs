@@ -6,8 +6,7 @@ use ggez::{Context, GameResult};
 use image::png::PNGEncoder;
 use image::{ColorType, ImageBuffer, Rgba};
 use std::fs::File;
-use std::io::BufWriter;
-use std::io::Read;
+use std::io::{BufWriter, Read};
 use std::path::{Path, PathBuf};
 
 fn load_image_data<P: AsRef<Path>>(

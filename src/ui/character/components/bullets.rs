@@ -1,7 +1,6 @@
 mod bullet_info;
 
-use crate::character::components::BulletInfo;
-use crate::character::components::Bullets;
+use crate::character::components::{BulletInfo, Bullets};
 use crate::imgui_extra::UiExtensions;
 use crate::ui::editor::Mode;
 pub use bullet_info::BulletInfoUi;

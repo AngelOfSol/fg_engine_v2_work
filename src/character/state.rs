@@ -19,8 +19,7 @@ pub mod components {
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
-use crate::typedefs::FgSerializable;
-use crate::typedefs::{HashId, StateId};
+use crate::typedefs::{FgSerializable, HashId, StateId};
 use animation_data::AnimationData;
 use bullet_spawn_data::BulletSpawn;
 use cancel_set::{CancelSet, MoveType};
