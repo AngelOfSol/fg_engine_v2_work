@@ -1,8 +1,8 @@
 use crate::assets::Assets;
-use crate::editor::Mode;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
 use crate::imgui_extra::UiExtensions;
+use crate::ui::editor::Mode;
 use ggez::Context;
 use imgui::{im_str, Ui};
 use nfd::Response;

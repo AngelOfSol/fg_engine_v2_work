@@ -1,11 +1,11 @@
 use crate::assets::Assets;
 use crate::character::{BulletsUi, ParticlesUi, PlayerCharacter, PropertiesUi, StatesUi};
 use crate::character_state::CharacterState;
-use crate::editor::{
-    AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
-};
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
+use crate::ui::editor::{
+    AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
+};
 use ggez::{Context, GameResult};
 use imgui::*;
 use std::path::PathBuf;

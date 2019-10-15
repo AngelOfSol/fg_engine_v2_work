@@ -1,7 +1,7 @@
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
-use crate::editor::{CharacterEditor, EditorState, Mode, Transition};
 use crate::imgui_wrapper::ImGuiWrapper;
+use crate::ui::editor::{CharacterEditor, EditorState, Mode, Transition};
 use ggez::{Context, GameResult};
 use imgui::*;
 use std::path::PathBuf;

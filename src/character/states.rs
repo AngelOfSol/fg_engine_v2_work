@@ -1,9 +1,9 @@
 use crate::assets::Assets;
 use crate::character_state::BulletSpawn;
 use crate::character_state::CharacterState;
-use crate::editor::Mode;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::HashId;
+use crate::ui::editor::Mode;
 use ggez::{Context, GameResult};
 use imgui::*;
 use serde::{Deserialize, Serialize};

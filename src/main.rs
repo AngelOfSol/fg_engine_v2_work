@@ -15,12 +15,12 @@ mod attack;
 mod imgui_extra;
 mod assets;
 mod character_state;
-mod editor;
 mod graphics;
 mod hitbox;
 mod imgui_wrapper;
 mod timeline;
 mod typedefs;
+mod ui;
 #[macro_use]
 mod character;
 mod game_match;

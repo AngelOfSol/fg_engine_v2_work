@@ -3,14 +3,14 @@ use crate::character_state::EditorCharacterState;
 use crate::character_state::{
     AnimationData, CancelSetUi, CharacterState, CharacterStateUi, FlagsUi, MovementData,
 };
-use crate::editor::AnimationEditor;
-use crate::editor::{EditorState, MessageData, Mode, Transition};
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
+use crate::ui::editor::AnimationEditor;
+use crate::ui::editor::{EditorState, MessageData, Mode, Transition};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

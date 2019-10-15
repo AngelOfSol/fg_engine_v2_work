@@ -1,7 +1,7 @@
 mod bullet_info;
 
-use crate::editor::Mode;
 use crate::imgui_extra::UiExtensions;
+use crate::ui::editor::Mode;
 pub use bullet_info::{BulletInfo, BulletInfoUi};
 use imgui::{im_str, Ui};
 use serde::{Deserialize, Serialize};

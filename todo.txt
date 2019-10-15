@@ -37,7 +37,7 @@ TODO LATWER) rework input buffer again
 
 NOTE: create id's for attack data, so it can be edited outside of the state editor (reduce clutter), also helps for resuse, and being clear about the data 
 
-
+consider removing jumpstartup flag and just looking at moveids?
 
 there is a max zoom, there is no min zoom
 

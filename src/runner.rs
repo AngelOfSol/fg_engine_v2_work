@@ -1,6 +1,6 @@
 use crate::button_check::ButtonCheck;
-use crate::editor::GameEditor;
 use crate::game_match::Match;
+use crate::ui::editor::GameEditor;
 use ggez::{Context, GameResult};
 
 pub trait AppState {

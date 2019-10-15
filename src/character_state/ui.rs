@@ -4,10 +4,10 @@ use super::{
 };
 use crate::assets::Assets;
 use crate::character_state::EditorCharacterState;
-use crate::editor::Mode;
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::timeline::Timeline;
+use crate::ui::editor::Mode;
 use ggez::Context;
 use imgui::*;
 use nfd::Response;
