@@ -92,8 +92,8 @@ impl Match {
         let resources = Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?;
         let mut p1_state = YuyukoState::new(&resources);
         let mut p2_state = YuyukoState::new(&resources);
-        p1_state.position.x = -1000_00;
-        p2_state.position.x = 1000_00;
+        p1_state.position.x = -100_00;
+        p2_state.position.x = 100_00;
         Ok(Self {
             p1: Player {
                 state: p1_state,
@@ -110,7 +110,7 @@ impl Match {
             pads_context: Gilrs::new()?,
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
-                width: background.width() as i32 * 100,
+                width: background.width() as i32 * 100, //- 50_00,
             },
             background,
             shader: graphics::Shader::new(
@@ -145,23 +145,46 @@ impl EventHandler for Match {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
-        let game_offset = Matrix4::new_translation(&Vec3::new(640.0, 660.0, 0.0));
+        let game_offset =
+            Matrix4::new_translation(&Vec3::new(graphics::drawable_size(ctx).0 / 2.0, 660.0, 0.0));
 
         let p1_x = self.p1.state.position.x.into_graphical();
         let p2_x = self.p2.state.position.x.into_graphical();
 
         let center_point = (p1_x + p2_x) / 2.0;
+        let dist = (p1_x - p2_x).abs();
 
-        let translate = f32::min(
-            self.background.give(ctx),
-            f32::max(center_point, -self.background.give(ctx)),
-        );
+        // min zoom level, determined by our camera size vs how big are image is
+        // this is a number between 0 and 1 because the background will usually be greater
+        // in width than the camera size, so to get it to render all in the camera (at min zoom out)
+        // we need to make it smaller
+        let min_scale = graphics::drawable_size(ctx).0 / self.background.width();
+        // max allowed zoom level
+        let max_scale = 2.0;
 
-        let world = Matrix4::new_translation(&Vec3::new(-(translate), 0.0, 0.0));
+        // this is our scaling factor
+        // it is in the range [min_scale, max_scale] so we don't zoom to far in or out
+        // its relative to the distance between characters, and the size of the camera
+        // we add a constant so the characters try to float in the inside edges
+        // rather than right next to the edge of the screen
+        let factor = graphics::drawable_size(ctx).0 / (dist + 140.0);
+        let scaling = f32::min(f32::max(factor, min_scale), max_scale);
+
+        // this is how much we can move the camera horizontally either way
+        // we have to componensate the give from the camera size via the scaling
+        // ie this is how much area between the edge of the camera if it was centered
+        // and the edge of the background
+        let give_factor =
+            ((self.background.width() - graphics::drawable_size(ctx).0 / scaling) / 2.0).abs();
+        // otherwise we just translate it by the center_point, so the player characters are centered
+        let translate = f32::min(give_factor, f32::max(center_point, -give_factor));
+
+        // we apply the scaling and then the translation
+        let world = game_offset
+            * Matrix4::new_scaling(scaling)
+            * Matrix4::new_translation(&Vec3::new(-translate, 0.0, 0.0));
 
         self.background.draw(ctx, world)?;
-
-        let world = world * game_offset * Matrix4::new_scaling(1.0);
 
         self.p1.draw(ctx, &self.shader, world)?;
         self.p2.draw(ctx, &self.shader, world)?;
@@ -172,9 +195,14 @@ impl EventHandler for Match {
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
         self.debug_text.fragments_mut()[0].text = format!(
-            "current center x: {}
+            "translate: {}\ncenter: {}\ngive_factor: {}\nwidth: {}\ndrawable: {}\nfactor: {}
         ",
             translate,
+            center_point,
+            give_factor,
+            self.background.width(),
+            graphics::drawable_size(ctx).0,
+            scaling
         );
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
