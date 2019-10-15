@@ -1,4 +1,4 @@
-use crate::character_state::AnimationData;
+use crate::character::state::AnimationData;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 

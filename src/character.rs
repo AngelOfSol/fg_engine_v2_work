@@ -1,7 +1,7 @@
 pub mod components;
+pub mod state;
 
 use crate::assets::Assets;
-use crate::character_state::CharacterState;
 use crate::graphics::Animation;
 use components::bullets::{BulletInfo, Bullets};
 use components::particles::Particles;
@@ -10,6 +10,7 @@ use components::states::{EditorStates, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
+use state::CharacterState;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;

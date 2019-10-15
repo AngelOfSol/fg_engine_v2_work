@@ -1,6 +1,6 @@
 use crate::assets::Assets;
-use crate::character_state::BulletSpawn;
-use crate::character_state::CharacterState;
+use crate::character::state::BulletSpawn;
+use crate::character::state::CharacterState;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::HashId;
 use crate::ui::editor::Mode;

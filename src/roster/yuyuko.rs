@@ -4,9 +4,9 @@ mod moves;
 mod particles;
 
 use crate::assets::Assets;
-use crate::character_state::CharacterState;
-use crate::character_state::Flags;
-use crate::character_state::MoveType;
+use crate::character::state::CharacterState;
+use crate::character::state::Flags;
+use crate::character::state::MoveType;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;

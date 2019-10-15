@@ -3,8 +3,8 @@ use crate::character::components::bullets::BulletsUi;
 use crate::character::components::particles::ParticlesUi;
 use crate::character::components::properties::PropertiesUi;
 use crate::character::components::states::StatesUi;
+use crate::character::state::CharacterState;
 use crate::character::PlayerCharacter;
-use crate::character_state::CharacterState;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::editor::{

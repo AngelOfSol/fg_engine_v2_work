@@ -1,6 +1,6 @@
 use crate::assets::Assets;
-use crate::character_state::EditorCharacterState;
-use crate::character_state::{AnimationData, CharacterState, MovementData};
+use crate::character::state::EditorCharacterState;
+use crate::character::state::{AnimationData, CharacterState, MovementData};
 
 use crate::ui::character_state::cancel_set::CancelSetUi;
 use crate::ui::character_state::flags::FlagsUi;

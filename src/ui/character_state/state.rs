@@ -4,12 +4,12 @@ use super::cancel_set::CancelSetUi;
 use super::flags::FlagsUi;
 use super::hitbox_set::HitboxSetUi;
 use super::particle_spawn_data::ParticleSpawnUi;
-use crate::character_state::{
+use crate::character::state::{
     AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn,
 };
 
 use crate::assets::Assets;
-use crate::character_state::EditorCharacterState;
+use crate::character::state::EditorCharacterState;
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::timeline::Timeline;

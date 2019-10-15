@@ -14,7 +14,6 @@ mod attack;
 #[macro_use]
 mod imgui_extra;
 mod assets;
-mod character_state;
 mod graphics;
 mod hitbox;
 mod imgui_wrapper;
