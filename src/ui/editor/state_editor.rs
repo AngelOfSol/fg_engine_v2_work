@@ -1,17 +1,13 @@
 use crate::assets::Assets;
 use crate::character::state::components::{AnimationData, MovementData};
 use crate::character::state::{EditorCharacterState, State};
-
-use crate::ui::character_state::cancel_set::CancelSetUi;
-use crate::ui::character_state::flags::FlagsUi;
-use crate::ui::character_state::state::CharacterStateUi;
-
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
+use crate::ui::character::state::{CancelSetUi, CharacterStateUi, FlagsUi};
 use crate::ui::editor::AnimationEditor;
 use crate::ui::editor::{EditorState, MessageData, Mode, Transition};
 use ggez::graphics;
