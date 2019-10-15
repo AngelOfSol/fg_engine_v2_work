@@ -146,7 +146,8 @@ pub struct YuyukoState {
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
-    pub spirit_gauge: i32, //TODO consider changing to i32
+    pub spirit_gauge: i32,
+    pub spirit_delay: i32,
 }
 
 impl YuyukoState {
@@ -160,6 +161,7 @@ impl YuyukoState {
             bullets: Vec::new(),
             air_actions: data.properties.max_air_actions,
             spirit_gauge: data.properties.max_spirit_gauge,
+            spirit_delay: 0,
             facing: Facing::Right,
         }
     }
@@ -417,19 +419,37 @@ impl YuyukoState {
     fn update_spirit(&mut self, data: &Yuyuko) {
         let (ref mut frame, ref mut move_id) = &mut self.current_state;
         let move_data = &data.states[move_id];
+        let flags = move_data.flags.at_time(*frame);
 
         if move_data.state_type == MoveType::Fly {
             self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
-            self.spirit_gauge = std::cmp::max(self.spirit_gauge, 0);
+            Self::clamp_spirit(&mut self.spirit_gauge, data);
             if self.spirit_gauge == 0 {
                 *move_id = MoveId::FlyEnd;
                 *frame = 0;
             }
         } else {
-            self.spirit_gauge -= move_data.flags.at_time(*frame).spirit_cost;
-            self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
-            self.spirit_gauge = std::cmp::min(self.spirit_gauge, data.properties.max_spirit_gauge);
+            self.spirit_gauge -= flags.spirit_cost;
+
+            if flags.reset_spirit_delay {
+                self.spirit_delay = 0;
+            }
+            self.spirit_delay += flags.spirit_delay;
+            self.spirit_delay -= 1;
+            self.spirit_delay = std::cmp::max(self.spirit_delay, 0);
+
+            if self.spirit_delay == 0 {
+                self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+            }
+
+            Self::clamp_spirit(&mut self.spirit_gauge, data);
         }
+    }
+    fn clamp_spirit(spirit_gauge: &mut i32, data: &Yuyuko) {
+        *spirit_gauge = std::cmp::max(
+            std::cmp::min(*spirit_gauge, data.properties.max_spirit_gauge),
+            0,
+        );
     }
 
     fn handle_refacing(&mut self, data: &Yuyuko) {

@@ -23,8 +23,14 @@ pub struct Flags {
     pub can_block: bool,
     pub airborne: bool,
     pub reset_velocity: bool,
+
     #[serde(default)]
     pub spirit_cost: i32,
+    #[serde(default)]
+    pub spirit_delay: i32,
+    #[serde(default)]
+    pub reset_spirit_delay: bool,
+
     #[serde(default)]
     pub jump_start: bool,
     #[serde(default)]
@@ -54,6 +60,8 @@ impl Flags {
             melee: MeleeHittable::Hit,
             bullet: MagicHittable::Hit,
             spirit_cost: 0,
+            spirit_delay: 0,
+            reset_spirit_delay: false,
             can_block: false,
             airborne: false,
             jump_start: false,
@@ -86,6 +94,9 @@ impl FlagsUi {
 
         ui.input_whole(im_str!("Spirit Cost"), &mut data.spirit_cost)
             .unwrap();
+        ui.input_whole(im_str!("Spirit Delay"), &mut data.spirit_delay)
+            .unwrap();
+        ui.checkbox(im_str!("Reset Spirit Delay"), &mut data.reset_spirit_delay);
 
         ui.separator();
         {

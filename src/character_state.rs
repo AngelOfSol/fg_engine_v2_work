@@ -42,6 +42,8 @@ where
     pub state_type: MoveType,
     #[serde(default)]
     pub on_expire_state: Id,
+    #[serde(default)]
+    pub minimum_spirit_required: i32,
 }
 pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
 fn default_move_type() -> MoveType {
@@ -147,6 +149,7 @@ impl CharacterState<String, String, BulletSpawn> {
             hitboxes: vec![(HitboxSet::new(), 1)],
             state_type: default_move_type(),
             on_expire_state: "stand".to_owned(),
+            minimum_spirit_required: 0,
             particles: Vec::new(),
             bullets: Vec::new(),
         }

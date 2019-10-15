@@ -144,7 +144,7 @@ impl StateEditor {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Properties"))
-                    .size([300.0, 100.0], Condition::Once)
+                    .size([300.0, 140.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
@@ -153,7 +153,7 @@ impl StateEditor {
                     });
                 imgui::Window::new(im_str!("Animations"))
                     .size([300.0, 345.0], Condition::Once)
-                    .position([0.0, 120.0], Condition::Once)
+                    .position([0.0, 160.0], Condition::Once)
                     .build(ui, || {
                         //let result = self.ui_data.draw_ui(ctx, assets, ui, &mut self.resource);
                         //
@@ -167,8 +167,8 @@ impl StateEditor {
                         self.handle_transition(result);
                     });
                 imgui::Window::new(im_str!("Playback"))
-                    .size([300.0, 200.0], Condition::Once)
-                    .position([0.0, 465.0], Condition::Once)
+                    .size([300.0, 215.0], Condition::Once)
+                    .position([0.0, 505.0], Condition::Once)
                     .build(ui, || {
                         if self.resource.duration() > 0 {
                             if ui

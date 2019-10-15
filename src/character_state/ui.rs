@@ -68,6 +68,11 @@ impl CharacterStateUi {
             &self.state_list,
             &|item| im_str!("{}", item).into(),
         );
+        ui.input_whole(
+            im_str!("Minmum Spirit Requried"),
+            &mut data.minimum_spirit_required,
+        )
+        .unwrap();
     }
     pub fn draw_animation_editor(
         &mut self,
