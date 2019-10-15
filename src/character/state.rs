@@ -24,7 +24,7 @@ use std::cmp;
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct CharacterState<Id, ParticleId, BulletSpawnInfo>
+pub struct State<Id, ParticleId, BulletSpawnInfo>
 where
     Id: HashId,
 {
@@ -43,12 +43,12 @@ where
     #[serde(default)]
     pub minimum_spirit_required: i32,
 }
-pub type EditorCharacterState = CharacterState<String, String, BulletSpawn>;
+pub type EditorCharacterState = State<String, String, BulletSpawn>;
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
 impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
-    CharacterState<Id, ParticleId, BulletSpawnInfo>
+    State<Id, ParticleId, BulletSpawnInfo>
 {
     pub fn load_from_json(
         ctx: &mut Context,
@@ -138,7 +138,7 @@ impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
     }
 }
 
-impl CharacterState<String, String, BulletSpawn> {
+impl State<String, String, BulletSpawn> {
     pub fn new() -> Self {
         Self {
             animations: vec![],

@@ -1,6 +1,6 @@
 use crate::assets::Assets;
 use crate::character::state::EditorCharacterState;
-use crate::character::state::{AnimationData, CharacterState, MovementData};
+use crate::character::state::{AnimationData, State, MovementData};
 
 use crate::ui::character_state::cancel_set::CancelSetUi;
 use crate::ui::character_state::flags::FlagsUi;
@@ -283,7 +283,7 @@ impl StateEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = CharacterState::new();
+                            self.resource = State::new();
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
@@ -297,14 +297,14 @@ impl StateEditor {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
                                 editor_result =
-                                    CharacterState::save(ctx, assets, &self.resource, path);
+                                    State::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
-                                match CharacterState::load_from_json(
+                                match State::load_from_json(
                                     ctx,
                                     assets,
                                     PathBuf::from(path),
@@ -324,7 +324,7 @@ impl StateEditor {
                         ui.separator();
 
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
-                            let ret = std::mem::replace(&mut self.resource, CharacterState::new());
+                            let ret = std::mem::replace(&mut self.resource, State::new());
                             self.ui_data = CharacterStateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),

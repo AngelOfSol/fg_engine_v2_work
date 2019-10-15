@@ -1,6 +1,6 @@
 use crate::assets::Assets;
 use crate::character::state::BulletSpawn;
-use crate::character::state::CharacterState;
+use crate::character::state::State;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::HashId;
 use crate::ui::editor::Mode;
@@ -18,7 +18,7 @@ where
     BulletInfo: Default,
 {
     #[serde(flatten)]
-    pub rest: HashMap<String, CharacterState<Id, ParticleId, BulletInfo>>,
+    pub rest: HashMap<String, State<Id, ParticleId, BulletInfo>>,
     #[serde(skip)]
     _secret: (),
 }
@@ -33,12 +33,12 @@ impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default> States<Id, Partic
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &CharacterState<Id, ParticleId, BulletInfo> {
+    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletInfo> {
         match key {
             _ => &self.rest[key],
         }
     }
-    pub fn replace_state(&mut self, key: String, data: CharacterState<Id, ParticleId, BulletInfo>) {
+    pub fn replace_state(&mut self, key: String, data: State<Id, ParticleId, BulletInfo>) {
         match key.as_str() {
             _ => {
                 self.rest.insert(key, data);
@@ -87,13 +87,13 @@ impl StatesUi {
                 let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
                 let name = data.guarentee_unique_key(name);
                 data.rest
-                    .insert(name, CharacterState::load_from_json(ctx, assets, path)?);
+                    .insert(name, State::load_from_json(ctx, assets, path)?);
             }
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             let key = data.guarentee_unique_key("new state");
-            data.rest.insert(key.clone(), CharacterState::new());
+            data.rest.insert(key.clone(), State::new());
             self.state_name_keys.insert(0, key);
         }
         ui.separator();
@@ -115,7 +115,7 @@ impl StatesUi {
             ui.same_line(0.0);
             if ui.small_button(im_str!("Load")) {
                 if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
-                    *value = CharacterState::load_from_json(ctx, assets, PathBuf::from(path))?;
+                    *value = State::load_from_json(ctx, assets, PathBuf::from(path))?;
                 }
             }
             ui.same_line(0.0);

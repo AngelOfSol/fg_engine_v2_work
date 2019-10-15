@@ -3,7 +3,7 @@ use crate::character::components::bullets::BulletsUi;
 use crate::character::components::particles::ParticlesUi;
 use crate::character::components::properties::PropertiesUi;
 use crate::character::components::states::StatesUi;
-use crate::character::state::CharacterState;
+use crate::character::state::State;
 use crate::character::PlayerCharacter;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
@@ -121,7 +121,7 @@ impl CharacterEditor {
                         if let Ok(Some(mode)) = &edit_result {
                             let state = match mode {
                                 Mode::Edit(key) => self.resource.states.get_state(key).clone(),
-                                _ => CharacterState::new(),
+                                _ => State::new(),
                             };
                             self.transition = Transition::Push(
                                 Box::new(

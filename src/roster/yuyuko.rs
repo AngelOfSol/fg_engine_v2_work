@@ -4,9 +4,9 @@ mod moves;
 mod particles;
 
 use crate::assets::Assets;
-use crate::character::state::CharacterState;
 use crate::character::state::Flags;
 use crate::character::state::MoveType;
+use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;
@@ -44,7 +44,7 @@ pub struct Yuyuko {
     command_list: CommandList<MoveId>,
 }
 
-type StateList = HashMap<MoveId, CharacterState<MoveId, Particle, BulletSpawn>>;
+type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn>>;
 type ParticleList = HashMap<Particle, Animation>;
 
 impl Yuyuko {
@@ -95,7 +95,7 @@ impl YuyukoData {
         path.pop();
         path.push(&name);
         for (name, state) in character.states.iter_mut() {
-            CharacterState::load(ctx, assets, state, &name.to_string(), path.clone())?;
+            State::load(ctx, assets, state, &name.to_string(), path.clone())?;
         }
         path.push("particles");
         for (_name, particle) in character.particles.iter_mut() {

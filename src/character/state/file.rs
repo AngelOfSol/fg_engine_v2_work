@@ -1,4 +1,4 @@
-use super::CharacterState;
+use super::State;
 use crate::assets::Assets;
 use crate::graphics::Animation;
 use crate::typedefs::{FgSerializable, StateId};
@@ -12,19 +12,19 @@ pub fn load_from_json<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSeria
     ctx: &mut Context,
     assets: &mut Assets,
     mut path: PathBuf,
-) -> GameResult<CharacterState<Id, ParticleId, BulletSpawnInfo>> {
+) -> GameResult<State<Id, ParticleId, BulletSpawnInfo>> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let mut state = serde_json::from_reader::<_, CharacterState<_, _, _>>(buf_read).unwrap();
+    let mut state = serde_json::from_reader::<_, State<_, _, _>>(buf_read).unwrap();
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     path.pop();
-    CharacterState::load(ctx, assets, &mut state, &name, path)?;
+    State::load(ctx, assets, &mut state, &name, path)?;
     Ok(state)
 }
 pub fn load<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &mut CharacterState<Id, ParticleId, BulletSpawnInfo>,
+    state: &mut State<Id, ParticleId, BulletSpawnInfo>,
     name: &str,
     mut path: PathBuf,
 ) -> GameResult<()> {
@@ -37,7 +37,7 @@ pub fn load<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
 pub fn save<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &CharacterState<Id, ParticleId, BulletSpawnInfo>,
+    state: &State<Id, ParticleId, BulletSpawnInfo>,
     mut path: PathBuf,
 ) -> GameResult<()> {
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();

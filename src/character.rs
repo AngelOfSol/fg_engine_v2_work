@@ -10,7 +10,7 @@ use components::states::{EditorStates, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
-use state::CharacterState;
+use state::State;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -64,7 +64,7 @@ impl PlayerCharacter {
         path.push(&character_file_name);
 
         for (name, state) in player_character.states.rest.iter_mut() {
-            CharacterState::load(ctx, assets, state, name, path.clone())?;
+            State::load(ctx, assets, state, name, path.clone())?;
         }
         path.push("particles");
         for (_, animation) in player_character.particles.particles.iter_mut() {
@@ -98,7 +98,7 @@ impl PlayerCharacter {
 
         for (state_name, state) in player_character.states.rest.iter() {
             path.push(format!("{}.json", state_name));
-            CharacterState::save(ctx, assets, state, path.clone())?;
+            State::save(ctx, assets, state, path.clone())?;
             path.pop();
         }
         path.push("particles");
