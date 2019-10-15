@@ -1,4 +1,9 @@
-pub mod bullets;
-pub mod particles;
-pub mod properties;
-pub mod states;
+mod bullets;
+mod particles;
+mod properties;
+mod states;
+
+pub use bullets::*;
+pub use particles::*;
+pub use properties::*;
+pub use states::*;

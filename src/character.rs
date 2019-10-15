@@ -3,10 +3,10 @@ pub mod state;
 
 use crate::assets::Assets;
 use crate::graphics::Animation;
-use components::bullets::{BulletInfo, Bullets};
-use components::particles::Particles;
-use components::properties::Properties;
-use components::states::{EditorStates, States};
+use components::Particles;
+use components::Properties;
+use components::{BulletInfo, Bullets};
+use components::{EditorStates, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};

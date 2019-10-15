@@ -1,8 +1,8 @@
 use crate::assets::Assets;
-use crate::character::components::bullets::BulletsUi;
-use crate::character::components::particles::ParticlesUi;
-use crate::character::components::properties::PropertiesUi;
-use crate::character::components::states::StatesUi;
+use crate::character::components::BulletsUi;
+use crate::character::components::ParticlesUi;
+use crate::character::components::PropertiesUi;
+use crate::character::components::StatesUi;
 use crate::character::state::State;
 use crate::character::PlayerCharacter;
 use crate::graphics::Animation;

@@ -5,7 +5,7 @@ mod main_menu;
 mod state_editor;
 
 use crate::assets::Assets;
-use crate::character::components::bullets::BulletInfo;
+use crate::character::components::BulletInfo;
 use crate::character::state::EditorCharacterState;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
