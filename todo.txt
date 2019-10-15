@@ -1,38 +1,14 @@
-
-7) make button check
-
-
-/*
-test out A+B macro AND E button to fly
-allow disallowing of the A+B macro
-*/
-
 TODO LATWER) rework input buffer again
     > each type reads as if the button presses were in the past 3 frames
     > run it for the last 8 frames and only give out the most recent for each category
     > kara canceling
 
-2) refactor UI
-    >encapsulate different tools better
-    >try the inspector-rs crate
-        >its too new needs things for vectors and other container types
-    >remove UI state, and just list things out
-        >no idea how to handle animation, because its inherently stateful
-    >idea:
-        >have things for each window
-        >sub elements have an edit button which pops up the windowed-editor
-        >a list of path to each element is what is used to show each window (which can also ID the element)
-        >how to handle animation?
-    >move all the ui stuff into a single folder, and keep the data structures solo
 
-
-
-5) add 5c to yuyuko
-    >spawns 4 that fly outwards
-        > WORK ON THIS NEXT [ DONE ]
-        > make bullets reflect angle properly [done]
-    >can be jump canceled after bullets come out [done]
-    >bullets expire when they leave the screen [done]
+TODO: 
+    >add second character to screen
+    >add second player controls
+    >fix reface point
+    >fix screen center
 
 
 NOTE: create id's for attack data, so it can be edited outside of the state editor (reduce clutter), also helps for resuse, and being clear about the data 

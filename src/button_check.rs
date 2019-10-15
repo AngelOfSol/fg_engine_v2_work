@@ -140,8 +140,13 @@ impl ButtonCheck {
 impl AppState for ButtonCheck {
     fn next_appstate(&mut self, ctx: &mut Context) -> Option<RunnerState> {
         // TODO make sure that people confirmed to exit
-        let control_scheme = std::mem::replace(&mut self.p1_control_scheme.scheme, None);
-        control_scheme.map(|item| RunnerState::Match(Match::new(ctx, item).unwrap()))
+        let p1 = std::mem::replace(&mut self.p1_control_scheme.scheme, None);
+        let p2 = std::mem::replace(&mut self.p2_control_scheme.scheme, None);
+        if let (Some(p1), Some(p2)) = (p1, p2) {
+            Some(RunnerState::Match(Match::new(ctx, p1, p2).unwrap()))
+        } else {
+            None
+        }
     }
 }
 const GREEN: [f32; 4] = [0.2, 1.0, 0.2, 1.0];

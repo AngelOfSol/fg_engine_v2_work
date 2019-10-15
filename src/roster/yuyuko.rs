@@ -33,6 +33,7 @@ pub struct BulletData {
 pub struct BulletList {
     pub butterfly: BulletData,
 }
+#[derive(Clone, Debug)]
 pub struct Yuyuko {
     assets: Assets,
     states: StateList,

@@ -14,6 +14,7 @@ macro_rules! make_command_list {
     }};
 }
 
+#[derive(Clone, Debug)]
 pub struct CommandList<S> {
     commands: HashMap<Input, Vec<S>>,
 }
