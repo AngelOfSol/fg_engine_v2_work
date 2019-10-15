@@ -368,12 +368,12 @@ impl YuyukoState {
         for (ref mut frame, _, _) in self.particles.iter_mut() {
             *frame += 1;
         }
+        self.particles
+            .retain(|item| item.0 < data.particles[&item.2].frames.duration());
         for particle in state_particles.iter().filter(|item| item.frame == frame) {
             self.particles
                 .push((0, particle.offset + self.position, particle.particle_id));
         }
-        self.particles
-            .retain(|item| item.0 < data.particles[&item.2].frames.duration());
     }
 
     fn update_bullets(&mut self, data: &Yuyuko, play_area: &PlayArea) {
@@ -389,19 +389,15 @@ impl YuyukoState {
                 }
             }
         }
-        // then remove offscreen bullets
-        self.bullets = self
-            .bullets
-            .drain(..)
-            .filter(|bullet| match bullet {
-                BulletState::Butterfly { position, .. } => {
-                    !(i32::abs(position.x)
-                        > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.x
-                        || i32::abs(position.y)
-                            > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.y)
-                }
-            })
-            .collect();
+
+        self.bullets.retain(|bullet| match bullet {
+            BulletState::Butterfly { position, .. } => {
+                !(i32::abs(position.x)
+                    > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.x
+                    || i32::abs(position.y)
+                        > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.y)
+            }
+        });
 
         // then spawn bullets
         let (frame, move_id) = self.current_state;
