@@ -1,18 +1,15 @@
-mod bullets;
-mod particles;
-mod properties;
-mod states;
+pub mod components;
 
 use crate::assets::Assets;
 use crate::character_state::CharacterState;
 use crate::graphics::Animation;
-pub use bullets::{BulletInfo, BulletInfoUi, Bullets, BulletsUi};
+use components::bullets::{BulletInfo, Bullets};
+use components::particles::Particles;
+use components::properties::Properties;
+use components::states::{EditorStates, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
-pub use particles::{Particles, ParticlesUi};
-pub use properties::{Properties, PropertiesUi};
 use serde::{Deserialize, Serialize};
-pub use states::{EditorStates, States, StatesUi};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;

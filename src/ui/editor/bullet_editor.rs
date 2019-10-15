@@ -1,5 +1,5 @@
 use crate::assets::Assets;
-use crate::character::{BulletInfo, BulletInfoUi};
+use crate::character::components::bullets::{BulletInfo, BulletInfoUi};
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
