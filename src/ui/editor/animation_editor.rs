@@ -1,9 +1,10 @@
 use crate::assets::Assets;
-use crate::graphics::{Animation, AnimationUi};
+use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::{EditorState, MessageData, Transition};
+use crate::ui::graphics::animation::AnimationUi;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

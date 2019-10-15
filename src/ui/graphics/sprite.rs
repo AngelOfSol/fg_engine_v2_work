@@ -1,5 +1,5 @@
-use super::Sprite;
 use crate::assets::Assets;
+use crate::graphics::Sprite;
 use crate::imgui_extra::UiExtensions;
 use ggez::{Context, GameResult};
 use imgui::*;

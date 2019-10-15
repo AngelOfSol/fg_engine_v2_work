@@ -1,5 +1,4 @@
 mod file;
-mod ui;
 
 use super::sprite::Sprite;
 use super::BlendMode;
@@ -10,7 +9,6 @@ use ggez::graphics;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-pub use ui::AnimationUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Animation {

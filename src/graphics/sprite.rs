@@ -1,5 +1,4 @@
 mod file;
-mod ui;
 
 use crate::assets::Assets;
 use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
@@ -8,7 +7,6 @@ use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-pub use ui::SpriteUi;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sprite {
