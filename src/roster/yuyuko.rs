@@ -448,14 +448,16 @@ impl YuyukoState {
         );
     }
 
-    fn handle_refacing(&mut self, data: &Yuyuko) {
+    pub fn handle_refacing(&mut self, data: &Yuyuko, other_player: collision::Int) {
         let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
         if flags.allow_reface {
-            self.facing = if self.position.x > 100 {
+            self.facing = if self.position.x > other_player && self.facing == Facing::Right {
                 Facing::Left
-            } else {
+            } else if self.position.x < other_player && self.facing == Facing::Left {
                 Facing::Right
+            } else {
+                self.facing
             }
         }
     }
@@ -469,7 +471,6 @@ impl YuyukoState {
         self.update_spirit(data);
         self.update_particles(data);
         self.update_bullets(data, play_area);
-        self.handle_refacing(data);
     }
     pub fn draw_ui(
         &self,
@@ -479,6 +480,7 @@ impl YuyukoState {
     ) -> GameResult<()> {
         ggez::graphics::set_transform(ctx, bottom_line);
         ggez::graphics::apply_transformations(ctx)?;
+        ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
 
         let hp_current = ggez::graphics::Rect::new(
             0.0,
@@ -546,6 +548,14 @@ impl YuyukoState {
                 )),
         )?;
 
+        Ok(())
+    }
+    pub fn draw_particles(
+        &self,
+        ctx: &mut Context,
+        data: &Yuyuko,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
         for (frame, position, id) in &self.particles {
             data.particles[&id].draw_at_time(
                 ctx,
@@ -557,6 +567,16 @@ impl YuyukoState {
                     )),
             )?;
         }
+
+        Ok(())
+    }
+
+    pub fn draw_bullets(
+        &self,
+        ctx: &mut Context,
+        data: &Yuyuko,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
         for bullet in &self.bullets {
             match bullet {
                 BulletState::Butterfly {

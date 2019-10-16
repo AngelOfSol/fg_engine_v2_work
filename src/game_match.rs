@@ -1,3 +1,5 @@
+mod player;
+
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::{Yuyuko, YuyukoState};
@@ -9,7 +11,8 @@ use ggez::event::EventHandler;
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
-use gilrs::{Event, EventType, Gilrs};
+use gilrs::Gilrs;
+use player::Player;
 use std::path::PathBuf;
 
 pub struct PlayArea {
@@ -24,66 +27,6 @@ pub struct Match {
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
-}
-
-pub struct Player {
-    resources: Yuyuko,
-    state: YuyukoState,
-    control_scheme: PadControlScheme,
-    input: InputBuffer,
-}
-
-impl Player {
-    fn update(&mut self, play_area: &PlayArea) {
-        self.state
-            .update_frame_mut(&self.resources, &self.input, play_area);
-    }
-    fn update_input<'a>(&mut self, events: impl Iterator<Item = &'a Event>) {
-        let mut current_frame = self.control_scheme.update_frame(*self.input.top());
-        for event in events {
-            let Event { id, event, .. } = event;
-            if *id == self.control_scheme.gamepad {
-                match event {
-                    EventType::ButtonPressed(button, _) => {
-                        current_frame = self.control_scheme.handle_press(*button, current_frame);
-                    }
-                    EventType::ButtonReleased(button, _) => {
-                        current_frame = self.control_scheme.handle_release(*button, current_frame);
-                    }
-                    _ => (),
-                }
-            }
-        }
-        self.input.push(current_frame);
-    }
-    fn draw(
-        &mut self,
-        ctx: &mut Context,
-        shadow_shader: &graphics::Shader<Shadow>,
-        world: Matrix4,
-    ) -> GameResult<()> {
-        {
-            let _lock = graphics::use_shader(ctx, &shadow_shader);
-            let skew = Matrix4::new(
-                1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            );
-            let world = world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
-
-            self.state.draw_shadow(ctx, &self.resources, world)?;
-        }
-
-        self.state.draw(ctx, &self.resources, world)?;
-
-        graphics::set_transform(ctx, Matrix4::identity());
-        graphics::apply_transformations(ctx)?;
-
-        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        self.state.draw_ui(
-            ctx,
-            &self.resources,
-            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
-        )
-    }
 }
 
 impl Match {
@@ -138,6 +81,9 @@ impl EventHandler for Match {
 
             self.p1.update(&self.play_area);
             self.p2.update(&self.play_area);
+
+            self.p1.handle_refacing(self.p2.position().x);
+            self.p2.handle_refacing(self.p1.position().x);
         }
         Ok(())
     }
@@ -148,8 +94,8 @@ impl EventHandler for Match {
         let game_offset =
             Matrix4::new_translation(&Vec3::new(graphics::drawable_size(ctx).0 / 2.0, 660.0, 0.0));
 
-        let p1_x = self.p1.state.position.x.into_graphical();
-        let p2_x = self.p2.state.position.x.into_graphical();
+        let p1_x = self.p1.position().x.into_graphical();
+        let p2_x = self.p2.position().x.into_graphical();
 
         let center_point = (p1_x + p2_x) / 2.0;
         let dist = (p1_x - p2_x).abs();
@@ -189,31 +135,24 @@ impl EventHandler for Match {
         self.p1.draw(ctx, &self.shader, world)?;
         self.p2.draw(ctx, &self.shader, world)?;
 
+        self.p1.draw_particles(ctx, world)?;
+        self.p2.draw_particles(ctx, world)?;
+
+        self.p1.draw_bullets(ctx, world)?;
+        self.p2.draw_bullets(ctx, world)?;
+
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!(
-            "translate: {}\ncenter: {}\ngive_factor: {}\nwidth: {}\ndrawable: {}\nfactor: {}
-        ",
-            translate,
-            center_point,
-            give_factor,
-            self.background.width(),
-            graphics::drawable_size(ctx).0,
-            scaling
-        );
+        self.debug_text.fragments_mut()[0].text = format!("{}", "");
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
-        self.p1.state.draw_ui(
+        self.p1
+            .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))?;
+        self.p2.draw_ui(
             ctx,
-            &self.p1.resources,
-            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
-        )?;
-        self.p2.state.draw_ui(
-            ctx,
-            &self.p2.resources,
             Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
         )?;
         graphics::present(ctx)?;
