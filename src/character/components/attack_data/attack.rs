@@ -5,3 +5,11 @@ use serde::{Deserialize, Serialize};
 pub struct AttackInfo {
     pub level: AttackLevel,
 }
+
+impl Default for AttackInfo {
+    fn default() -> Self {
+        Self {
+            level: AttackLevel::A,
+        }
+    }
+}

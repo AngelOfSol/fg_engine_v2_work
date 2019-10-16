@@ -3,7 +3,7 @@ pub mod state;
 
 use crate::assets::Assets;
 use crate::graphics::Animation;
-use components::{BulletInfo, Bullets, EditorStates, Particles, Properties, States};
+use components::{Attacks, BulletInfo, Bullets, EditorStates, Particles, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,8 @@ pub struct PlayerCharacter {
     pub particles: Particles,
     #[serde(default)]
     pub bullets: Bullets,
+    #[serde(default)]
+    pub attacks: Attacks,
 }
 
 impl PlayerCharacter {
@@ -29,6 +31,7 @@ impl PlayerCharacter {
             properties: Properties::new(),
             particles: Particles::new(),
             bullets: Bullets::new(),
+            attacks: Attacks::new(),
         }
     }
 
