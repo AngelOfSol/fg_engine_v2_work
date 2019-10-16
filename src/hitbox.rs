@@ -7,26 +7,74 @@ use ggez::{Context, GameResult};
 use imgui::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct Hitbox {
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct GenericHitbox<T> {
     pub center: Vec2,
     pub half_size: Vec2,
+    #[serde(skip)]
+    _secret: std::marker::PhantomData<T>,
 }
+
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct Relative;
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct Absolute;
+
+pub type Hitbox = GenericHitbox<Relative>;
+pub type PositionedHitbox = GenericHitbox<Absolute>;
 
 impl Hitbox {
     pub fn new() -> Self {
         Self {
             center: Vec2::zeros(),
             half_size: Vec2::new(1_00, 1_00),
+            _secret: std::marker::PhantomData,
         }
     }
     pub fn with_half_size(half_size: Vec2) -> Self {
         Self {
             center: Vec2::zeros(),
             half_size,
+            _secret: std::marker::PhantomData,
         }
     }
 
+    pub fn with_position(self, position: Vec2) -> PositionedHitbox {
+        PositionedHitbox {
+            center: self.center + position,
+            half_size: self.half_size,
+            _secret: std::marker::PhantomData,
+        }
+    }
+}
+
+impl PositionedHitbox {
+    pub fn overlaps(self, target: Self) -> bool {
+        let distance = (self.center - target.center).abs();
+        let allowed_distance = self.half_size + target.half_size;
+        distance.x < allowed_distance.x && distance.y < allowed_distance.y
+    }
+    pub fn fix_distances(self, target: Self) -> (Int, Int) {
+        let distance = (self.center - target.center).abs();
+        let allowed_distance = self.half_size + target.half_size;
+
+        let overlap = allowed_distance - distance;
+        let overlap_distance = overlap.x / 2;
+
+        let direction_mod = if self.center.x < target.center.x {
+            -1
+        } else {
+            1
+        };
+
+        (
+            direction_mod * overlap_distance,
+            -direction_mod * (overlap.x - overlap_distance),
+        )
+    }
+}
+
+impl<T> GenericHitbox<T> {
     pub fn size(&self) -> Vec2 {
         self.half_size * 2
     }

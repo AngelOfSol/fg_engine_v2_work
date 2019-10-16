@@ -9,7 +9,7 @@ use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;
-use crate::hitbox::Hitbox;
+use crate::hitbox::{Hitbox, PositionedHitbox};
 use crate::input::{read_inputs, Button, DirectedAxis, Facing, InputBuffer};
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
@@ -150,6 +150,15 @@ pub struct YuyukoState {
 }
 
 impl YuyukoState {
+    pub fn collision(&self, data: &Yuyuko) -> PositionedHitbox {
+        let (frame, move_id) = &self.current_state;
+        data.states[move_id]
+            .hitboxes
+            .at_time(*frame)
+            .collision
+            .with_position(self.position)
+    }
+
     pub fn new(data: &Yuyuko) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),

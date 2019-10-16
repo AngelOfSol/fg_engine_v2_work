@@ -84,6 +84,12 @@ impl EventHandler for Match {
 
             self.p1.handle_refacing(self.p2.position().x);
             self.p2.handle_refacing(self.p1.position().x);
+
+            if self.p1.collision().overlaps(self.p2.collision()) {
+                let (p1_mod, p2_mod) = self.p1.collision().fix_distances(self.p2.collision());
+                self.p1.position_mut().x += p1_mod;
+                self.p2.position_mut().x += p2_mod;
+            }
         }
         Ok(())
     }

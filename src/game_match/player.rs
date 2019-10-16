@@ -1,4 +1,5 @@
 use super::{PlayArea, Shadow};
+use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::{Yuyuko, YuyukoState};
@@ -16,6 +17,10 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn collision(&self) -> PositionedHitbox {
+        self.state.collision(&self.resources)
+    }
+
     pub fn handle_refacing(&mut self, other_player: collision::Int) {
         self.state.handle_refacing(&self.resources, other_player);
     }
@@ -84,5 +89,8 @@ impl Player {
 
     pub fn position(&self) -> collision::Vec2 {
         self.state.position
+    }
+    pub fn position_mut(&mut self) -> &mut collision::Vec2 {
+        &mut self.state.position
     }
 }
