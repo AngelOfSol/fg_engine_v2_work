@@ -150,6 +150,7 @@ impl CharacterEditor {
                                                 (key.clone(), value.properties.clone())
                                             })
                                             .collect(),
+                                        self.resource.attacks.attacks.keys().cloned().collect(),
                                     )
                                     .into(),
                                 ),

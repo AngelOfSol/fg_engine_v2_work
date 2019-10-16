@@ -23,6 +23,7 @@ pub struct StateEditor {
     transition: Transition,
     ui_data: StateUi,
     draw_mode: DrawMode,
+    attack_ids: Vec<String>,
 }
 struct DrawMode {
     collision_alpha: f32,
@@ -38,15 +39,18 @@ impl StateEditor {
         mut particle_list: Vec<String>,
         mut state_list: Vec<String>,
         bullet_list: HashMap<String, HashSet<String>>,
+        mut attack_ids: Vec<String>,
     ) -> Self {
         particle_list.sort();
         state_list.sort();
+        attack_ids.sort();
         Self {
             resource: state,
             transition: Transition::None,
             frame: 0,
             is_playing: true,
             ui_data: StateUi::new(particle_list, state_list, bullet_list),
+            attack_ids,
             draw_mode: DrawMode {
                 collision_alpha: 0.15,
                 hurtbox_alpha: 0.15,
@@ -235,8 +239,11 @@ impl StateEditor {
                     .size([300.0, 700.0], Condition::Once)
                     .position([1200.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data
-                            .draw_hitbox_editor(ui, &mut self.resource.hitboxes);
+                        self.ui_data.draw_hitbox_editor(
+                            ui,
+                            &mut self.resource.hitboxes,
+                            &self.attack_ids,
+                        );
                     });
                 imgui::Window::new(im_str!("Animation"))
                     .size([300.0, 263.0], Condition::Always)

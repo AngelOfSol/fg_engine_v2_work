@@ -8,23 +8,33 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-pub fn load_from_json<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
+pub fn load_from_json<
+    Id: StateId,
+    ParticleId: StateId,
+    BulletSpawnInfo: FgSerializable,
+    AttackId: StateId,
+>(
     ctx: &mut Context,
     assets: &mut Assets,
     mut path: PathBuf,
-) -> GameResult<State<Id, ParticleId, BulletSpawnInfo>> {
+) -> GameResult<State<Id, ParticleId, BulletSpawnInfo, AttackId>> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let mut state = serde_json::from_reader::<_, State<_, _, _>>(buf_read).unwrap();
+    let mut state = serde_json::from_reader::<_, State<_, _, _, _>>(buf_read).unwrap();
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     path.pop();
     State::load(ctx, assets, &mut state, &name, path)?;
     Ok(state)
 }
-pub fn load<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
+pub fn load<
+    Id: StateId,
+    ParticleId: StateId,
+    BulletSpawnInfo: FgSerializable,
+    AttackId: StateId,
+>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &mut State<Id, ParticleId, BulletSpawnInfo>,
+    state: &mut State<Id, ParticleId, BulletSpawnInfo, AttackId>,
     name: &str,
     mut path: PathBuf,
 ) -> GameResult<()> {
@@ -34,10 +44,15 @@ pub fn load<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
     }
     Ok(())
 }
-pub fn save<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>(
+pub fn save<
+    Id: StateId,
+    ParticleId: StateId,
+    BulletSpawnInfo: FgSerializable,
+    AttackId: StateId,
+>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &State<Id, ParticleId, BulletSpawnInfo>,
+    state: &State<Id, ParticleId, BulletSpawnInfo, AttackId>,
     mut path: PathBuf,
 ) -> GameResult<()> {
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();

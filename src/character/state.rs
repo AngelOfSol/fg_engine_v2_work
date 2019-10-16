@@ -32,14 +32,14 @@ use std::cmp;
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct State<Id, ParticleId, BulletSpawnInfo>
+pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId>
 where
     Id: HashId,
 {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
     pub cancels: Timeline<CancelSet<Id>>,
-    pub hitboxes: Timeline<HitboxSet>,
+    pub hitboxes: Timeline<HitboxSet<AttackId>>,
     #[serde(default)]
     pub particles: Vec<ParticleSpawn<ParticleId>>,
     #[serde(default)]
@@ -51,12 +51,12 @@ where
     #[serde(default)]
     pub minimum_spirit_required: i32,
 }
-pub type EditorCharacterState = State<String, String, BulletSpawn>;
+pub type EditorCharacterState = State<String, String, BulletSpawn, String>;
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
-impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
-    State<Id, ParticleId, BulletSpawnInfo>
+impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable, AttackId: StateId>
+    State<Id, ParticleId, BulletSpawnInfo, AttackId>
 {
     pub fn load_from_json(
         ctx: &mut Context,
@@ -146,7 +146,7 @@ impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable>
     }
 }
 
-impl State<String, String, BulletSpawn> {
+impl EditorCharacterState {
     pub fn new() -> Self {
         Self {
             animations: vec![],

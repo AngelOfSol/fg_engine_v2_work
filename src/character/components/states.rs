@@ -5,21 +5,23 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct States<Id, ParticleId, BulletInfo>
+pub struct States<Id, ParticleId, BulletInfo, AttackId>
 where
     Id: HashId,
     ParticleId: HashId,
     BulletInfo: Default,
 {
     #[serde(flatten)]
-    pub rest: HashMap<String, State<Id, ParticleId, BulletInfo>>,
+    pub rest: HashMap<String, State<Id, ParticleId, BulletInfo, AttackId>>,
     #[serde(skip)]
     _secret: (),
 }
 
-pub type EditorStates = States<String, String, BulletSpawn>;
+pub type EditorStates = States<String, String, BulletSpawn, String>;
 
-impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default> States<Id, ParticleId, BulletInfo> {
+impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default, AttackId: HashId>
+    States<Id, ParticleId, BulletInfo, AttackId>
+{
     pub fn new() -> Self {
         Self {
             rest: HashMap::new(),
@@ -27,12 +29,16 @@ impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default> States<Id, Partic
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletInfo> {
+    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletInfo, AttackId> {
         match key {
             _ => &self.rest[key],
         }
     }
-    pub fn replace_state(&mut self, key: String, data: State<Id, ParticleId, BulletInfo>) {
+    pub fn replace_state(
+        &mut self,
+        key: String,
+        data: State<Id, ParticleId, BulletInfo, AttackId>,
+    ) {
         match key.as_str() {
             _ => {
                 self.rest.insert(key, data);

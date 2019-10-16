@@ -231,7 +231,12 @@ impl StateUi {
         id.pop(ui);
     }
 
-    pub fn draw_hitbox_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<HitboxSet>) {
+    pub fn draw_hitbox_editor(
+        &mut self,
+        ui: &Ui<'_>,
+        data: &mut Timeline<HitboxSet<String>>,
+        attack_ids: &[String],
+    ) {
         let id = ui.push_id("Hitboxes");
         let mut counter = 0;
         let format_entry = |(_, duration): &(_, usize)| {
@@ -261,7 +266,7 @@ impl StateUi {
             *duration = cmp::max(*duration, 1);
 
             ui.separator();
-            ui_data.draw_ui(ui, hitboxes);
+            ui_data.draw_ui(ui, hitboxes, attack_ids);
         }
 
         id.pop(ui);

@@ -43,7 +43,7 @@ pub struct Yuyuko {
     command_list: CommandList<MoveId>,
 }
 
-type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn>>;
+type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, ()>>;
 type ParticleList = HashMap<Particle, Animation>;
 
 impl Yuyuko {

@@ -3,10 +3,22 @@ use crate::hitbox::Hitbox;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-pub fn draw_attack_ui(ui: &Ui<'_>, data: &mut AttackData, current_attack: &mut Option<usize>) {
+pub fn draw_attack_ui(
+    ui: &Ui<'_>,
+    data: &mut AttackData<String>,
+    current_attack: &mut Option<usize>,
+    attack_ids: &[String],
+) {
     let id = ui.push_id("Hitboxes");
 
     let _ = ui.input_whole(im_str!("ID"), &mut data.id);
+
+    ui.combo_items(
+        im_str!("Attack Data##Combo"),
+        &mut data.data_id,
+        attack_ids,
+        &|item| im_str!("{}", item).into(),
+    );
 
     let mut counter = 0;
     ui.rearrangable_list_box(
@@ -54,7 +66,7 @@ impl HitboxSetUi {
         }
     }
 
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut HitboxSet) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut HitboxSet<String>, attack_ids: &[String]) {
         let id = ui.push_id("Hitbox Set");
         ui.text(im_str!("Collision"));
         {
@@ -113,11 +125,16 @@ impl HitboxSetUi {
                             self.current_attack = None;
                             None
                         } else {
-                            draw_attack_ui(ui, &mut hitboxes, &mut self.current_attack);
+                            draw_attack_ui(
+                                ui,
+                                &mut hitboxes,
+                                &mut self.current_attack,
+                                &attack_ids,
+                            );
                             Some(hitboxes)
                         }
-                    } else if ui.small_button(im_str!("Create Attack")) {
-                        Some(AttackData::new())
+                    } else if !attack_ids.is_empty() && ui.small_button(im_str!("Create Attack")) {
+                        Some(AttackData::new(attack_ids[0].clone()))
                     } else {
                         None
                     };
