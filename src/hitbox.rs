@@ -1,4 +1,5 @@
 use crate::imgui_extra::UiExtensions;
+use crate::input::Facing;
 use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
 use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2};
 use ggez::graphics;
@@ -39,9 +40,16 @@ impl Hitbox {
         }
     }
 
-    pub fn with_position(self, position: Vec2) -> PositionedHitbox {
+    pub fn with_position(&self, position: &Vec2) -> PositionedHitbox {
         PositionedHitbox {
             center: self.center + position,
+            half_size: self.half_size,
+            _secret: std::marker::PhantomData,
+        }
+    }
+    pub fn with_position_and_facing(&self, position: &Vec2, facing: Facing) -> PositionedHitbox {
+        PositionedHitbox {
+            center: facing.fix_collision(self.center) + position,
             half_size: self.half_size,
             _secret: std::marker::PhantomData,
         }

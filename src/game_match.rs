@@ -90,6 +90,34 @@ impl EventHandler for Match {
                 self.p1.position_mut().x += p1_mod;
                 self.p2.position_mut().x += p2_mod;
             }
+
+            let mut p1_hit = false;
+            'check_p1: for hitbox in self.p2.hitboxes() {
+                for hurtbox in self.p1.hurtboxes() {
+                    if hitbox.overlaps(hurtbox) {
+                        p1_hit = true;
+                        break 'check_p1;
+                    }
+                }
+            }
+            let p1_hit = p1_hit;
+            let mut p2_hit = false;
+            'check_p2: for hitbox in self.p1.hitboxes() {
+                for hurtbox in self.p2.hurtboxes() {
+                    if hitbox.overlaps(hurtbox) {
+                        p2_hit = true;
+                        break 'check_p2;
+                    }
+                }
+            }
+            let p2_hit = p2_hit;
+
+            if p1_hit {
+                self.p1.take_hit(self.p2.get_attack_data().unwrap());
+            }
+            if p2_hit {
+                self.p2.take_hit(self.p1.get_attack_data().unwrap());
+            }
         }
         Ok(())
     }

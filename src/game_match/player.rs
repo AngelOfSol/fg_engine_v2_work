@@ -1,4 +1,5 @@
 use super::{PlayArea, Shadow};
+use crate::character::components::AttackInfo;
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
@@ -17,6 +18,20 @@ pub struct Player {
 }
 
 impl Player {
+    pub fn hitboxes(&self) -> Vec<PositionedHitbox> {
+        self.state.hitboxes(&self.resources)
+    }
+    pub fn hurtboxes(&self) -> Vec<PositionedHitbox> {
+        self.state.hurtboxes(&self.resources)
+    }
+    pub fn get_attack_data(&self) -> Option<&AttackInfo> {
+        self.state.get_attack_data(&self.resources)
+    }
+
+    pub fn take_hit(&mut self, info: &AttackInfo) {
+        self.state.take_hit(&self.resources, info);
+    }
+
     pub fn collision(&self) -> PositionedHitbox {
         self.state.collision(&self.resources)
     }

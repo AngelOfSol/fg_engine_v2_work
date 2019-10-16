@@ -25,6 +25,8 @@ pub enum MoveId {
     Fly,
     FlyStart,
     FlyEnd,
+    HitstunStandStart,
+    HitstunStandLoop,
 }
 
 impl Default for MoveId {

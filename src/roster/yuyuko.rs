@@ -1,9 +1,11 @@
+mod attacks;
 mod bullets;
 mod command_list;
 mod moves;
 mod particles;
 
 use crate::assets::Assets;
+use crate::character::components::AttackInfo;
 use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
@@ -14,6 +16,7 @@ use crate::input::{read_inputs, Button, DirectedAxis, Facing, InputBuffer};
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::{collision, graphics};
+use attacks::AttackId;
 use bullets::{BulletSpawn, BulletState};
 use ggez::{Context, GameResult};
 use moves::MoveId;
@@ -33,18 +36,21 @@ pub struct BulletData {
 pub struct BulletList {
     pub butterfly: BulletData,
 }
+
 #[derive(Clone, Debug)]
 pub struct Yuyuko {
     assets: Assets,
     states: StateList,
     particles: ParticleList,
     bullets: BulletList,
+    attacks: AttackList,
     properties: Properties,
     command_list: CommandList<MoveId>,
 }
 
-type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, ()>>;
+type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>;
 type ParticleList = HashMap<Particle, Animation>;
+type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
@@ -55,6 +61,7 @@ impl Yuyuko {
             states: data.states,
             particles: data.particles,
             properties: data.properties,
+            attacks: data.attacks,
             bullets: data.bullets,
             command_list: command_list::generate_command_list(),
         })
@@ -67,6 +74,7 @@ pub struct YuyukoData {
     particles: ParticleList,
     bullets: BulletList,
     properties: Properties,
+    attacks: AttackList,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -117,6 +125,7 @@ impl YuyukoData {
 enum ExtraData {
     JumpDirection(DirectedAxis),
     FlyDirection(DirectedAxis),
+    Hitstun(i32),
     None,
 }
 
@@ -131,6 +140,12 @@ impl ExtraData {
         match self {
             ExtraData::FlyDirection(dir) => dir,
             value => panic!("Expected FlyDirection, found {:?}.", value),
+        }
+    }
+    fn unwrap_hitstun_mut(&mut self) -> &mut i32 {
+        match self {
+            ExtraData::Hitstun(ref mut time) => time,
+            value => panic!("Expected HitStun, found {:?}.", value),
         }
     }
 }
@@ -156,7 +171,47 @@ impl YuyukoState {
             .hitboxes
             .at_time(*frame)
             .collision
-            .with_position(self.position)
+            .with_position(&self.position)
+    }
+    pub fn hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
+        let (frame, move_id) = &self.current_state;
+        data.states[move_id]
+            .hitboxes
+            .at_time(*frame)
+            .hitbox
+            .iter()
+            .map(|data| {
+                data.boxes
+                    .iter()
+                    .map(|item| item.with_position_and_facing(&self.position, self.facing))
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect()
+    }
+    pub fn hurtboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
+        let (frame, move_id) = &self.current_state;
+        data.states[move_id]
+            .hitboxes
+            .at_time(*frame)
+            .hurtbox
+            .iter()
+            .map(|item| item.with_position_and_facing(&self.position, self.facing))
+            .collect()
+    }
+    pub fn get_attack_data<'a>(&self, data: &'a Yuyuko) -> Option<&'a AttackInfo> {
+        let (frame, move_id) = &self.current_state;
+        data.states[move_id]
+            .hitboxes
+            .at_time(*frame)
+            .hitbox
+            .as_ref()
+            .map(|item| &data.attacks[&item.data_id])
+    }
+
+    pub fn take_hit(&mut self, _data: &Yuyuko, _info: &AttackInfo) {
+        self.current_state = (0, MoveId::HitstunStandStart);
+        self.extra_data = ExtraData::Hitstun(10);
     }
 
     pub fn new(data: &Yuyuko) -> Self {
@@ -236,6 +291,7 @@ impl YuyukoState {
 
     fn handle_expire(&mut self, data: &Yuyuko) {
         let (frame, move_id) = self.current_state;
+
         // if the next frame would be out of bounds
         self.current_state = if frame >= data.states[&move_id].duration() - 1 {
             (0, data.states[&move_id].on_expire_state)
@@ -243,6 +299,19 @@ impl YuyukoState {
             (frame + 1, move_id)
         };
     }
+
+    fn handle_hitstun(&mut self, data: &Yuyuko) {
+        let (_, move_id) = self.current_state;
+
+        if data.states[&move_id].state_type == MoveType::Hitstun {
+            let hitstun = self.extra_data.unwrap_hitstun_mut();
+            *hitstun -= 1;
+            if *hitstun == 0 {
+                self.current_state = (0, MoveId::Stand);
+            }
+        }
+    }
+
     fn handle_input(&mut self, data: &Yuyuko, input: &InputBuffer) {
         let (frame, move_id) = self.current_state;
         let cancels = data.states[&move_id].cancels.at_time(frame);
@@ -473,6 +542,7 @@ impl YuyukoState {
 
     pub fn update_frame_mut(&mut self, data: &Yuyuko, input: &InputBuffer, play_area: &PlayArea) {
         self.handle_expire(data);
+        self.handle_hitstun(data);
         self.handle_input(data, input);
         self.update_extra_data(input);
         self.update_velocity(data);
