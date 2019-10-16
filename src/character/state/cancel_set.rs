@@ -25,8 +25,10 @@ pub enum MoveType {
     AirMagicSpecial,
     AirSuper,
     AirFollowup,
+    Hitstun,
+    Blockstun,
 }
-const ALL_MOVE_TYPES: [MoveType; 19] = [
+const ALL_MOVE_TYPES: [MoveType; 21] = [
     MoveType::Idle,
     MoveType::Walk,
     MoveType::Jump,
@@ -46,9 +48,11 @@ const ALL_MOVE_TYPES: [MoveType; 19] = [
     MoveType::AirMagicSpecial,
     MoveType::AirSuper,
     MoveType::AirFollowup,
+    MoveType::Hitstun,
+    MoveType::Blockstun,
 ];
 impl MoveType {
-    pub fn all() -> &'static [MoveType; 19] {
+    pub fn all() -> &'static [MoveType; 21] {
         &ALL_MOVE_TYPES
     }
 }
@@ -77,6 +81,8 @@ impl Display for MoveType {
                 MoveType::AirMagicSpecial => "Air Magic Special",
                 MoveType::AirSuper => "Air Super",
                 MoveType::AirFollowup => "Air Followup",
+                MoveType::Hitstun => "Hitstun",
+                MoveType::Blockstun => "Blockstun",
             }
         )
     }
