@@ -1,14 +1,8 @@
-TODO LATWER) rework input buffer again
+TODO LATER) rework input buffer again
     > each type reads as if the button presses were in the past 3 frames
     > run it for the last 8 frames and only give out the most recent for each category
     > kara canceling
 
-
-TODO: 
-    >add second character to screen
-    >add second player controls
-    >fix reface point
-    >fix screen center
 
 
 NOTE: create id's for attack data, so it can be edited outside of the state editor (reduce clutter), also helps for resuse, and being clear about the data 
