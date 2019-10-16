@@ -10,7 +10,6 @@ use runner::Runner;
 use std::env;
 use std::error::Error;
 use std::path;
-mod attack;
 #[macro_use]
 mod imgui_extra;
 mod assets;

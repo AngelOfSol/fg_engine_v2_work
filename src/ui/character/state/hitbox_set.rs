@@ -1,4 +1,3 @@
-use crate::attack::AttackLevel;
 use crate::character::state::components::{AttackData, HitboxSet};
 use crate::hitbox::Hitbox;
 use crate::imgui_extra::UiExtensions;
@@ -8,14 +7,6 @@ pub fn draw_attack_ui(ui: &Ui<'_>, data: &mut AttackData, current_attack: &mut O
     let id = ui.push_id("Hitboxes");
 
     let _ = ui.input_whole(im_str!("ID"), &mut data.id);
-
-    ui.radio_button(im_str!("A"), &mut data.attack_level, AttackLevel::A);
-    ui.same_line(0.0);
-    ui.radio_button(im_str!("B"), &mut data.attack_level, AttackLevel::B);
-    ui.same_line(0.0);
-    ui.radio_button(im_str!("C"), &mut data.attack_level, AttackLevel::C);
-    ui.same_line(0.0);
-    ui.radio_button(im_str!("D"), &mut data.attack_level, AttackLevel::D);
 
     let mut counter = 0;
     ui.rearrangable_list_box(

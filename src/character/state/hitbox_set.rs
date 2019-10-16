@@ -1,4 +1,3 @@
-use crate::attack::AttackLevel;
 use crate::hitbox::Hitbox;
 use crate::typedefs::collision::Vec2;
 use serde::{Deserialize, Serialize};
@@ -6,14 +5,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct AttackData {
     pub id: usize,
-    pub attack_level: AttackLevel,
     pub boxes: Vec<Hitbox>,
 }
 impl AttackData {
     pub fn new() -> Self {
         Self {
             id: 0,
-            attack_level: AttackLevel::A,
             boxes: vec![],
         }
     }
