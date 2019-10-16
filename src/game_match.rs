@@ -152,7 +152,7 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!("{}", "");
+        self.debug_text.fragments_mut()[0].text = format!("{}", 2);
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
         self.p1

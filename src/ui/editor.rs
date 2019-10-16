@@ -1,16 +1,18 @@
 mod animation_editor;
+mod attack_editor;
 mod bullet_editor;
 mod character_editor;
 mod main_menu;
 mod state_editor;
 
 use crate::assets::Assets;
-use crate::character::components::BulletInfo;
+use crate::character::components::{AttackInfo, BulletInfo};
 use crate::character::state::EditorCharacterState;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::runner::{AppState, RunnerState};
 pub use animation_editor::AnimationEditor;
+pub use attack_editor::AttackInfoEditor;
 pub use bullet_editor::BulletInfoEditor;
 pub use character_editor::CharacterEditor;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
@@ -33,6 +35,7 @@ pub enum EditorState {
     StateEditor(StateEditor),
     CharacterEditor(CharacterEditor),
     BulletInfoEditor(BulletInfoEditor),
+    AttackInfoEditor(AttackInfoEditor),
 }
 impl EditorState {
     fn handle_event(&mut self, passed_data: MessageData, mode: Mode) {
@@ -62,6 +65,7 @@ pub enum MessageData {
     Animation(Animation),
     State(EditorCharacterState),
     BulletInfo(BulletInfo),
+    AttackInfo(AttackInfo),
 }
 
 pub enum Transition {
@@ -100,6 +104,7 @@ impl EventHandler for GameEditor {
                 EditorState::StateEditor(ref mut editor) => editor.update(),
                 EditorState::CharacterEditor(ref mut editor) => editor.update(),
                 EditorState::BulletInfoEditor(ref mut editor) => editor.update(),
+                EditorState::AttackInfoEditor(ref mut editor) => editor.update(),
             }?;
             match transition {
                 Transition::None => (),
@@ -151,6 +156,9 @@ impl EventHandler for GameEditor {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }
             EditorState::BulletInfoEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, &mut self.imgui)
+            }
+            EditorState::AttackInfoEditor(ref mut editor) => {
                 editor.draw(ctx, &mut self.assets, &mut self.imgui)
             }
         }?;

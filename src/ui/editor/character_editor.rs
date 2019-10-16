@@ -3,9 +3,10 @@ use crate::character::state::State;
 use crate::character::PlayerCharacter;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
-use crate::ui::character::components::{BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
+use crate::ui::character::components::{AttacksUi, BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{
-    AnimationEditor, BulletInfoEditor, EditorState, MessageData, Mode, StateEditor, Transition,
+    AnimationEditor, AttackInfoEditor, BulletInfoEditor, EditorState, MessageData, Mode,
+    StateEditor, Transition,
 };
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -17,17 +18,20 @@ pub struct CharacterEditor {
     particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
     bullet_ui_data: BulletsUi,
+    attacks_ui_data: AttacksUi,
 }
 impl CharacterEditor {
     pub fn new(resource: PlayerCharacter) -> Self {
         let particle_ui_data = ParticlesUi::new(&resource.particles);
         let states_ui_data = StatesUi::new(&resource.states);
         let bullet_ui_data = BulletsUi::new(&resource.bullets);
+        let attacks_ui_data = AttacksUi::new(&resource.attacks);
         Self {
             resource,
             particle_ui_data,
             states_ui_data,
             bullet_ui_data,
+            attacks_ui_data,
             transition: Transition::None,
         }
     }
@@ -51,6 +55,18 @@ impl CharacterEditor {
                         }
                     }
                     self.resource.bullets.bullets.insert(name, bullet);
+                }
+            },
+            MessageData::AttackInfo(attack) => match mode {
+                Mode::Standalone => (),
+                Mode::New => {
+                    self.resource.attacks.attacks.insert(
+                        self.resource.attacks.guarentee_unique_key("new attack"),
+                        attack,
+                    );
+                }
+                Mode::Edit(name) => {
+                    self.resource.attacks.attacks.insert(name, attack);
                 }
             },
             MessageData::State(state) => match mode {
@@ -183,6 +199,23 @@ impl CharacterEditor {
                             };
                             self.transition = Transition::Push(
                                 Box::new(BulletInfoEditor::with_bullet(bullet).into()),
+                                mode.clone(),
+                            );
+                        }
+                    });
+                imgui::Window::new(im_str!("Attacks"))
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([1200.0, 20.0], Condition::Once)
+                    .build(ui, || {
+                        let edit_change =
+                            self.attacks_ui_data.draw_ui(ui, &mut self.resource.attacks);
+                        if let Some(mode) = &edit_change {
+                            let attack = match &mode {
+                                Mode::Edit(name) => self.resource.attacks.attacks[name].clone(),
+                                _ => panic!("Attempting to edit attack with no name."),
+                            };
+                            self.transition = Transition::Push(
+                                Box::new(AttackInfoEditor::with_attack(attack).into()),
                                 mode.clone(),
                             );
                         }
