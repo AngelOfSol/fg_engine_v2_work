@@ -112,11 +112,11 @@ impl EventHandler for Match {
             }
             let p2_hit = p2_hit;
 
-            if p1_hit {
-                self.p1.take_hit(self.p2.get_attack_data().unwrap());
+            if p1_hit && self.p1.take_hit(self.p2.get_attack_data().unwrap()) {
+                self.p2.deal_hit();
             }
-            if p2_hit {
-                self.p2.take_hit(self.p1.get_attack_data().unwrap());
+            if p2_hit && self.p2.take_hit(self.p1.get_attack_data().unwrap()) {
+                self.p1.deal_hit();
             }
         }
         Ok(())
@@ -180,7 +180,10 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!("{}", 2);
+        self.debug_text.fragments_mut()[0].text = format!(
+            "p2 move_id {:?}\np2 last_hit_by: {:?}\np2 hitstop: {}",
+            self.p2.state.current_state, self.p2.state.last_hit_by, self.p2.state.hitstop
+        );
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
         self.p1

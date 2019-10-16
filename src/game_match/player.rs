@@ -1,9 +1,8 @@
 use super::{PlayArea, Shadow};
-use crate::character::components::AttackInfo;
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
-use crate::roster::{Yuyuko, YuyukoState};
+use crate::roster::{HitInfo, Yuyuko, YuyukoState};
 use crate::typedefs::collision;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
@@ -24,12 +23,15 @@ impl Player {
     pub fn hurtboxes(&self) -> Vec<PositionedHitbox> {
         self.state.hurtboxes(&self.resources)
     }
-    pub fn get_attack_data(&self) -> Option<&AttackInfo> {
+    pub fn get_attack_data(&self) -> Option<HitInfo<'_>> {
         self.state.get_attack_data(&self.resources)
     }
 
-    pub fn take_hit(&mut self, info: &AttackInfo) {
-        self.state.take_hit(&self.resources, info);
+    pub fn take_hit(&mut self, info: HitInfo) -> bool {
+        self.state.take_hit(&self.resources, info)
+    }
+    pub fn deal_hit(&mut self) {
+        self.state.deal_hit(&self.resources);
     }
 
     pub fn collision(&self) -> PositionedHitbox {

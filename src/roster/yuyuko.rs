@@ -52,6 +52,8 @@ type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>
 type ParticleList = HashMap<Particle, Animation>;
 type AttackList = HashMap<AttackId, AttackInfo>;
 
+pub type HitInfo<'a> = (&'a AttackInfo, MoveId, usize);
+
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
         let mut assets = Assets::new();
@@ -162,6 +164,8 @@ pub struct YuyukoState {
     pub air_actions: usize,
     pub spirit_gauge: i32,
     pub spirit_delay: i32,
+    pub hitstop: i32,
+    pub last_hit_by: Option<(MoveId, usize)>,
 }
 
 impl YuyukoState {
@@ -171,7 +175,7 @@ impl YuyukoState {
             .hitboxes
             .at_time(*frame)
             .collision
-            .with_position(&self.position)
+            .with_position(self.position)
     }
     pub fn hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.current_state;
@@ -183,7 +187,7 @@ impl YuyukoState {
             .map(|data| {
                 data.boxes
                     .iter()
-                    .map(|item| item.with_position_and_facing(&self.position, self.facing))
+                    .map(|item| item.with_position_and_facing(self.position, self.facing))
                     .collect::<Vec<_>>()
             })
             .flatten()
@@ -196,22 +200,40 @@ impl YuyukoState {
             .at_time(*frame)
             .hurtbox
             .iter()
-            .map(|item| item.with_position_and_facing(&self.position, self.facing))
+            .map(|item| item.with_position_and_facing(self.position, self.facing))
             .collect()
     }
-    pub fn get_attack_data<'a>(&self, data: &'a Yuyuko) -> Option<&'a AttackInfo> {
+    pub fn get_attack_data<'a>(&self, data: &'a Yuyuko) -> Option<HitInfo<'a>> {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hitbox
             .as_ref()
-            .map(|item| &data.attacks[&item.data_id])
+            .map(|item| (&data.attacks[&item.data_id], self.current_state.1, item.id))
     }
 
-    pub fn take_hit(&mut self, _data: &Yuyuko, _info: &AttackInfo) {
-        self.current_state = (0, MoveId::HitstunStandStart);
-        self.extra_data = ExtraData::Hitstun(10);
+    pub fn take_hit(&mut self, _data: &Yuyuko, info: HitInfo) -> bool {
+        let (info, move_id, hitbox_id) = info;
+
+        if self
+            .last_hit_by
+            .map(|(old_move_id, old_hitbox_id)| {
+                move_id != old_move_id || hitbox_id != old_hitbox_id
+            })
+            .unwrap_or(true)
+        {
+            self.current_state = (0, MoveId::HitstunStandStart);
+            self.extra_data = ExtraData::Hitstun(info.level.hitstun());
+            self.last_hit_by = Some((move_id, hitbox_id));
+            self.hitstop = 10;
+            true
+        } else {
+            false
+        }
+    }
+    pub fn deal_hit(&mut self, _data: &Yuyuko) {
+        self.hitstop = 10;
     }
 
     pub fn new(data: &Yuyuko) -> Self {
@@ -225,7 +247,9 @@ impl YuyukoState {
             air_actions: data.properties.max_air_actions,
             spirit_gauge: data.properties.max_spirit_gauge,
             spirit_delay: 0,
+            hitstop: 0,
             facing: Facing::Right,
+            last_hit_by: None,
         }
     }
 
@@ -308,6 +332,7 @@ impl YuyukoState {
             *hitstun -= 1;
             if *hitstun == 0 {
                 self.current_state = (0, MoveId::Stand);
+                self.last_hit_by = None;
             }
         }
     }
@@ -541,15 +566,20 @@ impl YuyukoState {
     }
 
     pub fn update_frame_mut(&mut self, data: &Yuyuko, input: &InputBuffer, play_area: &PlayArea) {
-        self.handle_expire(data);
-        self.handle_hitstun(data);
-        self.handle_input(data, input);
-        self.update_extra_data(input);
-        self.update_velocity(data);
-        self.update_position(data, play_area);
+        if self.hitstop > 0 {
+            self.hitstop -= 1;
+        } else {
+            self.handle_expire(data);
+            self.handle_hitstun(data);
+            self.handle_input(data, input);
+            self.update_extra_data(input);
+            self.update_velocity(data);
+            self.update_position(data, play_area);
+        }
         self.update_spirit(data);
         self.update_particles(data);
         self.update_bullets(data, play_area);
+        self.hitstop = i32::max(0, self.hitstop);
     }
     pub fn draw_ui(
         &self,

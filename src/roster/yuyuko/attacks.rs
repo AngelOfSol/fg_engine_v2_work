@@ -14,13 +14,3 @@ impl Default for AttackId {
         AttackId::Attack5A
     }
 }
-
-#[allow(clippy::inherent_to_string)]
-impl AttackId {
-    pub fn to_string(self) -> String {
-        serde_json::to_string(&self)
-            .unwrap()
-            .trim_matches('\"')
-            .to_owned()
-    }
-}
