@@ -30,8 +30,8 @@ impl Player {
     pub fn take_hit(&mut self, info: HitInfo) -> bool {
         self.state.take_hit(&self.resources, info)
     }
-    pub fn deal_hit(&mut self) {
-        self.state.deal_hit(&self.resources);
+    pub fn deal_hit(&mut self, info: HitInfo) {
+        self.state.deal_hit(&self.resources, info);
     }
 
     pub fn collision(&self) -> PositionedHitbox {

@@ -254,8 +254,8 @@ impl YuyukoState {
             false
         }
     }
-    pub fn deal_hit(&mut self, data: &Yuyuko) {
-        let (info, _, _) = self.get_attack_data(data).unwrap();
+    pub fn deal_hit(&mut self, data: &Yuyuko, info: HitInfo) {
+        let (info, _, _) = info;
         self.hitstop = info.attacker_hitstop;
     }
 
