@@ -23,7 +23,7 @@ impl Player {
     pub fn hurtboxes(&self) -> Vec<PositionedHitbox> {
         self.state.hurtboxes(&self.resources)
     }
-    pub fn get_attack_data(&self) -> Option<HitInfo<'_>> {
+    pub fn get_attack_data(&self) -> Option<HitInfo> {
         self.state.get_attack_data(&self.resources)
     }
 

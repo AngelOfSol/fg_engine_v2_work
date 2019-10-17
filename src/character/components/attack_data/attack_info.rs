@@ -6,6 +6,8 @@ pub struct AttackInfo {
     pub level: AttackLevel,
     #[serde(default = "default_hitstop")]
     pub hitstop: i32,
+    #[serde(default = "default_hitstop")]
+    pub blockstop: i32,
 }
 
 fn default_hitstop() -> i32 {
@@ -17,6 +19,7 @@ impl AttackInfo {
         Self {
             level: AttackLevel::A,
             hitstop: default_hitstop(),
+            blockstop: default_hitstop(),
         }
     }
 }

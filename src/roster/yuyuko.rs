@@ -52,7 +52,7 @@ type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>
 type ParticleList = HashMap<Particle, Animation>;
 type AttackList = HashMap<AttackId, AttackInfo>;
 
-pub type HitInfo<'a> = (&'a AttackInfo, MoveId, usize);
+pub type HitInfo = (AttackInfo, MoveId, usize);
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
@@ -204,14 +204,20 @@ impl YuyukoState {
             .map(|item| item.with_position_and_facing(self.position, self.facing))
             .collect()
     }
-    pub fn get_attack_data<'a>(&self, data: &'a Yuyuko) -> Option<HitInfo<'a>> {
+    pub fn get_attack_data<'a>(&self, data: &Yuyuko) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hitbox
             .as_ref()
-            .map(|item| (&data.attacks[&item.data_id], self.current_state.1, item.id))
+            .map(|item| {
+                (
+                    data.attacks[&item.data_id].clone(),
+                    self.current_state.1,
+                    item.id,
+                )
+            })
     }
 
     pub fn is_airbourne(&self, data: &Yuyuko) -> bool {
@@ -233,21 +239,22 @@ impl YuyukoState {
             self.current_state = (
                 0,
                 if self.is_airbourne(data) {
-                    MoveId::HitstunAir1
+                    MoveId::HitstunAirStart
                 } else {
                     MoveId::HitstunStandStart
                 },
             );
             self.extra_data = ExtraData::Hitstun(info.level.hitstun());
             self.last_hit_by = Some((move_id, hitbox_id));
-            self.hitstop = 10;
+            self.hitstop = info.hitstop;
             true
         } else {
             false
         }
     }
-    pub fn deal_hit(&mut self, _data: &Yuyuko) {
-        self.hitstop = 10;
+    pub fn deal_hit(&mut self, data: &Yuyuko) {
+        let (info, _, _) = self.get_attack_data(data).unwrap();
+        self.hitstop = info.hitstop;
     }
 
     pub fn new(data: &Yuyuko) -> Self {

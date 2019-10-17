@@ -112,10 +112,13 @@ impl EventHandler for Match {
             }
             let p2_hit = p2_hit;
 
-            if p1_hit && self.p1.take_hit(self.p2.get_attack_data().unwrap()) {
+            let p1_attack_data = self.p1.get_attack_data();
+            let p2_attack_data = self.p2.get_attack_data();
+
+            if p1_hit && self.p1.take_hit(p2_attack_data.unwrap()) {
                 self.p2.deal_hit();
             }
-            if p2_hit && self.p2.take_hit(self.p1.get_attack_data().unwrap()) {
+            if p2_hit && self.p2.take_hit(p1_attack_data.unwrap()) {
                 self.p1.deal_hit();
             }
         }
