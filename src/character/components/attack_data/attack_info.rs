@@ -5,9 +5,13 @@ use serde::{Deserialize, Serialize};
 pub struct AttackInfo {
     pub level: AttackLevel,
     #[serde(default = "default_hitstop")]
-    pub hitstop: i32,
+    pub defender_hitstop: i32,
     #[serde(default = "default_hitstop")]
-    pub blockstop: i32,
+    pub defender_blockstop: i32,
+    #[serde(default = "default_hitstop")]
+    pub attacker_hitstop: i32,
+    #[serde(default = "default_hitstop")]
+    pub attacker_blockstop: i32,
 }
 
 fn default_hitstop() -> i32 {
@@ -18,8 +22,10 @@ impl AttackInfo {
     pub fn new() -> Self {
         Self {
             level: AttackLevel::A,
-            hitstop: default_hitstop(),
-            blockstop: default_hitstop(),
+            defender_hitstop: default_hitstop(),
+            defender_blockstop: default_hitstop(),
+            attacker_hitstop: default_hitstop(),
+            attacker_blockstop: default_hitstop(),
         }
     }
 }

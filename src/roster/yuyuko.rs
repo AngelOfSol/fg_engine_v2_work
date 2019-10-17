@@ -236,17 +236,14 @@ impl YuyukoState {
             })
             .unwrap_or(true)
         {
-            self.current_state = (
-                0,
-                if self.is_airbourne(data) {
-                    MoveId::HitstunAirStart
-                } else {
-                    MoveId::HitstunStandStart
-                },
-            );
+            if self.is_airbourne(data) {
+                self.current_state = (0, MoveId::HitstunAirStart);
+            } else {
+                self.current_state = (0, MoveId::HitstunStandStart);
+            }
             self.extra_data = ExtraData::Hitstun(info.level.hitstun());
             self.last_hit_by = Some((move_id, hitbox_id));
-            self.hitstop = info.hitstop;
+            self.hitstop = info.defender_hitstop;
             true
         } else {
             false
@@ -254,7 +251,7 @@ impl YuyukoState {
     }
     pub fn deal_hit(&mut self, data: &Yuyuko) {
         let (info, _, _) = self.get_attack_data(data).unwrap();
-        self.hitstop = info.hitstop;
+        self.hitstop = info.attacker_hitstop;
     }
 
     pub fn new(data: &Yuyuko) -> Self {

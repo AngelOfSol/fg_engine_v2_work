@@ -15,9 +15,16 @@ impl AttackInfoUi {
         ui.radio_button(im_str!("C"), &mut data.level, AttackLevel::C);
         ui.radio_button(im_str!("D"), &mut data.level, AttackLevel::D);
         ui.separator();
-        ui.input_whole(im_str!("Hit Stop"), &mut data.hitstop)
+        ui.text(im_str!("Attacker"));
+        ui.input_whole(im_str!("Hit Stop"), &mut data.attacker_hitstop)
             .unwrap();
-        ui.input_whole(im_str!("Block Stop"), &mut data.blockstop)
+        ui.input_whole(im_str!("Block Stop"), &mut data.attacker_blockstop)
+            .unwrap();
+        ui.separator();
+        ui.text(im_str!("Defender"));
+        ui.input_whole(im_str!("Hit Stop"), &mut data.defender_hitstop)
+            .unwrap();
+        ui.input_whole(im_str!("Block Stop"), &mut data.defender_blockstop)
             .unwrap();
     }
 }
