@@ -238,8 +238,13 @@ impl YuyukoState {
         {
             if self.is_airbourne(data) {
                 self.current_state = (0, MoveId::HitstunAirStart);
+                self.velocity = self.facing.invert().fix_collision(info.air_force);
             } else {
                 self.current_state = (0, MoveId::HitstunStandStart);
+                self.velocity = self
+                    .facing
+                    .invert()
+                    .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
             }
             self.extra_data = ExtraData::Hitstun(info.level.hitstun());
             self.last_hit_by = Some((move_id, hitbox_id));
@@ -344,14 +349,20 @@ impl YuyukoState {
     }
 
     fn handle_hitstun(&mut self, data: &Yuyuko) {
-        let (_, move_id) = self.current_state;
+        let (frame, move_id) = self.current_state;
+        let flags = data.states[&move_id].flags.at_time(frame);
 
         if data.states[&move_id].state_type == MoveType::Hitstun {
             let hitstun = self.extra_data.unwrap_hitstun_mut();
             *hitstun -= 1;
             if *hitstun == 0 {
-                self.current_state = (0, MoveId::Stand);
-                self.last_hit_by = None;
+                if !flags.airborne {
+                    self.current_state = (0, MoveId::Stand);
+                    self.last_hit_by = None;
+                } else {
+                    self.current_state = (frame + 1, move_id);
+                    self.last_hit_by = None;
+                }
             }
         }
     }
@@ -437,7 +448,10 @@ impl YuyukoState {
             collision::Vec2::zeros()
         };
         let friction = if !flags.airborne {
-            collision::Vec2::new(-0_20 * i32::signum(base_velocity.x), 0_00)
+            collision::Vec2::new(
+                -i32::min(base_velocity.x.abs(), flags.friction) * i32::signum(base_velocity.x),
+                0_00,
+            )
         } else {
             collision::Vec2::zeros()
         };
@@ -466,8 +480,8 @@ impl YuyukoState {
         // handle landing
         if flags.airborne && self.position.y - collision.half_size.y <= -4 {
             self.velocity = collision::Vec2::zeros();
-            self.current_state.0 = 0;
-            self.current_state.1 = MoveId::Stand;
+            self.current_state = (0, MoveId::Stand);
+            self.extra_data = ExtraData::None;
             self.position.y = hitboxes.collision.half_size.y;
             self.air_actions = data.properties.max_air_actions;
         }

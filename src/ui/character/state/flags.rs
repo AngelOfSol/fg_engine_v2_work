@@ -43,7 +43,11 @@ impl FlagsUi {
 
         ui.separator();
 
-        ui.input_vec2_int(im_str!("Acceleration"), &mut data.accel);
+        ui.input_vec2_whole(im_str!("Acceleration"), &mut data.accel);
+        if !data.airborne {
+            ui.input_whole(im_str!("Friction"), &mut data.friction)
+                .unwrap();
+        }
     }
 
     pub fn draw_display_ui(ui: &Ui<'_>, data: &Flags, movement: &MovementData) {
@@ -73,6 +77,9 @@ impl FlagsUi {
             movement.pos.x,
             movement.pos.y
         ));
+        if !data.airborne {
+            ui.text(&im_str!("Friction: {}", data.friction));
+        }
         id.pop(ui);
     }
 }

@@ -41,6 +41,7 @@ impl Facing {
             Facing::Right => Facing::Left,
         }
     }
+
     pub fn fix_graphics(self, data: graphics::Vec2) -> graphics::Vec2 {
         data.component_mul(&self.graphics_multiplier())
     }

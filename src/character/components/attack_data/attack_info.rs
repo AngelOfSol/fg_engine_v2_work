@@ -1,4 +1,5 @@
 use super::AttackLevel;
+use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -12,6 +13,19 @@ pub struct AttackInfo {
     pub attacker_hitstop: i32,
     #[serde(default = "default_hitstop")]
     pub attacker_blockstop: i32,
+
+    #[serde(default = "default_air_force")]
+    pub air_force: Vec2,
+    #[serde(default = "default_ground_pushback")]
+    pub ground_pushback: Int,
+}
+
+fn default_air_force() -> Vec2 {
+    Vec2::new(4_00, 2_50)
+}
+
+fn default_ground_pushback() -> Int {
+    10_00
 }
 
 fn default_hitstop() -> i32 {
@@ -26,6 +40,8 @@ impl AttackInfo {
             defender_blockstop: default_hitstop(),
             attacker_hitstop: default_hitstop(),
             attacker_blockstop: default_hitstop(),
+            air_force: default_air_force(),
+            ground_pushback: default_ground_pushback(),
         }
     }
 }

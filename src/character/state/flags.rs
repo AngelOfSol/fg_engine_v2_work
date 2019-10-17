@@ -1,4 +1,4 @@
-use crate::typedefs::collision::Vec2;
+use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
@@ -34,6 +34,12 @@ pub struct Flags {
     #[serde(default)]
     pub allow_reface: bool,
     pub accel: Vec2,
+    #[serde(default = "default_friction")]
+    pub friction: Int,
+}
+
+fn default_friction() -> Int {
+    0_50
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -66,6 +72,7 @@ impl Flags {
             reset_velocity: true,
             allow_reface: false,
             accel: Vec2::zeros(),
+            friction: default_friction(),
         }
     }
 

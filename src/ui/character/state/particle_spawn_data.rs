@@ -22,7 +22,7 @@ impl ParticleSpawnUi {
 
         let _ = ui.input_whole(im_str!("Spawn Frame"), &mut data.frame);
         data.offset /= 100;
-        ui.input_vec2_int(im_str!("Offset"), &mut data.offset);
+        ui.input_vec2_whole(im_str!("Offset"), &mut data.offset);
         data.offset *= 100;
     }
 }

@@ -103,10 +103,10 @@ impl<T> GenericHitbox<T> {
 
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Hitbox) {
         data.center /= 100;
-        ui.input_vec2_int(im_str!("Center"), &mut data.center);
+        ui.input_vec2_whole(im_str!("Center"), &mut data.center);
         data.center *= 100;
         data.half_size /= 100;
-        ui.input_vec2_int(im_str!("Half Size"), &mut data.half_size);
+        ui.input_vec2_whole(im_str!("Half Size"), &mut data.half_size);
         data.half_size.x = std::cmp::max(data.half_size.x, 1);
         data.half_size.y = std::cmp::max(data.half_size.y, 1);
         data.half_size *= 100;

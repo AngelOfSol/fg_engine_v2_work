@@ -15,13 +15,13 @@ impl PropertiesUi {
 
         ui.separator();
 
-        ui.input_vec2_int(im_str!("Neutral Jump"), &mut data.neutral_jump_accel);
-        ui.input_vec2_int(
+        ui.input_vec2_whole(im_str!("Neutral Jump"), &mut data.neutral_jump_accel);
+        ui.input_vec2_whole(
             im_str!("Neutral Super Jump"),
             &mut data.neutral_super_jump_accel,
         );
-        ui.input_vec2_int(im_str!("Directed Jump"), &mut data.directed_jump_accel);
-        ui.input_vec2_int(
+        ui.input_vec2_whole(im_str!("Directed Jump"), &mut data.directed_jump_accel);
+        ui.input_vec2_whole(
             im_str!("Directed Super Jump"),
             &mut data.directed_super_jump_accel,
         );
