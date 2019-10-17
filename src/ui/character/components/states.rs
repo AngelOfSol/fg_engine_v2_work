@@ -81,6 +81,18 @@ impl StatesUi {
         }
         if let Some((old, new)) = to_change {
             let state = data.rest.remove(&old).unwrap();
+
+            for fix_state in data.rest.values_mut() {
+                if fix_state.on_expire_state == old {
+                    fix_state.on_expire_state = new.clone();
+                }
+                for (ref mut cancel_set, _) in fix_state.cancels.iter_mut() {
+                    if cancel_set.disallow.remove(&old) {
+                        cancel_set.disallow.insert(new.clone());
+                    }
+                }
+            }
+
             let new = data.guarentee_unique_key(new);
             data.rest.insert(new.clone(), state.clone());
             if let Some(idx) = self.state_name_keys.iter().position(|item| item == &old) {

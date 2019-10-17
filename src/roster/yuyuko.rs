@@ -166,6 +166,7 @@ pub struct YuyukoState {
     pub spirit_delay: i32,
     pub hitstop: i32,
     pub last_hit_by: Option<(MoveId, usize)>,
+    pub allowed_cancels: (),
 }
 
 impl YuyukoState {
@@ -213,7 +214,13 @@ impl YuyukoState {
             .map(|item| (&data.attacks[&item.data_id], self.current_state.1, item.id))
     }
 
-    pub fn take_hit(&mut self, _data: &Yuyuko, info: HitInfo) -> bool {
+    pub fn is_airbourne(&self, data: &Yuyuko) -> bool {
+        let (frame, move_id) = self.current_state;
+        data.states[&move_id].flags.at_time(frame).airborne
+    }
+
+    #[allow(clippy::block_in_if_condition_stmt)]
+    pub fn take_hit(&mut self, data: &Yuyuko, info: HitInfo) -> bool {
         let (info, move_id, hitbox_id) = info;
 
         if self
@@ -223,7 +230,14 @@ impl YuyukoState {
             })
             .unwrap_or(true)
         {
-            self.current_state = (0, MoveId::HitstunStandStart);
+            self.current_state = (
+                0,
+                if self.is_airbourne(data) {
+                    MoveId::HitstunAir1
+                } else {
+                    MoveId::HitstunStandStart
+                },
+            );
             self.extra_data = ExtraData::Hitstun(info.level.hitstun());
             self.last_hit_by = Some((move_id, hitbox_id));
             self.hitstop = 10;
@@ -250,6 +264,7 @@ impl YuyukoState {
             hitstop: 0,
             facing: Facing::Right,
             last_hit_by: None,
+            allowed_cancels: (), //57 vs 51
         }
     }
 
