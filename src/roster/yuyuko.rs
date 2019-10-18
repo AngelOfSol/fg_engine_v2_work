@@ -127,6 +127,7 @@ pub enum HitType {
     Continuation(HitInfo),
     Whiff,
     Block(HitInfo),
+    WrongBlock(HitInfo),
     Hit(HitInfo),
     Graze(HitInfo),
 }
@@ -290,7 +291,7 @@ impl YuyukoState {
                 self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_hit.defender_stop;
             }
-            HitType::Block(info) => {
+            HitType::Block(info) | HitType::WrongBlock(info) => {
                 let (info, move_id, hitbox_id) = info;
                 let on_block = &info.on_block;
                 if flags.airborne {
@@ -331,13 +332,12 @@ impl YuyukoState {
                     / boxes.len() as i32;
                 self.spawn_particle(Particle::HitEffect, spawn_point);
             }
-            HitType::Block(info) => {
+            HitType::Block(info) | HitType::WrongBlock(info) => {
                 let (info, _, _) = info;
                 let on_block = &info.on_block;
                 self.hitstop = on_block.attacker_stop;
             }
-            HitType::Whiff => {}
-            _ => {}
+            HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
         }
     }
 
