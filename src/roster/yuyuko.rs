@@ -204,7 +204,7 @@ impl YuyukoState {
             .map(|item| item.with_position_and_facing(self.position, self.facing))
             .collect()
     }
-    pub fn get_attack_data<'a>(&self, data: &Yuyuko) -> Option<HitInfo> {
+    pub fn get_attack_data(&self, data: &Yuyuko) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
             .hitboxes
@@ -225,38 +225,43 @@ impl YuyukoState {
         data.states[&move_id].flags.at_time(frame).airborne
     }
 
-    #[allow(clippy::block_in_if_condition_stmt)]
-    pub fn take_hit(&mut self, data: &Yuyuko, info: HitInfo) -> bool {
-        let (info, move_id, hitbox_id) = info;
-
-        if self
-            .last_hit_by
+    pub fn would_be_hit(&self, data: &Yuyuko, info: &HitInfo) -> bool {
+        let (_, move_id, hitbox_id) = info;
+        self.last_hit_by
             .map(|(old_move_id, old_hitbox_id)| {
-                move_id != old_move_id || hitbox_id != old_hitbox_id
+                *move_id != old_move_id || *hitbox_id != old_hitbox_id
             })
             .unwrap_or(true)
-        {
-            if self.is_airbourne(data) {
-                self.current_state = (0, MoveId::HitstunAirStart);
-                self.velocity = self.facing.invert().fix_collision(info.air_force);
-            } else {
-                self.current_state = (0, MoveId::HitstunStandStart);
-                self.velocity = self
-                    .facing
-                    .invert()
-                    .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
-            }
-            self.extra_data = ExtraData::Hitstun(info.level.hitstun());
-            self.last_hit_by = Some((move_id, hitbox_id));
-            self.hitstop = info.defender_hitstop;
-            true
-        } else {
-            false
-        }
     }
-    pub fn deal_hit(&mut self, data: &Yuyuko, info: HitInfo) {
+
+    #[allow(clippy::block_in_if_condition_stmt)]
+    pub fn take_hit(&mut self, data: &Yuyuko, info: &HitInfo) {
+        let (info, move_id, hitbox_id) = info;
+        if self.is_airbourne(data) {
+            self.current_state = (0, MoveId::HitstunAirStart);
+            self.velocity = self.facing.invert().fix_collision(info.air_force);
+        } else {
+            self.current_state = (0, MoveId::HitstunStandStart);
+            self.velocity = self
+                .facing
+                .invert()
+                .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+        }
+        self.extra_data = ExtraData::Hitstun(info.level.hitstun());
+        self.last_hit_by = Some((*move_id, *hitbox_id));
+        self.hitstop = info.defender_hitstop;
+    }
+    pub fn deal_hit(&mut self, data: &Yuyuko, info: &HitInfo) {
         let (info, _, _) = info;
         self.hitstop = info.attacker_hitstop;
+
+        let boxes = self.hitboxes(data);
+
+        let spawn_point = boxes
+            .iter()
+            .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
+            / boxes.len() as i32;
+        self.spawn_particle(Particle::HitEffect, spawn_point);
     }
 
     pub fn new(data: &Yuyuko) -> Self {
@@ -273,7 +278,7 @@ impl YuyukoState {
             hitstop: 0,
             facing: Facing::Right,
             last_hit_by: None,
-            allowed_cancels: (), //57 vs 51
+            allowed_cancels: (),
         }
     }
 
@@ -508,9 +513,12 @@ impl YuyukoState {
         self.particles
             .retain(|item| item.0 < data.particles[&item.2].frames.duration());
         for particle in state_particles.iter().filter(|item| item.frame == frame) {
-            self.particles
-                .push((0, particle.offset + self.position, particle.particle_id));
+            self.spawn_particle(particle.particle_id, self.position + particle.offset);
         }
+    }
+
+    fn spawn_particle(&mut self, particle: Particle, offset: collision::Vec2) {
+        self.particles.push((0, offset, particle));
     }
 
     fn update_bullets(&mut self, data: &Yuyuko, play_area: &PlayArea) {

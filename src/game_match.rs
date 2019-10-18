@@ -91,35 +91,44 @@ impl EventHandler for Match {
                 self.p2.position_mut().x += p2_mod;
             }
 
-            let mut p1_hit = false;
+            let mut p1_touched = false;
             'check_p1: for hitbox in self.p2.hitboxes() {
                 for hurtbox in self.p1.hurtboxes() {
                     if hitbox.overlaps(hurtbox) {
-                        p1_hit = true;
+                        p1_touched = true;
                         break 'check_p1;
                     }
                 }
             }
-            let p1_hit = p1_hit;
-            let mut p2_hit = false;
+            let p1_touched = p1_touched;
+            let mut p2_touched = false;
             'check_p2: for hitbox in self.p1.hitboxes() {
                 for hurtbox in self.p2.hurtboxes() {
                     if hitbox.overlaps(hurtbox) {
-                        p2_hit = true;
+                        p2_touched = true;
                         break 'check_p2;
                     }
                 }
             }
-            let p2_hit = p2_hit;
+            let p2_touched = p2_touched;
 
             let p1_attack_data = self.p1.get_attack_data();
             let p2_attack_data = self.p2.get_attack_data();
 
-            if p1_hit && self.p1.take_hit(p2_attack_data.clone().unwrap()) {
-                self.p2.deal_hit(p2_attack_data.unwrap());
+            if p1_touched && self.p1.would_be_hit(p2_attack_data.as_ref().unwrap()) {
+                self.p2.deal_hit(p2_attack_data.as_ref().unwrap());
             }
-            if p2_hit && self.p2.take_hit(p1_attack_data.clone().unwrap()) {
-                self.p1.deal_hit(p1_attack_data.unwrap());
+
+            if p2_touched && self.p2.would_be_hit(p1_attack_data.as_ref().unwrap()) {
+                self.p1.deal_hit(p1_attack_data.as_ref().unwrap());
+            }
+
+            if p1_touched && self.p1.would_be_hit(p2_attack_data.as_ref().unwrap()) {
+                self.p1.take_hit(p2_attack_data.as_ref().unwrap());
+            }
+
+            if p2_touched && self.p2.would_be_hit(p1_attack_data.as_ref().unwrap()) {
+                self.p2.take_hit(p1_attack_data.as_ref().unwrap());
             }
         }
         Ok(())

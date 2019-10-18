@@ -27,10 +27,13 @@ impl Player {
         self.state.get_attack_data(&self.resources)
     }
 
-    pub fn take_hit(&mut self, info: HitInfo) -> bool {
+    pub fn would_be_hit(&self, info: &HitInfo) -> bool {
+        self.state.would_be_hit(&self.resources, info)
+    }
+    pub fn take_hit(&mut self, info: &HitInfo) {
         self.state.take_hit(&self.resources, info)
     }
-    pub fn deal_hit(&mut self, info: HitInfo) {
+    pub fn deal_hit(&mut self, info: &HitInfo) {
         self.state.deal_hit(&self.resources, info);
     }
 

@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum Particle {
     SuperJumpParticle,
+    HitEffect,
 }
 
 impl Default for Particle {
