@@ -275,25 +275,27 @@ impl YuyukoState {
         match info {
             HitType::Hit(info) => {
                 let (info, move_id, hitbox_id) = info;
+                let on_hit = &info.on_hit;
                 if flags.airborne {
                     self.current_state = (0, MoveId::HitstunAirStart);
-                    self.velocity = self.facing.invert().fix_collision(info.air_force);
+                    self.velocity = self.facing.invert().fix_collision(on_hit.air_force);
                 } else {
                     self.current_state = (0, MoveId::HitstunStandStart);
                     self.velocity = self
                         .facing
                         .invert()
-                        .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+                        .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                 }
                 self.extra_data = ExtraData::Stun(info.level.hitstun());
                 self.last_hit_by = Some((*move_id, *hitbox_id));
-                self.hitstop = info.defender_hitstop;
+                self.hitstop = on_hit.defender_stop;
             }
             HitType::Block(info) => {
                 let (info, move_id, hitbox_id) = info;
+                let on_block = &info.on_block;
                 if flags.airborne {
                     self.current_state = (0, MoveId::BlockstunAirStart);
-                    self.velocity = self.facing.invert().fix_collision(info.air_force);
+                    self.velocity = self.facing.invert().fix_collision(on_block.air_force);
                 } else {
                     self.current_state = (
                         0,
@@ -306,11 +308,11 @@ impl YuyukoState {
                     self.velocity = self
                         .facing
                         .invert()
-                        .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+                        .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
                 self.extra_data = ExtraData::Stun(info.level.hitstun());
                 self.last_hit_by = Some((*move_id, *hitbox_id));
-                self.hitstop = info.defender_blockstop;
+                self.hitstop = on_block.defender_stop;
             }
 
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
@@ -321,7 +323,8 @@ impl YuyukoState {
         match info {
             HitType::Hit(info) => {
                 let (info, _, _) = info;
-                self.hitstop = info.attacker_hitstop;
+                let on_hit = &info.on_hit;
+                self.hitstop = on_hit.attacker_stop;
                 let spawn_point = boxes
                     .iter()
                     .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
@@ -330,7 +333,8 @@ impl YuyukoState {
             }
             HitType::Block(info) => {
                 let (info, _, _) = info;
-                self.hitstop = info.attacker_blockstop;
+                let on_block = &info.on_block;
+                self.hitstop = on_block.attacker_stop;
             }
             HitType::Whiff => {}
             _ => {}
