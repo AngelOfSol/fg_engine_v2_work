@@ -114,22 +114,14 @@ impl EventHandler for Match {
 
             let p1_attack_data = self.p1.get_attack_data();
             let p2_attack_data = self.p2.get_attack_data();
+            let p1_hit_type = self.p1.would_be_hit(p1_touched, p2_attack_data);
+            let p2_hit_type = self.p2.would_be_hit(p2_touched, p1_attack_data);
 
-            if p1_touched && self.p1.would_be_hit(p2_attack_data.as_ref().unwrap()) {
-                self.p2.deal_hit(p2_attack_data.as_ref().unwrap());
-            }
+            self.p1.deal_hit(&p2_hit_type);
+            self.p2.deal_hit(&p1_hit_type);
 
-            if p2_touched && self.p2.would_be_hit(p1_attack_data.as_ref().unwrap()) {
-                self.p1.deal_hit(p1_attack_data.as_ref().unwrap());
-            }
-
-            if p1_touched && self.p1.would_be_hit(p2_attack_data.as_ref().unwrap()) {
-                self.p1.take_hit(p2_attack_data.as_ref().unwrap());
-            }
-
-            if p2_touched && self.p2.would_be_hit(p1_attack_data.as_ref().unwrap()) {
-                self.p2.take_hit(p1_attack_data.as_ref().unwrap());
-            }
+            self.p1.take_hit(&p1_hit_type);
+            self.p2.take_hit(&p2_hit_type);
         }
         Ok(())
     }

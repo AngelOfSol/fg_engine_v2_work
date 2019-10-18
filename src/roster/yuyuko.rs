@@ -122,12 +122,20 @@ impl YuyukoData {
         Ok(character)
     }
 }
+#[derive(Debug, Clone)]
+pub enum HitType {
+    Continuation(HitInfo),
+    Whiff,
+    Block(HitInfo),
+    Hit(HitInfo),
+    Graze(HitInfo),
+}
 
 #[derive(Debug, Clone, Copy)]
 enum ExtraData {
     JumpDirection(DirectedAxis),
     FlyDirection(DirectedAxis),
-    Hitstun(i32),
+    Stun(i32),
     None,
 }
 
@@ -144,9 +152,9 @@ impl ExtraData {
             value => panic!("Expected FlyDirection, found {:?}.", value),
         }
     }
-    fn unwrap_hitstun_mut(&mut self) -> &mut i32 {
+    fn unwrap_stun_mut(&mut self) -> &mut i32 {
         match self {
-            ExtraData::Hitstun(ref mut time) => time,
+            ExtraData::Stun(ref mut time) => time,
             value => panic!("Expected HitStun, found {:?}.", value),
         }
     }
@@ -220,48 +228,113 @@ impl YuyukoState {
             })
     }
 
-    pub fn is_airbourne(&self, data: &Yuyuko) -> bool {
+    pub fn _is_airbourne(&self, data: &Yuyuko) -> bool {
         let (frame, move_id) = self.current_state;
         data.states[&move_id].flags.at_time(frame).airborne
     }
+    pub fn current_flags<'a>(&self, data: &'a Yuyuko) -> &'a Flags {
+        let (frame, move_id) = self.current_state;
+        data.states[&move_id].flags.at_time(frame)
+    }
 
-    pub fn would_be_hit(&self, data: &Yuyuko, info: &HitInfo) -> bool {
-        let (_, move_id, hitbox_id) = info;
-        self.last_hit_by
-            .map(|(old_move_id, old_hitbox_id)| {
-                *move_id != old_move_id || *hitbox_id != old_hitbox_id
-            })
-            .unwrap_or(true)
+    // TODO: change this to return Continuation|Whiff|Hit|Block|Graze
+    pub fn would_be_hit(
+        &self,
+        data: &Yuyuko,
+        input: &InputBuffer,
+        touched: bool,
+        info: Option<HitInfo>,
+    ) -> HitType {
+        if info.is_none() || !touched {
+            return HitType::Whiff;
+        }
+        let total_info = info.unwrap();
+
+        let (_, move_id, hitbox_id) = total_info;
+
+        if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
+            if move_id == old_move_id && hitbox_id == old_hitbox_id {
+                return HitType::Continuation(total_info);
+            }
+        }
+
+        let flags = self.current_flags(data);
+
+        let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
+
+        if flags.can_block && axis.is_backward() {
+            HitType::Block(total_info)
+        } else {
+            HitType::Hit(total_info)
+        }
     }
 
     #[allow(clippy::block_in_if_condition_stmt)]
-    pub fn take_hit(&mut self, data: &Yuyuko, info: &HitInfo) {
-        let (info, move_id, hitbox_id) = info;
-        if self.is_airbourne(data) {
-            self.current_state = (0, MoveId::HitstunAirStart);
-            self.velocity = self.facing.invert().fix_collision(info.air_force);
-        } else {
-            self.current_state = (0, MoveId::HitstunStandStart);
-            self.velocity = self
-                .facing
-                .invert()
-                .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+    pub fn take_hit(&mut self, data: &Yuyuko, info: &HitType) {
+        let flags = self.current_flags(data);
+        match info {
+            HitType::Hit(info) => {
+                let (info, move_id, hitbox_id) = info;
+                if flags.airborne {
+                    self.current_state = (0, MoveId::HitstunAirStart);
+                    self.velocity = self.facing.invert().fix_collision(info.air_force);
+                } else {
+                    self.current_state = (0, MoveId::HitstunStandStart);
+                    self.velocity = self
+                        .facing
+                        .invert()
+                        .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+                }
+                self.extra_data = ExtraData::Stun(info.level.hitstun());
+                self.last_hit_by = Some((*move_id, *hitbox_id));
+                self.hitstop = info.defender_hitstop;
+            }
+            HitType::Block(info) => {
+                let (info, move_id, hitbox_id) = info;
+                if flags.airborne {
+                    self.current_state = (0, MoveId::BlockstunAirStart);
+                    self.velocity = self.facing.invert().fix_collision(info.air_force);
+                } else {
+                    self.current_state = (
+                        0,
+                        if flags.crouching {
+                            MoveId::BlockstunCrouchStart
+                        } else {
+                            MoveId::BlockstunStandStart
+                        },
+                    );
+                    self.velocity = self
+                        .facing
+                        .invert()
+                        .fix_collision(collision::Vec2::new(info.ground_pushback, 0_00));
+                }
+                self.extra_data = ExtraData::Stun(info.level.hitstun());
+                self.last_hit_by = Some((*move_id, *hitbox_id));
+                self.hitstop = info.defender_blockstop;
+            }
+
+            HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
         }
-        self.extra_data = ExtraData::Hitstun(info.level.hitstun());
-        self.last_hit_by = Some((*move_id, *hitbox_id));
-        self.hitstop = info.defender_hitstop;
     }
-    pub fn deal_hit(&mut self, data: &Yuyuko, info: &HitInfo) {
-        let (info, _, _) = info;
-        self.hitstop = info.attacker_hitstop;
-
+    pub fn deal_hit(&mut self, data: &Yuyuko, info: &HitType) {
         let boxes = self.hitboxes(data);
-
-        let spawn_point = boxes
-            .iter()
-            .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
-            / boxes.len() as i32;
-        self.spawn_particle(Particle::HitEffect, spawn_point);
+        match info {
+            HitType::Hit(info) => {
+                let (info, _, _) = info;
+                self.hitstop = info.attacker_hitstop;
+                let spawn_point = boxes
+                    .iter()
+                    .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
+                    / boxes.len() as i32;
+                self.spawn_particle(Particle::HitEffect, spawn_point);
+            }
+            HitType::Block(info) => {
+                let (info, _, _) = info;
+                self.hitstop = info.attacker_blockstop;
+            }
+            HitType::Whiff => {}
+            _ => {}
+        }
     }
 
     pub fn new(data: &Yuyuko) -> Self {
@@ -356,16 +429,30 @@ impl YuyukoState {
     fn handle_hitstun(&mut self, data: &Yuyuko) {
         let (frame, move_id) = self.current_state;
         let flags = data.states[&move_id].flags.at_time(frame);
+        let state_type = data.states[&move_id].state_type;
 
-        if data.states[&move_id].state_type == MoveType::Hitstun {
-            let hitstun = self.extra_data.unwrap_hitstun_mut();
+        if state_type == MoveType::Hitstun || state_type == MoveType::Blockstun {
+            let hitstun = self.extra_data.unwrap_stun_mut();
             *hitstun -= 1;
             if *hitstun == 0 {
                 if !flags.airborne {
-                    self.current_state = (0, MoveId::Stand);
+                    self.current_state = (
+                        0,
+                        if flags.crouching {
+                            MoveId::Crouch
+                        } else {
+                            MoveId::Stand
+                        },
+                    );
                     self.last_hit_by = None;
                 } else {
-                    self.current_state = (frame + 1, move_id);
+                    // TODO, make this revert to air idle for blocking
+
+                    self.current_state = if state_type == MoveType::Blockstun {
+                        (0, MoveId::AirIdle)
+                    } else {
+                        (frame, move_id)
+                    };
                     self.last_hit_by = None;
                 }
             }

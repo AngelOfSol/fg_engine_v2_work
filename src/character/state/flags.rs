@@ -23,6 +23,8 @@ pub struct Flags {
     pub reset_velocity: bool,
 
     #[serde(default)]
+    pub crouching: bool,
+    #[serde(default)]
     pub spirit_cost: i32,
     #[serde(default)]
     pub spirit_delay: i32,
@@ -69,8 +71,9 @@ impl Flags {
             can_block: false,
             airborne: false,
             jump_start: false,
-            reset_velocity: true,
+            reset_velocity: false,
             allow_reface: false,
+            crouching: false,
             accel: Vec2::zeros(),
             friction: default_friction(),
         }

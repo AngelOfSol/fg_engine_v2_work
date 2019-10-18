@@ -2,7 +2,7 @@ use super::{PlayArea, Shadow};
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
-use crate::roster::{HitInfo, Yuyuko, YuyukoState};
+use crate::roster::{HitInfo, HitType, Yuyuko, YuyukoState};
 use crate::typedefs::collision;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
@@ -27,13 +27,14 @@ impl Player {
         self.state.get_attack_data(&self.resources)
     }
 
-    pub fn would_be_hit(&self, info: &HitInfo) -> bool {
-        self.state.would_be_hit(&self.resources, info)
+    pub fn would_be_hit(&self, touched: bool, info: Option<HitInfo>) -> HitType {
+        self.state
+            .would_be_hit(&self.resources, &self.input, touched, info)
     }
-    pub fn take_hit(&mut self, info: &HitInfo) {
+    pub fn take_hit(&mut self, info: &HitType) {
         self.state.take_hit(&self.resources, info)
     }
-    pub fn deal_hit(&mut self, info: &HitInfo) {
+    pub fn deal_hit(&mut self, info: &HitType) {
         self.state.deal_hit(&self.resources, info);
     }
 

@@ -31,6 +31,12 @@ pub enum MoveId {
     HitstunAirMid1,
     HitstunAirMid2,
     HitstunAirLoop,
+    BlockstunAirStart,
+    BlockstunAirLoop,
+    BlockstunCrouchStart,
+    BlockstunCrouchLoop,
+    BlockstunStandStart,
+    BlockstunStandLoop,
 }
 
 impl Default for MoveId {
