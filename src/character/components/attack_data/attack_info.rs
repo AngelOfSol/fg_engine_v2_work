@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AttackInfo {
     pub level: AttackLevel,
+    #[serde(default)]
     pub on_hit: HitInfo,
+    #[serde(default)]
     pub on_block: HitInfo,
 }
 
