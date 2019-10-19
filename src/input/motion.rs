@@ -46,6 +46,12 @@ impl DirectedAxis {
             _ => false,
         }
     }
+    pub fn is_down(self) -> bool {
+        match self {
+            DirectedAxis::Down | DirectedAxis::DownBackward | DirectedAxis::DownForward => true,
+            _ => false,
+        }
+    }
 
     pub fn invert(self) -> Self {
         match self {

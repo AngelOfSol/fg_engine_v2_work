@@ -5,7 +5,7 @@ mod moves;
 mod particles;
 
 use crate::assets::Assets;
-use crate::character::components::AttackInfo;
+use crate::character::components::{AttackInfo, Guard};
 use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
@@ -251,7 +251,7 @@ impl YuyukoState {
         }
         let total_info = info.unwrap();
 
-        let (_, move_id, hitbox_id) = total_info;
+        let (ref info, move_id, hitbox_id) = total_info;
 
         if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
             if move_id == old_move_id && hitbox_id == old_hitbox_id {
@@ -264,13 +264,28 @@ impl YuyukoState {
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
 
         if flags.can_block && axis.is_backward() {
-            HitType::Block(total_info)
+            match info.guard {
+                Guard::Mid => HitType::Block(total_info),
+                Guard::High => {
+                    if !axis.is_down() {
+                        HitType::Block(total_info)
+                    } else {
+                        HitType::WrongBlock(total_info)
+                    }
+                }
+                Guard::Low => {
+                    if axis.is_down() {
+                        HitType::Block(total_info)
+                    } else {
+                        HitType::WrongBlock(total_info)
+                    }
+                }
+            }
         } else {
             HitType::Hit(total_info)
         }
     }
 
-    #[allow(clippy::block_in_if_condition_stmt)]
     pub fn take_hit(&mut self, data: &Yuyuko, info: &HitType) {
         let flags = self.current_flags(data);
         match info {
