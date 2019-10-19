@@ -33,4 +33,21 @@ impl AttackLevel {
             AttackLevel::D => 23,
         }
     }
+
+    pub fn wrongblock_cost(self) -> i32 {
+        match self {
+            AttackLevel::A => 100,
+            AttackLevel::B => 100,
+            AttackLevel::C => 100,
+            AttackLevel::D => 100,
+        }
+    }
+    pub fn wrongblock_delay(self) -> i32 {
+        match self {
+            AttackLevel::A => 60,
+            AttackLevel::B => 60,
+            AttackLevel::C => 60,
+            AttackLevel::D => 60,
+        }
+    }
 }

@@ -184,10 +184,7 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!(
-            "p2 move_id {:?}\np2 last_hit_by: {:?}\np2 hitstop: {}",
-            self.p2.state.current_state, self.p2.state.last_hit_by, self.p2.state.hitstop
-        );
+        self.debug_text.fragments_mut()[0].text = format!("");
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
         self.p1

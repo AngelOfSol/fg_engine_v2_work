@@ -349,7 +349,11 @@ impl YuyukoState {
                     .facing
                     .invert()
                     .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
-                // TODO: move +4 f for wrongblock to a variable
+
+                self.spirit_delay = info.level.wrongblock_delay();
+                self.spirit_gauge -= info.level.wrongblock_cost();
+                self.spirit_gauge = i32::max(0, self.spirit_gauge);
+
                 self.extra_data = ExtraData::Stun(info.level.wrongblockstun());
                 self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_block.defender_stop;
