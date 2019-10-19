@@ -264,20 +264,24 @@ impl YuyukoState {
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
 
         if flags.can_block && axis.is_backward() {
-            match info.guard {
-                Guard::Mid => HitType::Block(total_info),
-                Guard::High => {
-                    if !axis.is_down() {
-                        HitType::Block(total_info)
-                    } else {
-                        HitType::WrongBlock(total_info)
+            if flags.airborne {
+                HitType::Block(total_info)
+            } else {
+                match info.guard {
+                    Guard::Mid => HitType::Block(total_info),
+                    Guard::High => {
+                        if !axis.is_down() {
+                            HitType::Block(total_info)
+                        } else {
+                            HitType::WrongBlock(total_info)
+                        }
                     }
-                }
-                Guard::Low => {
-                    if axis.is_down() {
-                        HitType::Block(total_info)
-                    } else {
-                        HitType::WrongBlock(total_info)
+                    Guard::Low => {
+                        if axis.is_down() {
+                            HitType::Block(total_info)
+                        } else {
+                            HitType::WrongBlock(total_info)
+                        }
                     }
                 }
             }
@@ -306,7 +310,7 @@ impl YuyukoState {
                 self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_hit.defender_stop;
             }
-            HitType::Block(info) | HitType::WrongBlock(info) => {
+            HitType::Block(info) => {
                 let (info, move_id, hitbox_id) = info;
                 let on_block = &info.on_block;
                 if flags.airborne {
@@ -326,11 +330,30 @@ impl YuyukoState {
                         .invert()
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
-                self.extra_data = ExtraData::Stun(info.level.hitstun());
+                self.extra_data = ExtraData::Stun(info.level.blockstun());
                 self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_block.defender_stop;
             }
-
+            HitType::WrongBlock(info) => {
+                let (info, move_id, hitbox_id) = info;
+                let on_block = &info.on_block;
+                self.current_state = (
+                    0,
+                    if flags.crouching {
+                        MoveId::WrongblockCrouchStart
+                    } else {
+                        MoveId::WrongblockStandStart
+                    },
+                );
+                self.velocity = self
+                    .facing
+                    .invert()
+                    .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
+                // TODO: move +4 f for wrongblock to a variable
+                self.extra_data = ExtraData::Stun(info.level.wrongblockstun());
+                self.last_hit_by = Some((*move_id, *hitbox_id));
+                self.hitstop = on_block.defender_stop;
+            }
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
         }
     }

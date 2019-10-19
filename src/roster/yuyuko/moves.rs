@@ -37,6 +37,10 @@ pub enum MoveId {
     BlockstunCrouchLoop,
     BlockstunStandStart,
     BlockstunStandLoop,
+    WrongblockCrouchStart,
+    WrongblockCrouchLoop,
+    WrongblockStandStart,
+    WrongblockStandLoop,
 }
 
 impl Default for MoveId {
