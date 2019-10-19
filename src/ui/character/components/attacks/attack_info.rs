@@ -1,4 +1,4 @@
-use crate::character::components::{AttackInfo, AttackLevel};
+use crate::character::components::{AttackInfo, AttackLevel, Guard};
 use crate::imgui_extra::UiExtensions;
 use imgui::{im_str, Ui};
 
@@ -9,11 +9,21 @@ impl AttackInfoUi {
         Self {}
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut AttackInfo) {
-        ui.text(im_str!("Attack Level"));
+        ui.text(im_str!("Attack Level:"));
         ui.radio_button(im_str!("A"), &mut data.level, AttackLevel::A);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("B"), &mut data.level, AttackLevel::B);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("C"), &mut data.level, AttackLevel::C);
+        ui.same_line(0.0);
         ui.radio_button(im_str!("D"), &mut data.level, AttackLevel::D);
+
+        ui.text(im_str!("Guard As:"));
+        ui.radio_button(im_str!("Low"), &mut data.guard, Guard::Low);
+        ui.same_line(0.0);
+        ui.radio_button(im_str!("Mid"), &mut data.guard, Guard::Mid);
+        ui.same_line(0.0);
+        ui.radio_button(im_str!("High"), &mut data.guard, Guard::High);
 
         if ui.collapsing_header(im_str!("On Hit")).build() {
             ui.input_whole(im_str!("Attacker Stop"), &mut data.on_hit.attacker_stop)

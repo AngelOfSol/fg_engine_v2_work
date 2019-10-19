@@ -1,8 +1,10 @@
 mod attack_info;
 mod attack_level;
+mod guard;
 
 pub use attack_info::AttackInfo;
 pub use attack_level::AttackLevel;
+pub use guard::Guard;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

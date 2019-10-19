@@ -1,10 +1,12 @@
-use super::AttackLevel;
+use super::{AttackLevel, Guard};
 use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AttackInfo {
     pub level: AttackLevel,
+    #[serde(default)]
+    pub guard: Guard,
     #[serde(default)]
     pub on_hit: HitInfo,
     #[serde(default)]
@@ -50,6 +52,7 @@ impl AttackInfo {
     pub fn new() -> Self {
         Self {
             level: AttackLevel::A,
+            guard: Default::default(),
             on_hit: Default::default(),
             on_block: Default::default(),
         }
