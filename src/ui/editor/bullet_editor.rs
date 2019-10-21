@@ -23,16 +23,18 @@ pub struct BulletInfoEditor {
     ui_data: BulletInfoUi,
     done: Status,
     transition: Transition,
+    attack_ids: Vec<String>,
 }
 
 impl BulletInfoEditor {
-    pub fn with_bullet(data: BulletInfo) -> Self {
+    pub fn with_bullet(data: BulletInfo, attack_ids: Vec<String>) -> Self {
         Self {
             frame: 0,
             resource: data,
             ui_data: BulletInfoUi::new(),
             done: Status::NotDone,
             transition: Transition::None,
+            attack_ids,
         }
     }
 
@@ -55,7 +57,10 @@ impl BulletInfoEditor {
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
-                let ret = std::mem::replace(&mut self.resource, BulletInfo::new("none".to_owned()));
+                let ret = std::mem::replace(
+                    &mut self.resource,
+                    BulletInfo::new("none".to_owned(), "none".to_owned()),
+                );
                 Ok(Transition::Pop(Some(MessageData::BulletInfo(ret))))
             }
             Status::DoneAndQuit => Ok(Transition::Pop(None)),
@@ -78,8 +83,13 @@ impl BulletInfoEditor {
                     .size([300.0, editor_height], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_change =
-                            self.ui_data.draw_ui(ctx, assets, &ui, &mut self.resource);
+                        let edit_change = self.ui_data.draw_ui(
+                            ctx,
+                            assets,
+                            &ui,
+                            &mut self.resource,
+                            &self.attack_ids,
+                        );
                         if let Some(mode) = &edit_change {
                             let animation = match &mode {
                                 Mode::Edit(_) => self.resource.animation.clone(),
@@ -103,7 +113,10 @@ impl BulletInfoEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Bullet Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = BulletInfo::new("new bullet".to_owned());
+                            self.resource = BulletInfo::new(
+                                "new bullet".to_owned(),
+                                self.attack_ids[0].clone(),
+                            );
                             self.ui_data = BulletInfoUi::new();
                         }
                         ui.separator();

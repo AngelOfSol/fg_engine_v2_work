@@ -26,6 +26,7 @@ impl BulletInfoUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut BulletInfo,
+        attack_ids: &Vec<String>,
     ) -> Option<Mode> {
         let mut ret = None;
         ui.text(im_str!("Animation"));
@@ -60,6 +61,13 @@ impl BulletInfoUi {
         ui.separator();
         ui.text(im_str!("Hitbox"));
         Hitbox::draw_ui(ui, &mut data.hitbox);
+
+        ui.combo_items(
+            im_str!("Attack Data##Combo"),
+            &mut data.attack_id,
+            attack_ids,
+            &|item| im_str!("{}", item).into(),
+        );
         ui.separator();
         ui.text(im_str!("Properties"));
         let mut to_delete = None;

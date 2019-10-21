@@ -7,6 +7,15 @@ pub enum MeleeHittable {
     Hit,
 }
 
+impl MeleeHittable {
+    pub fn is_invuln(self) -> bool {
+        match self {
+            MeleeHittable::Invuln => true,
+            MeleeHittable::Hit => false,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub enum MagicHittable {
     Hit,

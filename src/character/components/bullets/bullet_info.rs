@@ -7,12 +7,14 @@ use std::collections::HashSet;
 pub struct BulletInfo {
     pub animation: Animation,
     pub hitbox: Hitbox,
+    pub attack_id: String,
     pub properties: HashSet<String>,
 }
 
 impl BulletInfo {
-    pub fn new(key: String) -> Self {
+    pub fn new(key: String, attack_id: String) -> Self {
         Self {
+            attack_id,
             animation: Animation::new(key),
             hitbox: Hitbox::new(),
             properties: HashSet::new(),

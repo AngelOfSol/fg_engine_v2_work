@@ -191,17 +191,28 @@ impl CharacterEditor {
                     .size([300.0, 526.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_change =
-                            self.bullet_ui_data.draw_ui(ui, &mut self.resource.bullets);
-                        if let Some(mode) = &edit_change {
-                            let bullet = match &mode {
-                                Mode::Edit(name) => self.resource.bullets.bullets[name].clone(),
-                                _ => panic!("Attempting to edit bullet with no name."),
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(BulletInfoEditor::with_bullet(bullet).into()),
-                                mode.clone(),
+                        if !self.resource.attacks.attacks.is_empty() {
+                            let edit_change = self.bullet_ui_data.draw_ui(
+                                ui,
+                                &mut self.resource.bullets,
+                                self.resource.attacks.attacks.keys().next().unwrap().clone(),
                             );
+                            if let Some(mode) = &edit_change {
+                                let bullet = match &mode {
+                                    Mode::Edit(name) => self.resource.bullets.bullets[name].clone(),
+                                    _ => panic!("Attempting to edit bullet with no name."),
+                                };
+                                self.transition = Transition::Push(
+                                    Box::new(
+                                        BulletInfoEditor::with_bullet(
+                                            bullet,
+                                            self.resource.attacks.attacks.keys().cloned().collect(),
+                                        )
+                                        .into(),
+                                    ),
+                                    mode.clone(),
+                                );
+                            }
                         }
                     });
                 imgui::Window::new(im_str!("Attacks"))

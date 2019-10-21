@@ -15,14 +15,19 @@ impl BulletsUi {
             bullet_names: data.bullets.keys().cloned().collect(),
         }
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut Bullets) -> Option<Mode> {
+    pub fn draw_ui(
+        &mut self,
+        ui: &Ui<'_>,
+        data: &mut Bullets,
+        default_attack: String,
+    ) -> Option<Mode> {
         let mut ret = None;
         ui.text(im_str!("Bullets:"));
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             let key = data.guarentee_unique_key("new bullet");
             data.bullets
-                .insert(key.clone(), BulletInfo::new(key.clone()));
+                .insert(key.clone(), BulletInfo::new(key.clone(), default_attack));
             self.bullet_names.insert(0, key);
         }
         ui.separator();

@@ -1,5 +1,6 @@
 use super::ringbuffer::DirectionIter;
 use super::{Axis, Button, ButtonState, Facing, InputBuffer, MOTION_DIRECTION_SIZE};
+use crate::character::components::Guard;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum Direction {
@@ -81,6 +82,13 @@ impl DirectedAxis {
             ret.invert()
         } else {
             ret
+        }
+    }
+    pub fn is_blocking(self, guard: Guard) -> bool {
+        match guard {
+            Guard::Mid => true,
+            Guard::High => !self.is_down(),
+            Guard::Low => self.is_down(),
         }
     }
 }

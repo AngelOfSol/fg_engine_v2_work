@@ -8,6 +8,13 @@ pub struct AttackInfo {
     #[serde(default)]
     pub guard: Guard,
     #[serde(default)]
+    pub air_unblockable: bool,
+    #[serde(default)]
+    pub grazeable: bool,
+    #[serde(default)]
+    pub melee: bool,
+
+    #[serde(default)]
     pub on_hit: HitInfo,
     #[serde(default)]
     pub on_block: HitInfo,
@@ -55,6 +62,9 @@ impl AttackInfo {
             guard: Default::default(),
             on_hit: Default::default(),
             on_block: Default::default(),
+            air_unblockable: false,
+            grazeable: false,
+            melee: false,
         }
     }
 }

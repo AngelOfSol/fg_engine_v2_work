@@ -5,8 +5,8 @@ mod moves;
 mod particles;
 
 use crate::assets::Assets;
-use crate::character::components::{AttackInfo, Guard};
-use crate::character::state::components::{Flags, MoveType};
+use crate::character::components::AttackInfo;
+use crate::character::state::components::{Flags, MagicHittable, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
@@ -229,16 +229,11 @@ impl YuyukoState {
             })
     }
 
-    pub fn _is_airbourne(&self, data: &Yuyuko) -> bool {
-        let (frame, move_id) = self.current_state;
-        data.states[&move_id].flags.at_time(frame).airborne
-    }
     pub fn current_flags<'a>(&self, data: &'a Yuyuko) -> &'a Flags {
         let (frame, move_id) = self.current_state;
         data.states[&move_id].flags.at_time(frame)
     }
 
-    // TODO: change this to return Continuation|Whiff|Hit|Block|Graze
     pub fn would_be_hit(
         &self,
         data: &Yuyuko,
@@ -260,30 +255,26 @@ impl YuyukoState {
         }
 
         let flags = self.current_flags(data);
-
+        let state_type = data.states[&self.current_state.1].state_type;
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
 
-        if flags.can_block && axis.is_backward() {
-            if flags.airborne {
+        if !info.melee {
+            match flags.bullet {
+                MagicHittable::Hit => {}
+                MagicHittable::Graze => return HitType::Graze(total_info),
+                MagicHittable::Invuln => return HitType::Whiff,
+            }
+        } else if info.melee && flags.melee.is_invuln() {
+            return HitType::Whiff;
+        } else if info.air_unblockable && flags.airborne {
+            return HitType::Hit(total_info);
+        }
+
+        if state_type == MoveType::Blockstun || (flags.can_block && axis.is_backward()) {
+            if flags.airborne || axis.is_blocking(info.guard) {
                 HitType::Block(total_info)
             } else {
-                match info.guard {
-                    Guard::Mid => HitType::Block(total_info),
-                    Guard::High => {
-                        if !axis.is_down() {
-                            HitType::Block(total_info)
-                        } else {
-                            HitType::WrongBlock(total_info)
-                        }
-                    }
-                    Guard::Low => {
-                        if axis.is_down() {
-                            HitType::Block(total_info)
-                        } else {
-                            HitType::WrongBlock(total_info)
-                        }
-                    }
-                }
+                HitType::WrongBlock(total_info)
             }
         } else {
             HitType::Hit(total_info)
