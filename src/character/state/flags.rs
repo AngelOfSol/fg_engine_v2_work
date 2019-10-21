@@ -2,32 +2,27 @@ use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-pub enum MeleeHittable {
+pub enum Hittable {
     Invuln,
     Hit,
 }
 
-impl MeleeHittable {
+impl Hittable {
     pub fn is_invuln(self) -> bool {
         match self {
-            MeleeHittable::Invuln => true,
-            MeleeHittable::Hit => false,
+            Hittable::Invuln => true,
+            Hittable::Hit => false,
         }
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-pub enum MagicHittable {
-    Hit,
-    Graze,
-    Invuln,
-}
-
 #[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
 pub struct Flags {
-    pub melee: MeleeHittable,
-    pub bullet: MagicHittable,
+    pub melee: Hittable,
+    pub bullet: Hittable,
     pub can_block: bool,
+    #[serde(default)]
+    pub grazing: bool,
     pub airborne: bool,
     pub reset_velocity: bool,
 
@@ -72,12 +67,13 @@ impl MovementData {
 impl Flags {
     pub fn new() -> Self {
         Self {
-            melee: MeleeHittable::Hit,
-            bullet: MagicHittable::Hit,
+            melee: Hittable::Hit,
+            bullet: Hittable::Hit,
             spirit_cost: 0,
             spirit_delay: 0,
             reset_spirit_delay: false,
             can_block: false,
+            grazing: false,
             airborne: false,
             jump_start: false,
             reset_velocity: false,

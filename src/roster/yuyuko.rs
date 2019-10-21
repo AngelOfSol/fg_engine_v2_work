@@ -6,7 +6,7 @@ mod particles;
 
 use crate::assets::Assets;
 use crate::character::components::AttackInfo;
-use crate::character::state::components::{Flags, MagicHittable, MoveType};
+use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::PlayArea;
@@ -258,14 +258,10 @@ impl YuyukoState {
         let state_type = data.states[&self.current_state.1].state_type;
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
 
-        if !info.melee {
-            match flags.bullet {
-                MagicHittable::Hit => {}
-                MagicHittable::Graze => return HitType::Graze(total_info),
-                MagicHittable::Invuln => return HitType::Whiff,
-            }
-        } else if info.melee && flags.melee.is_invuln() {
+        if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
             return HitType::Whiff;
+        } else if info.grazeable && flags.grazing {
+            return HitType::Graze(total_info);
         } else if info.air_unblockable && flags.airborne {
             return HitType::Hit(total_info);
         }

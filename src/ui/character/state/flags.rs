@@ -1,4 +1,4 @@
-use crate::character::state::components::{Flags, MagicHittable, MeleeHittable, MovementData};
+use crate::character::state::components::{Flags, Hittable, MovementData};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -7,6 +7,7 @@ pub struct FlagsUi;
 impl FlagsUi {
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Flags) {
         ui.checkbox(im_str!("Can Block"), &mut data.can_block);
+        ui.checkbox(im_str!("Grazing"), &mut data.grazing);
         ui.checkbox(im_str!("Crouching"), &mut data.crouching);
         ui.checkbox(im_str!("Airborne"), &mut data.airborne);
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
@@ -24,9 +25,9 @@ impl FlagsUi {
         {
             ui.text(im_str!("Melee"));
             let id = ui.push_id("Melee");
-            ui.radio_button(im_str!("Hit"), &mut data.melee, MeleeHittable::Hit);
+            ui.radio_button(im_str!("Hit"), &mut data.melee, Hittable::Hit);
             ui.same_line(0.0);
-            ui.radio_button(im_str!("Invuln"), &mut data.melee, MeleeHittable::Invuln);
+            ui.radio_button(im_str!("Invuln"), &mut data.melee, Hittable::Invuln);
 
             id.pop(ui);
         }
@@ -34,11 +35,9 @@ impl FlagsUi {
         {
             ui.text(im_str!("Magic"));
             let id = ui.push_id("Magic");
-            ui.radio_button(im_str!("Hit"), &mut data.bullet, MagicHittable::Hit);
+            ui.radio_button(im_str!("Hit"), &mut data.bullet, Hittable::Hit);
             ui.same_line(0.0);
-            ui.radio_button(im_str!("Graze"), &mut data.bullet, MagicHittable::Graze);
-            ui.same_line(0.0);
-            ui.radio_button(im_str!("Invuln"), &mut data.bullet, MagicHittable::Invuln);
+            ui.radio_button(im_str!("Invuln"), &mut data.bullet, Hittable::Invuln);
             id.pop(ui);
         }
 
@@ -55,6 +54,7 @@ impl FlagsUi {
         let id = ui.push_id("Display");
 
         ui.text(&im_str!("Can Block: {}", data.can_block));
+        ui.text(&im_str!("Grazing: {}", data.grazing));
         ui.text(&im_str!("Crouching: {}", data.crouching));
         ui.text(&im_str!("Airborne: {}", data.airborne));
         ui.text(&im_str!("Reset Velocity: {}", data.reset_velocity));

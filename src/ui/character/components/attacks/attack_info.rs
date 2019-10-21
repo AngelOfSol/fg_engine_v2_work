@@ -18,8 +18,12 @@ impl AttackInfoUi {
         ui.same_line(0.0);
         ui.radio_button(im_str!("D"), &mut data.level, AttackLevel::D);
 
+        ui.text(im_str!("Attack Type:"));
+        ui.radio_button(im_str!("Melee"), &mut data.melee, true);
+        ui.same_line(0.0);
+        ui.radio_button(im_str!("Magic"), &mut data.melee, false);
+
         ui.checkbox(im_str!("Grazeable"), &mut data.grazeable);
-        ui.checkbox(im_str!("Melee"), &mut data.melee);
         ui.checkbox(im_str!("Air Unblockable"), &mut data.air_unblockable);
 
         ui.text(im_str!("Guard As:"));
