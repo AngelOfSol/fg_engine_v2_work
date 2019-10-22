@@ -150,7 +150,7 @@ impl EventHandler for Match {
                     p2_hurtboxes
                         .iter()
                         .copied()
-                        .fold(false, |acc, item| acc || bullet.overlaps(item))
+                        .any(|item| bullet.overlaps(item))
                 })
                 .map(|(idx, _)| {
                     // side effect
@@ -171,7 +171,7 @@ impl EventHandler for Match {
                     p1_hurtboxes
                         .iter()
                         .copied()
-                        .fold(false, |acc, item| acc || bullet.overlaps(item))
+                        .any(|item| bullet.overlaps(item))
                 })
                 .map(|(idx, _)| {
                     // side effect

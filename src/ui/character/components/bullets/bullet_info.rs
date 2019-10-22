@@ -26,7 +26,7 @@ impl BulletInfoUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut BulletInfo,
-        attack_ids: &Vec<String>,
+        attack_ids: &[String],
     ) -> Option<Mode> {
         let mut ret = None;
         ui.text(im_str!("Animation"));
