@@ -22,7 +22,7 @@ use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -31,6 +31,7 @@ use std::path::PathBuf;
 pub struct BulletData {
     pub animation: Animation,
     pub hitbox: Hitbox,
+    pub attack_id: AttackId,
 }
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletList {
@@ -52,7 +53,33 @@ type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>
 type ParticleList = HashMap<Particle, Animation>;
 type AttackList = HashMap<AttackId, AttackInfo>;
 
-pub type HitInfo = (AttackInfo, MoveId, usize);
+#[derive(Debug, Clone)]
+pub enum HitInfo {
+    Character {
+        info: AttackInfo,
+        move_id: MoveId,
+        hitbox_id: usize,
+    },
+    Bullet(AttackInfo),
+}
+impl HitInfo {
+    pub fn get_attack_data(&self) -> &AttackInfo {
+        match self {
+            HitInfo::Character { ref info, .. } => info,
+            HitInfo::Bullet(ref info) => info,
+        }
+    }
+    pub fn get_hit_by_data(&self) -> Option<(MoveId, usize)> {
+        if let HitInfo::Character {
+            move_id, hitbox_id, ..
+        } = self
+        {
+            Some((*move_id, *hitbox_id))
+        } else {
+            None
+        }
+    }
+}
 
 impl Yuyuko {
     pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
@@ -220,13 +247,34 @@ impl YuyukoState {
             .at_time(*frame)
             .hitbox
             .as_ref()
-            .map(|item| {
-                (
-                    data.attacks[&item.data_id].clone(),
-                    self.current_state.1,
-                    item.id,
-                )
+            .map(|item| HitInfo::Character {
+                info: data.attacks[&item.data_id].clone(),
+                move_id: self.current_state.1,
+                hitbox_id: item.id,
             })
+    }
+    pub fn get_bullet_attack_data(&self, data: &Yuyuko, idx: usize) -> Option<HitInfo> {
+        match &self.bullets[idx] {
+            BulletState::Butterfly { .. } => Some(HitInfo::Bullet(
+                data.attacks[&data.bullets.butterfly.attack_id].clone(),
+            )),
+        }
+    }
+    pub fn bullet_hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
+        self.bullets
+            .iter()
+            .map(|item| match item {
+                BulletState::Butterfly { position, .. } => {
+                    data.bullets.butterfly.hitbox.with_position(*position)
+                }
+            })
+            .collect()
+    }
+
+    pub fn prune_bullets(&mut self, to_kill: &HashSet<usize>) {
+        let mut idx = 0;
+        self.bullets
+            .retain(|_| (!to_kill.contains(&idx), idx += 1).0)
     }
 
     pub fn current_flags<'a>(&self, data: &'a Yuyuko) -> &'a Flags {
@@ -239,20 +287,28 @@ impl YuyukoState {
         data: &Yuyuko,
         input: &InputBuffer,
         touched: bool,
-        info: Option<HitInfo>,
+        total_info: Option<HitInfo>,
     ) -> HitType {
-        if info.is_none() || !touched {
+        if !touched || total_info.is_none() {
             return HitType::Whiff;
         }
-        let total_info = info.unwrap();
+        let total_info = total_info.unwrap();
 
-        let (ref info, move_id, hitbox_id) = total_info;
-
-        if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
-            if move_id == old_move_id && hitbox_id == old_hitbox_id {
-                return HitType::Continuation(total_info);
+        let info = match &total_info {
+            HitInfo::Character {
+                info,
+                move_id,
+                hitbox_id,
+            } => {
+                if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
+                    if *move_id == old_move_id && *hitbox_id == old_hitbox_id {
+                        return HitType::Continuation(total_info);
+                    }
+                }
+                info
             }
-        }
+            HitInfo::Bullet(info) => info,
+        };
 
         let flags = self.current_flags(data);
         let state_type = data.states[&self.current_state.1].state_type;
@@ -279,9 +335,15 @@ impl YuyukoState {
 
     pub fn take_hit(&mut self, data: &Yuyuko, info: &HitType) {
         let flags = self.current_flags(data);
+
         match info {
             HitType::Hit(info) => {
-                let (info, move_id, hitbox_id) = info;
+                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
+                    self.last_hit_by = Some((move_id, hitbox_id));
+                }
+
+                let info = info.get_attack_data();
+
                 let on_hit = &info.on_hit;
                 if flags.airborne {
                     self.current_state = (0, MoveId::HitstunAirStart);
@@ -294,11 +356,15 @@ impl YuyukoState {
                         .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                 }
                 self.extra_data = ExtraData::Stun(info.level.hitstun());
-                self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_hit.defender_stop;
             }
             HitType::Block(info) => {
-                let (info, move_id, hitbox_id) = info;
+                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
+                    self.last_hit_by = Some((move_id, hitbox_id));
+                }
+
+                let info = info.get_attack_data();
+
                 let on_block = &info.on_block;
                 if flags.airborne {
                     self.current_state = (0, MoveId::BlockstunAirStart);
@@ -318,11 +384,15 @@ impl YuyukoState {
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
                 self.extra_data = ExtraData::Stun(info.level.blockstun());
-                self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_block.defender_stop;
             }
             HitType::WrongBlock(info) => {
-                let (info, move_id, hitbox_id) = info;
+                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
+                    self.last_hit_by = Some((move_id, hitbox_id));
+                }
+
+                let info = info.get_attack_data();
+
                 let on_block = &info.on_block;
                 self.current_state = (
                     0,
@@ -342,7 +412,6 @@ impl YuyukoState {
                 self.spirit_gauge = i32::max(0, self.spirit_gauge);
 
                 self.extra_data = ExtraData::Stun(info.level.wrongblockstun());
-                self.last_hit_by = Some((*move_id, *hitbox_id));
                 self.hitstop = on_block.defender_stop;
             }
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
@@ -352,7 +421,7 @@ impl YuyukoState {
         let boxes = self.hitboxes(data);
         match info {
             HitType::Hit(info) => {
-                let (info, _, _) = info;
+                let info = info.get_attack_data();
                 let on_hit = &info.on_hit;
                 self.hitstop = on_hit.attacker_stop;
                 let spawn_point = boxes
@@ -362,7 +431,7 @@ impl YuyukoState {
                 self.spawn_particle(Particle::HitEffect, spawn_point);
             }
             HitType::Block(info) | HitType::WrongBlock(info) => {
-                let (info, _, _) = info;
+                let info = info.get_attack_data();
                 let on_block = &info.on_block;
                 self.hitstop = on_block.attacker_stop;
             }

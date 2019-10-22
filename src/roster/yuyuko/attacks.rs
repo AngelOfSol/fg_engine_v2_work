@@ -9,6 +9,7 @@ pub enum AttackId {
     Attack5A,
     #[serde(rename = "attack5b")]
     Attack5B,
+    Butterfly,
 }
 
 impl Default for AttackId {

@@ -13,6 +13,7 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 use gilrs::Gilrs;
 use player::Player;
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 pub struct PlayArea {
@@ -43,12 +44,14 @@ impl Match {
                 resources: resources.clone(),
                 control_scheme: p1,
                 input: InputBuffer::new(),
+                bullet_kill_list: HashSet::new(),
             },
             p2: Player {
                 state: p2_state,
                 resources,
                 control_scheme: p2,
                 input: InputBuffer::new(),
+                bullet_kill_list: HashSet::new(),
             },
             pads_context: Gilrs::new()?,
             debug_text: graphics::Text::new(""),
@@ -122,6 +125,47 @@ impl EventHandler for Match {
 
             self.p1.take_hit(&p1_hit_type);
             self.p2.take_hit(&p2_hit_type);
+
+            for (p1_bullet_idx, p1_bullet) in self.p1.bullet_hitboxes().into_iter().enumerate() {
+                for (p2_bullet_idx, p2_bullet) in self.p2.bullet_hitboxes().into_iter().enumerate()
+                {
+                    if p1_bullet.overlaps(p2_bullet) {
+                        self.p1.kill_bullet(p1_bullet_idx);
+                        self.p2.kill_bullet(p2_bullet_idx);
+                    }
+                }
+            }
+
+            self.p1.prune_bullets();
+            self.p2.prune_bullets();
+
+            let mut p2_hitby = HashSet::new();
+            for (p1_bullet_idx, p1_bullet) in self.p1.bullet_hitboxes().into_iter().enumerate() {
+                let mut hit = false;
+                'check_p1_bullet: for hurtbox in self.p2.hurtboxes() {
+                    if p1_bullet.overlaps(hurtbox) {
+                        hit = true;
+                        break 'check_p1_bullet;
+                    }
+                }
+                if hit {
+                    p2_hitby.insert(p1_bullet_idx);
+                }
+            }
+
+            for bullet_idx in &p2_hitby {
+                let attack_info = self.p1.get_bullet_attack_data(*bullet_idx);
+                let attack_info = self.p2.would_be_hit(true, attack_info);
+                self.p2.take_hit(&attack_info);
+            }
+
+            // compare bullets against opponents bullets
+            // apply damage to each bullet
+            // remove bullets that are dead
+
+            // compare player against bullets
+            //take_bullet_hit?take_hit?
+            //deal_bullet_hit (pass an ID)
         }
         Ok(())
     }

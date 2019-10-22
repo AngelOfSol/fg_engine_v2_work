@@ -34,6 +34,7 @@ impl AttackInfoUi {
         ui.radio_button(im_str!("High"), &mut data.guard, Guard::High);
 
         if ui.collapsing_header(im_str!("On Hit")).build() {
+            let id = ui.push_id("On Hit");
             ui.input_whole(im_str!("Attacker Stop"), &mut data.on_hit.attacker_stop)
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut data.on_hit.defender_stop)
@@ -42,9 +43,12 @@ impl AttackInfoUi {
             ui.input_vec2_whole(im_str!("Air"), &mut data.on_hit.air_force);
             ui.input_whole(im_str!("Ground"), &mut data.on_hit.ground_pushback)
                 .unwrap();
+
+            id.pop(ui);
         }
 
         if ui.collapsing_header(im_str!("On Block")).build() {
+            let id = ui.push_id("On Block");
             ui.input_whole(im_str!("Attacker Stop"), &mut data.on_block.attacker_stop)
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut data.on_block.defender_stop)
@@ -53,6 +57,7 @@ impl AttackInfoUi {
             ui.input_vec2_whole(im_str!("Air"), &mut data.on_block.air_force);
             ui.input_whole(im_str!("Ground"), &mut data.on_block.ground_pushback)
                 .unwrap();
+            id.pop(ui);
         }
     }
 }
