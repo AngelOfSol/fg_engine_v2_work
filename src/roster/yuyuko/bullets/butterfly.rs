@@ -1,4 +1,4 @@
-use super::super::{AttackList, BulletList, HitInfo};
+use super::super::{AttackList, BulletList, HitInfo, HitType};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
@@ -23,6 +23,7 @@ impl ButterflySpawn {
     }
     pub fn instantiate(&self, current_position: Vec2, facing: Facing) -> ButterflyState {
         ButterflyState {
+            alive: true,
             position: current_position + facing.fix_collision(self.offset),
             velocity: facing.fix_collision(Vec2::new(self.x_vel, self.y_vel)),
             rotation: facing.fix_rotation(self.angle as f32 * std::f32::consts::PI / -180.0),
@@ -35,6 +36,7 @@ pub struct ButterflyState {
     position: Vec2,
     velocity: Vec2,
     rotation: Float,
+    alive: bool,
 }
 
 impl ButterflyState {
@@ -48,13 +50,31 @@ impl ButterflyState {
         let in_y_bounds =
             i32::abs(self.position.y) <= area.width / 2 + bullets.butterfly.hitbox.half_size.y;
 
-        in_x_bounds && in_y_bounds
+        self.alive && in_x_bounds && in_y_bounds
     }
+
     pub fn hitbox(&self, bullets: &BulletList) -> Vec<PositionedHitbox> {
         vec![bullets.butterfly.hitbox.with_position(self.position)]
     }
+
     pub fn attack_data(&self, bullets: &BulletList, attacks: &AttackList) -> HitInfo {
         HitInfo::Bullet(attacks[&bullets.butterfly.attack_id].clone())
+    }
+
+    // TODO, make this return a HitType too, that way it can determine if it can hit again
+    // for the purpose of multi hit bullets
+    pub fn on_touch(&mut self, _: &BulletList, hit_type: &HitType) {
+        match hit_type {
+            HitType::Block(_) | HitType::WrongBlock(_) | HitType::Hit(_) | HitType::Graze(_) => {
+                self.alive = false
+            }
+
+            HitType::Continuation(_) | HitType::Whiff => (),
+        }
+    }
+
+    pub fn on_touch_bullet(&mut self, _: &BulletList, _: ()) {
+        self.alive = false;
     }
 
     pub fn draw(

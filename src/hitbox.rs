@@ -62,6 +62,13 @@ impl PositionedHitbox {
         let allowed_distance = self.half_size + target.half_size;
         distance.x < allowed_distance.x && distance.y < allowed_distance.y
     }
+    pub fn overlaps_any(lhs: &[Self], rhs: &[Self]) -> bool {
+        lhs.iter().any(|left_hitbox| {
+            rhs.iter()
+                .copied()
+                .any(|right_hitbox| left_hitbox.overlaps(right_hitbox))
+        })
+    }
     pub fn fix_distances(self, target: Self) -> (Int, Int) {
         let distance = (self.center - target.center).abs();
         let allowed_distance = self.half_size + target.half_size;

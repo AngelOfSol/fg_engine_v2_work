@@ -1,5 +1,6 @@
 mod player;
 
+use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::{Yuyuko, YuyukoState};
@@ -13,7 +14,6 @@ use ggez::timer;
 use ggez::{Context, GameResult};
 use gilrs::Gilrs;
 use player::Player;
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 pub struct PlayArea {
@@ -44,14 +44,12 @@ impl Match {
                 resources: resources.clone(),
                 control_scheme: p1,
                 input: InputBuffer::new(),
-                bullet_kill_list: HashSet::new(),
             },
             p2: Player {
                 state: p2_state,
                 resources,
                 control_scheme: p2,
                 input: InputBuffer::new(),
-                bullet_kill_list: HashSet::new(),
             },
             pads_context: Gilrs::new()?,
             debug_text: graphics::Text::new(""),
@@ -94,29 +92,14 @@ impl EventHandler for Match {
                 self.p2.position_mut().x += p2_mod;
             }
 
-            let mut p1_touched = false;
-            'check_p1: for hitbox in self.p2.hitboxes() {
-                for hurtbox in self.p1.hurtboxes() {
-                    if hitbox.overlaps(hurtbox) {
-                        p1_touched = true;
-                        break 'check_p1;
-                    }
-                }
-            }
-            let p1_touched = p1_touched;
-            let mut p2_touched = false;
-            'check_p2: for hitbox in self.p1.hitboxes() {
-                for hurtbox in self.p2.hurtboxes() {
-                    if hitbox.overlaps(hurtbox) {
-                        p2_touched = true;
-                        break 'check_p2;
-                    }
-                }
-            }
-            let p2_touched = p2_touched;
+            let p1_touched =
+                PositionedHitbox::overlaps_any(&self.p2.hitboxes(), &self.p1.hurtboxes());
+            let p2_touched =
+                PositionedHitbox::overlaps_any(&self.p1.hitboxes(), &self.p2.hurtboxes());
 
             let p1_attack_data = self.p1.get_attack_data();
             let p2_attack_data = self.p2.get_attack_data();
+
             let p1_hit_type = self.p1.would_be_hit(p1_touched, p2_attack_data);
             let p2_hit_type = self.p2.would_be_hit(p2_touched, p1_attack_data);
 
@@ -126,60 +109,81 @@ impl EventHandler for Match {
             self.p1.take_hit(&p1_hit_type);
             self.p2.take_hit(&p2_hit_type);
 
-            for (p1_bullet_idx, p1_bullet) in self.p1.bullet_hitboxes().into_iter().enumerate() {
-                for (p2_bullet_idx, p2_bullet) in self.p2.bullet_hitboxes().into_iter().enumerate()
-                {
-                    if p1_bullet.overlaps(p2_bullet) {
-                        self.p1.kill_bullet(p1_bullet_idx);
-                        self.p2.kill_bullet(p2_bullet_idx);
+            {
+                let (p1_context, p1_bullets) = self.p1.bullets_mut();
+                let (p2_context, p2_bullets) = self.p2.bullets_mut();
+
+                for p1_bullet in p1_bullets.iter_mut() {
+                    for p2_bullet in p2_bullets.iter_mut() {
+                        if PositionedHitbox::overlaps_any(
+                            &p1_bullet.hitbox(p1_context.bullets),
+                            &p2_bullet.hitbox(p2_context.bullets),
+                        ) {
+                            // TODO, replace unit parameter with bullet tier/hp system
+                            p1_bullet.on_touch_bullet(p1_context.bullets, ());
+                            p2_bullet.on_touch_bullet(p2_context.bullets, ());
+                        }
                     }
                 }
             }
 
-            self.p1.prune_bullets();
-            self.p2.prune_bullets();
-
-            let p2_hurtboxes = self.p2.hurtboxes();
-
-            let p2_hitby: Vec<_> = self
-                .p1
-                .bullet_hitboxes()
-                .into_iter()
-                .enumerate()
-                .filter(|(_, bullet)| {
-                    p2_hurtboxes
-                        .iter()
-                        .copied()
-                        .any(|item| bullet.overlaps(item))
-                })
-                .map(|(idx, _)| {
-                    // side effect
-                    self.p1.kill_bullet(idx);
-                    self.p2
-                        .would_be_hit(true, self.p1.get_bullet_attack_data(idx))
-                })
-                .collect();
+            self.p1.prune_bullets(&self.play_area);
+            self.p2.prune_bullets(&self.play_area);
 
             let p1_hurtboxes = self.p1.hurtboxes();
+            let p2_hurtboxes = self.p2.hurtboxes();
 
-            let p1_hitby: Vec<_> = self
-                .p2
-                .bullet_hitboxes()
-                .into_iter()
-                .enumerate()
-                .filter(|(_, bullet)| {
-                    p1_hurtboxes
-                        .iter()
-                        .copied()
-                        .any(|item| bullet.overlaps(item))
-                })
-                .map(|(idx, _)| {
-                    // side effect
-                    self.p2.kill_bullet(idx);
-                    self.p1
-                        .would_be_hit(true, self.p2.get_bullet_attack_data(idx))
-                })
-                .collect();
+            let (p1_hitby, p2_hitby) = {
+                let p2_hitby: Vec<_> = {
+                    let (p2, (p1_context, p1_bullets)) = (&self.p2, self.p1.bullets_mut());
+                    p1_bullets
+                        .iter_mut()
+                        .filter(|bullet| {
+                            PositionedHitbox::overlaps_any(
+                                &bullet.hitbox(p1_context.bullets),
+                                &p2_hurtboxes,
+                            )
+                        })
+                        .map(|bullet| {
+                            // side effect
+                            let result = p2.would_be_hit(
+                                true,
+                                Some(bullet.attack_data(p1_context.bullets, p1_context.attacks)),
+                            );
+                            // side effect, pass in
+                            bullet.on_touch(p1_context.bullets, &result);
+
+                            result
+                        })
+                        .collect()
+                };
+
+                let p1_hitby: Vec<_> = {
+                    let (p1, (p2_context, p2_bullets)) = (&self.p1, self.p2.bullets_mut());
+                    p2_bullets
+                        .iter_mut()
+                        .filter(|bullet| {
+                            PositionedHitbox::overlaps_any(
+                                &bullet.hitbox(p2_context.bullets),
+                                &p1_hurtboxes,
+                            )
+                        })
+                        .map(|bullet| {
+                            let result = p1.would_be_hit(
+                                true,
+                                Some(bullet.attack_data(p2_context.bullets, p2_context.attacks)),
+                            );
+
+                            // side effect, pass in
+                            bullet.on_touch(p2_context.bullets, &result);
+
+                            result
+                        })
+                        .collect()
+                };
+
+                (p1_hitby, p2_hitby)
+            };
 
             for attack_info in &p2_hitby {
                 self.p2.take_hit(&attack_info);
@@ -194,8 +198,9 @@ impl EventHandler for Match {
             for attack_info in &p1_hitby {
                 self.p1.deal_hit(&attack_info);
             }
-            self.p1.prune_bullets();
-            self.p2.prune_bullets();
+
+            self.p1.prune_bullets(&self.play_area);
+            self.p2.prune_bullets(&self.play_area);
 
             // compare bullets against opponents bullets
             // apply damage to each bullet

@@ -1,6 +1,6 @@
 mod butterfly;
 
-use super::{AttackList, BulletList, HitInfo};
+use super::{AttackList, BulletList, HitInfo, HitType};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
@@ -64,6 +64,20 @@ impl BulletState {
             BulletState::Butterfly(state) => state.attack_data(data, attacks),
         }
     }
+
+    pub fn on_touch(&mut self, bullets: &BulletList, hit_type: &HitType) {
+        match self {
+            BulletState::Butterfly(state) => state.on_touch(bullets, hit_type),
+        }
+    }
+    // REMOVE when actually passing damage in
+    #[allow(clippy::unit_arg)]
+    pub fn on_touch_bullet(&mut self, bullets: &BulletList, damage: ()) {
+        match self {
+            BulletState::Butterfly(state) => state.on_touch_bullet(bullets, damage),
+        }
+    }
+
     pub fn draw(
         &self,
         ctx: &mut Context,

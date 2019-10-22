@@ -2,20 +2,25 @@ use super::{PlayArea, Shadow};
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
-use crate::roster::{HitInfo, HitType, Yuyuko, YuyukoState};
+use crate::roster::AttackList;
+use crate::roster::BulletState;
+use crate::roster::{BulletList, HitInfo, HitType, Yuyuko, YuyukoState};
 use crate::typedefs::collision;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use gilrs::{Event, EventType};
-use std::collections::HashSet;
 
 pub struct Player {
     pub resources: Yuyuko,
     pub state: YuyukoState,
     pub control_scheme: PadControlScheme,
     pub input: InputBuffer,
-    pub bullet_kill_list: HashSet<usize>,
+}
+
+pub struct BulletsContext<'a> {
+    pub bullets: &'a BulletList,
+    pub attacks: &'a AttackList,
 }
 
 impl Player {
@@ -25,14 +30,19 @@ impl Player {
     pub fn hurtboxes(&self) -> Vec<PositionedHitbox> {
         self.state.hurtboxes(&self.resources)
     }
+
+    pub fn bullets_mut(&mut self) -> (BulletsContext, &mut Vec<BulletState>) {
+        (
+            BulletsContext {
+                bullets: &self.resources.bullets,
+                attacks: &self.resources.attacks,
+            },
+            &mut self.state.bullets,
+        )
+    }
+
     pub fn get_attack_data(&self) -> Option<HitInfo> {
         self.state.get_attack_data(&self.resources)
-    }
-    pub fn get_bullet_attack_data(&self, idx: usize) -> Option<HitInfo> {
-        self.state.get_bullet_attack_data(&self.resources, idx)
-    }
-    pub fn bullet_hitboxes(&self) -> Vec<PositionedHitbox> {
-        self.state.bullet_hitboxes(&self.resources)
     }
 
     pub fn would_be_hit(&self, touched: bool, info: Option<HitInfo>) -> HitType {
@@ -46,14 +56,8 @@ impl Player {
         self.state.deal_hit(&self.resources, info);
     }
 
-    pub fn kill_bullet(&mut self, idx: usize) {
-        self.bullet_kill_list.insert(idx);
-    }
-    pub fn prune_bullets(&mut self) {
-        self.state.prune_bullets(&std::mem::replace(
-            &mut self.bullet_kill_list,
-            HashSet::new(),
-        ));
+    pub fn prune_bullets(&mut self, play_area: &PlayArea) {
+        self.state.prune_bullets(&self.resources, play_area);
     }
 
     pub fn collision(&self) -> PositionedHitbox {

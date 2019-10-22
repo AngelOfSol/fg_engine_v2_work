@@ -17,12 +17,13 @@ use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::{collision, graphics};
 use attacks::AttackId;
-use bullets::{BulletSpawn, BulletState};
+use bullets::BulletSpawn;
+pub use bullets::BulletState;
 use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
 use serde::Deserialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -43,15 +44,15 @@ pub struct Yuyuko {
     assets: Assets,
     states: StateList,
     particles: ParticleList,
-    bullets: BulletList,
-    attacks: AttackList,
+    pub bullets: BulletList,
+    pub attacks: AttackList,
     properties: Properties,
     command_list: CommandList<MoveId>,
 }
 
 type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>;
 type ParticleList = HashMap<Particle, Animation>;
-type AttackList = HashMap<AttackId, AttackInfo>;
+pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 #[derive(Debug, Clone)]
 pub enum HitInfo {
@@ -253,20 +254,12 @@ impl YuyukoState {
                 hitbox_id: item.id,
             })
     }
-    pub fn get_bullet_attack_data(&self, data: &Yuyuko, idx: usize) -> Option<HitInfo> {
-        Some(self.bullets[idx].attack_data(&data.bullets, &data.attacks))
-    }
-    pub fn bullet_hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
-        self.bullets
-            .iter()
-            .map(|item| item.hitbox(&data.bullets)[0])
-            .collect()
-    }
 
-    pub fn prune_bullets(&mut self, to_kill: &HashSet<usize>) {
-        let mut idx = 0;
+    pub fn prune_bullets(&mut self, data: &Yuyuko, play_area: &PlayArea) {
+        // TODO, add on death effects here
+
         self.bullets
-            .retain(|_| (!to_kill.contains(&idx), idx += 1).0)
+            .retain(|item| item.alive(&data.bullets, play_area));
     }
 
     pub fn current_flags<'a>(&self, data: &'a Yuyuko) -> &'a Flags {
@@ -712,8 +705,7 @@ impl YuyukoState {
             bullet.update(&data.bullets);
         }
 
-        self.bullets
-            .retain(|bullet| bullet.alive(&data.bullets, play_area));
+        self.prune_bullets(data, play_area);
 
         // then spawn bullets
         let (frame, move_id) = self.current_state;
