@@ -145,12 +145,11 @@ impl EventHandler for Match {
                             )
                         })
                         .map(|bullet| {
-                            // side effect
                             let result = p2.would_be_hit(
                                 true,
                                 Some(bullet.attack_data(p1_context.bullets, p1_context.attacks)),
                             );
-                            // side effect, pass in
+                            // side effect
                             bullet.on_touch(p1_context.bullets, &result);
 
                             result
@@ -174,7 +173,7 @@ impl EventHandler for Match {
                                 Some(bullet.attack_data(p2_context.bullets, p2_context.attacks)),
                             );
 
-                            // side effect, pass in
+                            // side effect
                             bullet.on_touch(p2_context.bullets, &result);
 
                             result
@@ -271,7 +270,10 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!("");
+        self.debug_text.fragments_mut()[0].text = format!(
+            "{}, {:?}, {:?}",
+            self.p1.state.current_state.0, self.p1.state.current_state.1, self.p1.state.last_hit_by
+        );
         graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
 
         self.p1
