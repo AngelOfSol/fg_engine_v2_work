@@ -139,25 +139,63 @@ impl EventHandler for Match {
             self.p1.prune_bullets();
             self.p2.prune_bullets();
 
-            let mut p2_hitby = HashSet::new();
-            for (p1_bullet_idx, p1_bullet) in self.p1.bullet_hitboxes().into_iter().enumerate() {
-                let mut hit = false;
-                'check_p1_bullet: for hurtbox in self.p2.hurtboxes() {
-                    if p1_bullet.overlaps(hurtbox) {
-                        hit = true;
-                        break 'check_p1_bullet;
-                    }
-                }
-                if hit {
-                    p2_hitby.insert(p1_bullet_idx);
-                }
-            }
+            let p2_hurtboxes = self.p2.hurtboxes();
 
-            for bullet_idx in &p2_hitby {
-                let attack_info = self.p1.get_bullet_attack_data(*bullet_idx);
-                let attack_info = self.p2.would_be_hit(true, attack_info);
+            let p2_hitby: Vec<_> = self
+                .p1
+                .bullet_hitboxes()
+                .into_iter()
+                .enumerate()
+                .filter(|(_, bullet)| {
+                    p2_hurtboxes
+                        .iter()
+                        .copied()
+                        .fold(false, |acc, item| acc || bullet.overlaps(item))
+                })
+                .map(|(idx, _)| {
+                    // side effect
+                    self.p1.kill_bullet(idx);
+                    self.p2
+                        .would_be_hit(true, self.p1.get_bullet_attack_data(idx))
+                })
+                .collect();
+
+            let p1_hurtboxes = self.p1.hurtboxes();
+
+            let p1_hitby: Vec<_> = self
+                .p2
+                .bullet_hitboxes()
+                .into_iter()
+                .enumerate()
+                .filter(|(_, bullet)| {
+                    p1_hurtboxes
+                        .iter()
+                        .copied()
+                        .fold(false, |acc, item| acc || bullet.overlaps(item))
+                })
+                .map(|(idx, _)| {
+                    // side effect
+                    self.p2.kill_bullet(idx);
+                    self.p1
+                        .would_be_hit(true, self.p2.get_bullet_attack_data(idx))
+                })
+                .collect();
+
+            for attack_info in &p2_hitby {
                 self.p2.take_hit(&attack_info);
             }
+            for attack_info in &p1_hitby {
+                self.p1.take_hit(&attack_info);
+            }
+
+            for attack_info in &p2_hitby {
+                self.p2.deal_hit(&attack_info);
+            }
+            for attack_info in &p1_hitby {
+                self.p1.deal_hit(&attack_info);
+            }
+            self.p1.prune_bullets();
+            self.p2.prune_bullets();
 
             // compare bullets against opponents bullets
             // apply damage to each bullet

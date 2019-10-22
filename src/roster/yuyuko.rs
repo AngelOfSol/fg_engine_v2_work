@@ -419,16 +419,20 @@ impl YuyukoState {
     }
     pub fn deal_hit(&mut self, data: &Yuyuko, info: &HitType) {
         let boxes = self.hitboxes(data);
+
         match info {
             HitType::Hit(info) => {
                 let info = info.get_attack_data();
                 let on_hit = &info.on_hit;
                 self.hitstop = on_hit.attacker_stop;
-                let spawn_point = boxes
-                    .iter()
-                    .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
-                    / boxes.len() as i32;
-                self.spawn_particle(Particle::HitEffect, spawn_point);
+                if !boxes.is_empty() {
+                    // TODO improve hit effect particle spawning determination
+                    let spawn_point = boxes
+                        .iter()
+                        .fold(collision::Vec2::zeros(), |acc, item| acc + item.center)
+                        / boxes.len() as i32;
+                    self.spawn_particle(Particle::HitEffect, spawn_point);
+                }
             }
             HitType::Block(info) | HitType::WrongBlock(info) => {
                 let info = info.get_attack_data();
