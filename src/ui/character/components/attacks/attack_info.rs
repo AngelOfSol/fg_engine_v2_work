@@ -57,6 +57,15 @@ impl AttackInfoUi {
             ui.input_vec2_whole(im_str!("Air"), &mut data.on_block.air_force);
             ui.input_whole(im_str!("Ground"), &mut data.on_block.ground_pushback)
                 .unwrap();
+
+            ui.separator();
+
+            ui.input_whole(im_str!("Spirit Cost"), &mut data.spirit_cost)
+                .unwrap();
+            ui.input_whole(im_str!("Spirit Delay"), &mut data.spirit_delay)
+                .unwrap();
+            ui.checkbox(im_str!("Reset Spirit Delay"), &mut data.reset_spirit_delay);
+
             id.pop(ui);
         }
     }

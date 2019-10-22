@@ -18,6 +18,13 @@ pub struct AttackInfo {
     pub on_hit: HitInfo,
     #[serde(default)]
     pub on_block: HitInfo,
+
+    #[serde(default)]
+    pub spirit_cost: i32,
+    #[serde(default)]
+    pub spirit_delay: i32,
+    #[serde(default)]
+    pub reset_spirit_delay: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -65,6 +72,9 @@ impl AttackInfo {
             air_unblockable: false,
             grazeable: false,
             melee: false,
+            spirit_cost: 0,
+            spirit_delay: 0,
+            reset_spirit_delay: false,
         }
     }
 }

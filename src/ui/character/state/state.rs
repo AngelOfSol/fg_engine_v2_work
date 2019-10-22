@@ -116,6 +116,12 @@ impl StateUi {
                 if ui.small_button(im_str!("Edit")) {
                     ret = Some(Mode::Edit(animation.animation.name.clone()));
                 }
+            }
+            ui.same_line(0.0);
+            if ui.small_button(im_str!("Delete")) {
+                data.remove(animation);
+            }
+            if let Some(animation) = data.get_mut(animation) {
                 ui.separator();
                 AnimationDataUi::draw_ui(ui, animation);
             }

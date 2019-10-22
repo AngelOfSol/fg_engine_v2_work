@@ -41,13 +41,13 @@ pub struct BulletList {
 
 #[derive(Clone, Debug)]
 pub struct Yuyuko {
-    assets: Assets,
-    states: StateList,
-    particles: ParticleList,
+    pub assets: Assets,
+    pub states: StateList,
+    pub particles: ParticleList,
     pub bullets: BulletList,
     pub attacks: AttackList,
-    properties: Properties,
-    command_list: CommandList<MoveId>,
+    pub properties: Properties,
+    pub command_list: CommandList<MoveId>,
 }
 
 type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>;
@@ -108,7 +108,7 @@ pub struct YuyukoData {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct Properties {
+pub struct Properties {
     health: u32,
     name: String,
     neutral_jump_accel: collision::Vec2,
@@ -368,6 +368,13 @@ impl YuyukoState {
                         .invert()
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
+
+                self.spirit_gauge -= info.spirit_cost;
+                if info.reset_spirit_delay {
+                    self.spirit_delay = 0;
+                }
+                self.spirit_delay += info.spirit_delay;
+
                 self.extra_data = ExtraData::Stun(info.level.blockstun());
                 self.hitstop = on_block.defender_stop;
             }
