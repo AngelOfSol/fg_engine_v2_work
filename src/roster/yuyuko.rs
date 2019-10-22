@@ -254,20 +254,12 @@ impl YuyukoState {
             })
     }
     pub fn get_bullet_attack_data(&self, data: &Yuyuko, idx: usize) -> Option<HitInfo> {
-        match &self.bullets[idx] {
-            BulletState::Butterfly { .. } => Some(HitInfo::Bullet(
-                data.attacks[&data.bullets.butterfly.attack_id].clone(),
-            )),
-        }
+        Some(self.bullets[idx].attack_data(&data.bullets, &data.attacks))
     }
     pub fn bullet_hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
         self.bullets
             .iter()
-            .map(|item| match item {
-                BulletState::Butterfly { position, .. } => {
-                    data.bullets.butterfly.hitbox.with_position(*position)
-                }
-            })
+            .map(|item| item.hitbox(&data.bullets)[0])
             .collect()
     }
 
@@ -717,25 +709,11 @@ impl YuyukoState {
     fn update_bullets(&mut self, data: &Yuyuko, play_area: &PlayArea) {
         // first update all active bullets
         for bullet in self.bullets.iter_mut() {
-            match bullet {
-                BulletState::Butterfly {
-                    ref mut position,
-                    velocity,
-                    ..
-                } => {
-                    *position += *velocity;
-                }
-            }
+            bullet.update(&data.bullets);
         }
 
-        self.bullets.retain(|bullet| match bullet {
-            BulletState::Butterfly { position, .. } => {
-                !(i32::abs(position.x)
-                    > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.x
-                    || i32::abs(position.y)
-                        > play_area.width / 2 + data.bullets.butterfly.hitbox.half_size.y)
-            }
-        });
+        self.bullets
+            .retain(|bullet| bullet.alive(&data.bullets, play_area));
 
         // then spawn bullets
         let (frame, move_id) = self.current_state;
@@ -921,24 +899,7 @@ impl YuyukoState {
         world: graphics::Matrix4,
     ) -> GameResult<()> {
         for bullet in &self.bullets {
-            match bullet {
-                BulletState::Butterfly {
-                    position, rotation, ..
-                } => {
-                    data.bullets.butterfly.animation.draw_at_time(
-                        ctx,
-                        &data.assets,
-                        0,
-                        world
-                            * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                                position.into_graphical(),
-                            ))
-                            * graphics::Matrix4::new_rotation(
-                                nalgebra::Vector3::new(0.0, 0.0, 1.0) * *rotation,
-                            ),
-                    )?;
-                }
-            }
+            bullet.draw(ctx, &data.bullets, &data.assets, world)?;
         }
 
         Ok(())
