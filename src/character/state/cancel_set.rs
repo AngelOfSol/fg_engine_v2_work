@@ -55,6 +55,32 @@ impl MoveType {
     pub fn all() -> &'static [MoveType; 21] {
         &ALL_MOVE_TYPES
     }
+
+    pub fn is_attack(self) -> bool {
+        match self {
+            MoveType::Melee
+            | MoveType::Magic
+            | MoveType::MeleeSpecial
+            | MoveType::MagicSpecial
+            | MoveType::Super
+            | MoveType::Followup
+            | MoveType::AirMelee
+            | MoveType::AirMagic
+            | MoveType::AirMeleeSpecial
+            | MoveType::AirMagicSpecial
+            | MoveType::AirSuper
+            | MoveType::AirFollowup => true,
+            MoveType::Hitstun
+            | MoveType::Blockstun
+            | MoveType::Idle
+            | MoveType::Walk
+            | MoveType::Jump
+            | MoveType::HiJump
+            | MoveType::Dash
+            | MoveType::Fly
+            | MoveType::AirDash => false,
+        }
+    }
 }
 impl Display for MoveType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

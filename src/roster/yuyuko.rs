@@ -23,7 +23,7 @@ use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -240,6 +240,7 @@ pub struct YuyukoState {
     pub current_combo: Option<ComboState>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
+    pub rebeat_chain: HashSet<MoveId>,
 }
 
 impl YuyukoState {
@@ -260,6 +261,7 @@ impl YuyukoState {
             health: data.properties.health,
             current_combo: None,
             allowed_cancels: AllowedCancel::Always,
+            rebeat_chain: HashSet::new(),
         }
     }
 
@@ -609,6 +611,13 @@ impl YuyukoState {
             self.last_hit_by = None;
         }
     }
+    fn handle_rebeat_data(&mut self, data: &Yuyuko) {
+        let (_, move_id) = self.current_state;
+
+        if !data.states[&move_id].state_type.is_attack() {
+            self.rebeat_chain.clear();
+        }
+    }
 
     fn update_combo_state(&mut self, info: &AttackInfo, should_pushback: bool) {
         self.current_combo = Some(match &self.current_combo {
@@ -643,6 +652,7 @@ impl YuyukoState {
         // if the next frame would be out of bounds
         self.current_state = if frame >= data.states[&move_id].duration() - 1 {
             self.allowed_cancels = AllowedCancel::Always;
+            self.rebeat_chain.clear();
             (0, data.states[&move_id].on_expire_state)
         } else {
             (frame + 1, move_id)
@@ -709,6 +719,7 @@ impl YuyukoState {
                                     AllowedCancel::Block => cancels.block.contains(&data.states[new_move_id].state_type),
                                     AllowedCancel::Always => false,
                                 })
+                            && !self.rebeat_chain.contains(new_move_id)
                             && !cancels.disallow.contains(new_move_id)
                             // not ideal way to handle disallowing fly, consider separating out from cancel checking
                             && !(*new_move_id == MoveId::FlyStart && self.air_actions == 0)
@@ -717,8 +728,9 @@ impl YuyukoState {
                     .fold(None, |acc, item| acc.or(Some(item)))
                     .map(|new_move| (0, new_move));
 
-                if possible_new_move.is_some() {
+                if let Some((_, new_move)) = &possible_new_move {
                     self.allowed_cancels = AllowedCancel::Always;
+                    self.rebeat_chain.insert(*new_move);
                 }
 
                 possible_new_move.unwrap_or((frame, move_id))
@@ -938,6 +950,7 @@ impl YuyukoState {
             self.hitstop -= 1;
         } else {
             self.handle_expire(data);
+            self.handle_rebeat_data(data);
             self.handle_hitstun(data);
             self.handle_input(data, input);
             self.update_extra_data(input);
