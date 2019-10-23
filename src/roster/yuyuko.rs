@@ -109,7 +109,7 @@ pub struct YuyukoData {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Properties {
-    health: u32,
+    health: i32,
     name: String,
     neutral_jump_accel: collision::Vec2,
     neutral_super_jump_accel: collision::Vec2,
@@ -190,6 +190,14 @@ impl ExtraData {
 }
 
 #[derive(Debug, Clone)]
+pub struct ComboState {
+    hits: u32,
+    total_damage: i32,
+    last_hit_damage: i32,
+    proration: i32,
+}
+
+#[derive(Debug, Clone)]
 pub struct YuyukoState {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
@@ -203,7 +211,8 @@ pub struct YuyukoState {
     pub spirit_delay: i32,
     pub hitstop: i32,
     pub last_hit_by: Option<(MoveId, usize)>,
-    pub health: u32,
+    pub current_combo: Option<ComboState>,
+    pub health: i32,
     pub allowed_cancels: (),
 }
 
@@ -223,6 +232,7 @@ impl YuyukoState {
             facing: Facing::Right,
             last_hit_by: None,
             health: data.properties.health,
+            current_combo: None,
             allowed_cancels: (),
         }
     }
@@ -362,6 +372,10 @@ impl YuyukoState {
                 }
                 self.extra_data = ExtraData::Stun(info.level.hitstun());
                 self.hitstop = on_hit.defender_stop;
+
+                self.update_combo_state(&info);
+                let current_combo = self.current_combo.as_ref().unwrap();
+                self.health -= current_combo.last_hit_damage;
             }
             HitType::Block(info) => {
                 if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
@@ -513,6 +527,35 @@ impl YuyukoState {
         } else {
             collision::Vec2::zeros()
         }
+    }
+
+    fn handle_combo_state(&mut self, data: &Yuyuko) {
+        let (_, move_id) = self.current_state;
+
+        if data.states[&move_id].state_type != MoveType::Hitstun {
+            self.current_combo = None;
+        }
+    }
+
+    fn update_combo_state(&mut self, info: &AttackInfo) {
+        self.current_combo = Some(match &self.current_combo {
+            Some(state) => {
+                let proration = info.proration * state.proration / 100;
+                let last_hit_damage = info.hit_damage * state.proration / 100;
+                ComboState {
+                    hits: state.hits + 1,
+                    total_damage: state.total_damage + last_hit_damage,
+                    last_hit_damage,
+                    proration,
+                }
+            }
+            None => ComboState {
+                hits: 1,
+                total_damage: info.hit_damage,
+                last_hit_damage: info.hit_damage,
+                proration: info.proration,
+            },
+        });
     }
 
     fn handle_expire(&mut self, data: &Yuyuko) {
@@ -789,6 +832,7 @@ impl YuyukoState {
             self.update_velocity(data);
             self.update_position(data, play_area);
         }
+        self.handle_combo_state(data);
         self.update_spirit(data);
         self.update_particles(data);
         self.update_bullets(data, play_area);
