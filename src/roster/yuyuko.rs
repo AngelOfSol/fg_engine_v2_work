@@ -203,10 +203,30 @@ pub struct YuyukoState {
     pub spirit_delay: i32,
     pub hitstop: i32,
     pub last_hit_by: Option<(MoveId, usize)>,
+    pub health: u32,
     pub allowed_cancels: (),
 }
 
 impl YuyukoState {
+    pub fn new(data: &Yuyuko) -> Self {
+        Self {
+            velocity: collision::Vec2::zeros(),
+            position: collision::Vec2::zeros(),
+            current_state: (0, MoveId::Stand),
+            extra_data: ExtraData::None,
+            particles: Vec::new(),
+            bullets: Vec::new(),
+            air_actions: data.properties.max_air_actions,
+            spirit_gauge: data.properties.max_spirit_gauge,
+            spirit_delay: 0,
+            hitstop: 0,
+            facing: Facing::Right,
+            last_hit_by: None,
+            health: data.properties.health,
+            allowed_cancels: (),
+        }
+    }
+
     pub fn collision(&self, data: &Yuyuko) -> PositionedHitbox {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
@@ -432,24 +452,6 @@ impl YuyukoState {
                 self.hitstop = on_block.attacker_stop;
             }
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
-        }
-    }
-
-    pub fn new(data: &Yuyuko) -> Self {
-        Self {
-            velocity: collision::Vec2::zeros(),
-            position: collision::Vec2::zeros(),
-            current_state: (0, MoveId::Stand),
-            extra_data: ExtraData::None,
-            particles: Vec::new(),
-            bullets: Vec::new(),
-            air_actions: data.properties.max_air_actions,
-            spirit_gauge: data.properties.max_spirit_gauge,
-            spirit_delay: 0,
-            hitstop: 0,
-            facing: Facing::Right,
-            last_hit_by: None,
-            allowed_cancels: (),
         }
     }
 
@@ -802,14 +804,60 @@ impl YuyukoState {
         ggez::graphics::apply_transformations(ctx)?;
         ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
 
-        let hp_current = ggez::graphics::Rect::new(
+        let spirit_current = ggez::graphics::Rect::new(
             0.0,
             0.0,
             100.0 * self.spirit_gauge as f32 / data.properties.max_spirit_gauge as f32,
             20.0,
         );
-        let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
-        let hp_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
+        let spirit_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
+        let spirit_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            spirit_max,
+            ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
+        )?;
+
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            spirit_backdrop,
+            ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
+        )?;
+
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        let rect = ggez::graphics::Mesh::new_rectangle(
+            ctx,
+            ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+            spirit_current,
+            ggez::graphics::Color::new(0.0, 0.0, 1.0, 1.0),
+        )?;
+
+        ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+        // draw HP bar
+
+        ggez::graphics::set_transform(
+            ctx,
+            graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -400.0, 0.0))
+                * bottom_line,
+        );
+        ggez::graphics::apply_transformations(ctx)?;
+
+        let hp_length = 300.0;
+        let hp_current = ggez::graphics::Rect::new(
+            0.0,
+            0.0,
+            hp_length * self.health as f32 / data.properties.health as f32,
+            20.0,
+        );
+        let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, hp_length, 20.0);
+        let hp_max = ggez::graphics::Rect::new(-5.0, -5.0, hp_length + 10.0, 30.0);
 
         let rect = ggez::graphics::Mesh::new_rectangle(
             ctx,
@@ -833,7 +881,7 @@ impl YuyukoState {
             ctx,
             ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
             hp_current,
-            ggez::graphics::Color::new(0.0, 0.0, 1.0, 1.0),
+            ggez::graphics::Color::new(0.0, 1.0, 0.0, 1.0),
         )?;
 
         ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;

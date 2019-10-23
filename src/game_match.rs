@@ -200,14 +200,6 @@ impl EventHandler for Match {
 
             self.p1.prune_bullets(&self.play_area);
             self.p2.prune_bullets(&self.play_area);
-
-            // compare bullets against opponents bullets
-            // apply damage to each bullet
-            // remove bullets that are dead
-
-            // compare player against bullets
-            //take_bullet_hit?take_hit?
-            //deal_bullet_hit (pass an ID)
         }
         Ok(())
     }
