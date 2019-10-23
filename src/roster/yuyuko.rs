@@ -5,7 +5,7 @@ mod moves;
 mod particles;
 
 use crate::assets::Assets;
-use crate::character::components::AttackInfo;
+use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
@@ -212,6 +212,7 @@ pub struct ComboState {
     last_hit_damage: i32,
     proration: i32,
     should_pushback: bool,
+    ground_action: GroundAction,
 }
 
 #[derive(Debug, Clone)]
@@ -420,7 +421,7 @@ impl YuyukoState {
                 let attack_data = info.get_attack_data();
 
                 let on_hit = &attack_data.on_hit;
-                if flags.airborne {
+                if flags.airborne || attack_data.launcher {
                     self.current_state = (0, MoveId::HitstunAirStart);
                     self.velocity = hit_direction.fix_collision(on_hit.air_force);
                 } else {
@@ -597,6 +598,7 @@ impl YuyukoState {
 
         if data.states[&move_id].state_type != MoveType::Hitstun {
             self.current_combo = None;
+            self.last_hit_by = None;
         }
     }
 
@@ -611,6 +613,7 @@ impl YuyukoState {
                     last_hit_damage,
                     proration,
                     should_pushback,
+                    ground_action: info.ground_action,
                 }
             }
             None => ComboState {
@@ -619,6 +622,7 @@ impl YuyukoState {
                 last_hit_damage: info.hit_damage,
                 proration: info.proration,
                 should_pushback,
+                ground_action: info.ground_action,
             },
         });
     }
@@ -791,13 +795,30 @@ impl YuyukoState {
 
         // handle landing
         if flags.airborne && self.position.y - collision.half_size.y <= -4 {
-            self.velocity = collision::Vec2::zeros();
+            let mut reset_hitstun = true;
+            let mut reset_velocity = true;
             self.current_state = if state.state_type == MoveType::Hitstun {
-                (0, MoveId::HitGround)
+                match self.current_combo.as_ref().unwrap().ground_action {
+                    GroundAction::Knockdown => (0, MoveId::HitGround),
+                    GroundAction::GroundSlam => {
+                        self.velocity.y *= -1;
+                        self.current_combo.as_mut().unwrap().ground_action =
+                            GroundAction::Knockdown;
+                        reset_hitstun = false;
+                        reset_velocity = false;
+                        (0, MoveId::HitstunAirStart)
+                    }
+                    GroundAction::OnTheGround => (0, MoveId::HitGround),
+                }
             } else {
                 (0, MoveId::Stand)
             };
-            self.extra_data = ExtraData::None;
+            if reset_hitstun {
+                self.extra_data = ExtraData::None;
+            }
+            if reset_velocity {
+                self.velocity = collision::Vec2::zeros();
+            }
             self.position.y = hitboxes.collision.half_size.y;
             self.air_actions = data.properties.max_air_actions;
         }

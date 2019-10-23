@@ -1,4 +1,4 @@
-use crate::character::components::{AttackInfo, AttackLevel, Guard};
+use crate::character::components::{AttackInfo, AttackLevel, GroundAction, Guard};
 use crate::imgui_extra::UiExtensions;
 use imgui::{im_str, Ui};
 
@@ -35,20 +35,41 @@ impl AttackInfoUi {
 
         if ui.collapsing_header(im_str!("On Hit")).build() {
             let id = ui.push_id("On Hit");
+            ui.checkbox(im_str!("Launches"), &mut data.launcher);
+            ui.separator();
             ui.input_whole(im_str!("Attacker Stop"), &mut data.on_hit.attacker_stop)
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut data.on_hit.defender_stop)
                 .unwrap();
             ui.text(im_str!("Forces"));
             ui.input_vec2_whole(im_str!("Air"), &mut data.on_hit.air_force);
-            ui.input_whole(im_str!("Ground"), &mut data.on_hit.ground_pushback)
-                .unwrap();
+            if !data.launcher {
+                ui.input_whole(im_str!("Ground"), &mut data.on_hit.ground_pushback)
+                    .unwrap();
+            }
 
             ui.separator();
             ui.input_whole(im_str!("Hit Damage"), &mut data.hit_damage)
                 .unwrap();
             ui.input_whole(im_str!("Proration (%)"), &mut data.proration)
                 .unwrap();
+
+            ui.text(im_str!("Guard As:"));
+            ui.radio_button(
+                im_str!("Knockdown"),
+                &mut data.ground_action,
+                GroundAction::Knockdown,
+            );
+            ui.radio_button(
+                im_str!("Ground Slam"),
+                &mut data.ground_action,
+                GroundAction::GroundSlam,
+            );
+            ui.radio_button(
+                im_str!("OTG"),
+                &mut data.ground_action,
+                GroundAction::OnTheGround,
+            );
 
             id.pop(ui);
         }
@@ -60,7 +81,9 @@ impl AttackInfoUi {
             ui.input_whole(im_str!("Defender Stop"), &mut data.on_block.defender_stop)
                 .unwrap();
             ui.text(im_str!("Forces"));
-            ui.input_vec2_whole(im_str!("Air"), &mut data.on_block.air_force);
+            if !data.air_unblockable {
+                ui.input_vec2_whole(im_str!("Air"), &mut data.on_block.air_force);
+            }
             ui.input_whole(im_str!("Ground"), &mut data.on_block.ground_pushback)
                 .unwrap();
 

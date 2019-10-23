@@ -9,6 +9,8 @@ pub enum AttackId {
     Attack5A,
     #[serde(rename = "attack5b")]
     Attack5B,
+    #[serde(rename = "attack6b")]
+    Attack6B,
     Butterfly,
 }
 

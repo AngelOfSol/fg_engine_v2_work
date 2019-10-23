@@ -1,4 +1,4 @@
-use super::{AttackLevel, Guard};
+use super::{AttackLevel, GroundAction, Guard};
 use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +21,10 @@ pub struct AttackInfo {
     pub hit_damage: i32,
     #[serde(default)]
     pub proration: i32,
+    #[serde(default)]
+    pub launcher: bool,
+    #[serde(default)]
+    pub ground_action: GroundAction,
 
     #[serde(default)]
     pub on_block: HitInfo,
@@ -80,6 +84,8 @@ impl AttackInfo {
             air_unblockable: false,
             grazeable: false,
             melee: false,
+            launcher: false,
+            ground_action: GroundAction::default(),
             spirit_cost: 0,
             spirit_delay: 0,
             reset_spirit_delay: false,
