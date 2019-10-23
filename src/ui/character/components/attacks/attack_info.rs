@@ -44,6 +44,12 @@ impl AttackInfoUi {
             ui.input_whole(im_str!("Ground"), &mut data.on_hit.ground_pushback)
                 .unwrap();
 
+            ui.separator();
+            ui.input_whole(im_str!("Hit Damage"), &mut data.hit_damage)
+                .unwrap();
+            ui.input_whole(im_str!("Proration (%)"), &mut data.proration)
+                .unwrap();
+
             id.pop(ui);
         }
 
@@ -65,6 +71,9 @@ impl AttackInfoUi {
             ui.input_whole(im_str!("Spirit Delay"), &mut data.spirit_delay)
                 .unwrap();
             ui.checkbox(im_str!("Reset Spirit Delay"), &mut data.reset_spirit_delay);
+            ui.separator();
+            ui.input_whole(im_str!("Chip Damage"), &mut data.chip_damage)
+                .unwrap();
 
             id.pop(ui);
         }

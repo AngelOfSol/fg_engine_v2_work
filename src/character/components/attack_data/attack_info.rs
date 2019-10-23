@@ -16,6 +16,12 @@ pub struct AttackInfo {
 
     #[serde(default)]
     pub on_hit: HitInfo,
+
+    #[serde(default)]
+    pub hit_damage: i32,
+    #[serde(default)]
+    pub proration: i32,
+
     #[serde(default)]
     pub on_block: HitInfo,
 
@@ -25,6 +31,8 @@ pub struct AttackInfo {
     pub spirit_delay: i32,
     #[serde(default)]
     pub reset_spirit_delay: bool,
+    #[serde(default)]
+    pub chip_damage: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,6 +83,9 @@ impl AttackInfo {
             spirit_cost: 0,
             spirit_delay: 0,
             reset_spirit_delay: false,
+            hit_damage: 200,
+            proration: 100,
+            chip_damage: 0,
         }
     }
 }
