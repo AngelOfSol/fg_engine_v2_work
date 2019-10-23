@@ -79,6 +79,13 @@ impl HitInfo {
         }
     }
 
+    pub fn should_pushback(&self) -> bool {
+        match self {
+            HitInfo::Character { .. } => true,
+            HitInfo::Bullet(_, _) => false,
+        }
+    }
+
     pub fn get_hit_by_data(&self) -> Option<(MoveId, usize)> {
         if let HitInfo::Character {
             move_id, hitbox_id, ..
@@ -204,6 +211,7 @@ pub struct ComboState {
     total_damage: i32,
     last_hit_damage: i32,
     proration: i32,
+    should_pushback: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -261,6 +269,39 @@ impl YuyukoState {
             .collision
             .with_position(self.position)
     }
+    pub fn in_corner(&self, data: &Yuyuko, play_area: &PlayArea) -> bool {
+        let collision = self.collision(data);
+        i32::abs(self.position.x) >= play_area.width / 2 - collision.half_size.x
+    }
+
+    pub fn apply_pushback(&mut self, data: &Yuyuko, force: collision::Int) {
+        let flags = self.current_flags(data);
+        if !flags.airborne {
+            self.position.x += force;
+        }
+    }
+    pub fn get_pushback(&self, data: &Yuyuko, play_area: &PlayArea) -> collision::Int {
+        let (frame, move_id) = &self.current_state;
+        let state = &data.states[&move_id];
+        let flags = state.flags.at_time(*frame);
+
+        if let Some(combo_state) = &self.current_combo {
+            if !flags.airborne
+                && (state.state_type == MoveType::Hitstun
+                    || state.state_type == MoveType::Blockstun)
+                && self.in_corner(data, play_area)
+                && self.hitstop == 0
+                && combo_state.should_pushback
+            {
+                -self.velocity.x
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    }
+
     pub fn hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
@@ -376,9 +417,9 @@ impl YuyukoState {
                 }
 
                 let hit_direction = info.get_facing();
-                let info = info.get_attack_data();
+                let attack_data = info.get_attack_data();
 
-                let on_hit = &info.on_hit;
+                let on_hit = &attack_data.on_hit;
                 if flags.airborne {
                     self.current_state = (0, MoveId::HitstunAirStart);
                     self.velocity = hit_direction.fix_collision(on_hit.air_force);
@@ -387,10 +428,10 @@ impl YuyukoState {
                     self.velocity = hit_direction
                         .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                 }
-                self.extra_data = ExtraData::Stun(info.level.hitstun());
+                self.extra_data = ExtraData::Stun(attack_data.level.hitstun());
                 self.hitstop = on_hit.defender_stop;
 
-                self.update_combo_state(&info);
+                self.update_combo_state(&attack_data, info.should_pushback());
                 let current_combo = self.current_combo.as_ref().unwrap();
                 self.health -= current_combo.last_hit_damage;
             }
@@ -467,8 +508,10 @@ impl YuyukoState {
             HitType::Hit(info) => {
                 let info = info.get_attack_data();
                 let on_hit = &info.on_hit;
+
                 self.hitstop = on_hit.attacker_stop;
                 self.allowed_cancels = AllowedCancel::Hit;
+
                 if !boxes.is_empty() {
                     // TODO improve hit effect particle spawning determination
                     let spawn_point = boxes
@@ -481,6 +524,7 @@ impl YuyukoState {
             HitType::Block(info) | HitType::WrongBlock(info) => {
                 let info = info.get_attack_data();
                 let on_block = &info.on_block;
+
                 self.allowed_cancels = AllowedCancel::Block;
                 self.hitstop = on_block.attacker_stop;
             }
@@ -556,7 +600,7 @@ impl YuyukoState {
         }
     }
 
-    fn update_combo_state(&mut self, info: &AttackInfo) {
+    fn update_combo_state(&mut self, info: &AttackInfo, should_pushback: bool) {
         self.current_combo = Some(match &self.current_combo {
             Some(state) => {
                 let proration = info.proration * state.proration / 100;
@@ -566,6 +610,7 @@ impl YuyukoState {
                     total_damage: state.total_damage + last_hit_damage,
                     last_hit_damage,
                     proration,
+                    should_pushback,
                 }
             }
             None => ComboState {
@@ -573,6 +618,7 @@ impl YuyukoState {
                 total_damage: info.hit_damage,
                 last_hit_damage: info.hit_damage,
                 proration: info.proration,
+                should_pushback,
             },
         });
     }

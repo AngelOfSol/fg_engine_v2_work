@@ -56,6 +56,13 @@ impl Player {
         self.state.deal_hit(&self.resources, info);
     }
 
+    pub fn get_pushback(&self, play_area: &PlayArea) -> collision::Int {
+        self.state.get_pushback(&self.resources, play_area)
+    }
+    pub fn apply_pushback(&mut self, force: collision::Int) {
+        self.state.apply_pushback(&self.resources, force);
+    }
+
     pub fn prune_bullets(&mut self, play_area: &PlayArea) {
         self.state.prune_bullets(&self.resources, play_area);
     }

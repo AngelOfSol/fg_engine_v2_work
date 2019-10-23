@@ -99,7 +99,7 @@ impl PositionedHitbox {
         };
 
         let (left_mod, right_mod) = (
-            dbg!(direction_mod) * overlap_distance,
+            direction_mod * overlap_distance,
             -direction_mod * (overlap.x - overlap_distance),
         );
 

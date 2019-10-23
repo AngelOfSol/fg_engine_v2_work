@@ -86,6 +86,11 @@ impl EventHandler for Match {
             self.p1.handle_refacing(self.p2.position().x);
             self.p2.handle_refacing(self.p1.position().x);
 
+            self.p1
+                .apply_pushback(self.p2.get_pushback(&self.play_area));
+            self.p2
+                .apply_pushback(self.p1.get_pushback(&self.play_area));
+
             if self.p1.collision().overlaps(self.p2.collision()) {
                 let (p1_mod, p2_mod) = self.p1.collision().fix_distances(
                     self.p2.collision(),
@@ -108,6 +113,7 @@ impl EventHandler for Match {
             let p1_hit_type = self.p1.would_be_hit(p1_touched, p2_attack_data);
             let p2_hit_type = self.p2.would_be_hit(p2_touched, p1_attack_data);
 
+            // todo put check into see if opponent is in corner, so pushback can occur on the attacker instead
             self.p1.deal_hit(&p2_hit_type);
             self.p2.deal_hit(&p1_hit_type);
 
@@ -197,9 +203,11 @@ impl EventHandler for Match {
             }
 
             for attack_info in &p2_hitby {
+                // false is passed here, because bullets don't pushback there owners
                 self.p2.deal_hit(&attack_info);
             }
             for attack_info in &p1_hitby {
+                // false is passed here, because bullets don't pushback there owners
                 self.p1.deal_hit(&attack_info);
             }
 
