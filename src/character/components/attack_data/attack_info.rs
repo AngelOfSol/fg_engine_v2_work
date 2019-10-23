@@ -27,6 +27,11 @@ pub struct AttackInfo {
     pub ground_action: GroundAction,
 
     #[serde(default)]
+    pub starter_limit: i32,
+    #[serde(default)]
+    pub limit_cost: i32,
+
+    #[serde(default)]
     pub on_block: HitInfo,
 
     #[serde(default)]
@@ -92,6 +97,8 @@ impl AttackInfo {
             hit_damage: 200,
             proration: 100,
             chip_damage: 0,
+            starter_limit: 100,
+            limit_cost: 30,
         }
     }
 }

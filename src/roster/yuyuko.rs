@@ -213,6 +213,7 @@ pub struct ComboState {
     proration: i32,
     should_pushback: bool,
     ground_action: GroundAction,
+    available_limit: i32,
 }
 
 #[derive(Debug, Clone)]
@@ -363,7 +364,14 @@ impl YuyukoState {
         touched: bool,
         total_info: Option<HitInfo>,
     ) -> HitType {
-        if !touched || total_info.is_none() {
+        if !touched
+            || total_info.is_none()
+            || self
+                .current_combo
+                .as_ref()
+                .map(|item| item.available_limit <= 0)
+                .unwrap_or(false)
+        {
             return HitType::Whiff;
         }
         let total_info = total_info.unwrap();
@@ -614,6 +622,7 @@ impl YuyukoState {
                     proration,
                     should_pushback,
                     ground_action: info.ground_action,
+                    available_limit: state.available_limit - info.limit_cost,
                 }
             }
             None => ComboState {
@@ -623,6 +632,7 @@ impl YuyukoState {
                 proration: info.proration,
                 should_pushback,
                 ground_action: info.ground_action,
+                available_limit: info.starter_limit,
             },
         });
     }

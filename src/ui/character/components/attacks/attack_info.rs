@@ -49,6 +49,10 @@ impl AttackInfoUi {
             }
 
             ui.separator();
+            ui.input_whole(im_str!("Starter Limit"), &mut data.starter_limit)
+                .unwrap();
+            ui.input_whole(im_str!("Limit Cost"), &mut data.limit_cost)
+                .unwrap();
             ui.input_whole(im_str!("Hit Damage"), &mut data.hit_damage)
                 .unwrap();
             ui.input_whole(im_str!("Proration (%)"), &mut data.proration)
