@@ -41,6 +41,8 @@ pub enum MoveId {
     WrongblockCrouchLoop,
     WrongblockStandStart,
     WrongblockStandLoop,
+    HitGround,
+    GetUp,
 }
 
 impl Default for MoveId {

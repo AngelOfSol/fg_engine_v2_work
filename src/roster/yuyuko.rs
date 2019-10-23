@@ -782,8 +782,9 @@ impl YuyukoState {
 
     fn update_position(&mut self, data: &Yuyuko, play_area: &PlayArea) {
         let (frame, move_id) = self.current_state;
-        let flags = data.states[&move_id].flags.at_time(frame);
-        let hitboxes = data.states[&move_id].hitboxes.at_time(frame);
+        let state = &data.states[&move_id];
+        let flags = state.flags.at_time(frame);
+        let hitboxes = state.hitboxes.at_time(frame);
         let collision = &hitboxes.collision;
 
         self.position += self.velocity;
@@ -791,7 +792,11 @@ impl YuyukoState {
         // handle landing
         if flags.airborne && self.position.y - collision.half_size.y <= -4 {
             self.velocity = collision::Vec2::zeros();
-            self.current_state = (0, MoveId::Stand);
+            self.current_state = if state.state_type == MoveType::Hitstun {
+                (0, MoveId::HitGround)
+            } else {
+                (0, MoveId::Stand)
+            };
             self.extra_data = ExtraData::None;
             self.position.y = hitboxes.collision.half_size.y;
             self.air_actions = data.properties.max_air_actions;
