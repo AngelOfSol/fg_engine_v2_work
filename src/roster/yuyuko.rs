@@ -60,16 +60,25 @@ pub enum HitInfo {
         info: AttackInfo,
         move_id: MoveId,
         hitbox_id: usize,
+        facing: Facing,
     },
-    Bullet(AttackInfo),
+    Bullet(AttackInfo, Facing),
 }
 impl HitInfo {
     pub fn get_attack_data(&self) -> &AttackInfo {
         match self {
             HitInfo::Character { ref info, .. } => info,
-            HitInfo::Bullet(ref info) => info,
+            HitInfo::Bullet(ref info, _) => info,
         }
     }
+
+    pub fn get_facing(&self) -> Facing {
+        match self {
+            HitInfo::Character { facing, .. } => *facing,
+            HitInfo::Bullet(_, facing) => *facing,
+        }
+    }
+
     pub fn get_hit_by_data(&self) -> Option<(MoveId, usize)> {
         if let HitInfo::Character {
             move_id, hitbox_id, ..
@@ -279,6 +288,7 @@ impl YuyukoState {
             .hitbox
             .as_ref()
             .map(|item| HitInfo::Character {
+                facing: self.facing,
                 info: data.attacks[&item.data_id].clone(),
                 move_id: self.current_state.1,
                 hitbox_id: item.id,
@@ -314,6 +324,7 @@ impl YuyukoState {
                 info,
                 move_id,
                 hitbox_id,
+                ..
             } => {
                 if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
                     if *move_id == old_move_id && *hitbox_id == old_hitbox_id {
@@ -322,7 +333,7 @@ impl YuyukoState {
                 }
                 info
             }
-            HitInfo::Bullet(info) => info,
+            HitInfo::Bullet(info, _) => info,
         };
 
         let flags = self.current_flags(data);
@@ -357,17 +368,16 @@ impl YuyukoState {
                     self.last_hit_by = Some((move_id, hitbox_id));
                 }
 
+                let hit_direction = info.get_facing();
                 let info = info.get_attack_data();
 
                 let on_hit = &info.on_hit;
                 if flags.airborne {
                     self.current_state = (0, MoveId::HitstunAirStart);
-                    self.velocity = self.facing.invert().fix_collision(on_hit.air_force);
+                    self.velocity = hit_direction.fix_collision(on_hit.air_force);
                 } else {
                     self.current_state = (0, MoveId::HitstunStandStart);
-                    self.velocity = self
-                        .facing
-                        .invert()
+                    self.velocity = hit_direction
                         .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                 }
                 self.extra_data = ExtraData::Stun(info.level.hitstun());
@@ -382,12 +392,13 @@ impl YuyukoState {
                     self.last_hit_by = Some((move_id, hitbox_id));
                 }
 
+                let hit_direction = info.get_facing();
                 let info = info.get_attack_data();
 
                 let on_block = &info.on_block;
                 if flags.airborne {
                     self.current_state = (0, MoveId::BlockstunAirStart);
-                    self.velocity = self.facing.invert().fix_collision(on_block.air_force);
+                    self.velocity = hit_direction.fix_collision(on_block.air_force);
                 } else {
                     self.current_state = (
                         0,
@@ -397,9 +408,7 @@ impl YuyukoState {
                             MoveId::BlockstunStandStart
                         },
                     );
-                    self.velocity = self
-                        .facing
-                        .invert()
+                    self.velocity = hit_direction
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
 
@@ -418,6 +427,7 @@ impl YuyukoState {
                     self.last_hit_by = Some((move_id, hitbox_id));
                 }
 
+                let hit_direction = info.get_facing();
                 let info = info.get_attack_data();
 
                 let on_block = &info.on_block;
@@ -429,9 +439,7 @@ impl YuyukoState {
                         MoveId::WrongblockStandStart
                     },
                 );
-                self.velocity = self
-                    .facing
-                    .invert()
+                self.velocity = hit_direction
                     .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
 
                 self.spirit_delay = info.level.wrongblock_delay();

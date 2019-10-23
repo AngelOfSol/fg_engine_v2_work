@@ -27,6 +27,7 @@ impl ButterflySpawn {
             position: current_position + facing.fix_collision(self.offset),
             velocity: facing.fix_collision(Vec2::new(self.x_vel, self.y_vel)),
             rotation: facing.fix_rotation(self.angle as f32 * std::f32::consts::PI / -180.0),
+            facing,
         }
     }
 }
@@ -37,6 +38,7 @@ pub struct ButterflyState {
     velocity: Vec2,
     rotation: Float,
     alive: bool,
+    facing: Facing,
 }
 
 impl ButterflyState {
@@ -58,7 +60,7 @@ impl ButterflyState {
     }
 
     pub fn attack_data(&self, bullets: &BulletList, attacks: &AttackList) -> HitInfo {
-        HitInfo::Bullet(attacks[&bullets.butterfly.attack_id].clone())
+        HitInfo::Bullet(attacks[&bullets.butterfly.attack_id].clone(), self.facing)
     }
 
     // TODO, make this return a HitType too, that way it can determine if it can hit again
