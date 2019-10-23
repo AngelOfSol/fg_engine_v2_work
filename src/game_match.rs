@@ -87,7 +87,12 @@ impl EventHandler for Match {
             self.p2.handle_refacing(self.p1.position().x);
 
             if self.p1.collision().overlaps(self.p2.collision()) {
-                let (p1_mod, p2_mod) = self.p1.collision().fix_distances(self.p2.collision());
+                let (p1_mod, p2_mod) = self.p1.collision().fix_distances(
+                    self.p2.collision(),
+                    &self.play_area,
+                    (self.p1.state.velocity.x, self.p2.state.velocity.x),
+                    self.p1.state.facing,
+                );
                 self.p1.position_mut().x += p1_mod;
                 self.p2.position_mut().x += p2_mod;
             }
@@ -262,7 +267,7 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        let show_combo = false;
+        let show_combo = true;
         if show_combo {
             self.debug_text.fragments_mut()[0].text = format!("{:?}", self.p1.state.current_combo);
             graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;

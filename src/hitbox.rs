@@ -1,3 +1,4 @@
+use crate::game_match::PlayArea;
 use crate::imgui_extra::UiExtensions;
 use crate::input::Facing;
 use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
@@ -69,7 +70,14 @@ impl PositionedHitbox {
                 .any(|right_hitbox| left_hitbox.overlaps(right_hitbox))
         })
     }
-    pub fn fix_distances(self, target: Self) -> (Int, Int) {
+
+    pub fn fix_distances(
+        self,
+        target: Self,
+        play_area: &PlayArea,
+        vels: (Int, Int),
+        facing: Facing,
+    ) -> (Int, Int) {
         let distance = (self.center - target.center).abs();
         let allowed_distance = self.half_size + target.half_size;
 
@@ -78,13 +86,42 @@ impl PositionedHitbox {
 
         let direction_mod = if self.center.x < target.center.x {
             -1
-        } else {
+        } else if self.center.x > target.center.x {
             1
+        } else if self.center.x - vels.0 < target.center.x - vels.1 {
+            -1
+        } else if self.center.x - vels.0 > target.center.x - vels.1 {
+            1
+        } else if vels.0 + vels.1 != 0 {
+            Int::signum(vels.0 + vels.1)
+        } else {
+            facing.invert().collision_multiplier().x
+        };
+
+        let (left_mod, right_mod) = (
+            dbg!(direction_mod) * overlap_distance,
+            -direction_mod * (overlap.x - overlap_distance),
+        );
+
+        let self_mod =
+            if Int::abs(self.center.x + left_mod) > play_area.width / 2 - self.half_size.x {
+                Int::signum(self.center.x + left_mod) * (play_area.width / 2 - self.half_size.x)
+                    - (self.center.x + left_mod)
+            } else {
+                0
+            };
+        let target_mod = if Int::abs(target.center.x + right_mod)
+            > play_area.width / 2 - target.half_size.x
+        {
+            Int::signum(target.center.x + right_mod) * (play_area.width / 2 - target.half_size.x)
+                - (target.center.x + right_mod)
+        } else {
+            0
         };
 
         (
-            direction_mod * overlap_distance,
-            -direction_mod * (overlap.x - overlap_distance),
+            left_mod + target_mod + self_mod,
+            right_mod + target_mod + self_mod,
         )
     }
 }

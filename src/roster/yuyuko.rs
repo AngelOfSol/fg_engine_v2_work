@@ -207,6 +207,13 @@ pub struct ComboState {
 }
 
 #[derive(Debug, Clone)]
+pub enum AllowedCancel {
+    Always,
+    Hit,
+    Block,
+}
+
+#[derive(Debug, Clone)]
 pub struct YuyukoState {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
@@ -222,7 +229,7 @@ pub struct YuyukoState {
     pub last_hit_by: Option<(MoveId, usize)>,
     pub current_combo: Option<ComboState>,
     pub health: i32,
-    pub allowed_cancels: (),
+    pub allowed_cancels: AllowedCancel,
 }
 
 impl YuyukoState {
@@ -242,7 +249,7 @@ impl YuyukoState {
             last_hit_by: None,
             health: data.properties.health,
             current_combo: None,
-            allowed_cancels: (),
+            allowed_cancels: AllowedCancel::Always,
         }
     }
 
@@ -461,6 +468,7 @@ impl YuyukoState {
                 let info = info.get_attack_data();
                 let on_hit = &info.on_hit;
                 self.hitstop = on_hit.attacker_stop;
+                self.allowed_cancels = AllowedCancel::Hit;
                 if !boxes.is_empty() {
                     // TODO improve hit effect particle spawning determination
                     let spawn_point = boxes
@@ -473,6 +481,7 @@ impl YuyukoState {
             HitType::Block(info) | HitType::WrongBlock(info) => {
                 let info = info.get_attack_data();
                 let on_block = &info.on_block;
+                self.allowed_cancels = AllowedCancel::Block;
                 self.hitstop = on_block.attacker_stop;
             }
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
@@ -573,6 +582,7 @@ impl YuyukoState {
 
         // if the next frame would be out of bounds
         self.current_state = if frame >= data.states[&move_id].duration() - 1 {
+            self.allowed_cancels = AllowedCancel::Always;
             (0, data.states[&move_id].on_expire_state)
         } else {
             (frame + 1, move_id)
@@ -625,23 +635,33 @@ impl YuyukoState {
                     (0, MoveId::FlyEnd)
                 }
             } else {
-                data.command_list
+                let possible_new_move = data.command_list
                     .get_commands(&inputs)
                     .into_iter()
                     .copied()
                     .filter(|new_move_id| {
                         *new_move_id != move_id
-                            && cancels
+                            && (cancels
                                 .always
                                 .contains(&data.states[new_move_id].state_type)
+                                || match self.allowed_cancels {
+                                    AllowedCancel::Hit => cancels.hit.contains(&data.states[new_move_id].state_type),
+                                    AllowedCancel::Block => cancels.block.contains(&data.states[new_move_id].state_type),
+                                    AllowedCancel::Always => false,
+                                })
                             && !cancels.disallow.contains(new_move_id)
                             // not ideal way to handle disallowing fly, consider separating out from cancel checking
                             && !(*new_move_id == MoveId::FlyStart && self.air_actions == 0)
                             && self.spirit_gauge >= data.states[&new_move_id].minimum_spirit_required
                     })
                     .fold(None, |acc, item| acc.or(Some(item)))
-                    .map(|new_move| (0, new_move))
-                    .unwrap_or((frame, move_id))
+                    .map(|new_move| (0, new_move));
+
+                if possible_new_move.is_some() {
+                    self.allowed_cancels = AllowedCancel::Always;
+                }
+
+                possible_new_move.unwrap_or((frame, move_id))
             }
         };
     }
