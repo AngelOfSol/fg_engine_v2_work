@@ -262,8 +262,11 @@ impl EventHandler for Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.debug_text.fragments_mut()[0].text = format!("{:?}", self.p1.state.current_combo);
-        graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
+        let show_combo = false;
+        if show_combo {
+            self.debug_text.fragments_mut()[0].text = format!("{:?}", self.p1.state.current_combo);
+            graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
+        }
 
         self.p1
             .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))?;

@@ -411,6 +411,7 @@ impl YuyukoState {
 
                 self.extra_data = ExtraData::Stun(info.level.blockstun());
                 self.hitstop = on_block.defender_stop;
+                self.health -= info.chip_damage;
             }
             HitType::WrongBlock(info) => {
                 if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
@@ -439,6 +440,7 @@ impl YuyukoState {
 
                 self.extra_data = ExtraData::Stun(info.level.wrongblockstun());
                 self.hitstop = on_block.defender_stop;
+                self.health -= info.chip_damage;
             }
             HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
         }
