@@ -400,19 +400,23 @@ impl YuyukoState {
         //CHECKDO: CH here?  or in take_hit
 
         if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
-            return HitType::Whiff;
+            HitType::Whiff
         } else if info.grazeable && flags.grazing {
-            return HitType::Graze(total_info);
+            HitType::Graze(total_info)
         } else if info.air_unblockable && flags.airborne {
-            return HitType::Hit(total_info);
-        }
-
-        if state_type == MoveType::Blockstun || (flags.can_block && axis.is_backward()) {
+            if counter_hit {
+                HitType::CounterHit(total_info)
+            } else {
+                HitType::Hit(total_info)
+            }
+        } else if state_type == MoveType::Blockstun || (flags.can_block && axis.is_backward()) {
             if flags.airborne || axis.is_blocking(info.guard) {
                 HitType::Block(total_info)
             } else {
                 HitType::WrongBlock(total_info)
             }
+        } else if counter_hit {
+            HitType::CounterHit(total_info)
         } else {
             HitType::Hit(total_info)
         }
