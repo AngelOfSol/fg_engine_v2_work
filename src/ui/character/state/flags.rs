@@ -9,6 +9,7 @@ impl FlagsUi {
         ui.checkbox(im_str!("Can Block"), &mut data.can_block);
         ui.checkbox(im_str!("Grazing"), &mut data.grazing);
         ui.checkbox(im_str!("Crouching"), &mut data.crouching);
+        ui.checkbox(im_str!("Counter Hit"), &mut data.can_be_counter_hit);
         ui.checkbox(im_str!("Airborne"), &mut data.airborne);
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
         ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
