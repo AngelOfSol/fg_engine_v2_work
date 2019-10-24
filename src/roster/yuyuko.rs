@@ -210,7 +210,6 @@ pub struct ComboState {
     total_damage: i32,
     last_hit_damage: i32,
     proration: i32,
-    should_pushback: bool,
     ground_action: GroundAction,
     available_limit: i32,
 }
@@ -240,6 +239,7 @@ pub struct YuyukoState {
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<MoveId>,
+    pub should_pushback: bool,
 }
 
 impl YuyukoState {
@@ -261,6 +261,7 @@ impl YuyukoState {
             current_combo: None,
             allowed_cancels: AllowedCancel::Always,
             rebeat_chain: HashSet::new(),
+            should_pushback: true,
         }
     }
 
@@ -288,18 +289,13 @@ impl YuyukoState {
         let state = &data.states[&move_id];
         let flags = state.flags.at_time(*frame);
 
-        if let Some(combo_state) = &self.current_combo {
-            if !flags.airborne
-                && (state.state_type == MoveType::Hitstun
-                    || state.state_type == MoveType::Blockstun)
-                && self.in_corner(data, play_area)
-                && self.hitstop == 0
-                && combo_state.should_pushback
-            {
-                -self.velocity.x
-            } else {
-                0
-            }
+        if !flags.airborne
+            && (state.state_type == MoveType::Hitstun || state.state_type == MoveType::Blockstun)
+            && self.in_corner(data, play_area)
+            && self.hitstop == 0
+            && self.should_pushback
+        {
+            -self.velocity.x
         } else {
             0
         }
@@ -429,7 +425,7 @@ impl YuyukoState {
                 self.current_state = (0, MoveId::HitstunStandStart);
             }
             self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
-            self.update_combo_state(&attack_data, false);
+            self.update_combo_state(&attack_data, true);
         }
     }
 
@@ -452,8 +448,9 @@ impl YuyukoState {
                 }
                 self.extra_data = ExtraData::Stun(attack_data.level.hitstun());
                 self.hitstop = on_hit.defender_stop;
+                self.should_pushback = info.should_pushback();
 
-                self.update_combo_state(&attack_data, info.should_pushback());
+                self.update_combo_state(&attack_data, false);
                 let current_combo = self.current_combo.as_ref().unwrap();
                 self.health -= current_combo.last_hit_damage;
             }
@@ -487,6 +484,7 @@ impl YuyukoState {
 
                 self.extra_data = ExtraData::Stun(attack_data.level.blockstun());
                 self.hitstop = on_block.defender_stop;
+                self.should_pushback = info.should_pushback();
                 self.health -= attack_data.chip_damage;
 
                 if self.spirit_gauge <= 0 {
@@ -515,6 +513,7 @@ impl YuyukoState {
 
                 self.extra_data = ExtraData::Stun(attack_data.level.wrongblockstun());
                 self.hitstop = on_block.defender_stop;
+                self.should_pushback = info.should_pushback();
                 self.health -= attack_data.chip_damage;
 
                 if self.spirit_gauge <= 0 {
@@ -636,7 +635,7 @@ impl YuyukoState {
         }
     }
 
-    fn update_combo_state(&mut self, info: &AttackInfo, should_pushback: bool) {
+    fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool) {
         self.current_combo = Some(match &self.current_combo {
             Some(state) => {
                 let proration = info.proration * state.proration / 100;
@@ -646,20 +645,21 @@ impl YuyukoState {
                     total_damage: state.total_damage + last_hit_damage,
                     last_hit_damage,
                     proration,
-                    should_pushback,
                     ground_action: info.ground_action,
                     available_limit: state.available_limit - info.limit_cost,
                 }
             }
-            None => ComboState {
-                hits: 1,
-                total_damage: info.hit_damage,
-                last_hit_damage: info.hit_damage,
-                proration: info.proration,
-                should_pushback,
-                ground_action: info.ground_action,
-                available_limit: info.starter_limit,
-            },
+            None => {
+                let initial_hit_damage = if guard_crush { 0 } else { info.hit_damage };
+                ComboState {
+                    hits: 1,
+                    total_damage: initial_hit_damage,
+                    last_hit_damage: initial_hit_damage,
+                    proration: info.proration,
+                    ground_action: info.ground_action,
+                    available_limit: info.starter_limit,
+                }
+            }
         });
     }
 
