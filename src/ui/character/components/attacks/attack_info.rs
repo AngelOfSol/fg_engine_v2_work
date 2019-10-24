@@ -36,6 +36,7 @@ impl AttackInfoUi {
         if ui.collapsing_header(im_str!("On Hit")).build() {
             let id = ui.push_id("On Hit");
             ui.checkbox(im_str!("Launches"), &mut data.launcher);
+            ui.checkbox(im_str!("Can CH"), &mut data.can_counter_hit);
             ui.separator();
             ui.input_whole(im_str!("Attacker Stop"), &mut data.on_hit.attacker_stop)
                 .unwrap();
@@ -51,12 +52,17 @@ impl AttackInfoUi {
             ui.separator();
             ui.input_whole(im_str!("Starter Limit"), &mut data.starter_limit)
                 .unwrap();
+            if data.can_counter_hit {
+                ui.input_whole(im_str!("CH Starter Limit"), &mut data.counter_hit_limit)
+                    .unwrap();
+            }
             ui.input_whole(im_str!("Limit Cost"), &mut data.limit_cost)
                 .unwrap();
             ui.input_whole(im_str!("Hit Damage"), &mut data.hit_damage)
                 .unwrap();
             ui.input_whole(im_str!("Proration (%)"), &mut data.proration)
                 .unwrap();
+            ui.separator();
 
             ui.text(im_str!("Guard As:"));
             ui.radio_button(

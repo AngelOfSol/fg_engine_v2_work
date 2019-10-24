@@ -1,5 +1,4 @@
 use crate::assets::Assets;
-use crate::character::state::State;
 use crate::character::PlayerCharacter;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;

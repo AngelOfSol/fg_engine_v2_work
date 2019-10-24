@@ -32,6 +32,11 @@ pub struct AttackInfo {
     pub limit_cost: i32,
 
     #[serde(default)]
+    pub counter_hit_limit: i32,
+    #[serde(default)]
+    pub can_counter_hit: bool,
+
+    #[serde(default)]
     pub on_block: HitInfo,
 
     #[serde(default)]
@@ -99,6 +104,8 @@ impl AttackInfo {
             chip_damage: 0,
             starter_limit: 100,
             limit_cost: 30,
+            counter_hit_limit: 120,
+            can_counter_hit: false,
         }
     }
 }
