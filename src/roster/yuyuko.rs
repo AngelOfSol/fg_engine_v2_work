@@ -436,7 +436,7 @@ impl YuyukoState {
                 self.current_state = (0, MoveId::HitstunStandStart);
             }
             self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
-            self.update_combo_state(&attack_data, true);
+            self.update_combo_state(&attack_data, true, false);
 
             self.crush_orb(data);
         }
@@ -462,7 +462,7 @@ impl YuyukoState {
         let flags = self.current_flags(data);
 
         match info {
-            HitType::Hit(info) | HitType::CounterHit(info) => {
+            HitType::Hit(info) => {
                 let hit_direction = info.get_facing();
                 let attack_data = info.get_attack_data();
 
@@ -479,7 +479,28 @@ impl YuyukoState {
                 self.hitstop = on_hit.defender_stop;
                 self.should_pushback = info.should_pushback();
 
-                self.update_combo_state(&attack_data, false);
+                self.update_combo_state(&attack_data, false, false);
+                let current_combo = self.current_combo.as_ref().unwrap();
+                self.health -= current_combo.last_hit_damage;
+            }
+            HitType::CounterHit(info) => {
+                let hit_direction = info.get_facing();
+                let attack_data = info.get_attack_data();
+
+                let on_hit = &attack_data.on_hit;
+                if flags.airborne || attack_data.launcher {
+                    self.current_state = (0, MoveId::HitstunAirStart);
+                    self.velocity = hit_direction.fix_collision(on_hit.air_force);
+                } else {
+                    self.current_state = (0, MoveId::HitstunStandStart);
+                    self.velocity = hit_direction
+                        .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
+                }
+                self.extra_data = ExtraData::Stun(attack_data.level.counter_hitstun());
+                self.hitstop = on_hit.defender_stop;
+                self.should_pushback = info.should_pushback();
+
+                self.update_combo_state(&attack_data, false, true);
                 let current_combo = self.current_combo.as_ref().unwrap();
                 self.health -= current_combo.last_hit_damage;
             }
@@ -664,7 +685,8 @@ impl YuyukoState {
         }
     }
 
-    fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool) {
+    // TODO: change these bools into one 3 element enum
+    fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool, counter_hit: bool) {
         self.current_combo = Some(match &self.current_combo {
             Some(state) => {
                 let proration = info.proration * state.proration / 100;
@@ -686,7 +708,11 @@ impl YuyukoState {
                     last_hit_damage: initial_hit_damage,
                     proration: info.proration,
                     ground_action: info.ground_action,
-                    available_limit: info.starter_limit,
+                    available_limit: if counter_hit {
+                        info.counter_hit_limit
+                    } else {
+                        info.starter_limit
+                    },
                 }
             }
         });

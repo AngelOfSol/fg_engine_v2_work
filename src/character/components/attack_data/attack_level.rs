@@ -17,6 +17,9 @@ impl AttackLevel {
             AttackLevel::D => 21,
         }
     }
+    pub fn counter_hitstun(self) -> i32 {
+        self.hitstun() + 5
+    }
     pub fn blockstun(self) -> i32 {
         match self {
             AttackLevel::A => 13,
