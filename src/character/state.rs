@@ -147,14 +147,14 @@ impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable, AttackId
 }
 
 impl EditorCharacterState {
-    pub fn new() -> Self {
+    pub fn new(default_state: &str) -> Self {
         Self {
             animations: vec![],
             flags: vec![(Flags::new(), 1)],
             cancels: vec![(CancelSet::new(), 1)],
             hitboxes: vec![(HitboxSet::new(), 1)],
             state_type: default_move_type(),
-            on_expire_state: "stand".to_owned(),
+            on_expire_state: default_state.to_owned(),
             minimum_spirit_required: 0,
             particles: Vec::new(),
             bullets: Vec::new(),

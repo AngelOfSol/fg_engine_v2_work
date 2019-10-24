@@ -134,7 +134,7 @@ impl CharacterEditor {
                         if let Ok(Some(mode)) = &edit_result {
                             let state = match mode {
                                 Mode::Edit(key) => self.resource.states.get_state(key).clone(),
-                                _ => State::new(),
+                                _ => return,
                             };
                             self.transition = Transition::Push(
                                 Box::new(

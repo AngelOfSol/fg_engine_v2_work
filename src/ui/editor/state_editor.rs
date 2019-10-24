@@ -285,7 +285,7 @@ impl StateEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = State::new();
+                            self.resource = State::new(&self.resource.on_expire_state);
                             self.ui_data = StateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
@@ -321,7 +321,7 @@ impl StateEditor {
                         ui.separator();
 
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
-                            let ret = std::mem::replace(&mut self.resource, State::new());
+                            let ret = std::mem::replace(&mut self.resource, State::new(""));
                             self.ui_data = StateUi::new(
                                 self.ui_data.particle_list.clone(),
                                 self.ui_data.state_list.clone(),
