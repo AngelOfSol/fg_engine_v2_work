@@ -172,6 +172,7 @@ pub enum HitType {
     Block(HitInfo),
     WrongBlock(HitInfo),
     Hit(HitInfo),
+    CounterHit(HitInfo),
     Graze(HitInfo),
 }
 
@@ -394,6 +395,9 @@ impl YuyukoState {
         let flags = self.current_flags(data);
         let state_type = data.states[&self.current_state.1].state_type;
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
+        let counter_hit = flags.can_be_counter_hit && info.can_counter_hit;
+
+        //CHECKDO: CH here?  or in take_hit
 
         if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
             return HitType::Whiff;
@@ -454,7 +458,7 @@ impl YuyukoState {
         let flags = self.current_flags(data);
 
         match info {
-            HitType::Hit(info) => {
+            HitType::Hit(info) | HitType::CounterHit(info) => {
                 let hit_direction = info.get_facing();
                 let attack_data = info.get_attack_data();
 
@@ -548,7 +552,7 @@ impl YuyukoState {
         let boxes = self.hitboxes(data);
 
         match info {
-            HitType::Hit(info) => {
+            HitType::Hit(info) | HitType::CounterHit(info) => {
                 if let Some(last_hit) = info.get_hit_by_data() {
                     self.last_hit_using = Some(last_hit);
                 }

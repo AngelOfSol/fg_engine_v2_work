@@ -67,9 +67,11 @@ impl ButterflyState {
     // for the purpose of multi hit bullets
     pub fn on_touch(&mut self, _: &BulletList, hit_type: &HitType) {
         match hit_type {
-            HitType::Block(_) | HitType::WrongBlock(_) | HitType::Hit(_) | HitType::Graze(_) => {
-                self.alive = false
-            }
+            HitType::Block(_)
+            | HitType::WrongBlock(_)
+            | HitType::Graze(_)
+            | HitType::Hit(_)
+            | HitType::CounterHit(_) => self.alive = false,
 
             HitType::Whiff => (),
         }
