@@ -240,6 +240,8 @@ pub struct YuyukoState {
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<MoveId>,
     pub should_pushback: bool,
+    pub crushed_orbs: i32,
+    pub uncrush_timer: i32,
 }
 
 impl YuyukoState {
@@ -262,6 +264,8 @@ impl YuyukoState {
             allowed_cancels: AllowedCancel::Always,
             rebeat_chain: HashSet::new(),
             should_pushback: true,
+            crushed_orbs: 0,
+            uncrush_timer: 0,
         }
     }
 
@@ -416,7 +420,6 @@ impl YuyukoState {
             let hit_direction = info.get_facing();
             let on_hit = &attack_data.on_hit;
             // guard crush time!!!!!!!!!!
-            self.spirit_gauge = data.properties.max_spirit_gauge;
             if flags.airborne {
                 self.current_state = (0, MoveId::HitstunAirStart);
                 //TODO crush velocity mutliplier
@@ -426,7 +429,25 @@ impl YuyukoState {
             }
             self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
             self.update_combo_state(&attack_data, true);
+
+            self.crush_orb(data);
         }
+    }
+
+    pub fn crush_orb(&mut self, data: &Yuyuko) {
+        self.crushed_orbs += 1;
+        self.crushed_orbs = i32::min(5, self.crushed_orbs);
+        // move this to own file/type/function
+        self.uncrush_timer = match self.crushed_orbs {
+            1 => 13,
+            2 => 8,
+            3 => 5,
+            4 => 3,
+            5 => 1,
+            _ => unreachable!(),
+        } * 60;
+        // TODO move "100" to crushed_orb_value or to max_spirit_gauge / 5
+        self.spirit_gauge = data.properties.max_spirit_gauge - self.crushed_orbs * 100;
     }
 
     pub fn take_hit(&mut self, data: &Yuyuko, info: &HitType) {
@@ -917,7 +938,6 @@ impl YuyukoState {
 
         if move_data.state_type == MoveType::Fly {
             self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
-            Self::clamp_spirit(&mut self.spirit_gauge, data);
             if self.spirit_gauge == 0 {
                 *move_id = MoveId::FlyEnd;
                 *frame = 0;
@@ -935,13 +955,31 @@ impl YuyukoState {
             if self.spirit_delay == 0 {
                 self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
             }
-
-            Self::clamp_spirit(&mut self.spirit_gauge, data);
         }
+
+        if self.crushed_orbs > 0 {
+            self.uncrush_timer -= 1;
+            if self.uncrush_timer <= 0 {
+                self.crushed_orbs -= 1;
+                self.uncrush_timer = match self.crushed_orbs {
+                    0 => 0,
+                    1 => 13,
+                    2 => 8,
+                    3 => 5,
+                    4 => 3,
+                    _ => unreachable!(),
+                } * 60;
+            }
+        }
+
+        self.clamp_spirit(data);
     }
-    fn clamp_spirit(spirit_gauge: &mut i32, data: &Yuyuko) {
-        *spirit_gauge = std::cmp::max(
-            std::cmp::min(*spirit_gauge, data.properties.max_spirit_gauge),
+    fn clamp_spirit(&mut self, data: &Yuyuko) {
+        self.spirit_gauge = std::cmp::max(
+            std::cmp::min(
+                self.spirit_gauge,
+                data.properties.max_spirit_gauge - self.crushed_orbs * 100,
+            ),
             0,
         );
     }
