@@ -33,6 +33,9 @@ impl AttackLevel {
             AttackLevel::D => 23,
         }
     }
+    pub fn crush_stun(self) -> i32 {
+        55
+    }
 
     pub fn wrongblock_cost(self) -> i32 {
         match self {

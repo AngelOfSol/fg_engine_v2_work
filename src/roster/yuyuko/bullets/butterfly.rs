@@ -71,7 +71,7 @@ impl ButterflyState {
                 self.alive = false
             }
 
-            HitType::Continuation(_) | HitType::Whiff => (),
+            HitType::Whiff => (),
         }
     }
 

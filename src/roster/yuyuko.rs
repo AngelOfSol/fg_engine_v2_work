@@ -168,7 +168,6 @@ impl YuyukoData {
 }
 #[derive(Debug, Clone)]
 pub enum HitType {
-    Continuation(HitInfo),
     Whiff,
     Block(HitInfo),
     WrongBlock(HitInfo),
@@ -236,7 +235,7 @@ pub struct YuyukoState {
     pub spirit_gauge: i32,
     pub spirit_delay: i32,
     pub hitstop: i32,
-    pub last_hit_by: Option<(MoveId, usize)>,
+    pub last_hit_using: Option<(MoveId, usize)>,
     pub current_combo: Option<ComboState>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
@@ -257,7 +256,7 @@ impl YuyukoState {
             spirit_delay: 0,
             hitstop: 0,
             facing: Facing::Right,
-            last_hit_by: None,
+            last_hit_using: None,
             health: data.properties.health,
             current_combo: None,
             allowed_cancels: AllowedCancel::Always,
@@ -334,11 +333,20 @@ impl YuyukoState {
     }
     pub fn get_attack_data(&self, data: &Yuyuko) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
+
         data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hitbox
             .as_ref()
+            .and_then(|item| {
+                if let Some((move_id, hitbox_id)) = self.last_hit_using {
+                    if move_id == self.current_state.1 && hitbox_id == item.id {
+                        return None;
+                    }
+                }
+                Some(item)
+            })
             .map(|item| HitInfo::Character {
                 facing: self.facing,
                 info: data.attacks[&item.data_id].clone(),
@@ -379,19 +387,7 @@ impl YuyukoState {
         let total_info = total_info.unwrap();
 
         let info = match &total_info {
-            HitInfo::Character {
-                info,
-                move_id,
-                hitbox_id,
-                ..
-            } => {
-                if let Some((old_move_id, old_hitbox_id)) = self.last_hit_by {
-                    if *move_id == old_move_id && *hitbox_id == old_hitbox_id {
-                        return HitType::Continuation(total_info);
-                    }
-                }
-                info
-            }
+            HitInfo::Character { info, .. } => info,
             HitInfo::Bullet(info, _) => info,
         };
 
@@ -417,16 +413,31 @@ impl YuyukoState {
             HitType::Hit(total_info)
         }
     }
+    pub fn guard_crush(&mut self, data: &Yuyuko, info: &HitInfo) {
+        if self.spirit_gauge <= 0 {
+            let attack_data = info.get_attack_data();
+            let flags = self.current_flags(data);
+            let hit_direction = info.get_facing();
+            let on_hit = &attack_data.on_hit;
+            // guard crush time!!!!!!!!!!
+            self.spirit_gauge = data.properties.max_spirit_gauge;
+            if flags.airborne {
+                self.current_state = (0, MoveId::HitstunAirStart);
+                //TODO crush velocity mutliplier
+                self.velocity = hit_direction.fix_collision(on_hit.air_force) * 3;
+            } else {
+                self.current_state = (0, MoveId::HitstunStandStart);
+            }
+            self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
+            self.update_combo_state(&attack_data, false);
+        }
+    }
 
     pub fn take_hit(&mut self, data: &Yuyuko, info: &HitType) {
         let flags = self.current_flags(data);
 
         match info {
             HitType::Hit(info) => {
-                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
-                    self.last_hit_by = Some((move_id, hitbox_id));
-                }
-
                 let hit_direction = info.get_facing();
                 let attack_data = info.get_attack_data();
 
@@ -447,14 +458,10 @@ impl YuyukoState {
                 self.health -= current_combo.last_hit_damage;
             }
             HitType::Block(info) => {
-                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
-                    self.last_hit_by = Some((move_id, hitbox_id));
-                }
-
                 let hit_direction = info.get_facing();
-                let info = info.get_attack_data();
+                let attack_data = info.get_attack_data();
 
-                let on_block = &info.on_block;
+                let on_block = &attack_data.on_block;
                 if flags.airborne {
                     self.current_state = (0, MoveId::BlockstunAirStart);
                     self.velocity = hit_direction.fix_collision(on_block.air_force);
@@ -471,25 +478,26 @@ impl YuyukoState {
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                 }
 
-                self.spirit_gauge -= info.spirit_cost;
-                if info.reset_spirit_delay {
+                self.spirit_gauge -= attack_data.spirit_cost;
+                self.spirit_gauge = i32::max(0, self.spirit_gauge);
+                if attack_data.reset_spirit_delay {
                     self.spirit_delay = 0;
                 }
-                self.spirit_delay += info.spirit_delay;
+                self.spirit_delay += attack_data.spirit_delay;
 
-                self.extra_data = ExtraData::Stun(info.level.blockstun());
+                self.extra_data = ExtraData::Stun(attack_data.level.blockstun());
                 self.hitstop = on_block.defender_stop;
-                self.health -= info.chip_damage;
+                self.health -= attack_data.chip_damage;
+
+                if self.spirit_gauge <= 0 {
+                    self.guard_crush(data, info);
+                }
             }
             HitType::WrongBlock(info) => {
-                if let Some((move_id, hitbox_id)) = info.get_hit_by_data() {
-                    self.last_hit_by = Some((move_id, hitbox_id));
-                }
-
                 let hit_direction = info.get_facing();
-                let info = info.get_attack_data();
+                let attack_data = info.get_attack_data();
 
-                let on_block = &info.on_block;
+                let on_block = &attack_data.on_block;
                 self.current_state = (
                     0,
                     if flags.crouching {
@@ -501,15 +509,19 @@ impl YuyukoState {
                 self.velocity = hit_direction
                     .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
 
-                self.spirit_delay = info.level.wrongblock_delay();
-                self.spirit_gauge -= info.level.wrongblock_cost();
+                self.spirit_delay = attack_data.level.wrongblock_delay();
+                self.spirit_gauge -= attack_data.level.wrongblock_cost();
                 self.spirit_gauge = i32::max(0, self.spirit_gauge);
 
-                self.extra_data = ExtraData::Stun(info.level.wrongblockstun());
+                self.extra_data = ExtraData::Stun(attack_data.level.wrongblockstun());
                 self.hitstop = on_block.defender_stop;
-                self.health -= info.chip_damage;
+                self.health -= attack_data.chip_damage;
+
+                if self.spirit_gauge <= 0 {
+                    self.guard_crush(data, info);
+                }
             }
-            HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
+            HitType::Whiff | HitType::Graze(_) => {}
         }
     }
     pub fn deal_hit(&mut self, data: &Yuyuko, info: &HitType) {
@@ -517,6 +529,9 @@ impl YuyukoState {
 
         match info {
             HitType::Hit(info) => {
+                if let Some(last_hit) = info.get_hit_by_data() {
+                    self.last_hit_using = Some(last_hit);
+                }
                 let info = info.get_attack_data();
                 let on_hit = &info.on_hit;
 
@@ -533,13 +548,16 @@ impl YuyukoState {
                 }
             }
             HitType::Block(info) | HitType::WrongBlock(info) => {
+                if let Some(last_hit) = info.get_hit_by_data() {
+                    self.last_hit_using = Some(last_hit);
+                }
                 let info = info.get_attack_data();
                 let on_block = &info.on_block;
 
                 self.allowed_cancels = AllowedCancel::Block;
                 self.hitstop = on_block.attacker_stop;
             }
-            HitType::Whiff | HitType::Continuation(_) | HitType::Graze(_) => {}
+            HitType::Whiff | HitType::Graze(_) => {}
         }
     }
 
@@ -605,10 +623,9 @@ impl YuyukoState {
 
     fn handle_combo_state(&mut self, data: &Yuyuko) {
         let (_, move_id) = self.current_state;
-
-        if data.states[&move_id].state_type != MoveType::Hitstun {
+        let current_state_type = data.states[&move_id].state_type;
+        if current_state_type != MoveType::Hitstun && current_state_type != MoveType::Blockstun {
             self.current_combo = None;
-            self.last_hit_by = None;
         }
     }
     fn handle_rebeat_data(&mut self, data: &Yuyuko) {
@@ -652,6 +669,7 @@ impl YuyukoState {
         // if the next frame would be out of bounds
         self.current_state = if frame >= data.states[&move_id].duration() - 1 {
             self.allowed_cancels = AllowedCancel::Always;
+            self.last_hit_using = None;
             self.rebeat_chain.clear();
             (0, data.states[&move_id].on_expire_state)
         } else {
@@ -677,16 +695,12 @@ impl YuyukoState {
                             MoveId::Stand
                         },
                     );
-                    self.last_hit_by = None;
                 } else {
-                    // TODO, make this revert to air idle for blocking
-
                     self.current_state = if state_type == MoveType::Blockstun {
                         (0, MoveId::AirIdle)
                     } else {
                         (frame, move_id)
                     };
-                    self.last_hit_by = None;
                 }
             }
         }
@@ -730,6 +744,7 @@ impl YuyukoState {
 
                 if let Some((_, new_move)) = &possible_new_move {
                     self.allowed_cancels = AllowedCancel::Always;
+                    self.last_hit_using = None;
                     self.rebeat_chain.insert(*new_move);
                 }
 
