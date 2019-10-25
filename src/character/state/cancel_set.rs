@@ -27,8 +27,9 @@ pub enum MoveType {
     AirFollowup,
     Hitstun,
     Blockstun,
+    WrongBlockstun,
 }
-const ALL_MOVE_TYPES: [MoveType; 21] = [
+const ALL_MOVE_TYPES: [MoveType; 22] = [
     MoveType::Idle,
     MoveType::Walk,
     MoveType::Jump,
@@ -50,9 +51,10 @@ const ALL_MOVE_TYPES: [MoveType; 21] = [
     MoveType::AirFollowup,
     MoveType::Hitstun,
     MoveType::Blockstun,
+    MoveType::WrongBlockstun,
 ];
 impl MoveType {
-    pub fn all() -> &'static [MoveType; 21] {
+    pub fn all() -> &'static [MoveType; 22] {
         &ALL_MOVE_TYPES
     }
 
@@ -72,6 +74,7 @@ impl MoveType {
             | MoveType::AirFollowup => true,
             MoveType::Hitstun
             | MoveType::Blockstun
+            | MoveType::WrongBlockstun
             | MoveType::Idle
             | MoveType::Walk
             | MoveType::Jump
@@ -79,6 +82,18 @@ impl MoveType {
             | MoveType::Dash
             | MoveType::Fly
             | MoveType::AirDash => false,
+        }
+    }
+    pub fn is_stun(self) -> bool {
+        match self {
+            MoveType::Hitstun | MoveType::Blockstun | MoveType::WrongBlockstun => true,
+            _ => false,
+        }
+    }
+    pub fn is_blockstun(self) -> bool {
+        match self {
+            MoveType::Blockstun | MoveType::WrongBlockstun => true,
+            _ => false,
         }
     }
 }
@@ -109,6 +124,7 @@ impl Display for MoveType {
                 MoveType::AirFollowup => "Air Followup",
                 MoveType::Hitstun => "Hitstun",
                 MoveType::Blockstun => "Blockstun",
+                MoveType::WrongBlockstun => "Wrong Blockstun",
             }
         )
     }

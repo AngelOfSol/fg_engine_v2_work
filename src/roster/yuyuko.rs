@@ -295,7 +295,7 @@ impl YuyukoState {
         let flags = state.flags.at_time(*frame);
 
         if !flags.airborne
-            && (state.state_type == MoveType::Hitstun || state.state_type == MoveType::Blockstun)
+            && state.state_type.is_stun()
             && self.in_corner(data, play_area)
             && self.hitstop == 0
             && self.should_pushback
@@ -409,7 +409,7 @@ impl YuyukoState {
             } else {
                 HitType::Hit(total_info)
             }
-        } else if state_type == MoveType::Blockstun || (flags.can_block && axis.is_backward()) {
+        } else if state_type.is_blockstun() || (flags.can_block && axis.is_backward()) {
             if flags.airborne || axis.is_blocking(info.guard) {
                 HitType::Block(total_info)
             } else {
@@ -673,7 +673,7 @@ impl YuyukoState {
     fn handle_combo_state(&mut self, data: &Yuyuko) {
         let (_, move_id) = self.current_state;
         let current_state_type = data.states[&move_id].state_type;
-        if current_state_type != MoveType::Hitstun && current_state_type != MoveType::Blockstun {
+        if !current_state_type.is_stun() {
             self.current_combo = None;
         }
     }
@@ -737,7 +737,7 @@ impl YuyukoState {
         let flags = data.states[&move_id].flags.at_time(frame);
         let state_type = data.states[&move_id].state_type;
 
-        if state_type == MoveType::Hitstun || state_type == MoveType::Blockstun {
+        if state_type.is_stun() {
             let hitstun = self.extra_data.unwrap_stun_mut();
             *hitstun -= 1;
             if *hitstun == 0 {
@@ -751,7 +751,7 @@ impl YuyukoState {
                         },
                     );
                 } else {
-                    self.current_state = if state_type == MoveType::Blockstun {
+                    self.current_state = if state_type.is_blockstun() {
                         (0, MoveId::AirIdle)
                     } else {
                         (frame, move_id)

@@ -40,7 +40,7 @@ impl StatesUi {
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             let key = data.guarentee_unique_key("new state");
-            data.rest.insert(key.clone(), State::new(&key));
+            data.rest.insert(key.clone(), State::new());
             self.state_name_keys.insert(0, key);
         }
         ui.separator();

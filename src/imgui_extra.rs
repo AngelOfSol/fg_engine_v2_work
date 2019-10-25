@@ -98,7 +98,7 @@ impl<'a> UiExtensions for Ui<'a> {
     where
         for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>,
     {
-        let mut idx = items.iter().position(|item| *item == *value).unwrap();
+        let mut idx = items.iter().position(|item| *item == *value).unwrap_or(0);
 
         if imgui::ComboBox::new(label).build_simple(self, &mut idx, &items, f) {
             *value = items[idx].clone();
