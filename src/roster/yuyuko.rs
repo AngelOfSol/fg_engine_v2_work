@@ -270,14 +270,6 @@ impl YuyukoState {
         }
     }
 
-    pub fn collision(&self, data: &Yuyuko) -> PositionedHitbox {
-        let (frame, move_id) = &self.current_state;
-        data.states[move_id]
-            .hitboxes
-            .at_time(*frame)
-            .collision
-            .with_position(self.position)
-    }
     pub fn in_corner(&self, data: &Yuyuko, play_area: &PlayArea) -> bool {
         let collision = self.collision(data);
         i32::abs(self.position.x) >= play_area.width / 2 - collision.half_size.x
@@ -306,6 +298,14 @@ impl YuyukoState {
         }
     }
 
+    pub fn collision(&self, data: &Yuyuko) -> PositionedHitbox {
+        let (frame, move_id) = &self.current_state;
+        data.states[move_id]
+            .hitboxes
+            .at_time(*frame)
+            .collision
+            .with_position(self.position)
+    }
     pub fn hitboxes(&self, data: &Yuyuko) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.current_state;
         data.states[move_id]
@@ -332,6 +332,7 @@ impl YuyukoState {
             .map(|item| item.with_position_and_facing(self.position, self.facing))
             .collect()
     }
+
     pub fn get_attack_data(&self, data: &Yuyuko) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
 
@@ -642,7 +643,7 @@ impl YuyukoState {
             *extra_data = ExtraData::None;
             match move_id {
                 MoveId::Jump => {
-                    if axis == DirectedAxis::Up {
+                    if !axis.is_horizontal() {
                         data.neutral_jump_accel
                     } else {
                         data.directed_jump_accel
@@ -652,8 +653,8 @@ impl YuyukoState {
                             ))
                     }
                 }
-                MoveId::SuperJump => {
-                    if axis == DirectedAxis::Up {
+                MoveId::SuperJump | MoveId::BorderEscapeJump => {
+                    if !axis.is_horizontal() {
                         data.neutral_super_jump_accel
                     } else {
                         data.directed_super_jump_accel
@@ -764,6 +765,8 @@ impl YuyukoState {
     fn handle_input(&mut self, data: &Yuyuko, input: &InputBuffer) {
         let (frame, move_id) = self.current_state;
         let cancels = data.states[&move_id].cancels.at_time(frame);
+        let flags = data.states[&move_id].flags.at_time(frame);
+        let state_type = data.states[&move_id].state_type;
 
         self.current_state = {
             let inputs = read_inputs(&input, self.facing);
@@ -774,33 +777,50 @@ impl YuyukoState {
                     (0, MoveId::FlyEnd)
                 }
             } else {
-                let possible_new_move = data.command_list
+                let possible_new_move = data
+                    .command_list
                     .get_commands(&inputs)
                     .into_iter()
                     .copied()
                     .filter(|new_move_id| {
-                        *new_move_id != move_id
-                            && (cancels
-                                .always
-                                .contains(&data.states[new_move_id].state_type)
-                                || match self.allowed_cancels {
-                                    AllowedCancel::Hit => cancels.hit.contains(&data.states[new_move_id].state_type),
-                                    AllowedCancel::Block => cancels.block.contains(&data.states[new_move_id].state_type),
-                                    AllowedCancel::Always => false,
-                                })
-                            && !self.rebeat_chain.contains(new_move_id)
-                            && !cancels.disallow.contains(new_move_id)
-                            // not ideal way to handle disallowing fly, consider separating out from cancel checking
-                            && !(*new_move_id == MoveId::FlyStart && self.air_actions == 0)
-                            && self.spirit_gauge >= data.states[&new_move_id].minimum_spirit_required
+                        let is_not_self = *new_move_id != move_id;
+                        let is_allowed_cancel = match self.allowed_cancels {
+                            AllowedCancel::Hit => {
+                                cancels.hit.contains(&data.states[&new_move_id].state_type)
+                            }
+                            AllowedCancel::Block => cancels
+                                .block
+                                .contains(&data.states[&new_move_id].state_type),
+                            AllowedCancel::Always => false,
+                        } || cancels
+                            .always
+                            .contains(&data.states[&new_move_id].state_type)
+                            && !cancels.disallow.contains(&new_move_id);
+                        let can_rebeat = !self.rebeat_chain.contains(&new_move_id);
+                        let has_air_actions = self.air_actions != 0;
+                        let has_required_spirit =
+                            self.spirit_gauge >= data.states[&new_move_id].minimum_spirit_required;
+
+                        let in_blockstun = state_type == MoveType::Blockstun;
+                        let grounded = !flags.airborne;
+
+                        match *new_move_id {
+                            MoveId::BorderEscapeJump => in_blockstun && grounded,
+                            MoveId::MeleeRestitution => in_blockstun && grounded,
+                            MoveId::FlyStart => is_not_self && is_allowed_cancel && has_air_actions,
+                            _ => {
+                                is_not_self
+                                    && is_allowed_cancel
+                                    && can_rebeat
+                                    && has_required_spirit
+                            }
+                        }
                     })
                     .fold(None, |acc, item| acc.or(Some(item)))
                     .map(|new_move| (0, new_move));
 
                 if let Some((_, new_move)) = &possible_new_move {
-                    self.allowed_cancels = AllowedCancel::Always;
-                    self.last_hit_using = None;
-                    self.rebeat_chain.insert(*new_move);
+                    self.on_enter_move(data, input, *new_move);
                 }
 
                 possible_new_move.unwrap_or((frame, move_id))
@@ -808,18 +828,30 @@ impl YuyukoState {
         };
     }
 
-    fn update_extra_data(&mut self, input: &InputBuffer) {
-        let (frame, move_id) = self.current_state;
-        if frame == 0 {
-            if move_id == MoveId::Jump || move_id == MoveId::SuperJump {
+    pub fn on_enter_move(&mut self, data: &Yuyuko, input: &InputBuffer, move_id: MoveId) {
+        self.allowed_cancels = AllowedCancel::Always;
+        self.last_hit_using = None;
+        self.rebeat_chain.insert(move_id);
+
+        match move_id {
+            MoveId::BorderEscapeJump => {
                 self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                     input.top().axis,
                     self.facing,
                 ));
-            } else if move_id == MoveId::FlyStart {
-                if frame == 0 {
-                    self.air_actions -= 1;
-                }
+                self.crush_orb(data);
+            }
+            MoveId::MeleeRestitution => {
+                self.crush_orb(data);
+            }
+            MoveId::Jump | MoveId::SuperJump => {
+                self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    input.top().axis,
+                    self.facing,
+                ));
+            }
+            MoveId::FlyStart => {
+                self.air_actions -= 1;
                 let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
                 if dir.is_backward() {
                     self.facing = self.facing.invert();
@@ -831,6 +863,7 @@ impl YuyukoState {
                     dir
                 });
             }
+            _ => (),
         }
     }
 
@@ -1040,7 +1073,6 @@ impl YuyukoState {
             self.handle_rebeat_data(data);
             self.handle_hitstun(data);
             self.handle_input(data, input);
-            self.update_extra_data(input);
             self.update_velocity(data);
             self.update_position(data, play_area);
         }

@@ -10,7 +10,8 @@ pub fn generate_command_list() -> CommandList<MoveId> {
         numpad!(6 A B), numpad!(66) => MoveId::ForwardDashStart,
         numpad!(4 A B), numpad!(44) => MoveId::BackDash,
 
-        //numpad!(1 A B), numpad!(2 A B), numpad!(3 A B)  => MoveId::BorderEscapeJump,
+        numpad!(1 A B), numpad!(2 A B), numpad!(3 A B)  => MoveId::BorderEscapeJump,
+        numpad!(4 A B) => MoveId::MeleeRestitution,
 
         numpad!(5 A), numpad!(4 A), numpad!(6 A) => MoveId::Attack5A,
         numpad!(5 A), numpad!(4 A), numpad!(6 A) => MoveId::Air5A,

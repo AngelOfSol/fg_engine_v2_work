@@ -46,6 +46,7 @@ pub enum MoveId {
     HitGround,
     GetUp,
     BorderEscapeJump,
+    MeleeRestitution,
 }
 
 impl Default for MoveId {

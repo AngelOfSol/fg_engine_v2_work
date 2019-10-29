@@ -113,7 +113,6 @@ impl EventHandler for Match {
             let p1_hit_type = self.p1.would_be_hit(p1_touched, p2_attack_data);
             let p2_hit_type = self.p2.would_be_hit(p2_touched, p1_attack_data);
 
-            // todo put check into see if opponent is in corner, so pushback can occur on the attacker instead
             self.p1.deal_hit(&p2_hit_type);
             self.p2.deal_hit(&p1_hit_type);
 

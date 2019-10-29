@@ -11,6 +11,7 @@ pub enum AttackId {
     Attack5B,
     #[serde(rename = "attack6b")]
     Attack6B,
+    MeleeRestitution,
     Butterfly,
 }
 

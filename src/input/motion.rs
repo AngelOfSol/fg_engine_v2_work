@@ -84,6 +84,14 @@ impl DirectedAxis {
             ret
         }
     }
+
+    pub fn is_horizontal(self) -> bool {
+        match self {
+            DirectedAxis::Up | DirectedAxis::Neutral | DirectedAxis::Down => false,
+            _ => true,
+        }
+    }
+
     pub fn is_blocking(self, guard: Guard) -> bool {
         match guard {
             Guard::Mid => true,
