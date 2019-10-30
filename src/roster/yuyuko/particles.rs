@@ -1,3 +1,4 @@
+use crate::roster::generic_character::particle_id::GenericParticleId;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
@@ -5,6 +6,10 @@ use serde::{Deserialize, Serialize};
 pub enum Particle {
     SuperJumpParticle,
     HitEffect,
+}
+
+impl GenericParticleId for Particle {
+    const ON_HIT: Self = Self::HitEffect;
 }
 
 impl Default for Particle {

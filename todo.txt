@@ -19,7 +19,8 @@ there is a max zoom, there is no min zoom
 3b antiair <juggles> (mid)
 
 j5a air jab (high)
-j5b jump in (high)
+j5b jump in (high) 
+j6b ground slammer (high)
 
 5c swipe that sends a spread of butterflies outward in a spiral (up to down)
 2c reverse swipe (down to up) of 5b

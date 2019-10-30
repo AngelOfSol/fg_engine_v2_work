@@ -2,6 +2,7 @@ use super::{PlayArea, Shadow};
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
+use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::AttackList;
 use crate::roster::BulletState;
 use crate::roster::{BulletList, HitInfo, HitType, Yuyuko, YuyukoState};
@@ -11,6 +12,7 @@ use ggez::graphics;
 use ggez::{Context, GameResult};
 use gilrs::{Event, EventType};
 
+// TODO make this generic
 pub struct Player {
     pub resources: Yuyuko,
     pub state: YuyukoState,

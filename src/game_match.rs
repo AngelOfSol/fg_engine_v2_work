@@ -3,6 +3,7 @@ mod player;
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
+use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::{Yuyuko, YuyukoState};
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
