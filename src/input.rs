@@ -239,7 +239,7 @@ impl Axis {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct InputBuffer {
     buffer: RingBuffer,
 }

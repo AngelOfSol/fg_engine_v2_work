@@ -1,7 +1,7 @@
 use super::{Axis, InputState, BUFFER_LENGTH};
 use std::ops::Index;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RingBuffer {
     buffer: [InputState; BUFFER_LENGTH],
     head: usize,

@@ -16,6 +16,7 @@ use ggez::{Context, GameResult};
 use gilrs::Gilrs;
 use player::Player;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 pub struct PlayArea {
     pub width: i32,
@@ -34,7 +35,10 @@ pub struct Match {
 impl Match {
     pub fn new(ctx: &mut Context, p1: PadControlScheme, p2: PadControlScheme) -> GameResult<Self> {
         let background = Stage::new(ctx, "\\bg_14.png")?;
-        let resources = Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?;
+        let resources = Rc::new(Yuyuko::new_with_path(
+            ctx,
+            PathBuf::from(".\\resources\\yuyuko.json"),
+        )?);
         let mut p1_state = YuyukoState::new(&resources);
         let mut p2_state = YuyukoState::new(&resources);
         p1_state.position.x = -100_00;
@@ -42,14 +46,14 @@ impl Match {
         Ok(Self {
             p1: Player {
                 state: p1_state,
-                resources: resources.clone(),
-                control_scheme: p1,
+                resources: Rc::clone(&resources),
+                control_scheme: Rc::new(p1),
                 input: InputBuffer::new(),
             },
             p2: Player {
                 state: p2_state,
-                resources,
-                control_scheme: p2,
+                resources: Rc::clone(&resources),
+                control_scheme: Rc::new(p2),
                 input: InputBuffer::new(),
             },
             pads_context: Gilrs::new()?,

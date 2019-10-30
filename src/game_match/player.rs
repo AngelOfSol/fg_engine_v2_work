@@ -11,12 +11,14 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use gilrs::{Event, EventType};
+use std::rc::Rc;
 
 // TODO make this generic
+#[derive(Clone)]
 pub struct Player {
-    pub resources: Yuyuko,
+    pub resources: Rc<Yuyuko>,
     pub state: YuyukoState,
-    pub control_scheme: PadControlScheme,
+    pub control_scheme: Rc<PadControlScheme>,
     pub input: InputBuffer,
 }
 
