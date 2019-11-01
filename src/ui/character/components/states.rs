@@ -77,6 +77,7 @@ impl StatesUi {
             if let Some(idx) = self.state_name_keys.iter().position(|item| item == &key) {
                 self.state_name_keys.remove(idx);
                 data.rest.remove(&key);
+                // TODO have deleting a state delete all instances of it from the rest of hte state references
             }
         }
         if let Some((old, new)) = to_change {

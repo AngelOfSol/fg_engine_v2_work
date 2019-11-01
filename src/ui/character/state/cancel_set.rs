@@ -40,6 +40,7 @@ impl CancelSetUi {
         ui.text(im_str!("Disallowed"));
         let mut to_delete = None;
         for item in data.disallow.iter() {
+            let id = ui.push_id(item);
             {
                 let token = ui.push_style_color(StyleColor::Text, RED);
                 ui.text(im_str!("{}", item));
@@ -49,6 +50,7 @@ impl CancelSetUi {
             if ui.small_button(im_str!("Delete")) {
                 to_delete = Some(item.clone());
             }
+            id.pop(ui);
         }
         if let Some(item) = to_delete {
             data.disallow.remove(&item);

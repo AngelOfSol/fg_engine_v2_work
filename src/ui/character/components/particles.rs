@@ -67,8 +67,10 @@ impl ParticlesUi {
         if ui.small_button(im_str!("New")) {
             ret = Some(Mode::New);
         }
+        // TODO add deletion, and have it iterate through all the states removing every reference to the particle
         if let Some(particle) = self.current_particle {
             let particle_key = &self.particle_keys[particle];
+            let id = ui.push_id(&particle_key);
             let mut new_key = particle_key.to_owned();
             let fix_name = if let Some(particle) = &mut data.particles.get_mut(particle_key) {
                 ui.same_line(0.0);
@@ -85,6 +87,7 @@ impl ParticlesUi {
                 data.particles.insert(new_key.clone(), particle_data);
                 self.particle_keys[particle] = new_key;
             }
+            id.pop(ui)
         }
         id.pop(ui);
         ret
