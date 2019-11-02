@@ -13,10 +13,21 @@ pub fn generate_command_list() -> CommandList<MoveId> {
         numpad!(1 A B), numpad!(2 A B), numpad!(3 A B)  => MoveId::BorderEscapeJump,
         numpad!(4 A B) => MoveId::MeleeRestitution,
 
-        numpad!(5 A), numpad!(4 A), numpad!(6 A) => MoveId::Attack5A,
-        numpad!(5 A), numpad!(4 A), numpad!(6 A) => MoveId::Air5A,
+        numpad!(5 A), numpad!(4 A), numpad!(6 A), numpad!(7 A), numpad!(8 A), numpad!(9 A) => MoveId::Attack5A,
+        numpad!(1 A), numpad!(2 A), numpad!(3 A) => MoveId::Attack2A,
 
+
+        numpad!(5 B), numpad!(4 B), numpad!(7 B), numpad!(8 B) => MoveId::Attack5B,
+        numpad!(1 B), numpad!(2 B) => MoveId::Attack2B,
+        numpad!(3 B) => MoveId::Attack3B,
         numpad!(6 B) => MoveId::Attack6B,
+
+
+        numpad!(5 A), numpad!(4 A), numpad!(6 A), numpad!(1 A), numpad!(2 A), numpad!(3 A) => MoveId::Air5A,
+        numpad!(7 A), numpad!(8 A), numpad!(9 A) => MoveId::Air8A,
+        numpad!(5 B), numpad!(4 B), numpad!(6 B), numpad!(7 B), numpad!(8 B), numpad!(9 B) => MoveId::Air5B,
+        numpad!(1 B), numpad!(2 B), numpad!(3 B) => MoveId::Air2B,
+
 
         numpad!(5 C), numpad!(4 C), numpad!(6 C) => MoveId::Attack5C,
 

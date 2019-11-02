@@ -405,8 +405,6 @@ impl<
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
         let counter_hit = flags.can_be_counter_hit && info.can_counter_hit;
 
-        //CHECKDO: CH here?  or in take_hit
-
         if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
             HitType::Whiff
         } else if info.grazeable && flags.grazing {
@@ -718,7 +716,8 @@ impl<
     fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool, counter_hit: bool) {
         self.current_combo = Some(match &self.current_combo {
             Some(state) => {
-                let proration = info.proration * state.proration / 100;
+                // 20 is minimum proration
+                let proration = i32::max(info.proration * state.proration / 100, 20);
                 let last_hit_damage = info.hit_damage * state.proration / 100;
                 ComboState {
                     hits: state.hits + 1,
