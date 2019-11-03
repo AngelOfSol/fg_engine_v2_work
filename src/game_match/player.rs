@@ -30,10 +30,10 @@ pub struct BulletsContext<'a> {
 
 impl Player {
     pub fn hitboxes(&self) -> Vec<PositionedHitbox> {
-        self.state.hitboxes(&self.resources)
+        self.state.hitboxes()
     }
     pub fn hurtboxes(&self) -> Vec<PositionedHitbox> {
-        self.state.hurtboxes(&self.resources)
+        self.state.hurtboxes()
     }
 
     pub fn bullets_mut(&mut self) -> (BulletsContext, &mut Vec<BulletState>) {
@@ -47,41 +47,39 @@ impl Player {
     }
 
     pub fn get_attack_data(&self) -> Option<HitInfo> {
-        self.state.get_attack_data(&self.resources)
+        self.state.get_attack_data()
     }
 
     pub fn would_be_hit(&self, touched: bool, info: Option<HitInfo>) -> HitType {
-        self.state
-            .would_be_hit(&self.resources, &self.input, touched, info)
+        self.state.would_be_hit(&self.input, touched, info)
     }
     pub fn take_hit(&mut self, info: &HitType) {
-        self.state.take_hit(&self.resources, info)
+        self.state.take_hit(info)
     }
     pub fn deal_hit(&mut self, info: &HitType) {
-        self.state.deal_hit(&self.resources, info);
+        self.state.deal_hit(info);
     }
 
     pub fn get_pushback(&self, play_area: &PlayArea) -> collision::Int {
-        self.state.get_pushback(&self.resources, play_area)
+        self.state.get_pushback(play_area)
     }
     pub fn apply_pushback(&mut self, force: collision::Int) {
-        self.state.apply_pushback(&self.resources, force);
+        self.state.apply_pushback(force);
     }
 
     pub fn prune_bullets(&mut self, play_area: &PlayArea) {
-        self.state.prune_bullets(&self.resources, play_area);
+        self.state.prune_bullets(play_area);
     }
 
     pub fn collision(&self) -> PositionedHitbox {
-        self.state.collision(&self.resources)
+        self.state.collision()
     }
 
     pub fn handle_refacing(&mut self, other_player: collision::Int) {
-        self.state.handle_refacing(&self.resources, other_player);
+        self.state.handle_refacing(other_player);
     }
     pub fn update(&mut self, play_area: &PlayArea) {
-        self.state
-            .update_frame_mut(&self.resources, &self.input, play_area);
+        self.state.update_frame_mut(&self.input, play_area);
     }
     pub fn update_input<'a>(&mut self, events: impl Iterator<Item = &'a Event>) {
         let mut current_frame = self.control_scheme.update_frame(*self.input.top());
@@ -114,32 +112,29 @@ impl Player {
             );
             let world = world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-            self.state.draw_shadow(ctx, &self.resources, world)?;
+            self.state.draw_shadow(ctx, world)?;
         }
 
-        self.state.draw(ctx, &self.resources, world)?;
+        self.state.draw(ctx, world)?;
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        self.state.draw_ui(
-            ctx,
-            &self.resources,
-            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
-        )
+        self.state
+            .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))
     }
 
     pub fn draw_bullets(&mut self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
-        self.state.draw_bullets(ctx, &self.resources, world)
+        self.state.draw_bullets(ctx, world)
     }
 
     pub fn draw_particles(&mut self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
-        self.state.draw_particles(ctx, &self.resources, world)
+        self.state.draw_particles(ctx, world)
     }
 
     pub fn draw_ui(&mut self, ctx: &mut Context, bottom_line: Matrix4) -> GameResult<()> {
-        self.state.draw_ui(ctx, &self.resources, bottom_line)
+        self.state.draw_ui(ctx, bottom_line)
     }
 
     pub fn position(&self) -> collision::Vec2 {

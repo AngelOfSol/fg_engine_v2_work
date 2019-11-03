@@ -31,6 +31,7 @@ use particle_id::GenericParticleId;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::marker::PhantomData;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct GenericCharacterState<
@@ -41,6 +42,8 @@ pub struct GenericCharacterState<
     BulletSpawn,
     Particle: HashId,
 > {
+    pub data: Rc<ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>>,
+
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
@@ -93,39 +96,38 @@ pub struct ResourceData<
 }
 
 pub trait GenericCharacterBehaviour {
-    type ResourceData;
     type Particle;
     type MoveId;
+    type ResourceData;
 
-    fn new(data: &Self::ResourceData) -> Self;
+    fn new(data: Rc<Self::ResourceData>) -> Self;
 
-    fn in_corner(&self, data: &Self::ResourceData, play_area: &PlayArea) -> bool;
+    fn in_corner(&self, play_area: &PlayArea) -> bool;
 
-    fn apply_pushback(&mut self, data: &Self::ResourceData, force: collision::Int);
-    fn get_pushback(&self, data: &Self::ResourceData, play_area: &PlayArea) -> collision::Int;
+    fn apply_pushback(&mut self, force: collision::Int);
+    fn get_pushback(&self, play_area: &PlayArea) -> collision::Int;
 
-    fn collision(&self, data: &Self::ResourceData) -> PositionedHitbox;
-    fn hitboxes(&self, data: &Self::ResourceData) -> Vec<PositionedHitbox>;
-    fn hurtboxes(&self, data: &Self::ResourceData) -> Vec<PositionedHitbox>;
+    fn collision(&self) -> PositionedHitbox;
+    fn hitboxes(&self) -> Vec<PositionedHitbox>;
+    fn hurtboxes(&self) -> Vec<PositionedHitbox>;
 
-    fn get_attack_data(&self, data: &Self::ResourceData) -> Option<HitInfo>;
+    fn get_attack_data(&self) -> Option<HitInfo>;
 
-    fn prune_bullets(&mut self, data: &Self::ResourceData, play_area: &PlayArea);
+    fn prune_bullets(&mut self, play_area: &PlayArea);
 
-    fn current_flags<'a>(&self, data: &'a Self::ResourceData) -> &'a Flags;
+    fn current_flags(&self) -> &Flags;
 
     fn would_be_hit(
         &self,
-        data: &Self::ResourceData,
         input: &InputBuffer,
         touched: bool,
         total_info: Option<HitInfo>,
     ) -> HitType;
-    fn guard_crush(&mut self, data: &Self::ResourceData, info: &HitInfo);
+    fn guard_crush(&mut self, info: &HitInfo);
 
-    fn crush_orb(&mut self, data: &Self::ResourceData);
-    fn take_hit(&mut self, data: &Self::ResourceData, info: &HitType);
-    fn deal_hit(&mut self, data: &Self::ResourceData, info: &HitType);
+    fn crush_orb(&mut self);
+    fn take_hit(&mut self, info: &HitType);
+    fn deal_hit(&mut self, info: &HitType);
 
     fn handle_fly(move_id: Self::MoveId, extra_data: &mut ExtraData) -> collision::Vec2;
 
@@ -136,78 +138,41 @@ pub trait GenericCharacterBehaviour {
         extra_data: &mut ExtraData,
     ) -> collision::Vec2;
 
-    fn handle_combo_state(&mut self, data: &Self::ResourceData);
-    fn handle_rebeat_data(&mut self, data: &Self::ResourceData);
+    fn handle_combo_state(&mut self);
+    fn handle_rebeat_data(&mut self);
 
     // TODO: change these bools into one 3 element enum
     fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool, counter_hit: bool);
 
-    fn handle_expire(&mut self, data: &Self::ResourceData);
+    fn handle_expire(&mut self);
 
-    fn handle_hitstun(&mut self, data: &Self::ResourceData);
+    fn handle_hitstun(&mut self);
 
-    fn handle_input(&mut self, data: &Self::ResourceData, input: &InputBuffer);
+    fn handle_input(&mut self, input: &InputBuffer);
 
-    fn on_enter_move(
-        &mut self,
-        data: &Self::ResourceData,
-        input: &InputBuffer,
-        move_id: Self::MoveId,
-    );
+    fn on_enter_move(&mut self, input: &InputBuffer, move_id: Self::MoveId);
 
-    fn update_velocity(&mut self, data: &Self::ResourceData);
+    fn update_velocity(&mut self, play_area: &PlayArea);
+    fn update_position(&mut self, play_area: &PlayArea);
 
-    fn update_position(&mut self, data: &Self::ResourceData, play_area: &PlayArea);
-
-    fn update_particles(&mut self, data: &Self::ResourceData);
-
+    fn update_particles(&mut self);
     fn spawn_particle(&mut self, particle: Self::Particle, offset: collision::Vec2);
 
-    fn update_bullets(&mut self, data: &Self::ResourceData, play_area: &PlayArea);
+    fn update_bullets(&mut self, play_area: &PlayArea);
 
-    fn update_spirit(&mut self, data: &Self::ResourceData);
-    fn clamp_spirit(&mut self, data: &Self::ResourceData);
+    fn update_spirit(&mut self);
+    fn clamp_spirit(&mut self);
 
-    fn handle_refacing(&mut self, data: &Self::ResourceData, other_player: collision::Int);
-    fn update_frame_mut(
-        &mut self,
-        data: &Self::ResourceData,
-        input: &InputBuffer,
-        play_area: &PlayArea,
-    );
+    fn handle_refacing(&mut self, other_player: collision::Int);
+    fn update_frame_mut(&mut self, input: &InputBuffer, play_area: &PlayArea);
 
-    fn draw_ui(
-        &self,
-        ctx: &mut Context,
-        data: &Self::ResourceData,
-        bottom_line: graphics::Matrix4,
-    ) -> GameResult<()>;
+    fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
 
-    fn draw(
-        &self,
-        ctx: &mut Context,
-        data: &Self::ResourceData,
-        world: graphics::Matrix4,
-    ) -> GameResult<()>;
-    fn draw_particles(
-        &self,
-        ctx: &mut Context,
-        data: &Self::ResourceData,
-        world: graphics::Matrix4,
-    ) -> GameResult<()>;
+    fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+    fn draw_particles(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
 
-    fn draw_bullets(
-        &self,
-        ctx: &mut Context,
-        data: &Self::ResourceData,
-        world: graphics::Matrix4,
-    ) -> GameResult<()>;
-    fn draw_shadow(
-        &self,
-        ctx: &mut Context,
-        data: &Self::ResourceData,
-        world: graphics::Matrix4,
-    ) -> GameResult<()>;
+    fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+    fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
 }
 
 impl<
@@ -224,7 +189,7 @@ impl<
     type Particle = Particle;
     type ResourceData = ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>;
 
-    fn new(data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>) -> Self {
+    fn new(data: Rc<ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>>) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
@@ -246,40 +211,28 @@ impl<
             crushed_orbs: 0,
             uncrush_timer: 0,
             marker: PhantomData,
+            data,
         }
     }
 
-    fn in_corner(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        play_area: &PlayArea,
-    ) -> bool {
-        let collision = self.collision(data);
+    fn in_corner(&self, play_area: &PlayArea) -> bool {
+        let collision = self.collision();
         i32::abs(self.position.x) >= play_area.width / 2 - collision.half_size.x
     }
 
-    fn apply_pushback(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        force: collision::Int,
-    ) {
-        let flags = self.current_flags(data);
+    fn apply_pushback(&mut self, force: collision::Int) {
+        let flags = self.current_flags();
         if !flags.airborne {
             self.position.x += force;
         }
     }
-    fn get_pushback(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        play_area: &PlayArea,
-    ) -> collision::Int {
+    fn get_pushback(&self, play_area: &PlayArea) -> collision::Int {
         let (frame, move_id) = &self.current_state;
-        let state = &data.states[&move_id];
+        let state = &self.data.states[&move_id];
         let flags = state.flags.at_time(*frame);
 
-        if !flags.airborne
-            && state.state_type.is_stun()
-            && self.in_corner(data, play_area)
+        if state.state_type.is_stun()
+            && self.in_corner(play_area)
             && self.hitstop == 0
             && self.should_pushback
         {
@@ -289,23 +242,17 @@ impl<
         }
     }
 
-    fn collision(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> PositionedHitbox {
+    fn collision(&self) -> PositionedHitbox {
         let (frame, move_id) = &self.current_state;
-        data.states[move_id]
+        self.data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .collision
             .with_position(self.position)
     }
-    fn hitboxes(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> Vec<PositionedHitbox> {
+    fn hitboxes(&self) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.current_state;
-        data.states[move_id]
+        self.data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hitbox
@@ -319,12 +266,9 @@ impl<
             .flatten()
             .collect()
     }
-    fn hurtboxes(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> Vec<PositionedHitbox> {
+    fn hurtboxes(&self) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.current_state;
-        data.states[move_id]
+        self.data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hurtbox
@@ -333,13 +277,10 @@ impl<
             .collect()
     }
 
-    fn get_attack_data(
-        &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> Option<HitInfo> {
+    fn get_attack_data(&self) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
 
-        data.states[move_id]
+        self.data.states[move_id]
             .hitboxes
             .at_time(*frame)
             .hitbox
@@ -361,34 +302,25 @@ impl<
                 (move_id, item.id).hash(&mut hasher);
                 HitInfo::Character {
                     facing: self.facing,
-                    info: data.attacks[&item.data_id].clone(),
+                    info: self.data.attacks[&item.data_id].clone(),
                     hit_hash: hasher.finish(),
                 }
             })
     }
 
-    fn prune_bullets(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        play_area: &PlayArea,
-    ) {
-        // TODO, add on death effects here
-
+    fn prune_bullets(&mut self, play_area: &PlayArea) {
+        let bullet_data = &self.data.bullets;
         self.bullets
-            .retain(|item| item.alive(&data.bullets, play_area));
+            .retain(|item| item.alive(bullet_data, play_area));
     }
 
-    fn current_flags<'a>(
-        &self,
-        data: &'a ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> &'a Flags {
+    fn current_flags(&self) -> &Flags {
         let (frame, move_id) = self.current_state;
-        data.states[&move_id].flags.at_time(frame)
+        self.data.states[&move_id].flags.at_time(frame)
     }
 
     fn would_be_hit(
         &self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
         input: &InputBuffer,
         touched: bool,
         total_info: Option<HitInfo>,
@@ -410,8 +342,8 @@ impl<
             HitInfo::Bullet(info, _) => info,
         };
 
-        let flags = self.current_flags(data);
-        let state_type = data.states[&self.current_state.1].state_type;
+        let flags = self.current_flags();
+        let state_type = self.data.states[&self.current_state.1].state_type;
         let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
         let counter_hit = flags.can_be_counter_hit && info.can_counter_hit;
 
@@ -437,14 +369,10 @@ impl<
             HitType::Hit(total_info)
         }
     }
-    fn guard_crush(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitInfo,
-    ) {
+    fn guard_crush(&mut self, info: &HitInfo) {
         if self.spirit_gauge <= 0 {
             let attack_data = info.get_attack_data();
-            let flags = self.current_flags(data);
+            let flags = self.current_flags();
             let hit_direction = info.get_facing();
             let on_hit = &attack_data.on_hit;
             // guard crush time!!!!!!!!!!
@@ -458,14 +386,11 @@ impl<
             self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
             self.update_combo_state(&attack_data, true, false);
 
-            self.crush_orb(data);
+            self.crush_orb();
         }
     }
 
-    fn crush_orb(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn crush_orb(&mut self) {
         self.crushed_orbs += 1;
         self.crushed_orbs = i32::min(5, self.crushed_orbs);
         // move this to own file/type/function
@@ -478,15 +403,11 @@ impl<
             _ => unreachable!(),
         } * 60;
         // TODO move "100" to crushed_orb_value or to max_spirit_gauge / 5
-        self.spirit_gauge = data.properties.max_spirit_gauge - self.crushed_orbs * 100;
+        self.spirit_gauge = self.data.properties.max_spirit_gauge - self.crushed_orbs * 100;
     }
 
-    fn take_hit(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitType,
-    ) {
-        let flags = self.current_flags(data);
+    fn take_hit(&mut self, info: &HitType) {
+        let flags = self.current_flags();
 
         match info {
             HitType::Hit(info) => {
@@ -565,7 +486,7 @@ impl<
                 self.health -= attack_data.chip_damage;
 
                 if self.spirit_gauge <= 0 {
-                    self.guard_crush(data, info);
+                    self.guard_crush(info);
                 }
             }
             HitType::WrongBlock(info) => {
@@ -594,18 +515,14 @@ impl<
                 self.health -= attack_data.chip_damage;
 
                 if self.spirit_gauge <= 0 {
-                    self.guard_crush(data, info);
+                    self.guard_crush(info);
                 }
             }
             HitType::Whiff | HitType::Graze(_) => {}
         }
     }
-    fn deal_hit(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitType,
-    ) {
-        let boxes = self.hitboxes(data);
+    fn deal_hit(&mut self, info: &HitType) {
+        let boxes = self.hitboxes();
 
         match info {
             HitType::Hit(info) | HitType::CounterHit(info) => {
@@ -701,23 +618,17 @@ impl<
         }
     }
 
-    fn handle_combo_state(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn handle_combo_state(&mut self) {
         let (_, move_id) = self.current_state;
-        let current_state_type = data.states[&move_id].state_type;
+        let current_state_type = self.data.states[&move_id].state_type;
         if !current_state_type.is_stun() {
             self.current_combo = None;
         }
     }
-    fn handle_rebeat_data(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn handle_rebeat_data(&mut self) {
         let (_, move_id) = self.current_state;
 
-        if !data.states[&move_id].state_type.is_attack() {
+        if !self.data.states[&move_id].state_type.is_attack() {
             self.rebeat_chain.clear();
         }
     }
@@ -756,30 +667,24 @@ impl<
         });
     }
 
-    fn handle_expire(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn handle_expire(&mut self) {
         let (frame, move_id) = self.current_state;
 
         // if the next frame would be out of bounds
-        self.current_state = if frame >= data.states[&move_id].duration() - 1 {
+        self.current_state = if frame >= self.data.states[&move_id].duration() - 1 {
             self.allowed_cancels = AllowedCancel::Always;
             self.last_hit_using = None;
             self.rebeat_chain.clear();
-            (0, data.states[&move_id].on_expire_state)
+            (0, self.data.states[&move_id].on_expire_state)
         } else {
             (frame + 1, move_id)
         };
     }
 
-    fn handle_hitstun(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn handle_hitstun(&mut self) {
         let (frame, move_id) = self.current_state;
-        let flags = data.states[&move_id].flags.at_time(frame);
-        let state_type = data.states[&move_id].state_type;
+        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let state_type = self.data.states[&move_id].state_type;
 
         if state_type.is_stun() {
             let hitstun = self.extra_data.unwrap_stun_mut();
@@ -805,15 +710,11 @@ impl<
         }
     }
 
-    fn handle_input(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        input: &InputBuffer,
-    ) {
+    fn handle_input(&mut self, input: &InputBuffer) {
         let (frame, move_id) = self.current_state;
-        let cancels = data.states[&move_id].cancels.at_time(frame);
-        let flags = data.states[&move_id].flags.at_time(frame);
-        let state_type = data.states[&move_id].state_type;
+        let cancels = self.data.states[&move_id].cancels.at_time(frame);
+        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let state_type = self.data.states[&move_id].state_type;
 
         self.current_state = {
             let inputs = read_inputs(&input, self.facing);
@@ -824,7 +725,8 @@ impl<
                     (0, MoveId::FLY_END)
                 }
             } else {
-                let possible_new_move = data
+                let possible_new_move = self
+                    .data
                     .command_list
                     .get_commands(&inputs)
                     .into_iter()
@@ -833,24 +735,24 @@ impl<
                         let is_not_self = *new_move_id != move_id;
 
                         let is_allowed_cancel = match self.allowed_cancels {
-                            AllowedCancel::Hit => {
-                                cancels.hit.contains(&data.states[&new_move_id].state_type)
-                            }
+                            AllowedCancel::Hit => cancels
+                                .hit
+                                .contains(&self.data.states[&new_move_id].state_type),
                             AllowedCancel::Block => cancels
                                 .block
-                                .contains(&data.states[&new_move_id].state_type),
+                                .contains(&self.data.states[&new_move_id].state_type),
                             AllowedCancel::Always => false,
                         } || cancels
                             .always
-                            .contains(&data.states[&new_move_id].state_type)
+                            .contains(&self.data.states[&new_move_id].state_type)
                             && !cancels.disallow.contains(&new_move_id);
 
                         let can_rebeat = !self.rebeat_chain.contains(&new_move_id);
 
                         let has_air_actions = self.air_actions != 0;
 
-                        let has_required_spirit =
-                            self.spirit_gauge >= data.states[&new_move_id].minimum_spirit_required;
+                        let has_required_spirit = self.spirit_gauge
+                            >= self.data.states[&new_move_id].minimum_spirit_required;
 
                         let in_blockstun = state_type == MoveType::Blockstun;
 
@@ -876,7 +778,7 @@ impl<
                     .map(|new_move| (0, new_move));
 
                 if let Some((_, new_move)) = &possible_new_move {
-                    self.on_enter_move(data, input, *new_move);
+                    self.on_enter_move(input, *new_move);
                 }
 
                 possible_new_move.unwrap_or((frame, move_id))
@@ -884,12 +786,7 @@ impl<
         };
     }
 
-    fn on_enter_move(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        input: &InputBuffer,
-        move_id: MoveId,
-    ) {
+    fn on_enter_move(&mut self, input: &InputBuffer, move_id: MoveId) {
         self.allowed_cancels = AllowedCancel::Always;
         self.last_hit_using = None;
         self.rebeat_chain.insert(move_id);
@@ -900,10 +797,10 @@ impl<
                     input.top().axis,
                     self.facing,
                 ));
-                self.crush_orb(data);
+                self.crush_orb();
             }
             value if value == MoveId::MELEE_RESTITUTION => {
-                self.crush_orb(data);
+                self.crush_orb();
             }
             value if value == MoveId::JUMP || value == MoveId::SUPER_JUMP => {
                 self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
@@ -928,12 +825,9 @@ impl<
         }
     }
 
-    fn update_velocity(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn update_velocity(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.current_state;
-        let flags = data.states[&move_id].flags.at_time(frame);
+        let flags = self.data.states[&move_id].flags.at_time(frame);
 
         let base_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
@@ -951,7 +845,7 @@ impl<
         } else {
             collision::Vec2::zeros()
         };
-        let friction = if !flags.airborne {
+        let friction = if !flags.airborne || self.in_corner(play_area) {
             collision::Vec2::new(
                 -i32::min(base_velocity.x.abs(), flags.friction) * i32::signum(base_velocity.x),
                 0_00,
@@ -966,20 +860,16 @@ impl<
                 .fix_collision(Self::handle_fly(move_id, &mut self.extra_data))
             + self.facing.fix_collision(Self::handle_jump(
                 flags,
-                &data.properties,
+                &self.data.properties,
                 move_id,
                 &mut self.extra_data,
             ));
         self.velocity = base_velocity + accel + friction + gravity;
     }
 
-    fn update_position(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        play_area: &PlayArea,
-    ) {
+    fn update_position(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.current_state;
-        let state = &data.states[&move_id];
+        let state = &self.data.states[&move_id];
         let flags = state.flags.at_time(frame);
         let hitboxes = state.hitboxes.at_time(frame);
         let collision = &hitboxes.collision;
@@ -1013,7 +903,7 @@ impl<
                 self.velocity = collision::Vec2::zeros();
             }
             self.position.y = hitboxes.collision.half_size.y;
-            self.air_actions = data.properties.max_air_actions;
+            self.air_actions = self.data.properties.max_air_actions;
         }
 
         // handle stage sides
@@ -1028,20 +918,23 @@ impl<
         }
     }
 
-    fn update_particles(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn update_particles(&mut self) {
         let (frame, move_id) = self.current_state;
-        let state_particles = &data.states[&move_id].particles;
+        let particle_data = &self.data.particles;
+        let state_particles = &self.data.states[&move_id].particles;
 
         for (ref mut frame, _, _) in self.particles.iter_mut() {
             *frame += 1;
         }
         self.particles
-            .retain(|item| item.0 < data.particles[&item.2].frames.duration());
-        for particle in state_particles.iter().filter(|item| item.frame == frame) {
-            self.spawn_particle(particle.particle_id, self.position + particle.offset);
+            .retain(|item| item.0 < particle_data[&item.2].frames.duration());
+        for (particle_id, position) in state_particles
+            .iter()
+            .filter(|item| item.frame == frame)
+            .map(|particle| (particle.particle_id, self.position + particle.offset))
+            .collect::<Vec<_>>()
+        {
+            self.particles.push((0, position, particle_id));
         }
     }
 
@@ -1049,21 +942,17 @@ impl<
         self.particles.push((0, offset, particle));
     }
 
-    fn update_bullets(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        play_area: &PlayArea,
-    ) {
+    fn update_bullets(&mut self, play_area: &PlayArea) {
         // first update all active bullets
         for bullet in self.bullets.iter_mut() {
-            bullet.update(&data.bullets);
+            bullet.update(&self.data.bullets);
         }
 
-        self.prune_bullets(data, play_area);
+        self.prune_bullets(play_area);
 
         // then spawn bullets
         let (frame, move_id) = self.current_state;
-        for spawn in data.states[&move_id]
+        for spawn in self.data.states[&move_id]
             .bullets
             .iter()
             .filter(|item| item.get_spawn_frame() == frame)
@@ -1073,12 +962,9 @@ impl<
         }
     }
 
-    fn update_spirit(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn update_spirit(&mut self) {
         let (ref mut frame, ref mut move_id) = &mut self.current_state;
-        let move_data = &data.states[move_id];
+        let move_data = &self.data.states[move_id];
         let flags = move_data.flags.at_time(*frame);
 
         if move_data.state_type == MoveType::Fly {
@@ -1117,28 +1003,21 @@ impl<
             }
         }
 
-        self.clamp_spirit(data);
+        self.clamp_spirit();
     }
-    fn clamp_spirit(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) {
+    fn clamp_spirit(&mut self) {
         self.spirit_gauge = std::cmp::max(
             std::cmp::min(
                 self.spirit_gauge,
-                data.properties.max_spirit_gauge - self.crushed_orbs * 100,
+                self.data.properties.max_spirit_gauge - self.crushed_orbs * 100,
             ),
             0,
         );
     }
 
-    fn handle_refacing(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        other_player: collision::Int,
-    ) {
+    fn handle_refacing(&mut self, other_player: collision::Int) {
         let (frame, move_id) = self.current_state;
-        let flags = data.states[&move_id].flags.at_time(frame);
+        let flags = self.data.states[&move_id].flags.at_time(frame);
         if flags.allow_reface {
             self.facing = if self.position.x > other_player && self.facing == Facing::Right {
                 Facing::Left
@@ -1150,34 +1029,24 @@ impl<
         }
     }
 
-    fn update_frame_mut(
-        &mut self,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        input: &InputBuffer,
-        play_area: &PlayArea,
-    ) {
+    fn update_frame_mut(&mut self, input: &InputBuffer, play_area: &PlayArea) {
         if self.hitstop > 0 {
             self.hitstop -= 1;
         } else {
-            self.handle_expire(data);
-            self.handle_rebeat_data(data);
-            self.handle_hitstun(data);
-            self.handle_input(data, input);
-            self.update_velocity(data);
-            self.update_position(data, play_area);
+            self.handle_expire();
+            self.handle_rebeat_data();
+            self.handle_hitstun();
+            self.handle_input(input);
+            self.update_velocity(play_area);
+            self.update_position(play_area);
         }
-        self.handle_combo_state(data);
-        self.update_spirit(data);
-        self.update_particles(data);
-        self.update_bullets(data, play_area);
+        self.handle_combo_state();
+        self.update_spirit();
+        self.update_particles();
+        self.update_bullets(play_area);
         self.hitstop = i32::max(0, self.hitstop);
     }
-    fn draw_ui(
-        &self,
-        ctx: &mut Context,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        bottom_line: graphics::Matrix4,
-    ) -> GameResult<()> {
+    fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()> {
         ggez::graphics::set_transform(ctx, bottom_line);
         ggez::graphics::apply_transformations(ctx)?;
         ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
@@ -1185,7 +1054,7 @@ impl<
         let spirit_current = ggez::graphics::Rect::new(
             0.0,
             0.0,
-            100.0 * self.spirit_gauge as f32 / data.properties.max_spirit_gauge as f32,
+            100.0 * self.spirit_gauge as f32 / self.data.properties.max_spirit_gauge as f32,
             20.0,
         );
         let spirit_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
@@ -1231,7 +1100,7 @@ impl<
         let hp_current = ggez::graphics::Rect::new(
             0.0,
             0.0,
-            hp_length * self.health as f32 / data.properties.health as f32,
+            hp_length * self.health as f32 / self.data.properties.health as f32,
             20.0,
         );
         let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, hp_length, 20.0);
@@ -1267,23 +1136,18 @@ impl<
         Ok(())
     }
 
-    fn draw(
-        &self,
-        ctx: &mut Context,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        world: graphics::Matrix4,
-    ) -> GameResult<()> {
+    fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
         let (frame, move_id) = self.current_state;
 
-        let collision = &data.states[&move_id].hitboxes.at_time(frame).collision;
+        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
         let position = world
             * graphics::Matrix4::new_translation(&graphics::up_dimension(
                 self.position.into_graphical(),
             ));
 
-        data.states[&move_id].draw_at_time(
+        self.data.states[&move_id].draw_at_time(
             ctx,
-            &data.assets,
+            &self.data.assets,
             frame,
             position
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
@@ -1296,16 +1160,11 @@ impl<
 
         Ok(())
     }
-    fn draw_particles(
-        &self,
-        ctx: &mut Context,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        world: graphics::Matrix4,
-    ) -> GameResult<()> {
+    fn draw_particles(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
         for (frame, position, id) in &self.particles {
-            data.particles[&id].draw_at_time(
+            self.data.particles[&id].draw_at_time(
                 ctx,
-                &data.assets,
+                &self.data.assets,
                 *frame,
                 world
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
@@ -1317,35 +1176,25 @@ impl<
         Ok(())
     }
 
-    fn draw_bullets(
-        &self,
-        ctx: &mut Context,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        world: graphics::Matrix4,
-    ) -> GameResult<()> {
+    fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
         for bullet in &self.bullets {
-            bullet.draw(ctx, &data.bullets, &data.assets, world)?;
+            bullet.draw(ctx, &self.data.bullets, &self.data.assets, world)?;
         }
 
         Ok(())
     }
-    fn draw_shadow(
-        &self,
-        ctx: &mut Context,
-        data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        world: graphics::Matrix4,
-    ) -> GameResult<()> {
+    fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
         let (frame, move_id) = self.current_state;
 
-        let collision = &data.states[&move_id].hitboxes.at_time(frame).collision;
+        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
         let position = world
             * graphics::Matrix4::new_translation(&graphics::up_dimension(
                 self.position.into_graphical(),
             ));
 
-        data.states[&move_id].draw_shadow_at_time(
+        self.data.states[&move_id].draw_shadow_at_time(
             ctx,
-            &data.assets,
+            &self.data.assets,
             frame,
             position
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(

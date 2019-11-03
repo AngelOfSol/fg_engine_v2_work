@@ -39,8 +39,8 @@ impl Match {
             ctx,
             PathBuf::from(".\\resources\\yuyuko.json"),
         )?);
-        let mut p1_state = YuyukoState::new(&resources);
-        let mut p2_state = YuyukoState::new(&resources);
+        let mut p1_state = YuyukoState::new(Rc::clone(&resources));
+        let mut p2_state = YuyukoState::new(Rc::clone(&resources));
         p1_state.position.x = -100_00;
         p2_state.position.x = 100_00;
         Ok(Self {
