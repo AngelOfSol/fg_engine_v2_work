@@ -1,8 +1,9 @@
-use super::super::{AttackList, BulletList, HitInfo, HitType};
+use super::super::{AttackList, BulletList};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
+use crate::roster::generic_character::hit_info::{HitInfo, HitType};
 use crate::typedefs::collision::*;
 use crate::typedefs::graphics::{self, Float};
 use ggez::{Context, GameResult};

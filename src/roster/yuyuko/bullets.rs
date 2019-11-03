@@ -1,11 +1,12 @@
 mod butterfly;
 
-use super::{AttackList, BulletList, HitInfo, HitType};
+use super::{AttackList, BulletList};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
 use crate::roster::generic_character::bullet::{GenericBulletSpawn, GenericBulletState};
+use crate::roster::generic_character::hit_info::{HitInfo, HitType};
 use crate::typedefs::collision::Vec2;
 use crate::typedefs::graphics;
 use butterfly::{ButterflySpawn, ButterflyState};

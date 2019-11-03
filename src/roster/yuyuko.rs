@@ -9,7 +9,7 @@ use crate::character::components::AttackInfo;
 use crate::character::state::State;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
-use crate::roster::generic_character::{hit_info, GenericCharacterState, Properties, ResourceData};
+use crate::roster::generic_character::{GenericCharacterState, Properties, ResourceData};
 use attacks::AttackId;
 use bullets::BulletSpawn;
 pub use bullets::BulletState;
@@ -22,9 +22,6 @@ use std::fs::File;
 use std::io::BufReader;
 
 use std::path::PathBuf;
-
-pub type HitInfo = hit_info::HitInfo<MoveId>;
-pub type HitType = hit_info::HitType<MoveId>;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletData {

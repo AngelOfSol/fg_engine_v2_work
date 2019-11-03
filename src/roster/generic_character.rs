@@ -5,6 +5,9 @@ pub mod hit_info;
 pub mod move_id;
 pub mod particle_id;
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
 use crate::assets::Assets;
 use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, MoveType};
@@ -49,7 +52,7 @@ pub struct GenericCharacterState<
     pub spirit_gauge: i32,
     pub spirit_delay: i32,
     pub hitstop: i32,
-    pub last_hit_using: Option<(MoveId, usize)>,
+    pub last_hit_using: Option<u64>,
     pub current_combo: Option<ComboState>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
@@ -91,8 +94,8 @@ pub struct ResourceData<
 
 pub trait GenericCharacterBehaviour {
     type ResourceData;
-    type MoveId;
     type Particle;
+    type MoveId;
 
     fn new(data: &Self::ResourceData) -> Self;
 
@@ -105,7 +108,7 @@ pub trait GenericCharacterBehaviour {
     fn hitboxes(&self, data: &Self::ResourceData) -> Vec<PositionedHitbox>;
     fn hurtboxes(&self, data: &Self::ResourceData) -> Vec<PositionedHitbox>;
 
-    fn get_attack_data(&self, data: &Self::ResourceData) -> Option<HitInfo<Self::MoveId>>;
+    fn get_attack_data(&self, data: &Self::ResourceData) -> Option<HitInfo>;
 
     fn prune_bullets(&mut self, data: &Self::ResourceData, play_area: &PlayArea);
 
@@ -116,13 +119,13 @@ pub trait GenericCharacterBehaviour {
         data: &Self::ResourceData,
         input: &InputBuffer,
         touched: bool,
-        total_info: Option<HitInfo<Self::MoveId>>,
-    ) -> HitType<Self::MoveId>;
-    fn guard_crush(&mut self, data: &Self::ResourceData, info: &HitInfo<Self::MoveId>);
+        total_info: Option<HitInfo>,
+    ) -> HitType;
+    fn guard_crush(&mut self, data: &Self::ResourceData, info: &HitInfo);
 
     fn crush_orb(&mut self, data: &Self::ResourceData);
-    fn take_hit(&mut self, data: &Self::ResourceData, info: &HitType<Self::MoveId>);
-    fn deal_hit(&mut self, data: &Self::ResourceData, info: &HitType<Self::MoveId>);
+    fn take_hit(&mut self, data: &Self::ResourceData, info: &HitType);
+    fn deal_hit(&mut self, data: &Self::ResourceData, info: &HitType);
 
     fn handle_fly(move_id: Self::MoveId, extra_data: &mut ExtraData) -> collision::Vec2;
 
@@ -333,7 +336,7 @@ impl<
     fn get_attack_data(
         &self,
         data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-    ) -> Option<HitInfo<MoveId>> {
+    ) -> Option<HitInfo> {
         let (frame, move_id) = &self.current_state;
 
         data.states[move_id]
@@ -342,18 +345,25 @@ impl<
             .hitbox
             .as_ref()
             .and_then(|item| {
-                if let Some((move_id, hitbox_id)) = self.last_hit_using {
-                    if move_id == self.current_state.1 && hitbox_id == item.id {
+                if let Some(new_hash) = self.last_hit_using {
+                    let mut hasher = DefaultHasher::new();
+                    (move_id, item.id).hash(&mut hasher);
+                    let old_hash = hasher.finish();
+
+                    if new_hash == old_hash {
                         return None;
                     }
                 }
                 Some(item)
             })
-            .map(|item| HitInfo::Character {
-                facing: self.facing,
-                info: data.attacks[&item.data_id].clone(),
-                move_id: self.current_state.1,
-                hitbox_id: item.id,
+            .map(|item| {
+                let mut hasher = DefaultHasher::new();
+                (move_id, item.id).hash(&mut hasher);
+                HitInfo::Character {
+                    facing: self.facing,
+                    info: data.attacks[&item.data_id].clone(),
+                    hit_hash: hasher.finish(),
+                }
             })
     }
 
@@ -381,8 +391,8 @@ impl<
         data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
         input: &InputBuffer,
         touched: bool,
-        total_info: Option<HitInfo<MoveId>>,
-    ) -> HitType<MoveId> {
+        total_info: Option<HitInfo>,
+    ) -> HitType {
         if !touched
             || total_info.is_none()
             || self
@@ -430,7 +440,7 @@ impl<
     fn guard_crush(
         &mut self,
         data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitInfo<MoveId>,
+        info: &HitInfo,
     ) {
         if self.spirit_gauge <= 0 {
             let attack_data = info.get_attack_data();
@@ -474,7 +484,7 @@ impl<
     fn take_hit(
         &mut self,
         data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitType<MoveId>,
+        info: &HitType,
     ) {
         let flags = self.current_flags(data);
 
@@ -593,7 +603,7 @@ impl<
     fn deal_hit(
         &mut self,
         data: &ResourceData<MoveId, AttackId, BulletList, BulletSpawn, Particle>,
-        info: &HitType<MoveId>,
+        info: &HitType,
     ) {
         let boxes = self.hitboxes(data);
 

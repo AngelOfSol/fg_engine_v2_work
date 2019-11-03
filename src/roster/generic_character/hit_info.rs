@@ -2,26 +2,25 @@ use crate::character::components::AttackInfo;
 use crate::input::Facing;
 
 #[derive(Debug, Clone)]
-pub enum HitType<MoveId> {
+pub enum HitType {
     Whiff,
-    Block(HitInfo<MoveId>),
-    WrongBlock(HitInfo<MoveId>),
-    Hit(HitInfo<MoveId>),
-    CounterHit(HitInfo<MoveId>),
-    Graze(HitInfo<MoveId>),
+    Block(HitInfo),
+    WrongBlock(HitInfo),
+    Hit(HitInfo),
+    CounterHit(HitInfo),
+    Graze(HitInfo),
 }
 
 #[derive(Debug, Clone)]
-pub enum HitInfo<MoveId> {
+pub enum HitInfo {
     Character {
         info: AttackInfo,
-        move_id: MoveId,
-        hitbox_id: usize,
+        hit_hash: u64,
         facing: Facing,
     },
     Bullet(AttackInfo, Facing),
 }
-impl<MoveId: Copy> HitInfo<MoveId> {
+impl HitInfo {
     pub fn get_attack_data(&self) -> &AttackInfo {
         match self {
             HitInfo::Character { ref info, .. } => info,
@@ -43,12 +42,9 @@ impl<MoveId: Copy> HitInfo<MoveId> {
         }
     }
 
-    pub fn get_hit_by_data(&self) -> Option<(MoveId, usize)> {
-        if let HitInfo::Character {
-            move_id, hitbox_id, ..
-        } = self
-        {
-            Some((*move_id, *hitbox_id))
+    pub fn get_hit_by_data(&self) -> Option<u64> {
+        if let HitInfo::Character { hit_hash, .. } = self {
+            Some(*hit_hash)
         } else {
             None
         }
