@@ -18,7 +18,6 @@ use crate::roster::generic_character::bullet::{GenericBulletSpawn, GenericBullet
 use crate::roster::generic_character::combo_state::{AllowedCancel, ComboState};
 use crate::roster::generic_character::extra_data::ExtraData;
 use crate::roster::generic_character::hit_info::{HitInfo, HitType};
-use crate::roster::generic_character::move_id::GenericMoveId;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::timeline::AtTime;
 use crate::typedefs::collision;
@@ -158,8 +157,8 @@ pub struct YuyukoState {
 
 impl GenericCharacterBehaviour for YuyukoState {
     type MoveId = MoveId;
-    type Particle = Particle;
-    type ResourceData = Yuyuko;
+    type ParticleId = Particle;
+    type Resources = Yuyuko;
     type Properties = Properties;
 
     fn new(data: Rc<Yuyuko>) -> Self {
@@ -250,7 +249,7 @@ impl GenericCharacterBehaviour for YuyukoState {
         border_escape: MoveId::BorderEscapeJump,
         melee_restitution: MoveId::MeleeRestitution
     );
-    impl_update_velocity!();
+    impl_update_velocity!(fly_start: MoveId::FlyStart, fly_state: MoveId::Fly);
     impl_update_position!(
         knockdown_start: MoveId::HitGround,
         hitstun_air: MoveId::HitstunAirStart,
@@ -260,7 +259,7 @@ impl GenericCharacterBehaviour for YuyukoState {
     impl_spawn_particle!();
 
     impl_update_bullets!();
-    impl_update_spirit!();
+    impl_update_spirit!(fly_end: MoveId::FlyEnd);
     impl_clamp_spirit!();
     impl_handle_refacing!();
     impl_update_frame_mut!();

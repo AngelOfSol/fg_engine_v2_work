@@ -1,4 +1,5 @@
-use super::super::{AttackList, BulletList};
+use super::super::particles::Particle;
+use super::super::{AttackList, BulletList, Yuyuko};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
@@ -15,6 +16,7 @@ pub struct ButterflySpawn {
     angle: Int,
     x_vel: Int,
     y_vel: Int,
+    color: usize,
     frame: usize,
 }
 
@@ -24,7 +26,9 @@ impl ButterflySpawn {
     }
     pub fn instantiate(&self, current_position: Vec2, facing: Facing) -> ButterflyState {
         ButterflyState {
+            alive_duration: 0,
             alive: true,
+            color: self.color,
             position: current_position + facing.fix_collision(self.offset),
             velocity: facing.fix_collision(Vec2::new(self.x_vel, self.y_vel)),
             rotation: facing.fix_rotation(self.angle as f32 * std::f32::consts::PI / -180.0),
@@ -39,19 +43,22 @@ pub struct ButterflyState {
     velocity: Vec2,
     rotation: Float,
     alive: bool,
+    color: usize,
     facing: Facing,
+    alive_duration: i32,
 }
 
 impl ButterflyState {
-    pub fn update(&mut self, _: &BulletList) {
+    pub fn update(&mut self, _: &Yuyuko) {
+        self.alive_duration += 1;
         self.position += self.velocity;
     }
-    pub fn alive(&self, bullets: &BulletList, area: &PlayArea) -> bool {
+    pub fn alive(&self, data: &Yuyuko, area: &PlayArea) -> bool {
         let in_x_bounds =
-            i32::abs(self.position.x) <= area.width / 2 + bullets.butterfly.hitbox.half_size.x;
+            i32::abs(self.position.x) <= area.width / 2 + data.bullets.butterfly.hitbox.half_size.x;
 
         let in_y_bounds =
-            i32::abs(self.position.y) <= area.width / 2 + bullets.butterfly.hitbox.half_size.y;
+            i32::abs(self.position.y) <= area.width / 2 + data.bullets.butterfly.hitbox.half_size.y;
 
         self.alive && in_x_bounds && in_y_bounds
     }
@@ -85,18 +92,26 @@ impl ButterflyState {
     pub fn draw(
         &self,
         ctx: &mut Context,
-        data: &BulletList,
+        data: &Yuyuko,
         assets: &Assets,
         world: graphics::Matrix4,
     ) -> GameResult<()> {
-        data.butterfly.animation.draw_at_time(
+        let world = world
+            * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                self.position.into_graphical(),
+            ));
+        let scale = f32::cos(self.alive_duration as f32 / 25.0);
+        data.particles[&Particle::ButterflyFlare].draw_frame(
             ctx,
             assets,
-            0,
+            self.color,
+            world * graphics::Matrix4::new_scaling(dbg!(scale)),
+        )?;
+        data.bullets.butterfly.animation.draw_frame(
+            ctx,
+            assets,
+            self.color,
             world
-                * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    self.position.into_graphical(),
-                ))
                 * graphics::Matrix4::new_rotation(
                     nalgebra::Vector3::new(0.0, 0.0, 1.0) * self.rotation,
                 ),

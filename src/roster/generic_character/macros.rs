@@ -124,7 +124,7 @@ macro_rules! impl_get_attack_data {
 macro_rules! impl_prune_bullets {
     () => {
         fn prune_bullets(&mut self, play_area: &PlayArea) {
-            let bullet_data = &self.data.bullets;
+            let bullet_data = &self.data;
             self.bullets
                 .retain(|item| item.alive(bullet_data, play_area));
         }
@@ -428,10 +428,8 @@ macro_rules! impl_handle_fly {
         }
     };
 }
-
-// TODO change this to patterns rather than expr
 macro_rules! impl_handle_jump {
-    (jump: $jump:expr, super_jump: $super_jump:expr, border_escape: $border_escape:expr) => {
+    (jump: $jump:pat, super_jump: $super_jump:pat, border_escape: $border_escape:pat) => {
         fn handle_jump(
             flags: &Flags,
             data: &Properties,
@@ -442,7 +440,7 @@ macro_rules! impl_handle_jump {
                 let axis = extra_data.unwrap_jump_direction();
                 *extra_data = ExtraData::None;
                 match move_id {
-                    value if value == $jump => {
+                    $jump => {
                         if !axis.is_horizontal() {
                             data.neutral_jump_accel
                         } else {
@@ -453,7 +451,7 @@ macro_rules! impl_handle_jump {
                                 ))
                         }
                     }
-                    value if value == $super_jump || value == $border_escape => {
+                    $super_jump | $border_escape => {
                         if !axis.is_horizontal() {
                             data.neutral_super_jump_accel
                         } else {
@@ -587,9 +585,8 @@ macro_rules! impl_handle_hitstun {
     };
 }
 
-// TODO change this to patterns rather than expr
 macro_rules! impl_handle_input {
-    (fly_start: $fly_start:expr, fly_state: $fly_state:expr, fly_end: $fly_end:expr, border_escape: $border_escape:expr, melee_restitution: $melee_restitution:expr) => {
+    (fly_start: $fly_start:pat, fly_state: $fly_state:expr, fly_end: $fly_end:expr, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
         fn handle_input(&mut self, input: &InputBuffer) {
             let (frame, move_id) = self.current_state;
             let cancels = self.data.states[&move_id].cancels.at_time(frame);
@@ -639,11 +636,11 @@ macro_rules! impl_handle_input {
                             let grounded = !flags.airborne;
 
                             match *new_move_id {
-                                value if value == $border_escape => {
+                                $border_escape => {
                                     in_blockstun && grounded
                                 }
-                                value if value == $melee_restitution => in_blockstun && grounded,
-                                value if value == $fly_start => {
+                                $melee_restitution => in_blockstun && grounded,
+                                $fly_start => {
                                     is_not_self && is_allowed_cancel && has_air_actions
                                 }
                                 _ => {
@@ -668,32 +665,31 @@ macro_rules! impl_handle_input {
     };
 }
 
-// TODO change this to patterns rather than expr
 macro_rules! impl_on_enter_move {
-    (fly_start: $fly_start:expr, jump: $jump:expr, super_jump: $super_jump:expr, border_escape: $border_escape:expr, melee_restitution: $melee_restitution:expr) => {
+    (fly_start: $fly_start:pat, jump: $jump:pat, super_jump: $super_jump:pat, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
         fn on_enter_move(&mut self, input: &InputBuffer, move_id: MoveId) {
             self.allowed_cancels = AllowedCancel::Always;
             self.last_hit_using = None;
             self.rebeat_chain.insert(move_id);
 
             match move_id {
-                value if value == $border_escape => {
+                $border_escape => {
                     self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                         input.top().axis,
                         self.facing,
                     ));
                     self.crush_orb();
                 }
-                value if value == $melee_restitution => {
+                $melee_restitution => {
                     self.crush_orb();
                 }
-                value if value == $jump || value == $super_jump => {
+                $jump | $super_jump => {
                     self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                         input.top().axis,
                         self.facing,
                     ));
                 }
-                value if value == $fly_start => {
+                $fly_start => {
                     self.air_actions -= 1;
                     let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
                     if dir.is_backward() {
@@ -713,7 +709,7 @@ macro_rules! impl_on_enter_move {
 }
 
 macro_rules! impl_update_velocity {
-    () => {
+    (fly_start: $fly_start:expr, fly_state: $fly_state:expr) => {
         fn update_velocity(&mut self, play_area: &PlayArea) {
             let (frame, move_id) = self.current_state;
             let flags = self.data.states[&move_id].flags.at_time(frame);
@@ -727,8 +723,8 @@ macro_rules! impl_update_velocity {
             // we only run gravity if the move doesn't want to reset velocity, because that [resetting velocity] means the move has a trajectory in mind
             let gravity = if !flags.reset_velocity
                 && flags.airborne
-                && move_id != MoveId::FLY_START
-                && move_id != MoveId::FLY_CONTINUOUS
+                && move_id != $fly_start
+                && move_id != $fly_state
             {
                 collision::Vec2::new(0_00, -0_20)
             } else {
@@ -850,7 +846,7 @@ macro_rules! impl_update_bullets {
         fn update_bullets(&mut self, play_area: &PlayArea) {
             // first update all active bullets
             for bullet in self.bullets.iter_mut() {
-                bullet.update(&self.data.bullets);
+                bullet.update(&self.data);
             }
 
             self.prune_bullets(play_area);
@@ -870,7 +866,7 @@ macro_rules! impl_update_bullets {
 }
 
 macro_rules! impl_update_spirit {
-    () => {
+    (fly_end: $fly_end:expr) => {
     fn update_spirit(&mut self) {
         let (ref mut frame, ref mut move_id) = &mut self.current_state;
         let move_data = &self.data.states[move_id];
@@ -879,7 +875,7 @@ macro_rules! impl_update_spirit {
         if move_data.state_type == MoveType::Fly {
             self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
             if self.spirit_gauge == 0 {
-                *move_id = MoveId::FLY_END;
+                *move_id = $fly_end;
                 *frame = 0;
             }
         } else {
@@ -1119,7 +1115,7 @@ macro_rules! impl_draw_bullets {
     () => {
         fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
             for bullet in &self.bullets {
-                bullet.draw(ctx, &self.data.bullets, &self.data.assets, world)?;
+                bullet.draw(ctx, &self.data, &self.data.assets, world)?;
             }
 
             Ok(())

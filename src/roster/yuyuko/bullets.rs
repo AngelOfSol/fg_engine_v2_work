@@ -1,6 +1,6 @@
 mod butterfly;
 
-use super::{AttackList, BulletList};
+use super::{AttackList, BulletList, Yuyuko};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
@@ -47,13 +47,13 @@ impl GenericBulletSpawn for BulletSpawn {
 }
 
 impl GenericBulletState for BulletState {
-    type Resource = BulletList;
-    fn update(&mut self, data: &BulletList) {
+    type Resource = Yuyuko;
+    fn update(&mut self, data: &Yuyuko) {
         match self {
             BulletState::Butterfly(state) => state.update(data),
         }
     }
-    fn alive(&self, data: &BulletList, area: &PlayArea) -> bool {
+    fn alive(&self, data: &Yuyuko, area: &PlayArea) -> bool {
         match self {
             BulletState::Butterfly(state) => state.alive(data, area),
         }
@@ -61,7 +61,7 @@ impl GenericBulletState for BulletState {
     fn draw(
         &self,
         ctx: &mut Context,
-        data: &BulletList,
+        data: &Yuyuko,
         assets: &Assets,
         world: graphics::Matrix4,
     ) -> GameResult<()> {

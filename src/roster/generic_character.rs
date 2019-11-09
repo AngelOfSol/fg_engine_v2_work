@@ -21,12 +21,12 @@ use std::rc::Rc;
 /* Example structures.
 #[derive(Debug, Clone)]
 pub struct [Character]State {
-    pub data: Rc<Resources>,
+    pub data: Rc<[Character]Resources>,
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
     extra_data: ExtraData,
-    pub particles: Vec<(usize, collision::Vec2, Particle)>,
+    pub particles: Vec<(usize, collision::Vec2, ParticleId)>,
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
@@ -45,7 +45,7 @@ pub struct [Character]State {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Properties {
+pub struct [Character]Properties {
     health: i32,
     name: String,
     neutral_jump_accel: collision::Vec2,
@@ -57,24 +57,24 @@ pub struct Properties {
 }
 
 #[derive(Clone, Debug)]
-pub struct Resources {
+pub struct [Character]Resources {
     pub assets: Assets,
-    pub states: HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>,
-    pub particles: HashMap<Particle, Animation>,
+    pub states: HashMap<MoveId, State<MoveId, ParticleId, BulletSpawn, AttackId>>,
+    pub particles: HashMap<ParticleId, Animation>,
     pub bullets: BulletList,
     pub attacks: HashMap<AttackId, AttackInfo>,
-    pub properties: Properties,
+    pub properties: [Character]Properties,
     pub command_list: CommandList<MoveId>,
 }*/
 
 pub trait GenericCharacterBehaviour {
-    type Particle;
+    type ParticleId;
     type MoveId;
-    type ResourceData;
+    type Resources;
     type Properties;
 
     // probably unneeded.
-    fn new(data: Rc<Self::ResourceData>) -> Self;
+    fn new(data: Rc<Self::Resources>) -> Self;
 
     fn in_corner(&self, play_area: &PlayArea) -> bool;
 
@@ -133,7 +133,7 @@ pub trait GenericCharacterBehaviour {
 
     fn update_particles(&mut self);
     // can probably move this to a private method rather than a trait method
-    fn spawn_particle(&mut self, particle: Self::Particle, offset: collision::Vec2);
+    fn spawn_particle(&mut self, particle: Self::ParticleId, offset: collision::Vec2);
 
     fn update_bullets(&mut self, play_area: &PlayArea);
 
