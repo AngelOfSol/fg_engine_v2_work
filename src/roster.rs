@@ -1,3 +1,4 @@
+#[macro_use]
 pub mod generic_character;
 mod yuyuko;
 

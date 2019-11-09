@@ -23,6 +23,7 @@ mod ui;
 mod character;
 mod game_match;
 mod input;
+#[macro_use]
 mod roster;
 mod runner;
 mod stage;
