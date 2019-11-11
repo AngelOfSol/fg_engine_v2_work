@@ -20,6 +20,8 @@ pub enum MoveId {
     Attack6B,
     #[serde(rename = "attack5c")]
     Attack5C,
+    #[serde(rename = "attack2c")]
+    Attack2C,
     #[serde(rename = "air5a")]
     Air5A,
     #[serde(rename = "air8a")]
@@ -28,6 +30,10 @@ pub enum MoveId {
     Air5B,
     #[serde(rename = "air2b")]
     Air2B,
+    #[serde(rename = "air5c")]
+    Air5C,
+    #[serde(rename = "air2c")]
+    Air2C,
     Crouch,
     ToCrouch,
     ToStand,

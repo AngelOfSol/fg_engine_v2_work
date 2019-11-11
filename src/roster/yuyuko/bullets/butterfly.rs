@@ -105,7 +105,7 @@ impl ButterflyState {
             ctx,
             assets,
             self.color,
-            world * graphics::Matrix4::new_scaling(dbg!(scale)),
+            world * graphics::Matrix4::new_scaling(scale),
         )?;
         data.bullets.butterfly.animation.draw_frame(
             ctx,

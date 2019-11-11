@@ -30,6 +30,10 @@ pub fn generate_command_list() -> CommandList<MoveId> {
 
 
         numpad!(5 C), numpad!(4 C), numpad!(6 C) => MoveId::Attack5C,
+        numpad!(2 C), numpad!(1 C), numpad!(3 C) => MoveId::Attack2C,
+
+        numpad!(1 C), numpad!(2 C), numpad!(3 C) => MoveId::Air2C,
+        numpad!(5 C), numpad!(4 C), numpad!(6 C), numpad!(7 C), numpad!(8 C), numpad!(9 C) => MoveId::Air5C,
 
         numpad!(27), numpad!(28), numpad!(29) => MoveId::SuperJump,
         numpad!(7), numpad!(8), numpad!(9) => MoveId::Jump,
