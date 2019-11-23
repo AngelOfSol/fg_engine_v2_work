@@ -29,9 +29,8 @@ impl<T> AtTime<T> for Timeline<T> {
             let diff = self.duration() as isize - duration as isize;
             if diff != 0 {
                 if diff > 0 {
-                    // TODO FIX THIS
                     loop {
-                        let diff = self.duration() as isize - self.duration() as isize;
+                        let diff = self.duration() as isize - duration as isize;
 
                         let last_element = &mut self.last_mut().unwrap().1;
                         let new_duration = *last_element as isize - diff;

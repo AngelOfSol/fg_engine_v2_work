@@ -1,0 +1,40 @@
+TODO LATER) rework input buffer again
+    > each type reads as if the button presses were in the past 3 frames
+    > run it for the last 8 frames and only give out the most recent for each category
+    > kara canceling
+
+
+
+NOTE: create id's for attack data, so it can be edited outside of the state editor (reduce clutter), also helps for resuse, and being clear about the data 
+
+consider removing jumpstartup flag and just looking at moveids?
+
+there is a max zoom, there is no min zoom
+
+5a jab (high)
+2a jab (low)
+5b poke (mid) (low - on rebeat)
+6b overhead <groundslams?> (high) (hard - on rebeat)
+2b poke (low) (low - on rebeat)
+3b antiair <juggles> (mid)
+
+j5a air jab (high)
+j5b jump in (high) 
+j6b ground slammer (high)
+
+5c swipe that sends a spread of butterflies outward in a spiral (up to down)
+2c reverse swipe (down to up) of 5b
+5d spawns a butterfly that explodes into another butterfly (repeat 3 times) (high off the ground, hits standers and airdashers)
+2d spawns a butterfly that explodes into another butterfly (repeat 3 times) (low to the ground, hits crouchers)
+
+j5c spin around, like 5c but goes both sides
+j5d yuyu j5b
+
+623a/623b melee/bullet invuln DP
+
+236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/upforward)
+j236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/downforward)
+
+
+214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
+

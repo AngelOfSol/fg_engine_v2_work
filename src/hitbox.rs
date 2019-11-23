@@ -1,49 +1,132 @@
-use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
-
-use serde::{Deserialize, Serialize};
-
+use crate::game_match::PlayArea;
 use crate::imgui_extra::UiExtensions;
-use imgui::*;
-
-use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2, Vec3};
-
+use crate::input::Facing;
+use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
+use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2};
 use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
 use ggez::{Context, GameResult};
+use imgui::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct Hitbox {
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct GenericHitbox<T> {
     pub center: Vec2,
     pub half_size: Vec2,
+    #[serde(skip)]
+    _secret: std::marker::PhantomData<T>,
 }
+
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct Relative;
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+pub struct Absolute;
+
+pub type Hitbox = GenericHitbox<Relative>;
+pub type PositionedHitbox = GenericHitbox<Absolute>;
 
 impl Hitbox {
     pub fn new() -> Self {
         Self {
             center: Vec2::zeros(),
-            half_size: Vec2::new(100, 100),
+            half_size: Vec2::new(1_00, 1_00),
+            _secret: std::marker::PhantomData,
         }
     }
     pub fn with_half_size(half_size: Vec2) -> Self {
         Self {
             center: Vec2::zeros(),
             half_size,
+            _secret: std::marker::PhantomData,
         }
     }
 
-    pub fn left(&self) -> Int {
-        self.center.x - self.half_size.x
+    pub fn with_position(&self, position: Vec2) -> PositionedHitbox {
+        PositionedHitbox {
+            center: self.center + position,
+            half_size: self.half_size,
+            _secret: std::marker::PhantomData,
+        }
     }
-    pub fn right(&self) -> Int {
-        self.center.x + self.half_size.x
+    pub fn with_position_and_facing(&self, position: Vec2, facing: Facing) -> PositionedHitbox {
+        PositionedHitbox {
+            center: facing.fix_collision(self.center) + position,
+            half_size: self.half_size,
+            _secret: std::marker::PhantomData,
+        }
     }
-    pub fn top(&self) -> Int {
-        self.center.y - self.half_size.y
+}
+
+impl PositionedHitbox {
+    pub fn overlaps(self, target: Self) -> bool {
+        let distance = (self.center - target.center).abs();
+        let allowed_distance = self.half_size + target.half_size;
+        distance.x < allowed_distance.x && distance.y < allowed_distance.y
     }
-    pub fn bottom(&self) -> Int {
-        self.center.y + self.half_size.y
+    pub fn overlaps_any(lhs: &[Self], rhs: &[Self]) -> bool {
+        lhs.iter().any(|left_hitbox| {
+            rhs.iter()
+                .copied()
+                .any(|right_hitbox| left_hitbox.overlaps(right_hitbox))
+        })
     }
 
+    pub fn fix_distances(
+        self,
+        target: Self,
+        play_area: &PlayArea,
+        vels: (Int, Int),
+        facing: Facing,
+    ) -> (Int, Int) {
+        let distance = (self.center - target.center).abs();
+        let allowed_distance = self.half_size + target.half_size;
+
+        let overlap = allowed_distance - distance;
+        let overlap_distance = overlap.x / 2;
+
+        let direction_mod = if self.center.x < target.center.x {
+            -1
+        } else if self.center.x > target.center.x {
+            1
+        } else if self.center.x - vels.0 < target.center.x - vels.1 {
+            -1
+        } else if self.center.x - vels.0 > target.center.x - vels.1 {
+            1
+        } else if vels.0 + vels.1 != 0 {
+            Int::signum(vels.0 + vels.1)
+        } else {
+            facing.invert().collision_multiplier().x
+        };
+
+        let (left_mod, right_mod) = (
+            direction_mod * overlap_distance,
+            -direction_mod * (overlap.x - overlap_distance),
+        );
+
+        let self_mod =
+            if Int::abs(self.center.x + left_mod) > play_area.width / 2 - self.half_size.x {
+                Int::signum(self.center.x + left_mod) * (play_area.width / 2 - self.half_size.x)
+                    - (self.center.x + left_mod)
+            } else {
+                0
+            };
+        let target_mod = if Int::abs(target.center.x + right_mod)
+            > play_area.width / 2 - target.half_size.x
+        {
+            Int::signum(target.center.x + right_mod) * (play_area.width / 2 - target.half_size.x)
+                - (target.center.x + right_mod)
+        } else {
+            0
+        };
+
+        (
+            left_mod + target_mod + self_mod,
+            right_mod + target_mod + self_mod,
+        )
+    }
+}
+
+impl<T> GenericHitbox<T> {
     pub fn size(&self) -> Vec2 {
         self.half_size * 2
     }
@@ -58,41 +141,19 @@ impl Hitbox {
     pub fn collision_graphic_recenter(&self) -> GraphicVec2 {
         GraphicVec2::new(
             self.center.x.into_graphical(),
-            self.half_size.y.into_graphical() + self.center.y.into_graphical(),
+            self.half_size.y.into_graphical() - self.center.y.into_graphical(),
         )
     }
 
     pub fn draw_ui(ui: &Ui<'_>, data: &mut Hitbox) {
-        if ui
-            .collapsing_header(im_str!("Center"))
-            .default_open(true)
-            .build()
-        {
-            ui.push_id("Center");
-            data.center.x /= 100;
-            let _ = ui.input_whole(im_str!("X"), &mut data.center.x);
-            data.center.x *= 100;
-            data.center.y /= 100;
-            let _ = ui.input_whole(im_str!("Y"), &mut data.center.y);
-            data.center.y *= 100;
-            ui.pop_id();
-        }
-        if ui
-            .collapsing_header(im_str!("Half Size"))
-            .default_open(true)
-            .build()
-        {
-            ui.push_id("Size");
-            data.half_size.x /= 100;
-            let _ = ui.input_whole(im_str!("X"), &mut data.half_size.x);
-            data.half_size.x = std::cmp::max(data.half_size.x, 1);
-            data.half_size.x *= 100;
-            data.half_size.y /= 100;
-            let _ = ui.input_whole(im_str!("Y"), &mut data.half_size.y);
-            data.half_size.y = std::cmp::max(data.half_size.y, 1);
-            data.half_size.y *= 100;
-            ui.pop_id();
-        }
+        data.center /= 100;
+        ui.input_vec2_whole(im_str!("Center"), &mut data.center);
+        data.center *= 100;
+        data.half_size /= 100;
+        ui.input_vec2_whole(im_str!("Half Size"), &mut data.half_size);
+        data.half_size.x = std::cmp::max(data.half_size.x, 1);
+        data.half_size.y = std::cmp::max(data.half_size.y, 1);
+        data.half_size *= 100;
     }
 
     pub fn draw(&self, ctx: &mut Context, world: Matrix4, color: Color) -> GameResult<()> {
@@ -101,23 +162,16 @@ impl Hitbox {
             ctx,
             DrawMode::Fill(FillOptions::default()),
             Rect::new(
-                0.0,
-                0.0,
+                -self.half_size.x.into_graphical() + self.center.x.into_graphical(),
+                // graphically -y is up/+y is down, but for the purpores of math, our center has +y as up/-y as down
+                -self.half_size.y.into_graphical() - self.center.y.into_graphical(),
                 self.width().into_graphical(),
                 self.height().into_graphical(),
             ),
             color,
         )?;
 
-        graphics::set_transform(
-            ctx,
-            world
-                * Matrix4::new_translation(&Vec3::new(
-                    self.left().into_graphical(),
-                    self.top().into_graphical(),
-                    0.0,
-                )),
-        );
+        graphics::set_transform(ctx, world);
         graphics::apply_transformations(ctx)?;
         graphics::draw(ctx, &rect, DrawParam::default())?;
 
