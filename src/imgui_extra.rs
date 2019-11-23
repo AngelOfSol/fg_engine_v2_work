@@ -274,7 +274,7 @@ impl<'a> UiExtensions for Ui<'a> {
         mut delete: Delete,
         height_in_items: i32,
     ) -> (bool, Option<&'items mut T>) {
-        let mut ret = self.rearrangable_list_box(label, idx, items, display, height_in_items);;
+        let mut ret = self.rearrangable_list_box(label, idx, items, display, height_in_items);
         if self.small_button(im_str!("New")) {
             ret = true;
             items.push(new());
