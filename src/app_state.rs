@@ -3,18 +3,25 @@ use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 
-pub trait REWORKAppState {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()>;
+pub enum Transition {
+    Push(Box<dyn AppState>),
+    Replace(Box<dyn AppState>),
+    Pop,
+    None,
+}
+
+pub trait AppState {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition>;
     fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()>;
 }
 
 pub struct AppStateRunner {
-    history: Vec<Box<dyn REWORKAppState>>,
+    history: Vec<Box<dyn AppState>>,
     imgui: ImGuiWrapper,
 }
 
 impl AppStateRunner {
-    pub fn new(ctx: &mut Context, start: Box<dyn REWORKAppState>) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context, start: Box<dyn AppState>) -> GameResult<Self> {
         Ok(AppStateRunner {
             history: vec![start],
             imgui: ImGuiWrapper::new(ctx),
@@ -25,7 +32,21 @@ impl AppStateRunner {
 impl EventHandler for AppStateRunner {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         if let Some(state) = self.history.last_mut() {
-            state.update(ctx)?;
+            match state.update(ctx)? {
+                Transition::Push(new_state) => {
+                    self.history.push(new_state);
+                }
+                Transition::Replace(new_state) => {
+                    self.history.pop();
+                    self.history.push(new_state);
+                }
+                Transition::Pop => {
+                    self.history.pop();
+                }
+                Transition::None => (),
+            }
+        } else {
+            ggez::event::quit(ctx);
         }
         Ok(())
     }

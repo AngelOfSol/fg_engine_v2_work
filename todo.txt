@@ -38,3 +38,12 @@ j236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/
 
 214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
 
+TODO (2/15/2020):
+[] create a main menu appstate
+[] change screensize when going into editor mode
+[] rework editor to use new state system
+    [] pass an RC of the character and a path to each of the editors
+    [] have the states update the RC themselves when the save button is pressed
+[] remove dead code
+[] rework character to require a state id while editing?
+    [] loading a character 

@@ -6,7 +6,6 @@
 
 use ggez::conf;
 use ggez::ContextBuilder;
-use runner::Runner;
 use std::env;
 use std::error::Error;
 use std::path;
@@ -25,7 +24,6 @@ mod game_match;
 mod input;
 #[macro_use]
 mod roster;
-mod runner;
 mod stage;
 #[macro_use]
 mod command_list;
@@ -74,7 +72,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let x = crate::button_check::ButtonCheck::new(&mut ctx).unwrap();
-    let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(x)).unwrap();
+    let editor = crate::ui::editor::GameEditor::new(&mut ctx).unwrap();
+    let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(editor)).unwrap();
     ggez::event::run(&mut ctx, &mut event_loop, &mut runner).ok();
 }
