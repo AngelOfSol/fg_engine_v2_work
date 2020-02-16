@@ -136,6 +136,9 @@ impl ButtonCheck {
 }
 
 impl AppState for ButtonCheck {
+    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
     fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
             while let Some(event) = self.pads_context.next_event() {

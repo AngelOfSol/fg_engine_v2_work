@@ -60,7 +60,7 @@ pub fn save(
     )
     .unwrap();
 
-    png_writer.encode(&image, image.width(), image.height(), ColorType::RGBA(8))?;
-
-    Ok(())
+    png_writer
+        .encode(&image, image.width(), image.height(), ColorType::Rgba8)
+        .map_err(|_| GameError::FilesystemError("png_writer error".to_owned()))
 }
