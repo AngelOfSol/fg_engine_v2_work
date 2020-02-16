@@ -137,6 +137,55 @@ impl ButtonCheck {
     }
 }
 
+impl crate::app_state::REWORKAppState for ButtonCheck {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        while timer::check_update_time(ctx, 60) {
+            while let Some(event) = self.pads_context.next_event() {
+                // let id = event.id;
+                let Event { id, event, .. } = event;
+                if let EventType::ButtonPressed(button, _) = event {
+                    match button {
+                        Button::DPadLeft => {
+                            self.p1_control_scheme.assign_controller(id);
+                        }
+                        Button::DPadRight => {
+                            self.p2_control_scheme.assign_controller(id);
+                        }
+                        _ => {}
+                    }
+
+                    self.p1_control_scheme.update_button(id, button);
+                    self.p2_control_scheme.update_button(id, button);
+                }
+            }
+        }
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
+        let (p1, p2, pads_context) = (
+            &mut self.p1_control_scheme,
+            &mut self.p2_control_scheme,
+            &self.pads_context,
+        );
+        imgui
+            .frame()
+            .run(|ui| {
+                imgui::Window::new(im_str!("P1 Button Check")).build(ui, || {
+                    p1.draw_ui(ui, pads_context);
+                });
+                imgui::Window::new(im_str!("P2 Button Check")).build(ui, || {
+                    p2.draw_ui(ui, pads_context);
+                });
+            })
+            .render(ctx);
+
+        graphics::present(ctx)?;
+
+        Ok(())
+    }
+}
+
 impl AppState for ButtonCheck {
     fn next_appstate(&mut self, ctx: &mut Context) -> Option<RunnerState> {
         // TODO make sure that people confirmed to exit

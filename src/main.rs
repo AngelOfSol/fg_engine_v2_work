@@ -31,6 +31,7 @@ mod stage;
 mod command_list;
 #[macro_use]
 mod input_macros;
+mod app_state;
 mod button_check;
 
 fn main() {

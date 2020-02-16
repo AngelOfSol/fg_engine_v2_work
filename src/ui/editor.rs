@@ -90,6 +90,77 @@ impl AppState for GameEditor {
     }
 }
 
+impl crate::app_state::REWORKAppState for GameEditor {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        while timer::check_update_time(ctx, 60) {
+            let transition = match self
+                .game_state
+                .last_mut()
+                .expect("should have at least one gamestate")
+                .0
+            {
+                EditorState::Animating(ref mut editor) => editor.update(),
+                EditorState::MainMenu(ref mut menu) => menu.update(),
+                EditorState::StateEditor(ref mut editor) => editor.update(),
+                EditorState::CharacterEditor(ref mut editor) => editor.update(),
+                EditorState::BulletInfoEditor(ref mut editor) => editor.update(),
+                EditorState::AttackInfoEditor(ref mut editor) => editor.update(),
+            }?;
+            match transition {
+                Transition::None => (),
+                Transition::Pop(Some(passed_data)) => {
+                    let mode = self.game_state.pop().unwrap().1;
+                    self.game_state
+                        .last_mut()
+                        .unwrap()
+                        .0
+                        .handle_event(passed_data, mode);
+                }
+                Transition::Pop(None) => {
+                    self.game_state.pop();
+                }
+                Transition::Push(state, mode) => self.game_state.push((*state, mode)),
+            }
+
+            if self.game_state.is_empty() {
+                ggez::event::quit(ctx);
+            }
+        }
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
+
+        if self.game_state.is_empty() {
+            return Ok(());
+        }
+
+        match self
+            .game_state
+            .last_mut()
+            .expect("should have at least one gamestate")
+            .0
+        {
+            EditorState::Animating(ref mut editor) => editor.draw(ctx, &mut self.assets, imgui),
+            EditorState::MainMenu(ref mut menu) => menu.draw(ctx, &mut self.assets, imgui),
+            EditorState::StateEditor(ref mut editor) => editor.draw(ctx, &mut self.assets, imgui),
+            EditorState::CharacterEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, imgui)
+            }
+            EditorState::BulletInfoEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, imgui)
+            }
+            EditorState::AttackInfoEditor(ref mut editor) => {
+                editor.draw(ctx, &mut self.assets, imgui)
+            }
+        }?;
+
+        graphics::present(ctx)?;
+
+        Ok(())
+    }
+}
+
 impl EventHandler for GameEditor {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         while timer::check_update_time(ctx, 60) {
