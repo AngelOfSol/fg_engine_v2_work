@@ -31,41 +31,37 @@ impl MainMenu {
         imgui
             .frame()
             .run(|ui| {
+                let id = ui.push_id("Editor Main Menu");
                 // Window
-                ui.main_menu_bar(|| {
-                    ui.menu(im_str!("Main Menu"), true, || {
-                        if imgui::MenuItem::new(im_str!("New Character")).build(ui) {
-                            self.next = Transition::Push(
-                                Box::new(CharacterEditor::new(PlayerCharacter::new()).into()),
-                                Mode::Standalone,
-                            );
-                        }
-                        if imgui::MenuItem::new(im_str!("Open Character")).build(ui) {
-                            if let Ok(nfd::Response::Okay(path)) =
-                                nfd::open_file_dialog(Some("json"), None)
-                            {
-                                let result = PlayerCharacter::load_from_json(
-                                    ctx,
-                                    assets,
-                                    PathBuf::from(path),
+                imgui::Window::new(im_str!("Editor Menu")).build(ui, || {
+                    if ui.small_button(im_str!("New Character")) {
+                        self.next = Transition::Push(
+                            Box::new(CharacterEditor::new(PlayerCharacter::new()).into()),
+                            Mode::Standalone,
+                        );
+                    }
+                    if ui.small_button(im_str!("Load Character")) {
+                        if let Ok(nfd::Response::Okay(path)) =
+                            nfd::open_file_dialog(Some("json"), None)
+                        {
+                            let result =
+                                PlayerCharacter::load_from_json(ctx, assets, PathBuf::from(path));
+                            if result.is_err() {
+                                dbg!(result.as_ref().unwrap_err());
+                            }
+                            if let Ok(character) = result {
+                                self.next = Transition::Push(
+                                    Box::new(CharacterEditor::new(character).into()),
+                                    Mode::Standalone,
                                 );
-                                if result.is_err() {
-                                    dbg!(result.as_ref().unwrap_err());
-                                }
-                                if let Ok(character) = result {
-                                    self.next = Transition::Push(
-                                        Box::new(CharacterEditor::new(character).into()),
-                                        Mode::Standalone,
-                                    );
-                                }
                             }
                         }
-                        ui.separator();
-                        if imgui::MenuItem::new(im_str!("Quit")).build(ui) {
-                            self.next = Transition::Pop(None);
-                        }
-                    });
+                    }
+                    if ui.small_button(im_str!("Quit")) {
+                        self.next = Transition::Pop(None);
+                    }
                 });
+                id.pop(ui);
             })
             .render(ctx);
         Ok(())

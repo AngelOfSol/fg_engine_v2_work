@@ -42,12 +42,8 @@ fn main() {
     } else {
         path::PathBuf::from("./resources")
     };
-    let mut mode = conf::WindowMode::default().dimensions(1280.0, 720.0);
-    for arg in std::env::args() {
-        if arg == "--editor" {
-            mode = conf::WindowMode::default().dimensions(1500.0, 720.0);
-        }
-    }
+    let mode = conf::WindowMode::default().dimensions(1280.0, 720.0);
+
     // Make a Context and an EventLoop.
     let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "angel")
         .add_resource_path(resource_dir)

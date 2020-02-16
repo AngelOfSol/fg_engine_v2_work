@@ -11,7 +11,6 @@ use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use gfx::{self, *};
-use ggez::event::EventHandler;
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -77,6 +76,9 @@ impl Match {
 }
 
 impl AppState for Match {
+    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
     fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
             let mut events = Vec::new();

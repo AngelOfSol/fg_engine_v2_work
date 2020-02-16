@@ -12,6 +12,7 @@ pub enum Transition {
 
 pub trait AppState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<Transition>;
+    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()>;
     fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()>;
 }
 
@@ -21,7 +22,8 @@ pub struct AppStateRunner {
 }
 
 impl AppStateRunner {
-    pub fn new(ctx: &mut Context, start: Box<dyn AppState>) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context, mut start: Box<dyn AppState>) -> GameResult<Self> {
+        start.on_enter(ctx);
         Ok(AppStateRunner {
             history: vec![start],
             imgui: ImGuiWrapper::new(ctx),
@@ -35,13 +37,16 @@ impl EventHandler for AppStateRunner {
             match state.update(ctx)? {
                 Transition::Push(new_state) => {
                     self.history.push(new_state);
+                    self.history.last_mut().unwrap().on_enter(ctx)?;
                 }
                 Transition::Replace(new_state) => {
                     self.history.pop();
                     self.history.push(new_state);
+                    self.history.last_mut().unwrap().on_enter(ctx)?;
                 }
                 Transition::Pop => {
                     self.history.pop();
+                    self.history.last_mut().unwrap().on_enter(ctx)?;
                 }
                 Transition::None => (),
             }
