@@ -1,26 +1,36 @@
 use crate::character::state::components::BulletSpawn;
 use crate::character::state::State;
-use crate::typedefs::HashId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct States<Id, ParticleId, BulletInfo, AttackId>
-where
-    Id: HashId,
-    ParticleId: HashId,
-    BulletInfo: Default,
-{
+#[derive(Serialize, Deserialize)]
+pub struct States<Id, ParticleId, BulletSpawnInfo, AttackId> {
     #[serde(flatten)]
-    pub rest: HashMap<String, State<Id, ParticleId, BulletInfo, AttackId>>,
+    #[serde(bound(
+        serialize = "HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId>>: Serialize",
+        deserialize = "HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId>>: Deserialize<'de>"
+    ))]
+    pub rest: HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId>>,
     #[serde(skip)]
     _secret: (),
 }
 
+impl<Id, ParticleId, BulletSpawnInfo, AttackId> std::fmt::Debug
+    for States<Id, ParticleId, BulletSpawnInfo, AttackId>
+where
+    HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId>>: std::fmt::Debug,
+{
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut builder = fmt.debug_struct("States");
+        let _ = builder.field("rest", &self.rest);
+        builder.finish()
+    }
+}
+
 pub type EditorStates = States<String, String, BulletSpawn, String>;
 
-impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default, AttackId: HashId>
-    States<Id, ParticleId, BulletInfo, AttackId>
+impl<Id, ParticleId, BulletSpawnInfo: Eq + Default, AttackId>
+    States<Id, ParticleId, BulletSpawnInfo, AttackId>
 {
     pub fn new() -> Self {
         Self {
@@ -29,7 +39,7 @@ impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default, AttackId: HashId>
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletInfo, AttackId> {
+    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletSpawnInfo, AttackId> {
         match key {
             _ => &self.rest[key],
         }
@@ -37,7 +47,7 @@ impl<Id: HashId, ParticleId: HashId, BulletInfo: Eq + Default, AttackId: HashId>
     pub fn replace_state(
         &mut self,
         key: String,
-        data: State<Id, ParticleId, BulletInfo, AttackId>,
+        data: State<Id, ParticleId, BulletSpawnInfo, AttackId>,
     ) {
         match key.as_str() {
             _ => {

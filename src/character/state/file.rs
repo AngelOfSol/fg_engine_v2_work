@@ -1,18 +1,20 @@
 use super::State;
 use crate::assets::Assets;
 use crate::graphics::Animation;
-use crate::typedefs::{FgSerializable, StateId};
 use ggez::GameError;
 use ggez::{Context, GameResult};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::BufReader;
 use std::path::PathBuf;
 
 pub fn load_from_json<
-    Id: StateId,
-    ParticleId: StateId,
-    BulletSpawnInfo: FgSerializable,
-    AttackId: StateId,
+    Id: DeserializeOwned + Serialize + Eq + Hash + Default,
+    ParticleId: DeserializeOwned + Serialize + Default,
+    BulletSpawnInfo: DeserializeOwned + Serialize + Default,
+    AttackId: DeserializeOwned + Serialize + Default,
 >(
     ctx: &mut Context,
     assets: &mut Assets,
@@ -26,12 +28,7 @@ pub fn load_from_json<
     State::load(ctx, assets, &mut state, &name, path)?;
     Ok(state)
 }
-pub fn load<
-    Id: StateId,
-    ParticleId: StateId,
-    BulletSpawnInfo: FgSerializable,
-    AttackId: StateId,
->(
+pub fn load<Id, ParticleId, BulletSpawnInfo, AttackId>(
     ctx: &mut Context,
     assets: &mut Assets,
     state: &mut State<Id, ParticleId, BulletSpawnInfo, AttackId>,
@@ -45,10 +42,10 @@ pub fn load<
     Ok(())
 }
 pub fn save<
-    Id: StateId,
-    ParticleId: StateId,
-    BulletSpawnInfo: FgSerializable,
-    AttackId: StateId,
+    Id: Serialize + Eq + Hash,
+    ParticleId: Serialize,
+    BulletSpawnInfo: Serialize,
+    AttackId: Serialize,
 >(
     ctx: &mut Context,
     assets: &mut Assets,

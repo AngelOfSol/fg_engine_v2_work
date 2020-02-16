@@ -19,7 +19,6 @@ pub mod components {
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
-use crate::typedefs::{FgSerializable, HashId, StateId};
 use animation_data::AnimationData;
 use bullet_spawn_data::BulletSpawn;
 use cancel_set::{CancelSet, MoveType};
@@ -27,17 +26,20 @@ use flags::Flags;
 use ggez::{Context, GameResult};
 use hitbox_set::HitboxSet;
 use particle_spawn_data::ParticleSpawn;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::cmp;
+use std::hash::Hash;
 use std::path::PathBuf;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId>
-where
-    Id: HashId,
-{
+#[derive(Clone, Deserialize, Serialize)]
+pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId> {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
+    #[serde(bound(
+        serialize = "CancelSet<Id>: Serialize",
+        deserialize = "CancelSet<Id>: Deserialize<'de>"
+    ))]
     pub cancels: Timeline<CancelSet<Id>>,
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
     #[serde(default)]
@@ -51,12 +53,74 @@ where
     #[serde(default)]
     pub minimum_spirit_required: i32,
 }
+
+impl<Id, ParticleId, BulletSpawnInfo, AttackId> PartialEq
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+where
+    Id: PartialEq,
+    ParticleId: PartialEq,
+    BulletSpawnInfo: PartialEq,
+    AttackId: PartialEq,
+    CancelSet<Id>: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.animations.eq(&rhs.animations)
+            && self.flags.eq(&rhs.flags)
+            && self.cancels.eq(&rhs.cancels)
+            && self.hitboxes.eq(&rhs.hitboxes)
+            && self.particles.eq(&rhs.particles)
+            && self.bullets.eq(&rhs.bullets)
+            && self.state_type.eq(&rhs.state_type)
+            && self.on_expire_state.eq(&rhs.on_expire_state)
+            && self
+                .minimum_spirit_required
+                .eq(&rhs.minimum_spirit_required)
+    }
+}
+impl<Id, ParticleId, BulletSpawnInfo, AttackId> Eq
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+where
+    Id: PartialEq,
+    ParticleId: PartialEq,
+    BulletSpawnInfo: PartialEq,
+    AttackId: PartialEq,
+    CancelSet<Id>: PartialEq,
+{
+}
+
+impl<Id, ParticleId, BulletSpawnInfo, AttackId> std::fmt::Debug
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+where
+    Id: std::fmt::Debug,
+    ParticleId: std::fmt::Debug,
+    BulletSpawnInfo: std::fmt::Debug,
+    AttackId: std::fmt::Debug,
+    CancelSet<Id>: std::fmt::Debug,
+{
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut builder = fmt.debug_struct("State");
+        let _ = builder.field("flags", &self.flags);
+        let _ = builder.field("cancels", &self.cancels);
+        let _ = builder.field("hitboxes", &self.hitboxes);
+        let _ = builder.field("particles", &self.particles);
+        let _ = builder.field("bullets", &self.bullets);
+        let _ = builder.field("state_type", &self.state_type);
+        let _ = builder.field("on_expire_state", &self.on_expire_state);
+        let _ = builder.field("minimum_spirit_required", &self.minimum_spirit_required);
+        builder.finish()
+    }
+}
+
 pub type EditorCharacterState = State<String, String, BulletSpawn, String>;
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
-impl<Id: StateId, ParticleId: StateId, BulletSpawnInfo: FgSerializable, AttackId: StateId>
-    State<Id, ParticleId, BulletSpawnInfo, AttackId>
+impl<
+        Id: Serialize + DeserializeOwned + Eq + Hash + Default,
+        ParticleId: Serialize + DeserializeOwned + Default,
+        BulletSpawnInfo: Serialize + DeserializeOwned + Default,
+        AttackId: Serialize + DeserializeOwned + Default,
+    > State<Id, ParticleId, BulletSpawnInfo, AttackId>
 {
     pub fn load_from_json(
         ctx: &mut Context,

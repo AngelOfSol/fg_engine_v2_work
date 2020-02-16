@@ -1,6 +1,4 @@
-use crate::typedefs::StateId;
-
-pub trait GenericMoveId: StateId + Clone + Copy {
+pub trait GenericMoveId: Clone + Copy {
     const STARTING_STATE: Self;
     const HITSTUN_AIR_START: Self;
     const HITSTUN_STAND_START: Self;
