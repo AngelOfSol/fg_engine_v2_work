@@ -9,12 +9,14 @@ use ggez::ContextBuilder;
 use std::env;
 use std::error::Error;
 use std::path;
+
 #[macro_use]
 mod imgui_extra;
 mod assets;
 mod graphics;
 mod hitbox;
 mod imgui_wrapper;
+mod main_menu;
 mod timeline;
 mod typedefs;
 mod ui;
@@ -72,7 +74,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let editor = crate::ui::editor::GameEditor::new(&mut ctx).unwrap();
-    let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(editor)).unwrap();
+    let main_menu = crate::main_menu::MainMenu::new();
+    let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(main_menu)).unwrap();
     ggez::event::run(&mut ctx, &mut event_loop, &mut runner).ok();
 }
