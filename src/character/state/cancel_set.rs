@@ -1,8 +1,8 @@
-use crate::typedefs::HashId;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Display;
+use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
 pub enum MoveType {
@@ -130,19 +130,46 @@ impl Display for MoveType {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
-pub struct CancelSet<Id>
-where
-    Id: HashId,
-{
+#[derive(Clone, Deserialize, Serialize)]
+pub struct CancelSet<Id> {
     pub always: HashSet<MoveType>,
     pub hit: HashSet<MoveType>,
     pub block: HashSet<MoveType>,
-    #[serde(default)]
+    #[serde(bound(
+        serialize = "HashSet<Id>: Serialize",
+        deserialize = "HashSet<Id>: Deserialize<'de>"
+    ))]
     pub disallow: HashSet<Id>,
 }
 
-impl<Id: HashId> CancelSet<Id> {
+impl<Id> PartialEq for CancelSet<Id>
+where
+    HashSet<Id>: PartialEq,
+{
+    fn eq(&self, rhs: &Self) -> bool {
+        self.always.eq(&rhs.always)
+            && self.hit.eq(&rhs.hit)
+            && self.block.eq(&rhs.block)
+            && self.disallow.eq(&rhs.disallow)
+    }
+}
+impl<Id> Eq for CancelSet<Id> where HashSet<Id>: PartialEq {}
+
+impl<Id> std::fmt::Debug for CancelSet<Id>
+where
+    HashSet<Id>: std::fmt::Debug,
+{
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        let mut builder = fmt.debug_struct("CancelSet");
+        let _ = builder.field("always", &self.always);
+        let _ = builder.field("hit", &self.hit);
+        let _ = builder.field("block", &self.block);
+        let _ = builder.field("disallow", &self.disallow);
+        builder.finish()
+    }
+}
+
+impl<Id: Eq + Hash> CancelSet<Id> {
     pub fn new() -> Self {
         Self {
             always: HashSet::new(),

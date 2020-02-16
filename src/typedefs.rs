@@ -33,19 +33,3 @@ pub mod collision {
         }
     }
 }
-
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::hash::Hash;
-
-pub trait HashId: Eq + Hash + Default {}
-
-pub trait StateId: Eq + Hash + Default + Serialize + DeserializeOwned {}
-
-pub trait FgSerializable: Default + Serialize + DeserializeOwned {}
-
-impl<T> HashId for T where T: Eq + Hash + Default {}
-
-impl<T> StateId for T where T: Eq + Hash + Default + Serialize + DeserializeOwned {}
-
-impl<T> FgSerializable for T where T: Default + Serialize + DeserializeOwned {}
