@@ -74,7 +74,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-
-    let mut runner = Runner::new(&mut ctx).unwrap();
-    runner.run(&mut ctx, &mut event_loop);
+    let x = crate::button_check::ButtonCheck::new(&mut ctx).unwrap();
+    let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(x)).unwrap();
+    ggez::event::run(&mut ctx, &mut event_loop, &mut runner).ok();
 }
