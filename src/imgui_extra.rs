@@ -76,7 +76,7 @@ pub trait UiExtensions {
 
     fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>);
 
-    fn combo_items<T: Eq + Clone, L>(
+    fn combo_items<T: PartialEq + Clone, L>(
         &self,
         label: &ImStr,
         value: &mut T,
@@ -88,7 +88,7 @@ pub trait UiExtensions {
 }
 
 impl<'a> UiExtensions for Ui<'a> {
-    fn combo_items<T: Eq + Clone, L>(
+    fn combo_items<T: PartialEq + Clone, L>(
         &self,
         label: &ImStr,
         value: &mut T,

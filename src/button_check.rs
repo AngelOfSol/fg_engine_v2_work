@@ -136,7 +136,7 @@ impl ButtonCheck {
 }
 
 impl AppState for ButtonCheck {
-    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
         Ok(())
     }
     fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {

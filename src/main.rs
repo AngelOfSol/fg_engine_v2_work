@@ -16,7 +16,7 @@ mod assets;
 mod graphics;
 mod hitbox;
 mod imgui_wrapper;
-mod main_menu;
+mod menus;
 mod timeline;
 mod typedefs;
 mod ui;
@@ -42,13 +42,26 @@ fn main() {
     } else {
         path::PathBuf::from("./resources")
     };
-    let mode = conf::WindowMode::default().dimensions(1280.0, 720.0);
+
+    let default_conf = {
+        let mut conf = ggez::conf::Conf::default()
+            .window_mode(
+                conf::WindowMode::default()
+                    .dimensions(1280.0, 720.0)
+                    .fullscreen_type(ggez::conf::FullscreenType::Windowed),
+            )
+            .modules(conf::ModuleConf::default().gamepad(false));
+        conf.window_setup = conf::WindowSetup::default()
+            .title("World Scar")
+            .vsync(false);
+        conf
+    };
 
     // Make a Context and an EventLoop.
-    let (mut ctx, mut event_loop) = ContextBuilder::new("my_game", "angel")
+    let (mut ctx, mut event_loop) = ContextBuilder::new("world_scar", "aos-studios")
         .add_resource_path(resource_dir)
-        .window_setup(conf::WindowSetup::default().title("my_game").vsync(false))
-        .window_mode(mode)
+        .conf(default_conf)
+        .with_conf_file(true)
         .build()
         .expect("expected context");
 
@@ -70,7 +83,7 @@ fn main() {
     // Create an instance of your event handler.
     // Usually, you should provide it with the Context object to
     // use when setting your game up.
-    let main_menu = crate::main_menu::MainMenu::new();
+    let main_menu = crate::menus::MainMenu::new();
     let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(main_menu)).unwrap();
     ggez::event::run(&mut ctx, &mut event_loop, &mut runner).ok();
 }
