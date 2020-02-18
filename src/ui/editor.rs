@@ -82,11 +82,7 @@ impl GameEditor {
 
 impl AppState for GameEditor {
     fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::set_mode(
-            ctx,
-            ggez::conf::WindowMode::default().dimensions(1500.0, 720.0),
-        )?;
-        graphics::set_screen_coordinates(ctx, ggez::graphics::Rect::new(0.0, 0.0, 1500.0, 720.0))
+        crate::graphics::prepare_screen_for_editor(ctx)
     }
     // TODO remove teh full qualify
     fn update(&mut self, ctx: &mut Context) -> GameResult<crate::app_state::Transition> {

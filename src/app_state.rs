@@ -23,7 +23,7 @@ pub struct AppStateRunner {
 
 impl AppStateRunner {
     pub fn new(ctx: &mut Context, mut start: Box<dyn AppState>) -> GameResult<Self> {
-        start.on_enter(ctx);
+        start.on_enter(ctx)?;
         Ok(AppStateRunner {
             history: vec![start],
             imgui: ImGuiWrapper::new(ctx),
@@ -46,7 +46,9 @@ impl EventHandler for AppStateRunner {
                 }
                 Transition::Pop => {
                     self.history.pop();
-                    self.history.last_mut().unwrap().on_enter(ctx)?;
+                    if let Some(ref mut state) = self.history.last_mut() {
+                        state.on_enter(ctx)?;
+                    }
                 }
                 Transition::None => (),
             }

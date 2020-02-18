@@ -1,3 +1,4 @@
+use super::SettingsMenu;
 use crate::app_state::{AppState, Transition};
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::editor::GameEditor;
@@ -8,6 +9,7 @@ use imgui::im_str;
 enum NextState {
     Quit,
     Editor,
+    Settings,
 }
 
 pub struct MainMenu {
@@ -26,16 +28,13 @@ impl AppState for MainMenu {
             Some(state) => match state {
                 NextState::Quit => Ok(Transition::Pop),
                 NextState::Editor => Ok(Transition::Push(Box::new(GameEditor::new(ctx)?))),
+                NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
             },
             None => Ok(Transition::None),
         }
     }
-    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::set_mode(
-            ctx,
-            ggez::conf::WindowMode::default().dimensions(1280.0, 720.0),
-        )?;
-        graphics::set_screen_coordinates(ctx, ggez::graphics::Rect::new(0.0, 0.0, 1280.0, 720.0))
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
     }
     fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
@@ -47,8 +46,8 @@ impl AppState for MainMenu {
                     if ui.small_button(im_str!("Editor")) {
                         self.next = Some(NextState::Editor);
                     }
-                    if ui.small_button(im_str!("Button Check")) {
-                        self.next = Some(NextState::Quit);
+                    if ui.small_button(im_str!("Settings")) {
+                        self.next = Some(NextState::Settings);
                     }
                     if ui.small_button(im_str!("Quit")) {
                         self.next = Some(NextState::Quit);

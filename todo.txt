@@ -39,13 +39,13 @@ j236c/d heat wave (5 projectiles that eat a lot of projectiles in a row forward/
 214a/b tatsu (a tatsu goes upforwards and leaves you air acting, b tatsu goes horizontal and has good disjoint)
 
 TODO (2/15/2020):
-[] create a main menu appstate
-[] change screensize when going into editor mode
-    [] use https://docs.rs/ggez/0.5.1/ggez/graphics/fn.set_mode.html
+[x] create a main menu appstate
+[x] change screensize when going into editor mode
+    [x] use https://docs.rs/ggez/0.5.1/ggez/graphics/fn.set_mode.html
     [] create settings menu
-    [] add display settings options
-    [] use this https://docs.rs/ggez/0.5.1/ggez/graphics/fn.set_screen_coordinates.html
-        [] for making the game render up when fullscreened, but leave the UI correct.
+    [x] add display settings options
+    [x] use this https://docs.rs/ggez/0.5.1/ggez/graphics/fn.set_screen_coordinates.html
+        [x] for making the game render up when fullscreened, but leave the UI correct.
 [] rework editor to use new state system
     [] pass an RC of the character and a path to each of the editors
     [] have the states update the RC themselves when the save button is pressed

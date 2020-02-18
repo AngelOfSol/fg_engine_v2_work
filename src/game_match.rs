@@ -77,7 +77,7 @@ impl Match {
 
 impl AppState for Match {
     fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
-        Ok(())
+        crate::graphics::prepare_screen_for_game(ctx)
     }
     fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
