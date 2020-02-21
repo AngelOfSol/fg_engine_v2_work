@@ -1,15 +1,18 @@
+use super::character_editor::ItemResource;
+use crate::app_state::{AppState, Transition};
 use crate::assets::Assets;
 use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
-use crate::ui::editor::{EditorState, MessageData, Transition};
 use crate::ui::graphics::animation::AnimationUi;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 enum Status {
     DoneAndSave,
@@ -19,46 +22,39 @@ enum Status {
 
 pub struct AnimationEditor {
     frame: usize,
+    assets: Rc<RefCell<Assets>>,
+    path: Box<dyn ItemResource<Output = Animation>>,
     resource: Animation,
     ui_data: AnimationUi,
     done: Status,
 }
 
-impl AnimationEditor {
-    pub fn with_animation(data: Animation) -> Self {
-        Self {
-            frame: 0,
-            resource: data,
-            ui_data: AnimationUi::new(),
-            done: Status::NotDone,
+impl AppState for AnimationEditor {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+        while ggez::timer::check_update_time(ctx, 60) {
+            self.frame = self.frame.wrapping_add(1);
         }
-    }
 
-    pub fn update(&mut self) -> GameResult<Transition> {
-        self.frame = self.frame.wrapping_add(1);
-
-        match self.done {
+        match std::mem::replace(&mut self.done, Status::NotDone) {
             Status::NotDone => Ok(Transition::None),
             Status::DoneAndSave => {
-                let ret = std::mem::replace(&mut self.resource, Animation::new("none"));
-                Ok(Transition::Pop(Some(MessageData::Animation(ret))))
+                let mut overwrite_target = self.path.get_from_mut().unwrap();
+                *overwrite_target = std::mem::replace(&mut self.resource, Animation::new("empty"));
+                Ok(Transition::Pop)
             }
-            Status::DoneAndQuit => Ok(Transition::Pop(None)),
+            Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
-
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         let editor_height = 526.0;
         let dim = [editor_height / 2.0, editor_height / 2.0];
         let [width, height] = dim;
         let pos = [300.0, 20.0];
         let [x, y] = pos;
-
         let mut editor_result = Ok(());
         imgui
             .frame()
@@ -67,6 +63,7 @@ impl AnimationEditor {
                     .size([300.0, editor_height], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
+                        let assets = &mut self.assets.borrow_mut();
                         editor_result = self.ui_data.draw_ui(&ui, ctx, assets, &mut self.resource);
                     });
 
@@ -106,6 +103,7 @@ impl AnimationEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
+                                let assets = &mut self.assets.borrow_mut();
                                 editor_result = Animation::save(ctx, assets, &self.resource, path);
                             }
                         }
@@ -113,6 +111,7 @@ impl AnimationEditor {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
+                                let assets = &mut self.assets.borrow_mut();
                                 match Animation::load_from_json(ctx, assets, PathBuf::from(path)) {
                                     Ok(animation) => {
                                         self.resource = animation;
@@ -163,6 +162,7 @@ impl AnimationEditor {
                 DrawParam::default().dest([origin.0, origin.1]),
             )
         };
+        let assets = &mut self.assets.borrow_mut();
 
         if self.resource.frames.duration() > 0 {
             {
@@ -207,12 +207,23 @@ impl AnimationEditor {
                 draw_cross(ctx, origin)?;
             }
         }
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for AnimationEditor {
-    fn into(self) -> EditorState {
-        EditorState::Animating(self)
+impl AnimationEditor {
+    pub fn new(
+        assets: Rc<RefCell<Assets>>,
+        path: Box<dyn ItemResource<Output = Animation>>,
+    ) -> Option<Self> {
+        let resource = path.get_from()?.clone();
+        Some(Self {
+            frame: 0,
+            assets,
+            resource,
+            path,
+            ui_data: AnimationUi::new(),
+            done: Status::NotDone,
+        })
     }
 }

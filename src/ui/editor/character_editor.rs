@@ -1,119 +1,226 @@
+use crate::app_state::{AppState, Transition};
 use crate::assets::Assets;
+use crate::character::components::{AttackInfo, BulletInfo};
+use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
-use crate::graphics::Animation;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::character::components::{AttacksUi, BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
-use crate::ui::editor::{
-    AnimationEditor, AttackInfoEditor, BulletInfoEditor, EditorState, MessageData, Mode,
-    StateEditor, Transition,
-};
+use crate::ui::editor::{AnimationEditor, AttackInfoEditor, BulletInfoEditor, StateEditor};
+use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::{Ref, RefCell, RefMut};
 use std::path::PathBuf;
+use std::rc::Rc;
+
+pub trait ItemResource {
+    type Output;
+    fn get_from(&self) -> Option<Ref<Self::Output>>;
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>>;
+}
+
+pub struct AttackResource {
+    pub attack: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+impl ItemResource for AttackResource {
+    type Output = AttackInfo;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let character = self.data.borrow();
+        if character.attacks.attacks.contains_key(&self.attack) {
+            Some(Ref::map(character, |character| {
+                character.attacks.attacks.get(&self.attack).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let character = self.data.borrow_mut();
+        if character.attacks.attacks.contains_key(&self.attack) {
+            Some(RefMut::map(character, |character| {
+                character.attacks.attacks.get_mut(&self.attack).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct BulletResource {
+    pub bullet: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+impl ItemResource for BulletResource {
+    type Output = BulletInfo;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let character = self.data.borrow();
+        if character.bullets.bullets.contains_key(&self.bullet) {
+            Some(Ref::map(character, |character| {
+                character.bullets.bullets.get(&self.bullet).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let character = self.data.borrow_mut();
+        if character.bullets.bullets.contains_key(&self.bullet) {
+            Some(RefMut::map(character, |character| {
+                character.bullets.bullets.get_mut(&self.bullet).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct StateResource {
+    pub state: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+
+impl ItemResource for StateResource {
+    type Output = EditorCharacterState;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let character = self.data.borrow();
+        if character.states.rest.contains_key(&self.state) {
+            Some(Ref::map(character, |character| {
+                character.states.rest.get(&self.state).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let character = self.data.borrow_mut();
+        if character.states.rest.contains_key(&self.state) {
+            Some(RefMut::map(character, |character| {
+                character.states.rest.get_mut(&self.state).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct ParticleAnimationResource {
+    pub particle: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+
+impl ItemResource for ParticleAnimationResource {
+    type Output = crate::graphics::Animation;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let character = self.data.borrow();
+        if character.particles.particles.contains_key(&self.particle) {
+            Some(Ref::map(character, |character| {
+                character.particles.particles.get(&self.particle).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let character = self.data.borrow_mut();
+        if character.particles.particles.contains_key(&self.particle) {
+            Some(RefMut::map(character, |character| {
+                character
+                    .particles
+                    .particles
+                    .get_mut(&self.particle)
+                    .unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct BulletAnimationResource {
+    pub data: Rc<RefCell<BulletInfo>>,
+}
+
+impl ItemResource for BulletAnimationResource {
+    type Output = crate::graphics::Animation;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let bullet = self.data.borrow();
+        Some(Ref::map(bullet, |bullet| &bullet.animation))
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let bullet = self.data.borrow_mut();
+        Some(RefMut::map(bullet, |bullet| &mut bullet.animation))
+    }
+}
+
+pub struct StateAnimationResource {
+    pub data: Rc<RefCell<EditorCharacterState>>,
+    pub name: String,
+}
+
+impl ItemResource for StateAnimationResource {
+    type Output = crate::graphics::Animation;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let state = self.data.borrow();
+        if state
+            .animations
+            .iter()
+            .any(|item| item.animation.name == self.name)
+        {
+            Some(Ref::map(state, |state| {
+                &state
+                    .animations
+                    .iter()
+                    .find(|item| item.animation.name == self.name)
+                    .unwrap()
+                    .animation
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let state = self.data.borrow_mut();
+        if state
+            .animations
+            .iter()
+            .any(|item| item.animation.name == self.name)
+        {
+            Some(RefMut::map(state, |state| {
+                &mut state
+                    .animations
+                    .iter_mut()
+                    .find(|item| item.animation.name == self.name)
+                    .unwrap()
+                    .animation
+            }))
+        } else {
+            None
+        }
+    }
+}
 
 pub struct CharacterEditor {
-    resource: PlayerCharacter,
+    resource: Rc<RefCell<PlayerCharacter>>,
+    assets: Rc<RefCell<Assets>>,
     transition: Transition,
     particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
     bullet_ui_data: BulletsUi,
     attacks_ui_data: AttacksUi,
 }
-impl CharacterEditor {
-    pub fn new(resource: PlayerCharacter) -> Self {
-        let particle_ui_data = ParticlesUi::new(&resource.particles);
-        let states_ui_data = StatesUi::new(&resource.states);
-        let bullet_ui_data = BulletsUi::new(&resource.bullets);
-        let attacks_ui_data = AttacksUi::new(&resource.attacks);
-        Self {
-            resource,
-            particle_ui_data,
-            states_ui_data,
-            bullet_ui_data,
-            attacks_ui_data,
-            transition: Transition::None,
-        }
-    }
 
-    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        match data {
-            MessageData::BulletInfo(bullet) => match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    self.resource.bullets.bullets.insert(
-                        self.resource.bullets.guarentee_unique_key("new bullet"),
-                        bullet,
-                    );
-                }
-                Mode::Edit(name) => {
-                    for (_, state) in self.resource.states.rest.iter_mut() {
-                        for spawn in state.bullets.iter_mut() {
-                            if spawn.bullet_id == name {
-                                spawn.fix_properties(&bullet.properties);
-                            }
-                        }
-                    }
-                    self.resource.bullets.bullets.insert(name, bullet);
-                }
-            },
-            MessageData::AttackInfo(attack) => match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    self.resource.attacks.attacks.insert(
-                        self.resource.attacks.guarentee_unique_key("new attack"),
-                        attack,
-                    );
-                }
-                Mode::Edit(name) => {
-                    self.resource.attacks.attacks.insert(name, attack);
-                }
-            },
-            MessageData::State(state) => match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    self.resource.states.rest.insert(
-                        self.resource.states.guarentee_unique_key("new state"),
-                        state,
-                    );
-                }
-                Mode::Edit(name) => {
-                    self.resource.states.replace_state(name, state);
-                }
-            },
-            MessageData::Animation(animation) => match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    let name = self
-                        .resource
-                        .particles
-                        .guarentee_unique_key(&animation.name);
-                    self.particle_ui_data.particle_keys.push(name.clone());
-                    self.resource.particles.particles.insert(name, animation);
-                }
-                Mode::Edit(name) => {
-                    self.resource.particles.particles.remove(&name);
-                    let name = self
-                        .resource
-                        .particles
-                        .guarentee_unique_key(&animation.name);
-                    self.resource.particles.particles.insert(name, animation);
-                }
-            },
-        }
+impl AppState for CharacterEditor {
+    fn update(&mut self, _: &mut Context) -> GameResult<Transition> {
+        Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
-
-    pub fn update(&mut self) -> GameResult<Transition> {
-        let ret = std::mem::replace(&mut self.transition, Transition::None);
-        Ok(ret)
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
     }
-
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
+
         imgui
             .frame()
             .run(|ui| {
@@ -121,40 +228,31 @@ impl CharacterEditor {
                     .size([300.0, 526.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        PropertiesUi::draw_ui(ui, &mut self.resource.properties);
+                        PropertiesUi::draw_ui(ui, &mut self.resource.borrow_mut().properties);
                     });
                 imgui::Window::new(im_str!("States"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([300.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_result =
-                            self.states_ui_data
-                                .draw_ui(ctx, assets, ui, &mut self.resource.states);
-                        if let Ok(Some(mode)) = &edit_result {
-                            let state = match mode {
-                                Mode::Edit(key) => self.resource.states.get_state(key).clone(),
-                                _ => return,
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(
-                                    StateEditor::with_state(
+                        let edit_result = self.states_ui_data.draw_ui(
+                            ctx,
+                            &mut self.assets.borrow_mut(),
+                            ui,
+                            &mut self.resource.borrow_mut().states,
+                        );
+                        if let Ok(Some(state)) = &edit_result {
+                            let state = state.clone();
+                            self.transition = Transition::Push(Box::new(
+                                StateEditor::new(
+                                    self.resource.clone(),
+                                    self.assets.clone(),
+                                    StateResource {
                                         state,
-                                        self.resource.particles.particles.keys().cloned().collect(),
-                                        self.resource.states.rest.keys().cloned().collect(),
-                                        self.resource
-                                            .bullets
-                                            .bullets
-                                            .iter()
-                                            .map(|(key, value)| {
-                                                (key.clone(), value.properties.clone())
-                                            })
-                                            .collect(),
-                                        self.resource.attacks.attacks.keys().cloned().collect(),
-                                    )
-                                    .into(),
-                                ),
-                                mode.clone(),
-                            );
+                                        data: self.resource.clone(),
+                                    },
+                                )
+                                .unwrap(),
+                            ));
                         }
                         editor_result = edit_result.map(|_| ());
                     });
@@ -162,81 +260,76 @@ impl CharacterEditor {
                     .size([300.0, 526.0], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_change = self.particle_ui_data.draw_ui(
+                        let should_edit = self.particle_ui_data.draw_ui(
                             ctx,
-                            assets,
+                            &mut self.assets.borrow_mut(),
                             ui,
-                            &mut self.resource.particles,
+                            &mut self.resource.borrow_mut().particles,
                         );
-                        if let Some(mode) = &edit_change {
-                            let animation = match &mode {
-                                Mode::Edit(name) => self
-                                    .resource
-                                    .particles
-                                    .particles
-                                    .values()
-                                    .find(|item| &item.name == name)
-                                    .cloned()
-                                    .unwrap(),
-                                _ => Animation::new("new"),
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(AnimationEditor::with_animation(animation).into()),
-                                mode.clone(),
-                            );
+                        if let Some(animation_name) = should_edit {
+                            self.transition = Transition::Push(Box::new(
+                                AnimationEditor::new(
+                                    self.assets.clone(),
+                                    Box::new(ParticleAnimationResource {
+                                        data: self.resource.clone(),
+                                        particle: animation_name,
+                                    }),
+                                )
+                                .unwrap(),
+                            ));
                         }
                     });
                 imgui::Window::new(im_str!("Bullets"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        if !self.resource.attacks.attacks.is_empty() {
-                            let edit_change = self.bullet_ui_data.draw_ui(
-                                ui,
-                                &mut self.resource.bullets,
-                                self.resource.attacks.attacks.keys().next().unwrap().clone(),
-                            );
-                            if let Some(mode) = &edit_change {
-                                let bullet = match &mode {
-                                    Mode::Edit(name) => self.resource.bullets.bullets[name].clone(),
-                                    _ => panic!("Attempting to edit bullet with no name."),
-                                };
-                                self.transition = Transition::Push(
-                                    Box::new(
-                                        BulletInfoEditor::with_bullet(
-                                            bullet,
-                                            self.resource.attacks.attacks.keys().cloned().collect(),
-                                        )
-                                        .into(),
-                                    ),
-                                    mode.clone(),
-                                );
+                        let edit_change = {
+                            let mut resource = self.resource.borrow_mut();
+                            if !resource.attacks.attacks.is_empty() {
+                                let key = resource.attacks.attacks.keys().next().unwrap().clone();
+                                self.bullet_ui_data.draw_ui(ui, &mut resource.bullets, key)
+                            } else {
+                                None
                             }
+                        };
+                        if let Some(bullet) = edit_change {
+                            self.transition = Transition::Push(Box::new(
+                                BulletInfoEditor::new(
+                                    self.resource.clone(),
+                                    self.assets.clone(),
+                                    BulletResource {
+                                        bullet,
+                                        data: self.resource.clone(),
+                                    },
+                                )
+                                .unwrap(),
+                            ));
                         }
                     });
                 imgui::Window::new(im_str!("Attacks"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([1200.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_change =
-                            self.attacks_ui_data.draw_ui(ui, &mut self.resource.attacks);
-                        if let Some(mode) = &edit_change {
-                            let attack = match &mode {
-                                Mode::Edit(name) => self.resource.attacks.attacks[name].clone(),
-                                _ => panic!("Attempting to edit attack with no name."),
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(AttackInfoEditor::with_attack(attack).into()),
-                                mode.clone(),
-                            );
+                        let edit_change = self
+                            .attacks_ui_data
+                            .draw_ui(ui, &mut self.resource.borrow_mut().attacks);
+                        if let Some(attack) = edit_change {
+                            self.transition = Transition::Push(Box::new(
+                                AttackInfoEditor::new(AttackResource {
+                                    data: self.resource.clone(),
+                                    attack,
+                                })
+                                .unwrap(),
+                            ));
                         }
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Player Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = PlayerCharacter::new();
-                            self.particle_ui_data = ParticlesUi::new(&self.resource.particles);
-                            self.states_ui_data = StatesUi::new(&self.resource.states)
+                            *self.resource.borrow_mut() = PlayerCharacter::new();
+                            self.particle_ui_data =
+                                ParticlesUi::new(&self.resource.borrow_mut().particles);
+                            self.states_ui_data = StatesUi::new(&self.resource.borrow_mut().states)
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
@@ -244,8 +337,12 @@ impl CharacterEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                editor_result =
-                                    PlayerCharacter::save(ctx, assets, &self.resource, path);
+                                editor_result = PlayerCharacter::save(
+                                    ctx,
+                                    &mut self.assets.borrow_mut(),
+                                    &self.resource.borrow_mut(),
+                                    path,
+                                );
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
@@ -254,14 +351,15 @@ impl CharacterEditor {
                             {
                                 match PlayerCharacter::load_from_json(
                                     ctx,
-                                    assets,
+                                    &mut self.assets.borrow_mut(),
                                     PathBuf::from(path),
                                 ) {
                                     Ok(character) => {
-                                        self.resource = character;
+                                        *self.resource.borrow_mut() = character;
                                         self.particle_ui_data =
-                                            ParticlesUi::new(&self.resource.particles);
-                                        self.states_ui_data = StatesUi::new(&self.resource.states)
+                                            ParticlesUi::new(&self.resource.borrow_mut().particles);
+                                        self.states_ui_data =
+                                            StatesUi::new(&self.resource.borrow_mut().states)
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }
@@ -270,7 +368,7 @@ impl CharacterEditor {
                         ui.separator();
 
                         if imgui::MenuItem::new(im_str!("Main Menu")).build(ui) {
-                            self.transition = Transition::Pop(None);
+                            self.transition = Transition::Pop;
                         }
                     });
                 });
@@ -278,12 +376,24 @@ impl CharacterEditor {
             .render(ctx);
         editor_result?;
 
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for CharacterEditor {
-    fn into(self) -> EditorState {
-        EditorState::CharacterEditor(self)
+impl CharacterEditor {
+    pub fn new(resource: Rc<RefCell<PlayerCharacter>>, assets: Rc<RefCell<Assets>>) -> Self {
+        let particle_ui_data = ParticlesUi::new(&resource.borrow().particles);
+        let states_ui_data = StatesUi::new(&resource.borrow().states);
+        let bullet_ui_data = BulletsUi::new(&resource.borrow().bullets);
+        let attacks_ui_data = AttacksUi::new(&resource.borrow().attacks);
+        Self {
+            resource,
+            assets,
+            particle_ui_data,
+            states_ui_data,
+            bullet_ui_data,
+            attacks_ui_data,
+            transition: Transition::None,
+        }
     }
 }

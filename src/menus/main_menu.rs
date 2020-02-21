@@ -1,7 +1,7 @@
 use super::SettingsMenu;
 use crate::app_state::{AppState, Transition};
 use crate::imgui_wrapper::ImGuiWrapper;
-use crate::ui::editor::GameEditor;
+use crate::ui::editor::EditorMenu;
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::im_str;
@@ -23,11 +23,11 @@ impl MainMenu {
 }
 
 impl AppState for MainMenu {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<crate::app_state::Transition> {
+    fn update(&mut self, _: &mut Context) -> GameResult<crate::app_state::Transition> {
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Quit => Ok(Transition::Pop),
-                NextState::Editor => Ok(Transition::Push(Box::new(GameEditor::new(ctx)?))),
+                NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
             },
             None => Ok(Transition::None),

@@ -3,7 +3,7 @@ use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
 pub struct CancelSetUi {
-    state_list: Vec<String>,
+    //state_list: Vec<String>,
     new_disallow: String,
 }
 
@@ -12,13 +12,13 @@ const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 
 impl CancelSetUi {
-    pub fn new(state_list: Vec<String>) -> CancelSetUi {
+    pub fn new(default_disallow: String) -> CancelSetUi {
         CancelSetUi {
-            new_disallow: state_list.get(0).cloned().unwrap_or_else(|| "".to_owned()),
-            state_list,
+            new_disallow: default_disallow,
+            //state_list,
         }
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet<String>) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, state_list: &[String], data: &mut CancelSet<String>) {
         for move_type in MoveType::all() {
             ui.text(&im_str!("{}:", move_type));
             let id = ui.push_id(&format!("{}", move_type));
@@ -58,7 +58,7 @@ impl CancelSetUi {
         ui.combo_items(
             im_str!("##Combo"),
             &mut self.new_disallow,
-            &self.state_list,
+            &state_list,
             &|item| im_str!("{}", item).into(),
         );
 

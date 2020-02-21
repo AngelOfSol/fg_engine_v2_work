@@ -2,7 +2,6 @@ mod bullet_info;
 
 use crate::character::components::{BulletInfo, Bullets};
 use crate::imgui_extra::UiExtensions;
-use crate::ui::editor::Mode;
 pub use bullet_info::BulletInfoUi;
 use imgui::{im_str, Ui};
 
@@ -20,7 +19,7 @@ impl BulletsUi {
         ui: &Ui<'_>,
         data: &mut Bullets,
         default_attack: String,
-    ) -> Option<Mode> {
+    ) -> Option<String> {
         let mut ret = None;
         ui.text(im_str!("Bullets:"));
         ui.same_line(0.0);
@@ -42,7 +41,7 @@ impl BulletsUi {
             }
             ui.next_column();
             if ui.small_button(im_str!("Edit")) {
-                ret = Some(Mode::Edit(name.clone()));
+                ret = Some(name.clone());
             }
             ui.same_line(0.0);
             if ui.small_button(im_str!("Delete")) {

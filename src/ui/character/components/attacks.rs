@@ -2,7 +2,6 @@ mod attack_info;
 
 use crate::character::components::{AttackInfo, Attacks};
 use crate::imgui_extra::UiExtensions;
-use crate::ui::editor::Mode;
 pub use attack_info::AttackInfoUi;
 use imgui::{im_str, Ui};
 
@@ -15,7 +14,7 @@ impl AttacksUi {
             attack_names: data.attacks.keys().cloned().collect(),
         }
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut Attacks) -> Option<Mode> {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut Attacks) -> Option<String> {
         let mut ret = None;
         ui.text(im_str!("Attacks:"));
         ui.same_line(0.0);
@@ -36,7 +35,7 @@ impl AttacksUi {
             }
             ui.next_column();
             if ui.small_button(im_str!("Edit")) {
-                ret = Some(Mode::Edit(name.clone()));
+                ret = Some(name.clone());
             }
             ui.same_line(0.0);
             if ui.small_button(im_str!("Delete")) {
