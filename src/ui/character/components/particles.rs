@@ -2,7 +2,6 @@ use crate::assets::Assets;
 use crate::character::components::Particles;
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
-use crate::ui::editor::Mode;
 use ggez::Context;
 use imgui::*;
 use nfd::Response;
@@ -27,7 +26,7 @@ impl ParticlesUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut Particles,
-    ) -> Option<Mode> {
+    ) -> Option<String> {
         let mut ret = None;
         let id = ui.push_id("Particles");
         ui.rearrangable_list_box(
@@ -65,9 +64,13 @@ impl ParticlesUi {
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            ret = Some(Mode::New);
+            data.particles
+                .insert("new_particle".to_owned(), Animation::new("new_particle"));
+            self.particle_keys.push("new_particle".to_owned());
+            self.particle_keys.sort();
         }
         // TODO add deletion, and have it iterate through all the states removing every reference to the particle
+        // TODO fix editing the name
         if let Some(particle) = self.current_particle {
             let particle_key = &self.particle_keys[particle];
             let id = ui.push_id(&particle_key);
@@ -75,7 +78,7 @@ impl ParticlesUi {
             let fix_name = if let Some(particle) = &mut data.particles.get_mut(particle_key) {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("Edit")) {
-                    ret = Some(Mode::Edit(particle.name.clone()));
+                    ret = Some(particle.name.clone());
                 }
                 ui.input_string(im_str!("Name"), &mut new_key)
             } else {

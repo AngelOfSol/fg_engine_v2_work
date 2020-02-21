@@ -1,9 +1,9 @@
-use crate::assets::Assets;
+use super::character_editor::{AttackResource, ItemResource};
+use crate::app_state::{AppState, Transition};
 use crate::character::components::AttackInfo;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::character::components::AttackInfoUi;
-use crate::ui::editor::{EditorState, MessageData, Transition};
-use ggez::{Context, GameResult};
+use ggez::{graphics, Context, GameResult};
 use imgui::*;
 
 enum Status {
@@ -13,43 +13,34 @@ enum Status {
 }
 
 pub struct AttackInfoEditor {
+    path: AttackResource,
     frame: usize,
     resource: AttackInfo,
     ui_data: AttackInfoUi,
     done: Status,
     transition: Transition,
 }
-
-impl AttackInfoEditor {
-    pub fn with_attack(data: AttackInfo) -> Self {
-        Self {
-            frame: 0,
-            resource: data,
-            ui_data: AttackInfoUi::new(),
-            done: Status::NotDone,
-            transition: Transition::None,
+impl AppState for AttackInfoEditor {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+        while ggez::timer::check_update_time(ctx, 60) {
+            self.frame = self.frame.wrapping_add(1);
         }
-    }
-
-    pub fn update(&mut self) -> GameResult<Transition> {
-        self.frame = self.frame.wrapping_add(1);
 
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
-                let ret = std::mem::replace(&mut self.resource, AttackInfo::new());
-                Ok(Transition::Pop(Some(MessageData::AttackInfo(ret))))
+                let mut overwrite_target = self.path.get_from_mut().unwrap();
+                *overwrite_target = std::mem::replace(&mut self.resource, AttackInfo::new());
+                Ok(Transition::Pop)
             }
-            Status::DoneAndQuit => Ok(Transition::Pop(None)),
+            Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
-
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        _assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         let editor_height = 526.0;
         imgui
             .frame()
@@ -79,12 +70,20 @@ impl AttackInfoEditor {
             })
             .render(ctx);
 
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for AttackInfoEditor {
-    fn into(self) -> EditorState {
-        EditorState::AttackInfoEditor(self)
+impl AttackInfoEditor {
+    pub fn new(path: AttackResource) -> Option<Self> {
+        let resource = path.get_from()?.clone();
+        Some(Self {
+            path,
+            frame: 0,
+            resource,
+            ui_data: AttackInfoUi::new(),
+            done: Status::NotDone,
+            transition: Transition::None,
+        })
     }
 }

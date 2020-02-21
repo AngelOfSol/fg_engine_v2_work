@@ -1,33 +1,29 @@
+use crate::app_state::{AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
 use crate::imgui_wrapper::ImGuiWrapper;
-use crate::ui::editor::{CharacterEditor, EditorState, Mode, Transition};
+use crate::ui::editor::CharacterEditor;
+use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 
-pub struct MainMenu {
+pub struct EditorMenu {
     next: Transition,
 }
 
-impl MainMenu {
-    pub fn new() -> Self {
-        Self {
-            next: Transition::None,
-        }
+impl AppState for EditorMenu {
+    fn update(&mut self, _: &mut Context) -> GameResult<Transition> {
+        let ret = std::mem::replace(&mut self.next, Transition::None);
+        Ok(ret)
     }
-
-    pub fn update(&mut self) -> GameResult<Transition> {
-        let next = std::mem::replace(&mut self.next, Transition::None);
-        Ok(next)
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
     }
-
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         imgui
             .frame()
             .run(|ui| {
@@ -35,41 +31,47 @@ impl MainMenu {
                 // Window
                 imgui::Window::new(im_str!("Editor Menu")).build(ui, || {
                     if ui.small_button(im_str!("New Character")) {
-                        self.next = Transition::Push(
-                            Box::new(CharacterEditor::new(PlayerCharacter::new()).into()),
-                            Mode::Standalone,
-                        );
+                        let character = Rc::new(RefCell::new(PlayerCharacter::new()));
+                        let assets = Rc::new(RefCell::new(Assets::new()));
+                        self.next =
+                            Transition::Push(Box::new(CharacterEditor::new(character, assets)));
                     }
                     if ui.small_button(im_str!("Load Character")) {
                         if let Ok(nfd::Response::Okay(path)) =
                             nfd::open_file_dialog(Some("json"), None)
                         {
-                            let result =
-                                PlayerCharacter::load_from_json(ctx, assets, PathBuf::from(path));
-                            if result.is_err() {
-                                dbg!(result.as_ref().unwrap_err());
+                            let assets = Rc::new(RefCell::new(Assets::new()));
+                            let character = PlayerCharacter::load_from_json(
+                                ctx,
+                                &mut assets.borrow_mut(),
+                                PathBuf::from(path),
+                            );
+                            let character = character.map(|result| Rc::new(RefCell::new(result)));
+                            if character.is_err() {
+                                dbg!(character.as_ref().unwrap_err());
                             }
-                            if let Ok(character) = result {
-                                self.next = Transition::Push(
-                                    Box::new(CharacterEditor::new(character).into()),
-                                    Mode::Standalone,
-                                );
+                            if let Ok(character) = character {
+                                self.next = Transition::Push(Box::new(CharacterEditor::new(
+                                    character, assets,
+                                )));
                             }
                         }
                     }
                     if ui.small_button(im_str!("Quit")) {
-                        self.next = Transition::Pop(None);
+                        self.next = Transition::Pop;
                     }
                 });
                 id.pop(ui);
             })
             .render(ctx);
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for MainMenu {
-    fn into(self) -> EditorState {
-        EditorState::MainMenu(self)
+impl EditorMenu {
+    pub fn new() -> Self {
+        EditorMenu {
+            next: Transition::None,
+        }
     }
 }

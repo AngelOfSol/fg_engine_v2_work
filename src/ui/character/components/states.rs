@@ -1,7 +1,6 @@
 use crate::assets::Assets;
 use crate::character::state::State;
 use crate::imgui_extra::UiExtensions;
-use crate::ui::editor::Mode;
 use ggez::{Context, GameResult};
 use imgui::*;
 use std::path::PathBuf;
@@ -24,7 +23,7 @@ impl StatesUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut EditorStates,
-    ) -> GameResult<Option<Mode>> {
+    ) -> GameResult<Option<String>> {
         let mut ret = None;
         ui.text(im_str!("States:"));
         ui.same_line(0.0);
@@ -57,7 +56,7 @@ impl StatesUi {
             }
             ui.next_column();
             if ui.small_button(im_str!("Edit")) {
-                ret = Some(Mode::Edit(name.clone()));
+                ret = Some(name.clone());
             }
             ui.same_line(0.0);
             if ui.small_button(im_str!("Load")) {

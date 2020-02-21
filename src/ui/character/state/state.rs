@@ -8,7 +8,6 @@ use crate::character::state::EditorCharacterState;
 use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::timeline::Timeline;
-use crate::ui::editor::Mode;
 use ggez::Context;
 use imgui::*;
 use nfd::Response;
@@ -25,18 +24,11 @@ pub struct StateUi {
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
-    pub state_list: Vec<String>,
-    pub particle_list: Vec<String>,
-    pub bullet_list: HashMap<String, HashSet<String>>,
     particle_ui_data: ParticleSpawnUi,
 }
 
 impl StateUi {
-    pub fn new(
-        particle_list: Vec<String>,
-        state_list: Vec<String>,
-        bullet_list: HashMap<String, HashSet<String>>,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
             current_animation: None,
             current_flags: None,
@@ -46,14 +38,16 @@ impl StateUi {
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
-            state_list,
-            particle_ui_data: ParticleSpawnUi::new(particle_list.clone()),
-            particle_list,
-            bullet_list,
+            particle_ui_data: ParticleSpawnUi::new(),
         }
     }
 
-    pub fn draw_header(&mut self, ui: &Ui<'_>, data: &mut EditorCharacterState) {
+    pub fn draw_header(
+        &mut self,
+        ui: &Ui<'_>,
+        state_list: &[String],
+        data: &mut EditorCharacterState,
+    ) {
         ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
 
         ui.combo_items(
@@ -66,7 +60,7 @@ impl StateUi {
         ui.combo_items(
             im_str!("On Expire"),
             &mut data.on_expire_state,
-            &self.state_list,
+            &state_list,
             &|item| im_str!("{}", item).into(),
         );
         ui.input_whole(
@@ -81,7 +75,7 @@ impl StateUi {
         assets: &mut Assets,
         ui: &Ui<'_>,
         data: &mut Vec<AnimationData>,
-    ) -> Option<Mode> {
+    ) -> Option<String> {
         let mut ret = None;
 
         let id = ui.push_id("Animations");
@@ -107,14 +101,15 @@ impl StateUi {
 
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            ret = Some(Mode::New);
+            // TODO add popup?
+            data.push(AnimationData::new(Animation::new("new")));
         }
 
         if let Some(animation) = self.current_animation {
             if let Some(animation) = data.get_mut(animation) {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("Edit")) {
-                    ret = Some(Mode::Edit(animation.animation.name.clone()));
+                    ret = Some(animation.animation.name.clone());
                 }
             }
             ui.same_line(0.0);
@@ -131,10 +126,15 @@ impl StateUi {
         ret
     }
 
-    pub fn draw_particle_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<ParticleSpawn<String>>) {
-        if !self.particle_list.is_empty() {
+    pub fn draw_particle_editor(
+        &mut self,
+        ui: &Ui<'_>,
+        particle_list: &[String],
+        data: &mut Vec<ParticleSpawn<String>>,
+    ) {
+        if !particle_list.is_empty() {
             let id = ui.push_id("Particles");
-            let default_particle = self.particle_list[0].clone();
+            let default_particle = particle_list[0].clone();
             if let (_, Some(particle)) = ui.new_delete_list_box(
                 im_str!("List"),
                 &mut self.current_particle,
@@ -144,16 +144,21 @@ impl StateUi {
                 |_| {},
                 5,
             ) {
-                self.particle_ui_data.draw_ui(ui, particle);
+                self.particle_ui_data.draw_ui(ui, particle_list, particle);
             }
             id.pop(ui);
         }
     }
-    pub fn draw_bullet_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<BulletSpawn>) {
-        if !self.bullet_list.is_empty() {
+    pub fn draw_bullet_editor(
+        &mut self,
+        ui: &Ui<'_>,
+        bullet_list: &HashMap<String, HashSet<String>>,
+        data: &mut Vec<BulletSpawn>,
+    ) {
+        if !bullet_list.is_empty() {
             let id = ui.push_id("Bullets");
-            let default_bullet = self.bullet_list.keys().next().cloned().unwrap();
-            let default_properties = self.bullet_list[&default_bullet].clone();
+            let default_bullet = bullet_list.keys().next().cloned().unwrap();
+            let default_properties = bullet_list[&default_bullet].clone();
             if let (_, Some(bullet)) = ui.new_delete_list_box(
                 im_str!("List"),
                 &mut self.current_bullet,
@@ -163,7 +168,7 @@ impl StateUi {
                 |_| {},
                 5,
             ) {
-                BulletSpawnUi::draw_ui(ui, bullet, &self.bullet_list);
+                BulletSpawnUi::draw_ui(ui, bullet, &bullet_list);
             }
             id.pop(ui);
         }
@@ -199,7 +204,12 @@ impl StateUi {
 
         id.pop(ui);
     }
-    pub fn draw_cancels_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<CancelSet<String>>) {
+    pub fn draw_cancels_editor(
+        &mut self,
+        ui: &Ui<'_>,
+        state_list: &[String],
+        data: &mut Timeline<CancelSet<String>>,
+    ) {
         let id = ui.push_id("Cancels");
         let mut counter = 0;
         ui.rearrangable_list_box(
@@ -217,7 +227,7 @@ impl StateUi {
 
         if let Some(ref mut idx) = self.current_cancels {
             if self.current_cancel_set_ui.is_none() {
-                self.current_cancel_set_ui = Some(CancelSetUi::new(self.state_list.clone()));
+                self.current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
             }
             let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
             ui.timeline_modify(idx, data);
@@ -231,7 +241,7 @@ impl StateUi {
             imgui::ChildWindow::new(im_str!("child frame"))
                 .size([0.0, 0.0])
                 .build(ui, || {
-                    ui_data.draw_ui(ui, cancels);
+                    ui_data.draw_ui(ui, state_list, cancels);
                 });
         }
         id.pop(ui);

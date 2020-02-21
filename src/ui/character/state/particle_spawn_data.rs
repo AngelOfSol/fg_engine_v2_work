@@ -2,21 +2,22 @@ use crate::character::state::components::ParticleSpawn;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-pub struct ParticleSpawnUi {
-    particle_list_ids: Vec<String>,
-}
+pub struct ParticleSpawnUi {}
 
 impl ParticleSpawnUi {
-    pub fn new(particle_list: Vec<String>) -> Self {
-        Self {
-            particle_list_ids: particle_list.clone(),
-        }
+    pub fn new() -> Self {
+        Self {}
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut ParticleSpawn<String>) {
+    pub fn draw_ui(
+        &mut self,
+        ui: &Ui<'_>,
+        particle_list_ids: &[String],
+        data: &mut ParticleSpawn<String>,
+    ) {
         ui.combo_items(
             im_str!("ID"),
             &mut data.particle_id,
-            &self.particle_list_ids,
+            &particle_list_ids,
             &|item| im_str!("{}", item).into(),
         );
 

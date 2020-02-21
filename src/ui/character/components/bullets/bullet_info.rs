@@ -2,7 +2,6 @@ use crate::assets::Assets;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
 use crate::imgui_extra::UiExtensions;
-use crate::ui::editor::Mode;
 use ggez::Context;
 use imgui::{im_str, Ui};
 use nfd::Response;
@@ -27,7 +26,7 @@ impl BulletInfoUi {
         ui: &Ui<'_>,
         data: &mut BulletInfo,
         attack_ids: &[String],
-    ) -> Option<Mode> {
+    ) -> Option<()> {
         let mut ret = None;
         ui.text(im_str!("Animation"));
         if ui.small_button(im_str!("Load")) {
@@ -52,11 +51,11 @@ impl BulletInfoUi {
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            ret = Some(Mode::New);
+            data.animation = Animation::new("new".to_owned());
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("Edit")) {
-            ret = Some(Mode::Edit("self".to_owned()));
+            ret = Some(());
         }
         ui.separator();
         ui.text(im_str!("Hitbox"));

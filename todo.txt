@@ -49,7 +49,35 @@ TODO (2/15/2020):
 [] rework editor to use new state system
     [] pass an RC of the character and a path to each of the editors
     [] have the states update the RC themselves when the save button is pressed
+    [] gradually go through character editor, and fix up sub editors to work properly.
+    [] eventually switch over to a setup that opens up new windows itself??
+        [] store a path and UI_data for each window, which keeps track of its own update properties
+        [] if the windows focus is active, display that window in the render viewport
+            [] https://docs.rs/imgui/0.3.0/imgui/struct.Ui.html#method.is_window_focused
+        [] use the following to stop names from actively being resorted on text_edit
+            [] https://docs.rs/imgui/0.3.0/imgui/struct.Ui.html#method.is_item_active
+
 [] remove dead code
+[] rename player_character
 [] rework character to require a state id while editing?
     [] loading a character 
+    [] use strum to auto create all the states required
 
+
+
+solution to the current bug
+
+Instead of ItemPath, have an ItemResource, that stores all the needed data inside of it.
+
+basically Path + CharacterData/StateData/BulletData/etc.
+
+so:
+EditorStatePath -> EditorStateResource {
+    state_name: String,
+    resource: Rc<RefCell<Character>>
+}
+
+StateAnimationPath -> StateAnimationResource {
+    animation_name: String,
+    resource: Rc<RefCell<State>>,
+}

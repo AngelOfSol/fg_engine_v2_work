@@ -1,15 +1,19 @@
+use super::character_editor::{BulletAnimationResource, BulletResource, ItemResource};
+use crate::app_state::{AppState, Transition};
 use crate::assets::Assets;
 use crate::character::components::BulletInfo;
-use crate::graphics::Animation;
+use crate::character::PlayerCharacter;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::components::BulletInfoUi;
-use crate::ui::editor::{AnimationEditor, EditorState, MessageData, Mode, Transition};
+use crate::ui::editor::AnimationEditor;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 enum Status {
     DoneAndSave,
@@ -19,60 +23,50 @@ enum Status {
 
 pub struct BulletInfoEditor {
     frame: usize,
-    resource: BulletInfo,
+    path: BulletResource,
+    resource: Rc<RefCell<BulletInfo>>,
     ui_data: BulletInfoUi,
     done: Status,
     transition: Transition,
-    attack_ids: Vec<String>,
+    character_data: Rc<RefCell<PlayerCharacter>>,
+    assets: Rc<RefCell<Assets>>,
 }
 
-impl BulletInfoEditor {
-    pub fn with_bullet(data: BulletInfo, attack_ids: Vec<String>) -> Self {
-        Self {
-            frame: 0,
-            resource: data,
-            ui_data: BulletInfoUi::new(),
-            done: Status::NotDone,
-            transition: Transition::None,
-            attack_ids,
+impl AppState for BulletInfoEditor {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+        while ggez::timer::check_update_time(ctx, 60) {
+            self.frame = self.frame.wrapping_add(1);
         }
-    }
-
-    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        if let MessageData::Animation(animation) = data {
-            match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    self.resource.animation = animation;
-                }
-                Mode::Edit(_) => {
-                    self.resource.animation = animation;
-                }
-            }
-        }
-    }
-    pub fn update(&mut self) -> GameResult<Transition> {
-        self.frame = self.frame.wrapping_add(1);
 
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
-                let ret = std::mem::replace(
-                    &mut self.resource,
+                let mut overwrite_target = self.path.get_from_mut().unwrap();
+                *overwrite_target = std::mem::replace(
+                    &mut self.resource.borrow_mut(),
                     BulletInfo::new("none".to_owned(), "none".to_owned()),
                 );
-                Ok(Transition::Pop(Some(MessageData::BulletInfo(ret))))
+                Ok(Transition::Pop)
             }
-            Status::DoneAndQuit => Ok(Transition::Pop(None)),
+            Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
 
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+        let attack_ids: Vec<_> = {
+            self.character_data
+                .borrow()
+                .attacks
+                .attacks
+                .keys()
+                .cloned()
+                .collect()
+        };
+
         let editor_height = 526.0;
         let dim = [editor_height / 2.0, editor_height / 2.0];
         let pos = [300.0, 20.0];
@@ -85,20 +79,21 @@ impl BulletInfoEditor {
                     .build(ui, || {
                         let edit_change = self.ui_data.draw_ui(
                             ctx,
-                            assets,
+                            &mut self.assets.borrow_mut(),
                             &ui,
-                            &mut self.resource,
-                            &self.attack_ids,
+                            &mut self.resource.borrow_mut(),
+                            &attack_ids,
                         );
-                        if let Some(mode) = &edit_change {
-                            let animation = match &mode {
-                                Mode::Edit(_) => self.resource.animation.clone(),
-                                _ => Animation::new("new"),
-                            };
-                            self.transition = Transition::Push(
-                                Box::new(AnimationEditor::with_animation(animation).into()),
-                                mode.clone(),
-                            );
+                        if let Some(()) = &edit_change {
+                            self.transition = Transition::Push(Box::new(
+                                AnimationEditor::new(
+                                    self.assets.clone(),
+                                    Box::new(BulletAnimationResource {
+                                        data: self.resource.clone(),
+                                    }),
+                                )
+                                .unwrap(),
+                            ));
                         }
                     });
 
@@ -113,10 +108,8 @@ impl BulletInfoEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Bullet Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = BulletInfo::new(
-                                "new bullet".to_owned(),
-                                self.attack_ids[0].clone(),
-                            );
+                            *self.resource.borrow_mut() =
+                                BulletInfo::new("new bullet".to_owned(), attack_ids[0].clone());
                             self.ui_data = BulletInfoUi::new();
                         }
                         ui.separator();
@@ -166,32 +159,48 @@ impl BulletInfoEditor {
         let origin = (x + width / 2.0, y + height / 2.0);
         let offset = Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0));
 
-        self.resource
+        let resource = self.resource.borrow();
+
+        resource
             .hitbox
             .draw(ctx, offset, Color::new(1.0, 1.0, 1.0, 0.15))?;
-        if self.resource.animation.frames.duration() > 0 {
+        if resource.animation.frames.duration() > 0 {
             {
-                self.resource.animation.draw_at_time(
+                resource.animation.draw_at_time(
                     ctx,
-                    assets,
-                    self.frame % self.resource.animation.frames.duration(),
+                    &self.assets.borrow(),
+                    self.frame % resource.animation.frames.duration(),
                     offset,
                 )?;
             }
         }
-        self.resource
+        resource
             .hitbox
             .draw(ctx, offset, Color::new(1.0, 0.0, 0.0, 0.35))?;
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
         draw_cross(ctx, origin)?;
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for BulletInfoEditor {
-    fn into(self) -> EditorState {
-        EditorState::BulletInfoEditor(self)
+impl BulletInfoEditor {
+    pub fn new(
+        character_data: Rc<RefCell<PlayerCharacter>>,
+        assets: Rc<RefCell<Assets>>,
+        path: BulletResource,
+    ) -> Option<Self> {
+        let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
+        Some(Self {
+            character_data,
+            assets,
+            path,
+            frame: 0,
+            resource,
+            ui_data: BulletInfoUi::new(),
+            done: Status::NotDone,
+            transition: Transition::None,
+        })
     }
 }

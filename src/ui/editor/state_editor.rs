@@ -1,29 +1,34 @@
+use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
+use crate::app_state::{AppState, Transition};
 use crate::assets::Assets;
-use crate::character::state::components::{AnimationData, MovementData};
+use crate::character::state::components::MovementData;
 use crate::character::state::{EditorCharacterState, State};
-use crate::graphics::Animation;
+use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::state::{CancelSetUi, FlagsUi, StateUi};
-use crate::ui::editor::{AnimationEditor, EditorState, MessageData, Mode, Transition};
+use crate::ui::editor::AnimationEditor;
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 pub struct StateEditor {
-    resource: EditorCharacterState,
+    character_data: Rc<RefCell<PlayerCharacter>>,
+    assets: Rc<RefCell<Assets>>,
+    resource: Rc<RefCell<EditorCharacterState>>,
+    path: StateResource,
     frame: usize,
     is_playing: bool,
     transition: Transition,
     ui_data: StateUi,
     draw_mode: DrawMode,
-    attack_ids: Vec<String>,
 }
 struct DrawMode {
     collision_alpha: f32,
@@ -33,115 +38,56 @@ struct DrawMode {
     show_axes: bool,
     show_all_bullets: bool,
 }
-impl StateEditor {
-    pub fn with_state(
-        state: EditorCharacterState,
-        mut particle_list: Vec<String>,
-        mut state_list: Vec<String>,
-        bullet_list: HashMap<String, HashSet<String>>,
-        mut attack_ids: Vec<String>,
-    ) -> Self {
-        particle_list.sort();
-        state_list.sort();
-        attack_ids.sort();
-        Self {
-            resource: state,
-            transition: Transition::None,
-            frame: 0,
-            is_playing: true,
-            ui_data: StateUi::new(particle_list, state_list, bullet_list),
-            attack_ids,
-            draw_mode: DrawMode {
-                collision_alpha: 0.15,
-                hurtbox_alpha: 0.15,
-                hitbox_alpha: 0.15,
-                debug_animation: true,
-                show_axes: true,
-                show_all_bullets: false,
-            },
-        }
-    }
 
-    pub fn handle_message(&mut self, data: MessageData, mode: Mode) {
-        if let MessageData::Animation(mut animation) = data {
-            let mut temp_name = animation.name.clone();
-            let mut counter = 1;
-            loop {
-                if self
-                    .resource
-                    .animations
-                    .iter()
-                    .map(|item| &item.animation.name)
-                    .any(|name| name == &temp_name)
-                {
-                    temp_name = format!("{} ({})", &animation.name, counter);
-                    counter += 1;
+impl AppState for StateEditor {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+        while ggez::timer::check_update_time(ctx, 60) {
+            if self.is_playing {
+                self.frame = self.frame.wrapping_add(1);
+                let resource = self.resource.borrow();
+                if resource.duration() > 0 {
+                    self.frame %= resource.duration();
                 } else {
-                    break;
-                }
-            }
-            match mode {
-                Mode::Standalone => (),
-                Mode::New => {
-                    animation.name = temp_name;
-                    self.resource.animations.push(AnimationData::new(animation));
-                }
-                Mode::Edit(name) => {
-                    let index = self
-                        .resource
-                        .animations
-                        .iter()
-                        .position(|item| item.animation.name == name);
-                    match index {
-                        Some(index) => self.resource.animations[index].animation = animation,
-                        None => self.resource.animations.push(AnimationData::new(animation)),
-                    }
+                    self.frame = 0;
                 }
             }
         }
+
+        Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
-
-    pub fn update(&mut self) -> GameResult<Transition> {
-        if self.is_playing {
-            self.frame = self.frame.wrapping_add(1);
-            if self.resource.duration() > 0 {
-                self.frame %= self.resource.duration();
-            } else {
-                self.frame = 0;
-            }
-        }
-
-        let ret = std::mem::replace(&mut self.transition, Transition::None);
-        Ok(ret)
+    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+        Ok(())
     }
-
-    fn handle_transition(&mut self, result: Option<Mode>) {
-        if let Some(mode) = &result {
-            let animation = match &mode {
-                Mode::Edit(name) => self
-                    .resource
-                    .animations
-                    .iter()
-                    .map(|item| &item.animation)
-                    .find(|item| &item.name == name)
-                    .cloned()
-                    .unwrap(),
-                _ => Animation::new("new"),
-            };
-            self.transition = Transition::Push(
-                Box::new(AnimationEditor::with_animation(animation).into()),
-                mode.clone(),
-            );
-        }
-    }
-
-    pub fn draw(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        imgui: &mut ImGuiWrapper,
-    ) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+        graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
+        let (state_list, particles_list, bullet_list, attack_ids) = {
+            let character_data = self.character_data.borrow();
+
+            let state_list = {
+                let mut state_list: Vec<_> = character_data.states.rest.keys().cloned().collect();
+                state_list.sort();
+                state_list
+            };
+
+            let particles_list = {
+                let mut particles_list: Vec<_> =
+                    character_data.particles.particles.keys().cloned().collect();
+                particles_list.sort();
+                particles_list
+            };
+
+            let bullet_list = character_data
+                .bullets
+                .bullets
+                .iter()
+                .map(|(key, value)| (key.clone(), value.properties.clone()))
+                .collect();
+
+            let attack_ids: Vec<_> = character_data.attacks.attacks.keys().cloned().collect();
+
+            (state_list, particles_list, bullet_list, attack_ids)
+        };
         imgui
             .frame()
             .run(|ui| {
@@ -149,32 +95,46 @@ impl StateEditor {
                     .size([300.0, 140.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data.draw_header(ui, &mut self.resource);
+                        self.ui_data
+                            .draw_header(ui, &state_list, &mut self.resource.borrow_mut());
                     });
                 imgui::Window::new(im_str!("Animations"))
                     .size([300.0, 345.0], Condition::Once)
                     .position([0.0, 160.0], Condition::Once)
                     .build(ui, || {
+                        let assets = &mut self.assets.borrow_mut();
                         let result = self.ui_data.draw_animation_editor(
                             ctx,
                             assets,
                             ui,
-                            &mut self.resource.animations,
+                            &mut self.resource.borrow_mut().animations,
                         );
-                        self.resource.fix_duration();
-                        self.handle_transition(result);
+                        self.resource.borrow_mut().fix_duration();
+                        if let Some(name) = result {
+                            self.transition = Transition::Push(Box::new(
+                                AnimationEditor::new(
+                                    self.assets.clone(),
+                                    Box::new(StateAnimationResource {
+                                        data: self.resource.clone(),
+                                        name,
+                                    }),
+                                )
+                                .unwrap(),
+                            ))
+                        }
                     });
                 imgui::Window::new(im_str!("Playback"))
                     .size([300.0, 215.0], Condition::Once)
                     .position([0.0, 505.0], Condition::Once)
                     .build(ui, || {
-                        if self.resource.duration() > 0 {
+                        let resource = self.resource.borrow();
+                        if resource.duration() > 0 {
                             if ui
                                 .slider_whole(
                                     im_str!("Frame"),
                                     &mut self.frame,
                                     0,
-                                    self.resource.duration() - 1,
+                                    resource.duration() - 1,
                                 )
                                 .unwrap_or(false)
                             {
@@ -211,29 +171,39 @@ impl StateEditor {
                     .position([300.0, 283.0], Condition::Once)
                     .collapsed(true, Condition::Once)
                     .build(ui, || {
-                        self.ui_data
-                            .draw_particle_editor(ui, &mut self.resource.particles);
+                        self.ui_data.draw_particle_editor(
+                            ui,
+                            &particles_list,
+                            &mut self.resource.borrow_mut().particles,
+                        );
                     });
                 imgui::Window::new(im_str!("Bullets##State"))
                     .size([300.0, 400.0], Condition::Once)
                     .position([300.0, 303.0], Condition::Once)
                     .collapsed(true, Condition::Once)
                     .build(ui, || {
-                        self.ui_data
-                            .draw_bullet_editor(ui, &mut self.resource.bullets);
+                        self.ui_data.draw_bullet_editor(
+                            ui,
+                            &bullet_list,
+                            &mut self.resource.borrow_mut().bullets,
+                        );
                     });
                 imgui::Window::new(im_str!("Flags"))
                     .size([300.0, 420.0], Condition::Once)
                     .position([600.0, 283.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data.draw_flags_editor(ui, &mut self.resource.flags);
+                        self.ui_data
+                            .draw_flags_editor(ui, &mut self.resource.borrow_mut().flags);
                     });
                 imgui::Window::new(im_str!("Cancels"))
                     .size([300.0, 420.0], Condition::Once)
                     .position([900.0, 283.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data
-                            .draw_cancels_editor(ui, &mut self.resource.cancels);
+                        self.ui_data.draw_cancels_editor(
+                            ui,
+                            &state_list,
+                            &mut self.resource.borrow_mut().cancels,
+                        );
                     });
                 imgui::Window::new(im_str!("Hitboxes"))
                     .size([300.0, 700.0], Condition::Once)
@@ -241,8 +211,8 @@ impl StateEditor {
                     .build(ui, || {
                         self.ui_data.draw_hitbox_editor(
                             ui,
-                            &mut self.resource.hitboxes,
-                            &self.attack_ids,
+                            &mut self.resource.borrow_mut().hitboxes,
+                            &attack_ids,
                         );
                     });
                 imgui::Window::new(im_str!("Animation"))
@@ -256,12 +226,13 @@ impl StateEditor {
                     .size([300.0, 263.0], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        if let Some(data) = self.resource.flags.try_time(self.frame) {
+                        let resource = self.resource.borrow();
+                        if let Some(data) = resource.flags.try_time(self.frame) {
                             let move_data = {
                                 let mut move_data = MovementData::new();
 
                                 for frame in 0..self.frame {
-                                    let flags = self.resource.flags.try_time(frame);
+                                    let flags = resource.flags.try_time(frame);
                                     if let Some(flags) = flags {
                                         move_data = flags.apply_movement(move_data);
                                     } else {
@@ -278,19 +249,15 @@ impl StateEditor {
                     .size([300.0, 263.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        if let Some(data) = self.resource.cancels.try_time(self.frame) {
+                        if let Some(data) = self.resource.borrow().cancels.try_time(self.frame) {
                             CancelSetUi::draw_display_ui(ui, data);
                         }
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = State::new();
-                            self.ui_data = StateUi::new(
-                                self.ui_data.particle_list.clone(),
-                                self.ui_data.state_list.clone(),
-                                self.ui_data.bullet_list.clone(),
-                            );
+                            *self.resource.borrow_mut() = State::new();
+                            self.ui_data = StateUi::new();
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
@@ -298,21 +265,20 @@ impl StateEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                editor_result = State::save(ctx, assets, &self.resource, path);
+                                let assets = &mut self.assets.borrow_mut();
+                                editor_result =
+                                    State::save(ctx, assets, &self.resource.borrow(), path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
+                                let assets = &mut self.assets.borrow_mut();
                                 match State::load_from_json(ctx, assets, PathBuf::from(path)) {
                                     Ok(state) => {
-                                        self.resource = state;
-                                        self.ui_data = StateUi::new(
-                                            self.ui_data.particle_list.clone(),
-                                            self.ui_data.state_list.clone(),
-                                            self.ui_data.bullet_list.clone(),
-                                        );
+                                        *self.resource.borrow_mut() = state;
+                                        self.ui_data = StateUi::new();
                                     }
                                     Err(err) => editor_result = Err(err),
                                 }
@@ -321,16 +287,13 @@ impl StateEditor {
                         ui.separator();
 
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
-                            let ret = std::mem::replace(&mut self.resource, State::new());
-                            self.ui_data = StateUi::new(
-                                self.ui_data.particle_list.clone(),
-                                self.ui_data.state_list.clone(),
-                                self.ui_data.bullet_list.clone(),
-                            );
-                            self.transition = Transition::Pop(Some(MessageData::State(ret)));
+                            let mut overwrite_target = self.path.get_from_mut().unwrap();
+                            *overwrite_target =
+                                std::mem::replace(&mut self.resource.borrow_mut(), State::new());
+                            self.transition = Transition::Pop;
                         }
                         if imgui::MenuItem::new(im_str!("Back without saving")).build(ui) {
-                            self.transition = Transition::Pop(None);
+                            self.transition = Transition::Pop;
                         }
                     });
                 });
@@ -357,10 +320,12 @@ impl StateEditor {
             graphics::draw(ctx, &y_axis, DrawParam::default())?;
         }
 
+        let resource = self.resource.borrow();
+
         let offset = {
             let mut offset = Vec3::zeros();
 
-            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
                 let recenter = boxes.collision.collision_graphic_recenter();
                 offset.x -= recenter.x;
                 offset.y -= recenter.y;
@@ -369,18 +334,17 @@ impl StateEditor {
         };
 
         let offset = animation_window_center * Matrix4::new_translation(&offset);
+        let assets = &self.assets.borrow();
 
         if self.draw_mode.debug_animation {
-            self.resource
-                .draw_at_time_debug(ctx, assets, self.frame, offset)?;
+            resource.draw_at_time_debug(ctx, assets, self.frame, offset)?;
         } else {
-            self.resource
-                .draw_at_time(ctx, assets, self.frame, offset)?;
+            resource.draw_at_time(ctx, assets, self.frame, offset)?;
         }
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
                 offset.x -= boxes.collision.center.x.into_graphical();
                 offset.y -= boxes.collision.half_size.y.into_graphical()
                     - boxes.collision.center.y.into_graphical();
@@ -389,7 +353,7 @@ impl StateEditor {
             offset
         };
         let offset = animation_window_center * Matrix4::new_translation(&offset);
-        if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+        if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
             boxes.collision.draw(
                 ctx,
                 offset,
@@ -399,7 +363,7 @@ impl StateEditor {
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
                 offset.y -= boxes.collision.half_size.y.into_graphical();
             }
 
@@ -431,8 +395,7 @@ impl StateEditor {
                 DrawParam::default().dest([origin.x, origin.y]),
             )
         };
-        for particle_spawn in self
-            .resource
+        for particle_spawn in resource
             .particles
             .iter()
             .filter(|item| item.frame == self.frame)
@@ -440,8 +403,7 @@ impl StateEditor {
             let offset = particle_spawn.offset.into_graphical();
             draw_cross(ctx, offset)?;
         }
-        for bullet_spawn in self
-            .resource
+        for bullet_spawn in resource
             .bullets
             .iter()
             .filter(|item| item.frame == self.frame || self.draw_mode.show_all_bullets)
@@ -449,7 +411,7 @@ impl StateEditor {
             let offset = bullet_spawn.offset.into_graphical();
             draw_cross(ctx, offset)?;
         }
-        if let Some(boxes) = self.resource.hitboxes.try_time(self.frame) {
+        if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(
                     ctx,
@@ -468,12 +430,34 @@ impl StateEditor {
             }
         }
 
-        Ok(())
+        graphics::present(ctx)
     }
 }
 
-impl Into<EditorState> for StateEditor {
-    fn into(self) -> EditorState {
-        EditorState::StateEditor(self)
+impl StateEditor {
+    pub fn new(
+        character_data: Rc<RefCell<PlayerCharacter>>,
+        assets: Rc<RefCell<Assets>>,
+        path: StateResource,
+    ) -> Option<Self> {
+        let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
+        Some(Self {
+            character_data,
+            assets,
+            path,
+            resource,
+            transition: Transition::None,
+            frame: 0,
+            is_playing: true,
+            ui_data: StateUi::new(),
+            draw_mode: DrawMode {
+                collision_alpha: 0.15,
+                hurtbox_alpha: 0.15,
+                hitbox_alpha: 0.15,
+                debug_animation: true,
+                show_axes: true,
+                show_all_bullets: false,
+            },
+        })
     }
 }
