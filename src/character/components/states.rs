@@ -39,22 +39,6 @@ impl<Id, ParticleId, BulletSpawnInfo: Eq + Default, AttackId>
         }
     }
 
-    pub fn get_state(&self, key: &str) -> &State<Id, ParticleId, BulletSpawnInfo, AttackId> {
-        match key {
-            _ => &self.rest[key],
-        }
-    }
-    pub fn replace_state(
-        &mut self,
-        key: String,
-        data: State<Id, ParticleId, BulletSpawnInfo, AttackId>,
-    ) {
-        match key.as_str() {
-            _ => {
-                self.rest.insert(key, data);
-            }
-        }
-    }
     pub fn guarentee_unique_key<S: Into<String>>(&self, key: S) -> String {
         let base = key.into();
         let mut new_key = base.clone();
