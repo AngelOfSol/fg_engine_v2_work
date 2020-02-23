@@ -31,10 +31,4 @@ impl BulletSpawn {
             properties: properties.iter().map(|key| (key.clone(), 0)).collect(),
         }
     }
-    pub fn fix_properties(&mut self, properties: &HashSet<String>) {
-        self.properties = properties
-            .iter()
-            .map(|key| (key.clone(), self.properties.remove(key).unwrap_or(0)))
-            .collect();
-    }
 }
