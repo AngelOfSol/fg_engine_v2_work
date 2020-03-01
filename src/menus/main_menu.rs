@@ -1,6 +1,5 @@
 use super::SettingsMenu;
-use crate::app_state::{AppState, Transition};
-use crate::imgui_wrapper::ImGuiWrapper;
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -23,7 +22,11 @@ impl MainMenu {
 }
 
 impl AppState for MainMenu {
-    fn update(&mut self, _: &mut Context) -> GameResult<crate::app_state::Transition> {
+    fn update(
+        &mut self,
+        _: &mut Context,
+        _: &mut AppContext,
+    ) -> GameResult<crate::app_state::Transition> {
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Quit => Ok(Transition::Pop),
@@ -33,10 +36,14 @@ impl AppState for MainMenu {
             None => Ok(Transition::None),
         }
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
         let frame = imgui.frame();

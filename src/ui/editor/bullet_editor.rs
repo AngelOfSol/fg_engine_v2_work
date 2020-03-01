@@ -1,9 +1,8 @@
 use super::character_editor::{BulletAnimationResource, BulletResource, ItemResource};
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::components::BulletInfo;
 use crate::character::PlayerCharacter;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::components::BulletInfoUi;
@@ -33,7 +32,7 @@ pub struct BulletInfoEditor {
 }
 
 impl AppState for BulletInfoEditor {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
         }
@@ -51,10 +50,15 @@ impl AppState for BulletInfoEditor {
             Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
         let attack_ids: Vec<_> = {

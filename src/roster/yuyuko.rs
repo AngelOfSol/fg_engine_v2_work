@@ -205,8 +205,6 @@ impl GenericCharacterBehaviour for YuyukoState {
     );
 
     impl_crush_orb!();
-    // TODO FIX THESE VALUES
-    // THEN SWITCH FROM EXPR TO PATTERN WHERE PERTINENT
     impl_take_hit!(
         hitstun_air: MoveId::HitstunAirStart,
         hitstun_ground: MoveId::HitstunStandStart,

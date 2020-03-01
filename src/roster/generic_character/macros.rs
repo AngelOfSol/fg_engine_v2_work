@@ -4,7 +4,7 @@ macro_rules! impl_in_corner {
             let collision = self.collision();
             i32::abs(self.position.x) >= play_area.width / 2 - collision.half_size.x
         }
-    }
+    };
 }
 macro_rules! impl_apply_pushback {
     () => {
@@ -14,7 +14,7 @@ macro_rules! impl_apply_pushback {
                 self.position.x += force;
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_get_pushback {
@@ -82,7 +82,6 @@ macro_rules! impl_hurtboxes {
                 .map(|item| item.with_position_and_facing(self.position, self.facing))
                 .collect()
         }
-
     };
 }
 
@@ -192,7 +191,6 @@ macro_rules! impl_would_be_hit {
                 HitType::Hit(total_info)
             }
         }
-
     };
 }
 
@@ -530,7 +528,6 @@ macro_rules! impl_update_combo_state {
                 }
             });
         }
-
     };
 }
 
@@ -636,13 +633,9 @@ macro_rules! impl_handle_input {
                             let grounded = !flags.airborne;
 
                             match *new_move_id {
-                                $border_escape => {
-                                    in_blockstun && grounded
-                                }
+                                $border_escape => in_blockstun && grounded,
                                 $melee_restitution => in_blockstun && grounded,
-                                $fly_start => {
-                                    is_not_self && is_allowed_cancel && has_air_actions
-                                }
+                                $fly_start => is_not_self && is_allowed_cancel && has_air_actions,
                                 _ => {
                                     is_not_self
                                         && is_allowed_cancel
@@ -867,63 +860,63 @@ macro_rules! impl_update_bullets {
 
 macro_rules! impl_update_spirit {
     (fly_end: $fly_end:expr) => {
-    fn update_spirit(&mut self) {
-        let (ref mut frame, ref mut move_id) = &mut self.current_state;
-        let move_data = &self.data.states[move_id];
-        let flags = move_data.flags.at_time(*frame);
+        fn update_spirit(&mut self) {
+            let (ref mut frame, ref mut move_id) = &mut self.current_state;
+            let move_data = &self.data.states[move_id];
+            let flags = move_data.flags.at_time(*frame);
 
-        if move_data.state_type == MoveType::Fly {
-            self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
-            if self.spirit_gauge == 0 {
-                *move_id = $fly_end;
-                *frame = 0;
-            }
-        } else {
-            self.spirit_gauge -= flags.spirit_cost;
+            if move_data.state_type == MoveType::Fly {
+                self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
+                if self.spirit_gauge == 0 {
+                    *move_id = $fly_end;
+                    *frame = 0;
+                }
+            } else {
+                self.spirit_gauge -= flags.spirit_cost;
 
-            if flags.reset_spirit_delay {
-                self.spirit_delay = 0;
-            }
-            self.spirit_delay += flags.spirit_delay;
-            self.spirit_delay -= 1;
-            self.spirit_delay = std::cmp::max(self.spirit_delay, 0);
+                if flags.reset_spirit_delay {
+                    self.spirit_delay = 0;
+                }
+                self.spirit_delay += flags.spirit_delay;
+                self.spirit_delay -= 1;
+                self.spirit_delay = std::cmp::max(self.spirit_delay, 0);
 
-            if self.spirit_delay == 0 {
-                self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+                if self.spirit_delay == 0 {
+                    self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+                }
             }
+
+            if self.crushed_orbs > 0 {
+                self.uncrush_timer -= 1;
+                if self.uncrush_timer <= 0 {
+                    self.crushed_orbs -= 1;
+                    self.uncrush_timer = match self.crushed_orbs {
+                        0 => 0,
+                        1 => 13,
+                        2 => 8,
+                        3 => 5,
+                        4 => 3,
+                        _ => unreachable!(),
+                    } * 60;
+                }
+            }
+
+            self.clamp_spirit();
         }
-
-        if self.crushed_orbs > 0 {
-            self.uncrush_timer -= 1;
-            if self.uncrush_timer <= 0 {
-                self.crushed_orbs -= 1;
-                self.uncrush_timer = match self.crushed_orbs {
-                    0 => 0,
-                    1 => 13,
-                    2 => 8,
-                    3 => 5,
-                    4 => 3,
-                    _ => unreachable!(),
-                } * 60;
-            }
-        }
-
-        self.clamp_spirit();
-    }
     };
 }
 
 macro_rules! impl_clamp_spirit {
     () => {
-    fn clamp_spirit(&mut self) {
-        self.spirit_gauge = std::cmp::max(
-            std::cmp::min(
-                self.spirit_gauge,
-                self.data.properties.max_spirit_gauge - self.crushed_orbs * 100,
-            ),
-            0,
-        );
-    }
+        fn clamp_spirit(&mut self) {
+            self.spirit_gauge = std::cmp::max(
+                std::cmp::min(
+                    self.spirit_gauge,
+                    self.data.properties.max_spirit_gauge - self.crushed_orbs * 100,
+                ),
+                0,
+            );
+        }
     };
 }
 
@@ -969,7 +962,6 @@ macro_rules! impl_update_frame_mut {
 
 macro_rules! impl_draw_ui {
     () => {
-
         fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()> {
             ggez::graphics::set_transform(ctx, bottom_line);
             ggez::graphics::apply_transformations(ctx)?;

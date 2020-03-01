@@ -1,8 +1,7 @@
 mod player;
 
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::hitbox::PositionedHitbox;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::generic_character::GenericCharacterBehaviour;
@@ -14,7 +13,6 @@ use gfx::{self, *};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
-use gilrs::Gilrs;
 use player::Player;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -26,7 +24,6 @@ gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 pub struct Match {
     p1: Player,
     p2: Player,
-    pads_context: Gilrs,
     background: Stage,
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
@@ -57,7 +54,6 @@ impl Match {
                 control_scheme: Rc::new(p2),
                 input: InputBuffer::new(),
             },
-            pads_context: Gilrs::new()?,
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
@@ -76,13 +72,17 @@ impl Match {
 }
 
 impl AppState for Match {
-    fn on_enter(&mut self, ctx: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)
     }
-    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut pads, .. }: &mut AppContext,
+    ) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
             let mut events = Vec::new();
-            while let Some(event) = self.pads_context.next_event() {
+            while let Some(event) = pads.next_event() {
                 events.push(event);
             }
             let events = events;
@@ -211,11 +211,9 @@ impl AppState for Match {
             }
 
             for attack_info in &p2_hitby {
-                // false is passed here, because bullets don't pushback there owners
                 self.p2.deal_hit(&attack_info);
             }
             for attack_info in &p1_hitby {
-                // false is passed here, because bullets don't pushback there owners
                 self.p1.deal_hit(&attack_info);
             }
 
@@ -224,7 +222,7 @@ impl AppState for Match {
         }
         Ok(Transition::None)
     }
-    fn draw(&mut self, ctx: &mut Context, _: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
         let game_offset =

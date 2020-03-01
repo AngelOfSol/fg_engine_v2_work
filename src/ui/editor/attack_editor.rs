@@ -1,7 +1,6 @@
 use super::character_editor::{AttackResource, ItemResource};
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::character::components::AttackInfo;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::character::components::AttackInfoUi;
 use ggez::{graphics, Context, GameResult};
 use imgui::*;
@@ -21,7 +20,7 @@ pub struct AttackInfoEditor {
     transition: Transition,
 }
 impl AppState for AttackInfoEditor {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
         }
@@ -36,10 +35,14 @@ impl AppState for AttackInfoEditor {
             Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let editor_height = 526.0;
         imgui

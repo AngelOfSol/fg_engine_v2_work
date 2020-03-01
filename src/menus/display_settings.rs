@@ -1,6 +1,5 @@
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
-use crate::imgui_wrapper::ImGuiWrapper;
 use ggez::{conf, graphics};
 use ggez::{Context, GameResult};
 use imgui::im_str;
@@ -52,7 +51,11 @@ impl DisplaySettings {
 }
 
 impl AppState for DisplaySettings {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<crate::app_state::Transition> {
+    fn update(
+        &mut self,
+        ctx: &mut Context,
+        _: &mut AppContext,
+    ) -> GameResult<crate::app_state::Transition> {
         self.save = match self.save {
             SaveStatus::FixResolution => {
                 ggez::graphics::set_drawable_size(
@@ -82,10 +85,14 @@ impl AppState for DisplaySettings {
             None => Ok(Transition::None),
         }
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
         let frame = imgui.frame();

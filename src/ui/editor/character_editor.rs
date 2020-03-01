@@ -1,9 +1,8 @@
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::components::{AttackInfo, BulletInfo};
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::character::components::{AttacksUi, BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{AnimationEditor, AttackInfoEditor, BulletInfoEditor, StateEditor};
 use ggez::graphics;
@@ -211,13 +210,18 @@ pub struct CharacterEditor {
 }
 
 impl AppState for CharacterEditor {
-    fn update(&mut self, _: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
 
