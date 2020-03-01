@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 
 pub type PadControlScheme = ControlScheme<GilButton>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ControlScheme<ButtonCode> {
     axis: HashMap<ButtonCode, Axis>,
     pub buttons: [HashSet<ButtonCode>; 4],

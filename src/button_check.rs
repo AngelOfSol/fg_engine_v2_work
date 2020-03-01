@@ -17,9 +17,9 @@ struct CreateScheme {
 }
 
 impl CreateScheme {
-    fn new(id: GamepadId) -> Self {
+    fn new(scheme: PadControlScheme) -> Self {
         Self {
-            scheme: PadControlScheme::new(id),
+            scheme,
             selected_cell: 0,
             ready: false,
         }
@@ -114,13 +114,32 @@ impl ButtonCheck {
 }
 
 impl AppState for ButtonCheck {
-    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+    fn on_enter(
+        &mut self,
+        _: &mut Context,
+        AppContext {
+            ref mut pads,
+            ref control_schemes,
+            ..
+        }: &mut AppContext,
+    ) -> GameResult<()> {
+        if let Some((id, _)) = pads.gamepads().next() {
+            let scheme = control_schemes
+                .get(&id)
+                .cloned()
+                .unwrap_or(PadControlScheme::new(id));
+            self.active_control_schemes.push(CreateScheme::new(scheme));
+        }
         Ok(())
     }
     fn update(
         &mut self,
         ctx: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
+        AppContext {
+            ref mut pads,
+            ref mut control_schemes,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
             while let Some(event) = pads.next_event() {
@@ -134,26 +153,36 @@ impl AppState for ButtonCheck {
                                 .iter()
                                 .any(|item| item.scheme.gamepad == id)
                             {
-                                self.active_control_schemes.push(CreateScheme::new(id));
+                                let scheme = control_schemes
+                                    .get(&id)
+                                    .cloned()
+                                    .unwrap_or(PadControlScheme::new(id));
+                                self.active_control_schemes.push(CreateScheme::new(scheme));
                             }
                         }
                         _ => {}
                     }
-
                     for scheme in self.active_control_schemes.iter_mut() {
                         scheme.update_button(id, button);
                     }
-                    self.active_control_schemes = self
+                    let (retain, updated): (Vec<_>, Vec<_>) = self
                         .active_control_schemes
                         .drain(..)
-                        .filter(|item| !item.ready)
-                        .collect();
+                        .partition(|item| !item.ready);
+                    self.active_control_schemes = retain;
+                    for scheme in updated {
+                        control_schemes.insert(scheme.scheme.gamepad, scheme.scheme);
+                        dbg!(&control_schemes);
+                    }
                 }
             }
         }
-        // TODO figure out when to transition
 
-        Ok(Transition::None)
+        if self.active_control_schemes.len() > 0 {
+            Ok(Transition::None)
+        } else {
+            Ok(Transition::Pop)
+        }
     }
     fn draw(
         &mut self,
@@ -161,6 +190,7 @@ impl AppState for ButtonCheck {
         AppContext {
             ref mut imgui,
             ref mut pads,
+            ..
         }: &mut AppContext,
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);

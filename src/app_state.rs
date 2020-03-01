@@ -1,8 +1,10 @@
 use crate::imgui_wrapper::ImGuiWrapper;
+use crate::input::control_scheme::PadControlScheme;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
-use gilrs::{Button, EventType, Gilrs, GilrsBuilder};
+use gilrs::{Button, EventType, GamepadId, Gilrs, GilrsBuilder};
+use std::collections::HashMap;
 
 pub enum Transition {
     Push(Box<dyn AppState>),
@@ -14,6 +16,7 @@ pub enum Transition {
 pub struct AppContext {
     pub pads: Gilrs,
     pub imgui: ImGuiWrapper,
+    pub control_schemes: HashMap<GamepadId, PadControlScheme>,
 }
 
 pub trait AppState {
@@ -32,6 +35,7 @@ impl AppStateRunner {
         let mut app_ctx = AppContext {
             pads: GilrsBuilder::new().build()?,
             imgui: ImGuiWrapper::new(ctx),
+            control_schemes: HashMap::new(),
         };
         start.on_enter(ctx, &mut app_ctx)?;
         Ok(AppStateRunner {
@@ -104,6 +108,8 @@ impl EventHandler for AppStateRunner {
                         .last_mut()
                         .unwrap()
                         .on_enter(ctx, &mut self.app_ctx)?;
+
+                    while let Some(_) = self.app_ctx.pads.next_event() {}
                 }
                 Transition::Replace(new_state) => {
                     self.history.pop();
@@ -112,11 +118,13 @@ impl EventHandler for AppStateRunner {
                         .last_mut()
                         .unwrap()
                         .on_enter(ctx, &mut self.app_ctx)?;
+                    while let Some(_) = self.app_ctx.pads.next_event() {}
                 }
                 Transition::Pop => {
                     self.history.pop();
                     if let Some(ref mut state) = self.history.last_mut() {
                         state.on_enter(ctx, &mut self.app_ctx)?;
+                        while let Some(_) = self.app_ctx.pads.next_event() {}
                     }
                 }
                 Transition::None => (),
@@ -124,8 +132,6 @@ impl EventHandler for AppStateRunner {
         } else {
             ggez::event::quit(ctx);
         }
-
-        while let Some(_) = self.app_ctx.pads.next_event() {}
 
         Ok(())
     }
