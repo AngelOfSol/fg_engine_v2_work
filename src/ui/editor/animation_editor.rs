@@ -1,8 +1,7 @@
 use super::character_editor::ItemResource;
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::graphics::Animation;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::graphics::animation::AnimationUi;
@@ -30,7 +29,7 @@ pub struct AnimationEditor {
 }
 
 impl AppState for AnimationEditor {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
         }
@@ -45,10 +44,14 @@ impl AppState for AnimationEditor {
             Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let editor_height = 526.0;
         let dim = [editor_height / 2.0, editor_height / 2.0];

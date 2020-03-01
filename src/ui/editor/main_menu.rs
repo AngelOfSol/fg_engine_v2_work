@@ -1,7 +1,6 @@
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::ui::editor::CharacterEditor;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -15,14 +14,19 @@ pub struct EditorMenu {
 }
 
 impl AppState for EditorMenu {
-    fn update(&mut self, _: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         let ret = std::mem::replace(&mut self.next, Transition::None);
         Ok(ret)
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         imgui
             .frame()

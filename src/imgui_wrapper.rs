@@ -22,11 +22,13 @@ pub struct ImGuiWrapper {
     pub renderer: RendererType,
     last_frame: Instant,
     mouse_state: MouseState,
+    gamepad_state: [f32; 21],
 }
 
 pub struct ImguiFrameRunner<'ui, 'parent: 'ui, Stage> {
     ui: Ui<'ui>,
     renderer: &'parent mut RendererType,
+
     data: PhantomData<Stage>,
 }
 pub struct RunUi;
@@ -88,12 +90,21 @@ impl ImGuiWrapper {
         io.key_map[Key::Backspace as usize] = KeyCode::Back as u32;
         io.key_map[Key::Enter as usize] = KeyCode::Return as u32;
         io.key_map[Key::Escape as usize] = KeyCode::Escape as u32;
+        io.key_map[Key::Space as usize] = KeyCode::Space as u32;
         io.key_map[Key::A as usize] = KeyCode::A as u32;
         io.key_map[Key::C as usize] = KeyCode::C as u32;
         io.key_map[Key::V as usize] = KeyCode::V as u32;
         io.key_map[Key::X as usize] = KeyCode::X as u32;
         io.key_map[Key::Y as usize] = KeyCode::Y as u32;
         io.key_map[Key::Z as usize] = KeyCode::Z as u32;
+        io.config_flags
+            .set(imgui::ConfigFlags::NAV_ENABLE_KEYBOARD, true);
+        io.config_flags
+            .set(imgui::ConfigFlags::NAV_ENABLE_GAMEPAD, true);
+        io.backend_flags.set(imgui::BackendFlags::HAS_GAMEPAD, true);
+        io.nav_visible = true;
+        io.nav_active = true;
+
         // Shaders
         let shaders = {
             let (_, device, _, _, _) = graphics::gfx_objects(ctx);
@@ -141,6 +152,7 @@ impl ImGuiWrapper {
             renderer,
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
+            gamepad_state: [0.0; 21],
         }
     }
     pub fn resize(&mut self, ctx: &Context) {
@@ -152,6 +164,7 @@ impl ImGuiWrapper {
     pub fn frame(&mut self) -> ImguiFrameRunner<'_, '_, RunUi> {
         // Update mouse
         self.update_mouse();
+        self.update_gamepad();
 
         //let now = Instant::now();
         self.last_frame = self.imgui.io_mut().update_delta_time(self.last_frame);
@@ -159,6 +172,10 @@ impl ImGuiWrapper {
         ImguiFrameRunner::new(self)
     }
 
+    fn update_gamepad(&mut self) {
+        let mut io = self.imgui.io_mut();
+        io.nav_inputs = self.gamepad_state;
+    }
     fn update_mouse(&mut self) {
         let mut io = self.imgui.io_mut();
         io.mouse_pos = [self.mouse_state.pos.0, self.mouse_state.pos.1];
@@ -187,13 +204,17 @@ impl ImGuiWrapper {
 
         if pressed.0 {}
     }
+
+    pub fn handle_gamepad_input(&mut self, input: NavInput, value: f32) {
+        self.gamepad_state[input as usize] = value;
+    }
     pub fn handle_keyboard_input(&mut self, keycode: KeyCode, keymod: KeyMods, is_down: bool) {
         let mut io = self.imgui.io_mut();
         io.key_shift = keymod.contains(KeyMods::SHIFT);
         io.key_ctrl = keymod.contains(KeyMods::CTRL);
         io.key_alt = keymod.contains(KeyMods::ALT);
         io.key_super = keymod.contains(KeyMods::LOGO);
-        io.keys_down[keycode as usize] = is_down; // Io::key(&mut self.imgui,keycode as _, is_down);
+        io.keys_down[keycode as usize] = is_down;
         match keycode {
             KeyCode::LShift | KeyCode::RShift => io.key_shift = is_down,
             KeyCode::LControl | KeyCode::RControl => io.key_ctrl = is_down,

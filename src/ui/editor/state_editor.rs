@@ -1,11 +1,10 @@
 use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
-use crate::app_state::{AppState, Transition};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::state::components::MovementData;
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
-use crate::imgui_wrapper::ImGuiWrapper;
 use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
@@ -40,7 +39,7 @@ struct DrawMode {
 }
 
 impl AppState for StateEditor {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<Transition> {
+    fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             if self.is_playing {
                 self.frame = self.frame.wrapping_add(1);
@@ -55,10 +54,15 @@ impl AppState for StateEditor {
 
         Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
-    fn on_enter(&mut self, _: &mut Context) -> GameResult<()> {
+
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, imgui: &mut ImGuiWrapper) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { ref mut imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
         let (state_list, particles_list, bullet_list, attack_ids) = {

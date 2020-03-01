@@ -1,13 +1,8 @@
-#![allow(
-    clippy::type_repetition_in_bounds,
-    clippy::zero_prefixed_literal,
-    clippy::inconsistent_digit_grouping
-)]
+#![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping)]
 
 use ggez::conf;
 use ggez::ContextBuilder;
 use std::env;
-use std::error::Error;
 use std::path;
 
 #[macro_use]
@@ -70,7 +65,7 @@ fn main() {
     let result = nfd::dialog().open();
 
     if let Err(error) = result {
-        if error.description() == "Could not initialize COM." {
+        if error.to_string() == "Could not initialize COM." {
             println!("Attempted to open unnecessary dialog.  This is in place because the first dialog after building a context breaks.");
         } else {
             println!("Unexpected error: {}", error);
