@@ -20,7 +20,6 @@ pub struct Player {
     pub resources: Rc<Yuyuko>,
     pub state: YuyukoState,
     pub control_scheme: Rc<PadControlScheme>,
-    pub input: InputBuffer,
 }
 
 pub struct BulletsContext<'a> {
@@ -50,8 +49,13 @@ impl Player {
         self.state.get_attack_data()
     }
 
-    pub fn would_be_hit(&self, touched: bool, info: Option<HitInfo>) -> HitType {
-        self.state.would_be_hit(&self.input, touched, info)
+    pub fn would_be_hit(
+        &self,
+        input: &InputBuffer,
+        touched: bool,
+        info: Option<HitInfo>,
+    ) -> HitType {
+        self.state.would_be_hit(input, touched, info)
     }
     pub fn take_hit(&mut self, info: &HitType) {
         self.state.take_hit(info)
@@ -78,29 +82,11 @@ impl Player {
     pub fn handle_refacing(&mut self, other_player: collision::Int) {
         self.state.handle_refacing(other_player);
     }
-    pub fn update(&mut self, play_area: &PlayArea) {
-        self.state.update_frame_mut(&self.input, play_area);
-    }
-    pub fn update_input<'a>(&mut self, events: impl Iterator<Item = &'a Event>) {
-        let mut current_frame = self.control_scheme.update_frame(*self.input.top());
-        for event in events {
-            let Event { id, event, .. } = event;
-            if *id == self.control_scheme.gamepad {
-                match event {
-                    EventType::ButtonPressed(button, _) => {
-                        current_frame = self.control_scheme.handle_press(*button, current_frame);
-                    }
-                    EventType::ButtonReleased(button, _) => {
-                        current_frame = self.control_scheme.handle_release(*button, current_frame);
-                    }
-                    _ => (),
-                }
-            }
-        }
-        self.input.push(current_frame);
+    pub fn update(&mut self, input: &InputBuffer, play_area: &PlayArea) {
+        self.state.update_frame_mut(input, play_area);
     }
     pub fn draw(
-        &mut self,
+        &self,
         ctx: &mut Context,
         shadow_shader: &graphics::Shader<Shadow>,
         world: Matrix4,
@@ -125,15 +111,15 @@ impl Player {
             .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))
     }
 
-    pub fn draw_bullets(&mut self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
+    pub fn draw_bullets(&self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
         self.state.draw_bullets(ctx, world)
     }
 
-    pub fn draw_particles(&mut self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
+    pub fn draw_particles(&self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
         self.state.draw_particles(ctx, world)
     }
 
-    pub fn draw_ui(&mut self, ctx: &mut Context, bottom_line: Matrix4) -> GameResult<()> {
+    pub fn draw_ui(&self, ctx: &mut Context, bottom_line: Matrix4) -> GameResult<()> {
         self.state.draw_ui(ctx, bottom_line)
     }
 

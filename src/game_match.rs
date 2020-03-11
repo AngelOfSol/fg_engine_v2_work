@@ -1,17 +1,17 @@
 mod player;
 
-use crate::app_state::{AppContext, AppState, Transition};
 use crate::hitbox::PositionedHitbox;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
+use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::{Yuyuko, YuyukoState};
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
+use crate::typedefs::player::PlayerData;
 use gfx::{self, *};
 use ggez::graphics;
-use ggez::timer;
 use ggez::{Context, GameResult};
 use player::Player;
 use std::path::PathBuf;
@@ -22,8 +22,7 @@ pub struct PlayArea {
 }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 pub struct Match {
-    p1: Player,
-    p2: Player,
+    players: PlayerData<Player>,
     background: Stage,
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
@@ -42,18 +41,19 @@ impl Match {
         p1_state.position.x = -100_00;
         p2_state.position.x = 100_00;
         Ok(Self {
-            p1: Player {
-                state: p1_state,
-                resources: Rc::clone(&resources),
-                control_scheme: Rc::new(p1),
-                input: InputBuffer::new(),
-            },
-            p2: Player {
-                state: p2_state,
-                resources: Rc::clone(&resources),
-                control_scheme: Rc::new(p2),
-                input: InputBuffer::new(),
-            },
+            players: [
+                Player {
+                    state: p1_state,
+                    resources: Rc::clone(&resources),
+                    control_scheme: Rc::new(p1),
+                },
+                Player {
+                    state: p2_state,
+                    resources: Rc::clone(&resources),
+                    control_scheme: Rc::new(p2),
+                },
+            ]
+            .into(),
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
@@ -71,165 +71,166 @@ impl Match {
     }
 }
 
-impl AppState for Match {
-    fn on_enter(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
-        crate::graphics::prepare_screen_for_game(ctx)
-    }
-    fn update(
-        &mut self,
-        ctx: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
-    ) -> GameResult<Transition> {
-        while timer::check_update_time(ctx, 60) {
-            let mut events = Vec::new();
-            while let Some(event) = pads.next_event() {
-                events.push(event);
-            }
-            let events = events;
-            self.p1.update_input(events.iter());
-            self.p2.update_input(events.iter());
+impl Match {
+    fn update(&mut self, input: &PlayerData<InputBuffer>) -> GameResult<()> {
+        /*let mut events = Vec::new();
+        while let Some(event) = pads.next_event() {
+            events.push(event);
+        }
+        let events = events;
+        self.p1.update_input(&events);
+        self.p2.update_input(&events);*/
 
-            self.p1.update(&self.play_area);
-            self.p2.update(&self.play_area);
-
-            self.p1.handle_refacing(self.p2.position().x);
-            self.p2.handle_refacing(self.p1.position().x);
-
-            self.p1
-                .apply_pushback(self.p2.get_pushback(&self.play_area));
-            self.p2
-                .apply_pushback(self.p1.get_pushback(&self.play_area));
-
-            if self.p1.collision().overlaps(self.p2.collision()) {
-                let (p1_mod, p2_mod) = self.p1.collision().fix_distances(
-                    self.p2.collision(),
-                    &self.play_area,
-                    (self.p1.state.velocity.x, self.p2.state.velocity.x),
-                    self.p1.state.facing,
-                );
-                self.p1.position_mut().x += p1_mod;
-                self.p2.position_mut().x += p2_mod;
-            }
-
-            let p1_touched =
-                PositionedHitbox::overlaps_any(&self.p2.hitboxes(), &self.p1.hurtboxes());
-            let p2_touched =
-                PositionedHitbox::overlaps_any(&self.p1.hitboxes(), &self.p2.hurtboxes());
-
-            let p1_attack_data = self.p1.get_attack_data();
-            let p2_attack_data = self.p2.get_attack_data();
-
-            let p1_hit_type = self.p1.would_be_hit(p1_touched, p2_attack_data);
-            let p2_hit_type = self.p2.would_be_hit(p2_touched, p1_attack_data);
-
-            self.p1.deal_hit(&p2_hit_type);
-            self.p2.deal_hit(&p1_hit_type);
-
-            self.p1.take_hit(&p1_hit_type);
-            self.p2.take_hit(&p2_hit_type);
-
-            {
-                let (p1_context, p1_bullets) = self.p1.bullets_mut();
-                let (p2_context, p2_bullets) = self.p2.bullets_mut();
-
-                for p1_bullet in p1_bullets.iter_mut() {
-                    for p2_bullet in p2_bullets.iter_mut() {
-                        if PositionedHitbox::overlaps_any(
-                            &p1_bullet.hitbox(p1_context.bullets),
-                            &p2_bullet.hitbox(p2_context.bullets),
-                        ) {
-                            // TODO, replace unit parameter with bullet tier/hp system
-                            p1_bullet.on_touch_bullet(p1_context.bullets, ());
-                            p2_bullet.on_touch_bullet(p2_context.bullets, ());
+        /* pub fn update_input(&mut self, events: &[Event]) {
+            let mut current_frame = self.control_scheme.update_frame(*self.input.top());
+            for event in events {
+                let Event { id, event, .. } = event;
+                if *id == self.control_scheme.gamepad {
+                    match event {
+                        EventType::ButtonPressed(button, _) => {
+                            current_frame = self.control_scheme.handle_press(*button, current_frame);
                         }
+                        EventType::ButtonReleased(button, _) => {
+                            current_frame = self.control_scheme.handle_release(*button, current_frame);
+                        }
+                        _ => (),
                     }
                 }
             }
+            self.input.push(current_frame);
+        }*/
 
-            self.p1.prune_bullets(&self.play_area);
-            self.p2.prune_bullets(&self.play_area);
-
-            let p1_hurtboxes = self.p1.hurtboxes();
-            let p2_hurtboxes = self.p2.hurtboxes();
-
-            let (p1_hitby, p2_hitby) = {
-                let p2_hitby: Vec<_> = {
-                    let (p2, (p1_context, p1_bullets)) = (&self.p2, self.p1.bullets_mut());
-                    p1_bullets
-                        .iter_mut()
-                        .filter(|bullet| {
-                            PositionedHitbox::overlaps_any(
-                                &bullet.hitbox(p1_context.bullets),
-                                &p2_hurtboxes,
-                            )
-                        })
-                        .map(|bullet| {
-                            let result = p2.would_be_hit(
-                                true,
-                                Some(bullet.attack_data(p1_context.bullets, p1_context.attacks)),
-                            );
-                            // side effect
-                            bullet.on_touch(p1_context.bullets, &result);
-
-                            result
-                        })
-                        .collect()
-                };
-
-                let p1_hitby: Vec<_> = {
-                    let (p1, (p2_context, p2_bullets)) = (&self.p1, self.p2.bullets_mut());
-                    p2_bullets
-                        .iter_mut()
-                        .filter(|bullet| {
-                            PositionedHitbox::overlaps_any(
-                                &bullet.hitbox(p2_context.bullets),
-                                &p1_hurtboxes,
-                            )
-                        })
-                        .map(|bullet| {
-                            let result = p1.would_be_hit(
-                                true,
-                                Some(bullet.attack_data(p2_context.bullets, p2_context.attacks)),
-                            );
-
-                            // side effect
-                            bullet.on_touch(p2_context.bullets, &result);
-
-                            result
-                        })
-                        .collect()
-                };
-
-                (p1_hitby, p2_hitby)
-            };
-
-            for attack_info in &p2_hitby {
-                self.p2.take_hit(&attack_info);
-            }
-            for attack_info in &p1_hitby {
-                self.p1.take_hit(&attack_info);
-            }
-
-            for attack_info in &p2_hitby {
-                self.p2.deal_hit(&attack_info);
-            }
-            for attack_info in &p1_hitby {
-                self.p1.deal_hit(&attack_info);
-            }
-
-            self.p1.prune_bullets(&self.play_area);
-            self.p2.prune_bullets(&self.play_area);
+        for (player, input) in self.players.iter_mut().zip(input.iter()) {
+            player.update(input, &self.play_area);
         }
-        Ok(Transition::None)
-    }
-    fn draw(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
 
+        let (p1, p2) = self.players.both_mut();
+
+        p1.handle_refacing(p2.position().x);
+        p2.handle_refacing(p1.position().x);
+
+        p1.apply_pushback(p2.get_pushback(&self.play_area));
+        p2.apply_pushback(p1.get_pushback(&self.play_area));
+
+        if p1.collision().overlaps(p2.collision()) {
+            let (p1_mod, p2_mod) = p1.collision().fix_distances(
+                p2.collision(),
+                &self.play_area,
+                (p1.state.velocity.x, p2.state.velocity.x),
+                p1.state.facing,
+            );
+            p1.position_mut().x += p1_mod;
+            p2.position_mut().x += p2_mod;
+        }
+
+        let touched = vec![
+            PositionedHitbox::overlaps_any(&p2.hitboxes(), &p1.hurtboxes()),
+            PositionedHitbox::overlaps_any(&p1.hitboxes(), &p2.hurtboxes()),
+        ];
+
+        let attack_data: Vec<_> = self
+            .players
+            .iter()
+            .map(|player| player.get_attack_data())
+            .collect();
+
+        let hit_types: Vec<_> = self
+            .players
+            .iter()
+            .zip(touched.into_iter())
+            .zip(attack_data.into_iter().rev())
+            .zip(input.iter())
+            .map(|(((player, touched), attack_data), input)| {
+                player.would_be_hit(input, touched, attack_data)
+            })
+            .collect();
+
+        for (player, hit_type) in self.players.iter_mut().zip(hit_types.iter().rev()) {
+            player.deal_hit(hit_type);
+        }
+        for (player, hit_type) in self.players.iter_mut().zip(hit_types.iter()) {
+            player.take_hit(hit_type);
+        }
+
+        let (p1, p2) = self.players.both_mut();
+        let (p1_context, p1_bullets) = p1.bullets_mut();
+        let (p2_context, p2_bullets) = p2.bullets_mut();
+
+        for p1_bullet in p1_bullets.iter_mut() {
+            for p2_bullet in p2_bullets.iter_mut() {
+                if PositionedHitbox::overlaps_any(
+                    &p1_bullet.hitbox(p1_context.bullets),
+                    &p2_bullet.hitbox(p2_context.bullets),
+                ) {
+                    // TODO, replace unit parameter with bullet tier/hp system
+                    p1_bullet.on_touch_bullet(p1_context.bullets, ());
+                    p2_bullet.on_touch_bullet(p2_context.bullets, ());
+                }
+            }
+        }
+
+        for player in self.players.iter_mut() {
+            player.prune_bullets(&self.play_area);
+        }
+
+        fn handle_bullets(
+            acting: &mut Player,
+            reference: &mut Player,
+            acting_input: &InputBuffer,
+        ) -> Vec<HitType> {
+            let (context, bullets) = reference.bullets_mut();
+            bullets
+                .iter_mut()
+                .filter(|bullet| {
+                    PositionedHitbox::overlaps_any(
+                        &bullet.hitbox(context.bullets),
+                        &acting.hurtboxes(),
+                    )
+                })
+                .map(|bullet| {
+                    let result = acting.would_be_hit(
+                        acting_input,
+                        true,
+                        Some(bullet.attack_data(context.bullets, context.attacks)),
+                    );
+                    // side effect
+                    bullet.on_touch(context.bullets, &result);
+
+                    result
+                })
+                .collect()
+        }
+
+        let (p1, p2) = self.players.both_mut();
+        let hit_info = vec![
+            handle_bullets(p1, p2, input.p1()),
+            handle_bullets(p2, p1, input.p2()),
+        ];
+
+        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter()) {
+            for hit_info in hit_info.iter() {
+                player.take_hit(&hit_info);
+            }
+        }
+
+        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter()) {
+            for hit_info in hit_info.iter() {
+                player.deal_hit(&hit_info);
+            }
+        }
+
+        for player in self.players.iter_mut() {
+            player.prune_bullets(&self.play_area);
+        }
+
+        Ok(())
+    }
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let game_offset =
             Matrix4::new_translation(&Vec3::new(graphics::drawable_size(ctx).0 / 2.0, 660.0, 0.0));
 
-        let p1_x = self.p1.position().x.into_graphical();
-        let p2_x = self.p2.position().x.into_graphical();
+        let p1_x = self.players.p1().position().x.into_graphical();
+        let p2_x = self.players.p2().position().x.into_graphical();
 
         let center_point = (p1_x + p2_x) / 2.0;
         let dist = (p1_x - p2_x).abs();
@@ -266,14 +267,17 @@ impl AppState for Match {
 
         self.background.draw(ctx, world)?;
 
-        self.p1.draw(ctx, &self.shader, world)?;
-        self.p2.draw(ctx, &self.shader, world)?;
+        for player in self.players.iter() {
+            player.draw(ctx, &self.shader, world)?;
+        }
 
-        self.p1.draw_particles(ctx, world)?;
-        self.p2.draw_particles(ctx, world)?;
+        for player in self.players.iter() {
+            player.draw_particles(ctx, world)?;
+        }
 
-        self.p1.draw_bullets(ctx, world)?;
-        self.p2.draw_bullets(ctx, world)?;
+        for player in self.players.iter() {
+            player.draw_bullets(ctx, world)?;
+        }
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
@@ -282,17 +286,19 @@ impl AppState for Match {
 
         let show_combo = true;
         if show_combo {
-            self.debug_text.fragments_mut()[0].text = format!("{:?}", self.p1.state.current_combo);
+            self.debug_text.fragments_mut()[0].text =
+                format!("{:?}", self.players.p1().state.current_combo);
             graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
         }
 
-        self.p1
+        self.players
+            .p1_mut()
             .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))?;
-        self.p2.draw_ui(
+        self.players.p2_mut().draw_ui(
             ctx,
             Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
         )?;
-        graphics::present(ctx)?;
+
         Ok(())
     }
 }
