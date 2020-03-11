@@ -1,10 +1,11 @@
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::input::control_scheme::PadControlScheme;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
+use std::convert::TryInto;
 use strum::{EnumCount, IntoEnumIterator};
-
 use strum_macros::{Display, EnumCount, EnumIter};
 
 enum NextState {
@@ -18,28 +19,29 @@ pub enum SelectBy {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount)]
-enum Character {
+pub enum Character {
     Yuyuko,
-    Mia,
 }
+
+type NextStateCreate =
+    dyn FnOnce(&mut Context, PlayerData<Character>, PlayerData<PadControlScheme>) -> Transition;
 
 pub struct CharacterSelect {
     next: Option<NextState>,
     select_by: PlayerData<SelectBy>,
-    selected_characters_id: PlayerData<usize>, //next_state: Box<dyn FnOnce(PlayerData<Option<GamepadId>>) -> Transition>,
+    selected_characters_id: PlayerData<usize>,
     confirmed: PlayerData<bool>,
+    next_state: Box<NextStateCreate>,
 }
 
 impl CharacterSelect {
-    pub fn new(
-        select_by: PlayerData<SelectBy>,
-        //next_state: Box<dyn FnOnce(PlayerData<Option<GamepadId>>) -> Transition>,
-    ) -> Self {
+    pub fn new(select_by: PlayerData<SelectBy>, next_state: Box<NextStateCreate>) -> Self {
         Self {
             next: None,
             select_by,
             selected_characters_id: [0; 2].into(),
             confirmed: [false; 2].into(),
+            next_state,
         }
     }
 }
@@ -47,8 +49,12 @@ impl CharacterSelect {
 impl AppState for CharacterSelect {
     fn update(
         &mut self,
-        _: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
+        ctx: &mut Context,
+        AppContext {
+            ref mut pads,
+            ref control_schemes,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         while let Some(event) = pads.next_event() {
             match event.event {
@@ -112,7 +118,7 @@ impl AppState for CharacterSelect {
                                     self.confirmed[player_idx] = true;
                                     break;
                                 } else if self.confirmed.iter().all(|item| *item) {
-                                    self.next = Some(NextState::Back);
+                                    self.next = Some(NextState::Next);
                                 }
                             }
                         }
@@ -126,10 +132,30 @@ impl AppState for CharacterSelect {
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Next => {
-                    /* let next_state =
-                        std::mem::replace(&mut self.next_state, Box::new(|_| Transition::Pop));
-                    Ok(next_state(self.selected_gamepad))*/
-                    Ok(Transition::Pop)
+                    let next_state = std::mem::replace(
+                        &mut self.next_state,
+                        Box::new(|_, _, _| Transition::Pop),
+                    );
+                    Ok(next_state(
+                        ctx,
+                        self.selected_characters_id
+                            .iter()
+                            .map(|idx| Character::iter().nth(*idx).unwrap())
+                            .collect::<Vec<_>>()
+                            .try_into()
+                            .unwrap(),
+                        self.select_by
+                            .iter()
+                            .map(|item| match item {
+                                SelectBy::Local(gamepad) => control_schemes
+                                    .get(gamepad)
+                                    .cloned()
+                                    .unwrap_or(PadControlScheme::new(*gamepad)),
+                            })
+                            .collect::<Vec<_>>()
+                            .try_into()
+                            .unwrap(),
+                    ))
                 }
                 NextState::Back => Ok(Transition::Pop),
             },

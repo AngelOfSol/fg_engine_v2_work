@@ -1,7 +1,6 @@
 mod player;
 
 use crate::hitbox::PositionedHitbox;
-use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
@@ -11,7 +10,7 @@ use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use gfx::{self, *};
-use ggez::graphics;
+use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use player::Player;
 use std::path::PathBuf;
@@ -21,6 +20,7 @@ pub struct PlayArea {
     pub width: i32,
 }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
+
 pub struct Match {
     players: PlayerData<Player>,
     background: Stage,
@@ -30,7 +30,7 @@ pub struct Match {
 }
 
 impl Match {
-    pub fn new(ctx: &mut Context, p1: PadControlScheme, p2: PadControlScheme) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
         let background = Stage::new(ctx, "\\bg_14.png")?;
         let resources = Rc::new(Yuyuko::new_with_path(
             ctx,
@@ -41,19 +41,7 @@ impl Match {
         p1_state.position.x = -100_00;
         p2_state.position.x = 100_00;
         Ok(Self {
-            players: [
-                Player {
-                    state: p1_state,
-                    resources: Rc::clone(&resources),
-                    control_scheme: Rc::new(p1),
-                },
-                Player {
-                    state: p2_state,
-                    resources: Rc::clone(&resources),
-                    control_scheme: Rc::new(p2),
-                },
-            ]
-            .into(),
+            players: [Player { state: p1_state }, Player { state: p2_state }].into(),
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
@@ -72,34 +60,7 @@ impl Match {
 }
 
 impl Match {
-    fn update(&mut self, input: &PlayerData<InputBuffer>) -> GameResult<()> {
-        /*let mut events = Vec::new();
-        while let Some(event) = pads.next_event() {
-            events.push(event);
-        }
-        let events = events;
-        self.p1.update_input(&events);
-        self.p2.update_input(&events);*/
-
-        /* pub fn update_input(&mut self, events: &[Event]) {
-            let mut current_frame = self.control_scheme.update_frame(*self.input.top());
-            for event in events {
-                let Event { id, event, .. } = event;
-                if *id == self.control_scheme.gamepad {
-                    match event {
-                        EventType::ButtonPressed(button, _) => {
-                            current_frame = self.control_scheme.handle_press(*button, current_frame);
-                        }
-                        EventType::ButtonReleased(button, _) => {
-                            current_frame = self.control_scheme.handle_release(*button, current_frame);
-                        }
-                        _ => (),
-                    }
-                }
-            }
-            self.input.push(current_frame);
-        }*/
-
+    pub fn update(&mut self, input: &PlayerData<InputBuffer>) -> GameResult<()> {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             player.update(input, &self.play_area);
         }
@@ -213,7 +174,7 @@ impl Match {
             }
         }
 
-        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter()) {
+        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter().rev()) {
             for hit_info in hit_info.iter() {
                 player.deal_hit(&hit_info);
             }
@@ -225,9 +186,12 @@ impl Match {
 
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let game_offset =
-            Matrix4::new_translation(&Vec3::new(graphics::drawable_size(ctx).0 / 2.0, 660.0, 0.0));
+    pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        crate::graphics::prepare_screen_for_game(ctx)?;
+
+        let screen = Rect::new(0.0, 0.0, 1280.0, 720.0);
+
+        let game_offset = Matrix4::new_translation(&Vec3::new(screen.w / 2.0, 660.0, 0.0));
 
         let p1_x = self.players.p1().position().x.into_graphical();
         let p2_x = self.players.p2().position().x.into_graphical();
@@ -239,7 +203,7 @@ impl Match {
         // this is a number between 0 and 1 because the background will usually be greater
         // in width than the camera size, so to get it to render all in the camera (at min zoom out)
         // we need to make it smaller
-        let min_scale = graphics::drawable_size(ctx).0 / self.background.width();
+        let min_scale = screen.w / self.background.width();
         // max allowed zoom level
         let max_scale = 2.0;
 
@@ -248,15 +212,14 @@ impl Match {
         // its relative to the distance between characters, and the size of the camera
         // we add a constant so the characters try to float in the inside edges
         // rather than right next to the edge of the screen
-        let factor = graphics::drawable_size(ctx).0 / (dist + 140.0);
+        let factor = screen.w / (dist + 140.0);
         let scaling = f32::min(f32::max(factor, min_scale), max_scale);
 
         // this is how much we can move the camera horizontally either way
         // we have to componensate the give from the camera size via the scaling
         // ie this is how much area between the edge of the camera if it was centered
         // and the edge of the background
-        let give_factor =
-            ((self.background.width() - graphics::drawable_size(ctx).0 / scaling) / 2.0).abs();
+        let give_factor = ((self.background.width() - screen.w / scaling) / 2.0).abs();
         // otherwise we just translate it by the center_point, so the player characters are centered
         let translate = f32::min(give_factor, f32::max(center_point, -give_factor));
 
@@ -286,8 +249,11 @@ impl Match {
 
         let show_combo = true;
         if show_combo {
-            self.debug_text.fragments_mut()[0].text =
-                format!("{:?}", self.players.p1().state.current_combo);
+            self.debug_text.fragments_mut()[0].text = format!(
+                "{}, {}",
+                self.players.p1().state.health,
+                self.players.p2().state.health
+            );
             graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
         }
 
@@ -298,6 +264,8 @@ impl Match {
             ctx,
             Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
         )?;
+
+        crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())
     }

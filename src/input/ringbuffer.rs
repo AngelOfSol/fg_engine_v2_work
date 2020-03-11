@@ -1,5 +1,5 @@
 use super::{Axis, InputState, BUFFER_LENGTH};
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone)]
 pub struct RingBuffer {
@@ -23,6 +23,9 @@ impl RingBuffer {
     pub fn top(&self) -> &InputState {
         &self[0]
     }
+    pub fn top_mut(&mut self) -> &mut InputState {
+        &mut self[0]
+    }
 
     pub fn iter(&self) -> RingBufferIter<'_> {
         RingBufferIter {
@@ -39,6 +42,11 @@ impl Index<usize> for RingBuffer {
     }
 }
 
+impl IndexMut<usize> for RingBuffer {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.buffer[(self.head + idx) % BUFFER_LENGTH]
+    }
+}
 #[derive(Debug, Clone)]
 pub struct DirectionIter<'ring> {
     buffer: &'ring RingBuffer,

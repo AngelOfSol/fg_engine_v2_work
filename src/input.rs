@@ -254,6 +254,9 @@ impl InputBuffer {
     pub fn top(&self) -> &InputState {
         self.buffer.top()
     }
+    pub fn top_mut(&mut self) -> &mut InputState {
+        self.buffer.top_mut()
+    }
 
     pub fn iter(&self) -> RingBufferIter<'_> {
         self.buffer.iter()
