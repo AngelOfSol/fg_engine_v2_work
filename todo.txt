@@ -58,11 +58,45 @@ TODO (2/15/2020):
             [] https://docs.rs/imgui/0.3.0/imgui/struct.Ui.html#method.is_item_active
 
 [x] remove dead code
-[] rename player_character
 [] rework configuration into self stored config file, rather than ggez stored config file  
     [] move back to official ggez versioning
-[] make button check associated with a controller
+[x] make button check associated with a controller
+[x] controller select
+    [x] selectable_players (p1 | p2)
+    [x] closure
+        [x] takes (option<GamepadId>, option<GamepadId>)
+        [x] returns a transition
+    [x] if p1 is selectable
+        [x] if a gamepad press '<-'
+            [x] if p1 isn't selected
+                [x] make p1 that gamepad
+        [x] if a gamepad press '->' || <B> || <Circle>
+            [x] if p1 is selected and the gamepad is p1
+                [x] remove it from p1
 
+    [x] if p2 is selectable
+        [x] if a gamepad press '<-'
+            [x] if p2 isn't selected
+                [x] make p2 that gamepad
+        [x] if a gamepad press '->' || <B> || <Circle>
+            [x] if p2 is selected and the gamepad is p2
+                [x] remove it from p2
 
+    [x] if (a gamepad press 'A' || 'start') && gamepad_id is assigned to p1 or p2 && all selectable players are selected
+        [x] proceed to following screen
+            [x] uses closure to create next state
+[x] character select
+    [x] contains selected characters
+    [x] selection_type
+        [] local(GamePadId)
+        [] network()
+    [x] p1: SelectionType
+    [x] p2: SelectionType
+        [x] when both p1 and p2 have the same local(GamePadId)
+            [x] p1 is controlled as long as p1 is unselected
+            [x] while p2, if the gamepad presses back and it hasn't selected a character
+                [x] deselect p1 and return control
+    [] TBD: Handle Network selection
+        [] 
 
 random key: 4D 6D 9C 6C 2B

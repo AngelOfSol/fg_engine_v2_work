@@ -52,7 +52,7 @@ pub mod player {
         }
     }
 
-    use std::convert::From;
+    use std::convert::{From, TryFrom};
 
     impl<T> From<[T; 2]> for PlayerData<T> {
         fn from(data: [T; 2]) -> Self {
@@ -63,6 +63,18 @@ pub mod player {
     impl<T> From<(T, T)> for PlayerData<T> {
         fn from(data: (T, T)) -> Self {
             Self([data.0, data.1])
+        }
+    }
+    impl<T> TryFrom<Vec<T>> for PlayerData<T> {
+        type Error = &'static str;
+        fn try_from(mut data: Vec<T>) -> Result<Self, Self::Error> {
+            if data.len() == 2 {
+                let p1 = data.remove(0);
+                let p2 = data.remove(0);
+                Ok(Self([p1, p2]))
+            } else {
+                Err("Tried to convert from non 2 sized vector.")
+            }
         }
     }
 
@@ -79,6 +91,7 @@ pub mod player {
         pub fn p2_mut(&mut self) -> &mut T {
             &mut self.0[1]
         }
+
         pub fn both(&self) -> (&T, &T) {
             let data = self.0.split_at(1);
             (&data.0[0], &data.1[0])
