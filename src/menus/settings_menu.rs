@@ -31,9 +31,9 @@ impl AppState for SettingsMenu {
                 NextState::DisplaySettings => {
                     Ok(Transition::Push(Box::new(super::DisplaySettings::new(ctx))))
                 }
-                NextState::ControlSettings => Ok(Transition::Push(Box::new(
-                    crate::button_check::ButtonCheck::new(ctx)?,
-                ))),
+                NextState::ControlSettings => {
+                    Ok(Transition::Push(Box::new(super::ButtonCheck::new(ctx)?)))
+                }
             },
             None => Ok(Transition::None),
         }
