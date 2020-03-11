@@ -1,6 +1,9 @@
+use super::gameplay::training_mode::TrainingMode;
+use super::gameplay::Character;
 use super::gameplay::{CharacterSelect, ControllerSelect, SelectBy};
 use super::SettingsMenu;
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::input::control_scheme::PadControlScheme;
 use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
@@ -38,10 +41,15 @@ impl AppState for MainMenu {
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
                 NextState::TrainingModeControllerSelect => {
+                    let to_training_mode = Box::new(|ctx: &mut Context, player_data, controls| {
+                        Transition::Replace(Box::new(TrainingMode::new(ctx, controls).unwrap()))
+                    });
+
                     let to_character_select =
-                        Box::new(|player_data: PlayerData<Option<GamepadId>>| {
+                        Box::new(move |player_data: PlayerData<Option<GamepadId>>| {
                             Transition::Replace(Box::new(CharacterSelect::new(
                                 [SelectBy::Local(player_data.p1().unwrap()); 2].into(),
+                                to_training_mode,
                             )))
                             //
                         });
@@ -59,6 +67,7 @@ impl AppState for MainMenu {
                                     SelectBy::Local(player_data.p2().unwrap()),
                                 ]
                                 .into(),
+                                Box::new(|_, _, _| Transition::Pop),
                             )))
                         });
                     Ok(Transition::Push(Box::new(ControllerSelect::new(

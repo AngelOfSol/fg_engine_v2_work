@@ -160,8 +160,8 @@ pub fn read_inputs(buffer: &InputBuffer, facing: Facing) -> Vec<Input> {
         read_idle(buffer),
     ]
     .iter()
-    .filter(|item| item.is_some())
-    .map(|item| item.unwrap())
+    .flatten()
+    .copied()
     .map(|item| {
         if facing == Facing::Right {
             item

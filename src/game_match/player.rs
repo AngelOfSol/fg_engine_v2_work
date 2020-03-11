@@ -1,6 +1,5 @@
 use super::{PlayArea, Shadow};
 use crate::hitbox::PositionedHitbox;
-use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::roster::generic_character::hit_info::{HitInfo, HitType};
 use crate::roster::generic_character::GenericCharacterBehaviour;
@@ -15,11 +14,8 @@ use gilrs::{Event, EventType};
 use std::rc::Rc;
 
 // TODO make this generic
-#[derive(Clone)]
 pub struct Player {
-    pub resources: Rc<Yuyuko>,
     pub state: YuyukoState,
-    pub control_scheme: Rc<PadControlScheme>,
 }
 
 pub struct BulletsContext<'a> {
@@ -38,8 +34,8 @@ impl Player {
     pub fn bullets_mut(&mut self) -> (BulletsContext, &mut Vec<BulletState>) {
         (
             BulletsContext {
-                bullets: &self.resources.bullets,
-                attacks: &self.resources.attacks,
+                bullets: &self.state.data.bullets,
+                attacks: &self.state.data.attacks,
             },
             &mut self.state.bullets,
         )
@@ -106,9 +102,7 @@ impl Player {
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
 
-        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        self.state
-            .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))
+        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)
     }
 
     pub fn draw_bullets(&self, ctx: &mut Context, world: Matrix4) -> GameResult<()> {
