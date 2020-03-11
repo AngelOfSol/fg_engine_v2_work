@@ -1,14 +1,19 @@
+use super::gameplay::{CharacterSelect, ControllerSelect, SelectBy};
 use super::SettingsMenu;
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use gilrs::GamepadId;
 use imgui::im_str;
 
 enum NextState {
     Quit,
     Editor,
     Settings,
+    TrainingModeControllerSelect,
+    VsModeControllerSelect,
 }
 
 pub struct MainMenu {
@@ -32,6 +37,35 @@ impl AppState for MainMenu {
                 NextState::Quit => Ok(Transition::Pop),
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
+                NextState::TrainingModeControllerSelect => {
+                    let to_character_select =
+                        Box::new(|player_data: PlayerData<Option<GamepadId>>| {
+                            Transition::Replace(Box::new(CharacterSelect::new(
+                                [SelectBy::Local(player_data.p1().unwrap()); 2].into(),
+                            )))
+                            //
+                        });
+                    Ok(Transition::Push(Box::new(ControllerSelect::new(
+                        [true, false].into(),
+                        to_character_select,
+                    ))))
+                }
+                NextState::VsModeControllerSelect => {
+                    let to_character_select =
+                        Box::new(|player_data: PlayerData<Option<GamepadId>>| {
+                            Transition::Replace(Box::new(CharacterSelect::new(
+                                [
+                                    SelectBy::Local(player_data.p1().unwrap()),
+                                    SelectBy::Local(player_data.p2().unwrap()),
+                                ]
+                                .into(),
+                            )))
+                        });
+                    Ok(Transition::Push(Box::new(ControllerSelect::new(
+                        [true, true].into(),
+                        to_character_select,
+                    ))))
+                }
             },
             None => Ok(Transition::None),
         }
@@ -50,11 +84,17 @@ impl AppState for MainMenu {
         frame
             .run(|ui| {
                 imgui::Window::new(im_str!("Main Menu")).build(ui, || {
-                    if ui.small_button(im_str!("Editor")) {
-                        self.next = Some(NextState::Editor);
+                    if ui.small_button(im_str!("VS")) {
+                        self.next = Some(NextState::VsModeControllerSelect);
+                    }
+                    if ui.small_button(im_str!("Training Mode")) {
+                        self.next = Some(NextState::TrainingModeControllerSelect);
                     }
                     if ui.small_button(im_str!("Settings")) {
                         self.next = Some(NextState::Settings);
+                    }
+                    if ui.small_button(im_str!("Editor")) {
+                        self.next = Some(NextState::Editor);
                     }
                     if ui.small_button(im_str!("Quit")) {
                         self.next = Some(NextState::Quit);

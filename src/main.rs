@@ -27,7 +27,6 @@ mod command_list;
 #[macro_use]
 mod input_macros;
 mod app_state;
-mod button_check;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
