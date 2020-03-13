@@ -1,5 +1,4 @@
-use super::ringbuffer::DirectionIter;
-use super::{Axis, Button, ButtonState, Facing, InputBuffer, MOTION_DIRECTION_SIZE};
+use super::{Axis, Button, ButtonSet, ButtonState, Facing, InputState, MOTION_DIRECTION_SIZE};
 use crate::character::components::Guard;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -39,6 +38,44 @@ impl DirectedAxis {
             _ => 0,
         };
         facing * self_value
+    }
+
+    pub fn is_cardinal(self) -> bool {
+        match self {
+            DirectedAxis::Forward
+            | DirectedAxis::Up
+            | DirectedAxis::Backward
+            | DirectedAxis::Down => true,
+            _ => false,
+        }
+    }
+    pub fn matches_cardinal(self, target: DirectedAxis) -> bool {
+        target.is_cardinal()
+            && match target {
+                DirectedAxis::Forward => match self {
+                    DirectedAxis::UpForward | DirectedAxis::DownForward | DirectedAxis::Forward => {
+                        true
+                    }
+                    _ => false,
+                },
+                DirectedAxis::Up => match self {
+                    DirectedAxis::UpForward | DirectedAxis::UpBackward | DirectedAxis::Up => true,
+                    _ => false,
+                },
+                DirectedAxis::Backward => match self {
+                    DirectedAxis::UpBackward
+                    | DirectedAxis::DownBackward
+                    | DirectedAxis::Backward => true,
+                    _ => false,
+                },
+                DirectedAxis::Down => match self {
+                    DirectedAxis::DownForward | DirectedAxis::DownBackward | DirectedAxis::Down => {
+                        true
+                    }
+                    _ => false,
+                },
+                _ => unreachable!(),
+            }
     }
 
     pub fn is_backward(self) -> bool {
@@ -116,17 +153,10 @@ impl From<Axis> for DirectedAxis {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum ButtonSet {
-    Single(Button),
-    Double(Button, Button),
-}
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Input {
     Idle(DirectedAxis),
     PressButton(DirectedAxis, ButtonSet),
-    ReleaseButton(ButtonSet),
     QuarterCircle(Direction, ButtonSet),
     DragonPunch(Direction, ButtonSet),
     DoubleTap(DirectedAxis),
@@ -139,7 +169,6 @@ impl Input {
             Input::Idle(dir) => Input::Idle(dir.invert()),
             Input::DoubleTap(dir) => Input::DoubleTap(dir.invert()),
             Input::PressButton(dir, button) => Input::PressButton(dir.invert(), button),
-            Input::ReleaseButton(button) => Input::ReleaseButton(button),
             Input::QuarterCircle(dir, button) => Input::QuarterCircle(dir.invert(), button),
             Input::DragonPunch(dir, button) => Input::DragonPunch(dir.invert(), button),
             Input::SuperJump(dir) => Input::SuperJump(dir.invert()),
@@ -147,17 +176,30 @@ impl Input {
     }
 }
 
-pub fn read_inputs(buffer: &InputBuffer, facing: Facing) -> Vec<Input> {
+fn read_button_set(button_list: [ButtonState; 4], check_state: ButtonState) -> Option<ButtonSet> {
+    let mut buttons = None;
+    for (id, _) in button_list
+        .iter()
+        .copied()
+        .enumerate()
+        .filter(|(_, state)| *state == check_state)
+    {
+        buttons = match buttons {
+            Some(button) => Some(button | Button::from_id(id)),
+            None => Some(Button::from_id(id).into()),
+        }
+    }
+    buttons
+}
+
+pub fn read_inputs(buffer: impl Iterator<Item = InputState> + Clone, facing: Facing) -> Vec<Input> {
     [
-        read_super_jump(buffer),
-        read_super_jump_macro(buffer),
-        read_dragon_punch(buffer),
-        read_quarter_circle(buffer),
-        read_button_press(buffer),
-        read_button_press_neutral(buffer),
-        read_button_release(buffer),
-        read_double_tap(buffer),
-        read_idle(buffer),
+        read_super_jump_new(buffer.clone()),
+        read_dragon_punch_new(buffer.clone()),
+        read_quarter_circle_new(buffer.clone()),
+        read_button_press_new(buffer.clone()),
+        read_double_tap_new(buffer.clone()),
+        read_idle_new(buffer),
     ]
     .iter()
     .flatten()
@@ -172,195 +214,327 @@ pub fn read_inputs(buffer: &InputBuffer, facing: Facing) -> Vec<Input> {
     .collect()
 }
 
-fn read_button_set(button_list: [ButtonState; 4], check_state: ButtonState) -> Option<ButtonSet> {
-    let mut buttons = None;
-    for (id, state) in button_list.iter().enumerate() {
-        if *state == check_state {
-            buttons = match buttons {
-                Some(button) => return Some(ButtonSet::Double(button, Button::from_usize(id))),
-                None => Some(Button::from_usize(id)),
+pub fn read_idle_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    buffer.next().map(|item| Input::Idle(item.axis.into()))
+}
+pub fn read_double_tap_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    for _ in 0..8 {
+        let mut buffer = InputCoalesce::new(
+            {
+                let new_buffer = buffer.clone();
+                buffer.next();
+                new_buffer
             }
+            .map(|item| item.axis.into()),
+        );
+
+        let ret = buffer
+            .next()
+            .and_then(|(dash_dir, count): (DirectedAxis, _)| {
+                if count <= MOTION_DIRECTION_SIZE && dash_dir.is_cardinal() {
+                    Some(dash_dir)
+                } else {
+                    None
+                }
+            })
+            .and_then(|dash_dir| {
+                let (neutral_dir, count) = buffer.next()?;
+                if count <= MOTION_DIRECTION_SIZE && !neutral_dir.matches_cardinal(dash_dir) {
+                    Some(dash_dir)
+                } else {
+                    None
+                }
+            })
+            .and_then(|dash_dir| {
+                let (redash_dir, count) = buffer.next()?;
+                if count <= MOTION_DIRECTION_SIZE * 2 && redash_dir.matches_cardinal(dash_dir) {
+                    Some(Input::DoubleTap(dash_dir))
+                } else {
+                    None
+                }
+            });
+        if ret.is_some() {
+            return ret;
         }
-    }
-    if let Some(button) = buttons {
-        return Some(ButtonSet::Single(button));
     }
     None
 }
 
-fn read_idle(buffer: &InputBuffer) -> Option<Input> {
-    Some(Input::Idle(buffer.top().axis.into()))
+fn read_button_press_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    for _ in 0..8 {
+        if let Some(buttons) = read_recent_button_set(buffer.clone()) {
+            return Some(Input::PressButton(
+                buffer.next().unwrap().axis.into(),
+                buttons,
+            ));
+        }
+        buffer.next();
+    }
+    None
 }
 
-fn read_double_tap(buffer: &InputBuffer) -> Option<Input> {
-    let inputs = buffer.iter().into_direction_iter().collect::<Vec<_>>();
-    let (time, axis) = inputs[0];
-    if time > MOTION_DIRECTION_SIZE * 2 {
-        return None;
-    }
-    let (time, should_be_neutral) = inputs[1];
-    if time > MOTION_DIRECTION_SIZE * 2 || should_be_neutral != Axis::Neutral {
-        return None;
-    }
-    if inputs[2].1 == axis {
-        Some(Input::DoubleTap(axis.into()))
-    } else {
-        None
-    }
-}
-
-enum SuperJumpReaderState {
-    Start,
-    JumpRead(usize, Axis),
-}
-
-fn read_super_jump(buffer: &InputBuffer) -> Option<Input> {
-    let mut ret = None;
-    let mut state = SuperJumpReaderState::Start;
-    for (duration, axis) in buffer.iter().into_direction_iter() {
-        state = match state {
-            SuperJumpReaderState::Start => {
-                if duration <= 2 && axis.is_up() {
-                    SuperJumpReaderState::JumpRead(0, axis)
+fn read_recent_button_set(
+    mut buffer: impl Iterator<Item = InputState> + Clone,
+) -> Option<ButtonSet> {
+    buffer
+        .next()
+        .and_then(|base| read_button_set(base.buttons, ButtonState::JustPressed))
+        .map(|mut buttons| {
+            for _ in 0..2 {
+                let next = if let Some(value) = buffer
+                    .next()
+                    .and_then(|next| read_button_set(next.buttons, ButtonState::JustPressed))
+                {
+                    value
                 } else {
                     break;
-                }
+                };
+                buttons |= next;
             }
-            SuperJumpReaderState::JumpRead(total_duration, jump_axis) => {
-                if axis.is_down() {
-                    ret = if duration <= MOTION_DIRECTION_SIZE * 3 {
-                        Some(Input::SuperJump(jump_axis.into()))
-                    } else {
-                        None
-                    };
-                    break;
-                } else if total_duration + duration < MOTION_DIRECTION_SIZE * 3 {
-                    SuperJumpReaderState::JumpRead(total_duration + duration, jump_axis)
+            buttons
+        })
+}
+
+use std::collections::HashSet;
+#[derive(Clone, Debug)]
+enum ReadInput {
+    Optional(HashSet<Axis>, usize),
+    RequiredWithin(HashSet<Axis>, usize),
+    Required(HashSet<Axis>),
+    Pass,
+}
+
+use maplit::hashset;
+
+fn read_super_jump_new(buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    let buffer = InputCoalesce::new(buffer.map(|item| item.axis));
+
+    let super_jump_right = vec![
+        ReadInput::RequiredWithin(hashset!(Axis::UpRight), MOTION_DIRECTION_SIZE),
+        ReadInput::Optional(hashset!(Axis::Neutral, Axis::Right), MOTION_DIRECTION_SIZE),
+        ReadInput::RequiredWithin(
+            hashset!(Axis::Down, Axis::DownRight, Axis::DownLeft),
+            MOTION_DIRECTION_SIZE,
+        ),
+        ReadInput::Pass,
+    ];
+
+    if ReadInput::check(super_jump_right.iter(), buffer.clone()).unwrap_or(false) {
+        return Some(Input::SuperJump(DirectedAxis::UpForward));
+    }
+    let super_jump = vec![
+        ReadInput::RequiredWithin(hashset!(Axis::Up), MOTION_DIRECTION_SIZE),
+        ReadInput::Optional(
+            hashset!(Axis::Neutral, Axis::Right, Axis::Left),
+            MOTION_DIRECTION_SIZE,
+        ),
+        ReadInput::RequiredWithin(
+            hashset!(Axis::Down, Axis::DownRight, Axis::DownLeft),
+            MOTION_DIRECTION_SIZE * 2,
+        ),
+        ReadInput::Pass,
+    ];
+
+    if ReadInput::check(super_jump.iter(), buffer.clone()).unwrap_or(false) {
+        return Some(Input::SuperJump(DirectedAxis::Up));
+    }
+
+    let super_jump_left = vec![
+        ReadInput::RequiredWithin(hashset!(Axis::UpLeft), MOTION_DIRECTION_SIZE),
+        ReadInput::Optional(hashset!(Axis::Neutral, Axis::Left), MOTION_DIRECTION_SIZE),
+        ReadInput::RequiredWithin(
+            hashset!(Axis::Down, Axis::DownRight, Axis::DownLeft),
+            MOTION_DIRECTION_SIZE * 2,
+        ),
+        ReadInput::Pass,
+    ];
+
+    if ReadInput::check(super_jump_left.iter(), buffer.clone()).unwrap_or(false) {
+        return Some(Input::SuperJump(DirectedAxis::UpBackward));
+    }
+
+    None
+}
+
+fn read_dragon_punch_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    for _ in 0..8 {
+        if let Some(buttons) = read_recent_button_set(buffer.clone()) {
+            let buffer = InputCoalesce::new(
+                {
+                    let new_buffer = buffer.clone();
+                    buffer.next();
+                    new_buffer
+                }
+                .map(|item| item.axis),
+            );
+
+            let dp_right = vec![
+                ReadInput::Optional(hashset!(Axis::Right), MOTION_DIRECTION_SIZE),
+                ReadInput::RequiredWithin(hashset!(Axis::DownRight), MOTION_DIRECTION_SIZE * 2),
+                ReadInput::RequiredWithin(hashset!(Axis::Down), MOTION_DIRECTION_SIZE),
+                ReadInput::Optional(hashset!(Axis::DownRight), MOTION_DIRECTION_SIZE),
+                ReadInput::Required(hashset!(Axis::Right)),
+                ReadInput::Pass,
+            ];
+
+            if ReadInput::check(dp_right.iter(), buffer.clone()).unwrap_or(false) {
+                return Some(Input::DragonPunch(Direction::Forward, buttons));
+            }
+
+            let dp_left = vec![
+                ReadInput::Optional(hashset!(Axis::Left), MOTION_DIRECTION_SIZE),
+                ReadInput::RequiredWithin(hashset!(Axis::DownLeft), MOTION_DIRECTION_SIZE * 2),
+                ReadInput::RequiredWithin(hashset!(Axis::Down), MOTION_DIRECTION_SIZE),
+                ReadInput::Optional(hashset!(Axis::DownLeft), MOTION_DIRECTION_SIZE),
+                ReadInput::Required(hashset!(Axis::Left)),
+                ReadInput::Pass,
+            ];
+
+            if ReadInput::check(dp_left.iter(), buffer.clone()).unwrap_or(false) {
+                return Some(Input::DragonPunch(Direction::Backward, buttons));
+            }
+        }
+        buffer.next();
+    }
+    None
+}
+
+fn read_quarter_circle_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+    for _ in 0..8 {
+        if let Some(buttons) = read_recent_button_set(buffer.clone()) {
+            let buffer = InputCoalesce::new(
+                {
+                    let new_buffer = buffer.clone();
+                    buffer.next();
+                    new_buffer
+                }
+                .map(|item| item.axis),
+            );
+
+            let qcf_right = vec![
+                ReadInput::Optional(hashset!(Axis::UpRight), MOTION_DIRECTION_SIZE),
+                ReadInput::RequiredWithin(hashset!(Axis::Right), MOTION_DIRECTION_SIZE * 2),
+                ReadInput::RequiredWithin(hashset!(Axis::DownRight), MOTION_DIRECTION_SIZE),
+                ReadInput::Required(hashset!(Axis::Down)),
+                ReadInput::Pass,
+            ];
+
+            if ReadInput::check(qcf_right.iter(), buffer.clone()).unwrap_or(false) {
+                return Some(Input::QuarterCircle(Direction::Forward, buttons));
+            }
+
+            let qcf_left = vec![
+                ReadInput::Optional(hashset!(Axis::UpLeft), MOTION_DIRECTION_SIZE),
+                ReadInput::RequiredWithin(hashset!(Axis::Left), MOTION_DIRECTION_SIZE * 2),
+                ReadInput::RequiredWithin(hashset!(Axis::DownLeft), MOTION_DIRECTION_SIZE),
+                ReadInput::Required(hashset!(Axis::Down)),
+                ReadInput::Pass,
+            ];
+            if ReadInput::check(qcf_left.iter(), buffer.clone()).unwrap_or(false) {
+                return Some(Input::QuarterCircle(Direction::Backward, buttons));
+            }
+        }
+        buffer.next();
+    }
+    None
+}
+#[derive(Copy, Clone, Debug, Hash)]
+enum ReadInputAction {
+    Consume,
+    Continue,
+    Fail,
+    Pass,
+}
+
+impl ReadInput {
+    fn run(&self, axis: Axis, duration: usize) -> ReadInputAction {
+        match self {
+            Self::Optional(axes, target_duration) => {
+                if axes.contains(&axis) && *target_duration >= duration {
+                    ReadInputAction::Consume
                 } else {
-                    break;
+                    ReadInputAction::Continue
                 }
             }
-        }
-    }
-    ret
-}
-
-fn read_super_jump_macro(buffer: &InputBuffer) -> Option<Input> {
-    if buffer.top().buttons[0].is_pressed()
-        && buffer.top().buttons[1].is_pressed()
-        && buffer.top().axis.is_up()
-    {
-        Some(Input::SuperJump(buffer.top().axis.into()))
-    } else {
-        None
-    }
-}
-
-fn read_button_press(buffer: &InputBuffer) -> Option<Input> {
-    for input_state in buffer.iter().take(1) {
-        if let Some(buttons) = read_button_set(input_state.buttons, ButtonState::JustPressed) {
-            return Some(Input::PressButton(input_state.axis.into(), buttons));
-        }
-    }
-    None
-}
-
-fn read_button_press_neutral(buffer: &InputBuffer) -> Option<Input> {
-    for input_state in buffer.iter().take(1) {
-        if let Some(buttons) = read_button_set(input_state.buttons, ButtonState::JustPressed) {
-            return Some(Input::PressButton(DirectedAxis::Neutral, buttons));
-        }
-    }
-    None
-}
-
-fn read_button_release(buffer: &InputBuffer) -> Option<Input> {
-    for input_state in buffer.iter().take(1) {
-        if let Some(buttons) = read_button_set(input_state.buttons, ButtonState::JustReleased) {
-            return Some(Input::ReleaseButton(buttons));
-        }
-    }
-    None
-}
-
-fn read_quarter_circle_motion(iter: DirectionIter<'_>) -> Option<Direction> {
-    let inputs = iter.take(3).collect::<Vec<_>>();
-    let (time, axis) = inputs[0];
-    if time > MOTION_DIRECTION_SIZE || axis != Axis::Down {
-        return None;
-    }
-    let (time, axis) = inputs[1];
-    if time > MOTION_DIRECTION_SIZE || !(axis == Axis::DownLeft || axis == Axis::DownRight) {
-        return None;
-    }
-    let (_, axis) = inputs[2];
-    if axis.is_horizontal() {
-        axis.get_direction()
-    } else {
-        None
-    }
-}
-fn read_quarter_circle(buffer: &InputBuffer) -> Option<Input> {
-    let mut iter = buffer.iter();
-    let mut count = 0;
-    while let Some(state) = iter.next() {
-        if count >= 8 {
-            break;
-        }
-        count += 1;
-        for (id, state) in state.buttons.iter().enumerate() {
-            if *state == ButtonState::JustPressed {
-                if let Some(direction) =
-                    read_quarter_circle_motion(iter.clone().into_direction_iter())
-                {
-                    return Some(Input::QuarterCircle(
-                        direction,
-                        ButtonSet::Single(Button::from_usize(id)),
-                    ));
+            Self::RequiredWithin(axes, target_duration) => {
+                if axes.contains(&axis) && *target_duration >= duration {
+                    ReadInputAction::Consume
+                } else {
+                    ReadInputAction::Fail
                 }
             }
-        }
-    }
-    None
-}
-
-fn read_dragon_punch_motion(iter: DirectionIter<'_>) -> Option<Direction> {
-    let inputs = iter.take(3).collect::<Vec<_>>();
-    let (time, axis) = inputs[0];
-    if time > MOTION_DIRECTION_SIZE || !axis.is_horizontal() {
-        return None;
-    }
-    let (time, down_input) = inputs[1];
-    if time > MOTION_DIRECTION_SIZE || down_input != Axis::Down {
-        return None;
-    }
-    let (_, end_axis) = inputs[2];
-    if end_axis.get_direction() == axis.get_direction() {
-        axis.get_direction()
-    } else {
-        None
-    }
-}
-fn read_dragon_punch(buffer: &InputBuffer) -> Option<Input> {
-    let mut iter = buffer.iter();
-    let mut count = 0;
-    while let Some(state) = iter.next() {
-        if count >= 8 {
-            break;
-        }
-        count += 1;
-        for (id, state) in state.buttons.iter().enumerate() {
-            if *state == ButtonState::JustPressed {
-                if let Some(direction) =
-                    read_dragon_punch_motion(iter.clone().into_direction_iter())
-                {
-                    return Some(Input::DragonPunch(
-                        direction,
-                        ButtonSet::Single(Button::from_usize(id)),
-                    ));
+            Self::Required(axes) => {
+                if axes.contains(&axis) {
+                    ReadInputAction::Consume
+                } else {
+                    ReadInputAction::Fail
                 }
             }
+            Self::Pass => ReadInputAction::Pass,
         }
     }
-    None
+
+    fn check<'a>(
+        mut machine: impl Iterator<Item = &'a ReadInput>,
+        mut directions: impl Iterator<Item = (Axis, usize)>,
+    ) -> Option<bool> {
+        let mut current = directions.next()?;
+        Some(loop {
+            let state = machine.next()?;
+            match state.run(current.0, current.1) {
+                ReadInputAction::Consume => current = directions.next()?,
+                ReadInputAction::Continue => (),
+                ReadInputAction::Fail => break false,
+                ReadInputAction::Pass => break true,
+            }
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+struct InputCoalesce<I, V> {
+    iter: I,
+    value: Option<V>,
+}
+
+impl<I, V> InputCoalesce<I, V>
+where
+    I: Iterator<Item = V>,
+    V: PartialEq,
+{
+    pub fn new(iter: I) -> Self {
+        Self { iter, value: None }
+    }
+}
+
+use std::iter::Iterator;
+
+impl<I, V> Iterator for InputCoalesce<I, V>
+where
+    I: Iterator<Item = V>,
+    V: PartialEq,
+{
+    type Item = (I::Item, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (mut count, value) = match self.value.take() {
+            Some(value) => (1, value),
+            None => (1, self.iter.next()?),
+        };
+
+        let new_value = loop {
+            if let Some(new_value) = self.iter.next() {
+                if new_value == value {
+                    count += 1;
+                } else {
+                    break Some(new_value);
+                }
+            } else {
+                break None;
+            };
+        };
+        self.value = new_value;
+
+        Some((value, count))
+    }
 }

@@ -64,12 +64,12 @@ impl ControlScheme<GilButton> {
             gamepad: id,
         };
 
-        ret.buttons[Button::A as usize].insert(GilButton::West);
-        ret.buttons[Button::A as usize].insert(GilButton::RightTrigger);
-        ret.buttons[Button::B as usize].insert(GilButton::North);
-        ret.buttons[Button::B as usize].insert(GilButton::RightTrigger);
-        ret.buttons[Button::C as usize].insert(GilButton::East);
-        ret.buttons[Button::D as usize].insert(GilButton::South);
+        ret.buttons[Button::A.as_id()].insert(GilButton::West);
+        ret.buttons[Button::A.as_id()].insert(GilButton::RightTrigger);
+        ret.buttons[Button::B.as_id()].insert(GilButton::North);
+        ret.buttons[Button::B.as_id()].insert(GilButton::RightTrigger);
+        ret.buttons[Button::C.as_id()].insert(GilButton::East);
+        ret.buttons[Button::D.as_id()].insert(GilButton::South);
 
         ret.axis.insert(GilButton::DPadUp, Axis::Up);
         ret.axis.insert(GilButton::DPadDown, Axis::Down);

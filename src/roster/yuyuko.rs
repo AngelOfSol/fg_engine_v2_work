@@ -112,8 +112,9 @@ impl YuyukoData {
         path.pop();
         path.push(&name);
         for (name, state) in character.states.iter_mut() {
-            State::load(ctx, assets, state, &name.to_string(), path.clone())?;
+            State::load(ctx, assets, state, &name.file_name(), path.clone())?;
         }
+
         path.push("particles");
         for (_name, particle) in character.particles.iter_mut() {
             Animation::load(ctx, assets, particle, path.clone())?;

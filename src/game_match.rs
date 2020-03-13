@@ -36,6 +36,7 @@ impl Match {
             ctx,
             PathBuf::from(".\\resources\\yuyuko.json"),
         )?);
+        dbg!("loaded yuyu");
         let mut p1_state = YuyukoState::new(Rc::clone(&resources));
         let mut p2_state = YuyukoState::new(Rc::clone(&resources));
         p1_state.position.x = -100_00;
@@ -74,6 +75,12 @@ impl Match {
         p2.apply_pushback(p1.get_pushback(&self.play_area));
 
         if p1.collision().overlaps(p2.collision()) {
+            let (p1, p2) = if p1.collision().center.y > p2.collision().center.y {
+                (p1, p2)
+            } else {
+                (p2, p1)
+            };
+
             let (p1_mod, p2_mod) = p1.collision().fix_distances(
                 p2.collision(),
                 &self.play_area,
@@ -83,6 +90,8 @@ impl Match {
             p1.position_mut().x += p1_mod;
             p2.position_mut().x += p2_mod;
         }
+
+        let (p1, p2) = self.players.both_mut();
 
         let touched = vec![
             PositionedHitbox::overlaps_any(&p2.hitboxes(), &p1.hurtboxes()),
@@ -251,8 +260,8 @@ impl Match {
         if show_combo {
             self.debug_text.fragments_mut()[0].text = format!(
                 "{}, {}",
-                self.players.p1().state.health,
-                self.players.p2().state.health
+                self.players.p1().state.current_state.1,
+                self.players.p2().state.current_state.1
             );
             graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
         }

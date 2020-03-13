@@ -4,10 +4,7 @@ use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputBuffer;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Button, Event, EventType, GamepadId};
-use imgui::im_str;
-use strum::{EnumCount, IntoEnumIterator};
-use strum_macros::{Display, EnumCount, EnumIter};
+use gilrs::{Event, EventType};
 
 enum NextState {
     Back,
@@ -61,7 +58,6 @@ impl AppState for TrainingMode {
                 }
             }
             *input.top_mut() = current_frame;
-            //input.push(current_frame);
         }
         while ggez::timer::check_update_time(ctx, 60) {
             self.game_state.update(&self.inputs)?;
@@ -78,8 +74,7 @@ impl AppState for TrainingMode {
             None => Ok(Transition::None),
         }
     }
-    fn on_enter(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
-        //crate::graphics::prepare_screen_for_game(ctx)
+    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         Ok(())
     }
     fn draw(&mut self, ctx: &mut Context, AppContext { .. }: &mut AppContext) -> GameResult<()> {

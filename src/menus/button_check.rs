@@ -172,7 +172,6 @@ impl AppState for ButtonCheck {
                     self.active_control_schemes = retain;
                     for scheme in updated {
                         control_schemes.insert(scheme.scheme.gamepad, scheme.scheme);
-                        dbg!(&control_schemes);
                     }
                 }
             }

@@ -1,9 +1,7 @@
 use super::gameplay::training_mode::TrainingMode;
-use super::gameplay::Character;
 use super::gameplay::{CharacterSelect, ControllerSelect, SelectBy};
 use super::SettingsMenu;
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::input::control_scheme::PadControlScheme;
 use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
@@ -41,7 +39,7 @@ impl AppState for MainMenu {
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
                 NextState::TrainingModeControllerSelect => {
-                    let to_training_mode = Box::new(|ctx: &mut Context, player_data, controls| {
+                    let to_training_mode = Box::new(|ctx: &mut Context, _, controls| {
                         Transition::Replace(Box::new(TrainingMode::new(ctx, controls).unwrap()))
                     });
 

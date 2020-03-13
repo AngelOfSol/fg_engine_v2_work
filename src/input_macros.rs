@@ -1,43 +1,37 @@
 #[macro_export]
 macro_rules! numpad {
     (236$button:ident) => {
-        Input::QuarterCircle(Direction::Forward, Button::$button)
+        Input::QuarterCircle(Direction::Forward, Button::$button.into())
     };
     (214$button:ident) => {
-        Input::QuarterCircle(Direction::Backward, Button::$button)
+        Input::QuarterCircle(Direction::Backward, Button::$button.into())
     };
     (623$button:ident) => {
-        Input::DragonPunch(Direction::Forward, Button::$button)
+        Input::DragonPunch(Direction::Forward, Button::$button.into())
     };
     (421$button:ident) => {
-        Input::DragonPunch(Direction::Backward, Button::$button)
+        Input::DragonPunch(Direction::Backward, Button::$button.into())
     };
 
     (release $button:ident) => {
-        Input::ReleaseButton(ButtonSet::Single(Button::$button))
+        Input::ReleaseButton(Button::$button.into())
     };
     (release $button:ident $button2:ident) => {
-        Input::ReleaseButton(ButtonSet::Double(Button::$button, Button::$button2))
+        Input::ReleaseButton(Button::$button | Button::$button2)
     };
 
     (press $button:ident) => {
-        Input::PressButton(DirectedAxis::Neutral, ButtonSet::Single(Button::$button))
+        Input::PressButton(DirectedAxis::Neutral, Button::$button.into())
     };
     (press $button:ident $button2:ident) => {
-        Input::PressButton(
-            DirectedAxis::Neutral,
-            ButtonSet::Double(Button::$button, Button::$button2),
-        )
+        Input::PressButton(DirectedAxis::Neutral, Button::$button | Button::$button2)
     };
 
     ($dir:tt $button:ident) => {
-        Input::PressButton(read_axis!($dir), ButtonSet::Single(Button::$button))
+        Input::PressButton(read_axis!($dir), Button::$button.into())
     };
     ($dir:tt $button:ident $button2:ident) => {
-        Input::PressButton(
-            read_axis!($dir),
-            ButtonSet::Double(Button::$button, Button::$button2),
-        )
+        Input::PressButton(read_axis!($dir), Button::$button | Button::$button2)
     };
 
     (66) => {
