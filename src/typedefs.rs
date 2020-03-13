@@ -92,6 +92,7 @@ pub mod player {
             &mut self.0[1]
         }
 
+        #[allow(dead_code)]
         pub fn both(&self) -> (&T, &T) {
             let data = self.0.split_at(1);
             (&data.0[0], &data.1[0])

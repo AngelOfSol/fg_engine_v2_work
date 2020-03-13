@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Display)]
 #[serde(rename_all = "snake_case")]
 pub enum MoveId {
     Stand,
@@ -75,9 +76,8 @@ impl Default for MoveId {
     }
 }
 
-#[allow(clippy::inherent_to_string)]
 impl MoveId {
-    pub fn to_string(self) -> String {
+    pub fn file_name(self) -> String {
         serde_json::to_string(&self)
             .unwrap()
             .trim_matches('\"')

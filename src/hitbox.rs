@@ -48,6 +48,13 @@ impl Hitbox {
             _secret: std::marker::PhantomData,
         }
     }
+    pub fn with_collision_position(&self, position: Vec2) -> PositionedHitbox {
+        PositionedHitbox {
+            center: position,
+            half_size: self.half_size,
+            _secret: std::marker::PhantomData,
+        }
+    }
     pub fn with_position_and_facing(&self, position: Vec2, facing: Facing) -> PositionedHitbox {
         PositionedHitbox {
             center: facing.fix_collision(self.center) + position,

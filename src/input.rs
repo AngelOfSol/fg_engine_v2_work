@@ -4,14 +4,13 @@ mod motion;
 mod ringbuffer;
 
 use crate::typedefs::{collision, graphics};
-pub use motion::{read_inputs, ButtonSet, DirectedAxis, Direction, Input};
+pub use motion::{read_inputs, DirectedAxis, Direction, Input};
 use ringbuffer::{RingBuffer, RingBufferIter};
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
-const MOTION_DIRECTION_SIZE: usize = 5;
-const MOTION_LENGTH: usize = 5 * MOTION_DIRECTION_SIZE;
-const BUFFER_LENGTH: usize = MOTION_LENGTH + MOTION_DIRECTION_SIZE;
+const MOTION_DIRECTION_SIZE: usize = 10;
+const BUFFER_LENGTH: usize = 6 * MOTION_DIRECTION_SIZE;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {
@@ -71,12 +70,12 @@ impl Facing {
 impl Index<Button> for InputState {
     type Output = ButtonState;
     fn index(&self, idx: Button) -> &Self::Output {
-        &self.buttons[idx as usize]
+        &self.buttons[idx.as_id()]
     }
 }
 impl IndexMut<Button> for InputState {
     fn index_mut(&mut self, idx: Button) -> &mut Self::Output {
-        &mut self.buttons[idx as usize]
+        &mut self.buttons[idx.as_id()]
     }
 }
 
@@ -112,22 +111,70 @@ impl ButtonState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
-#[repr(usize)]
+pub struct ButtonSet(u8);
+
+impl From<Button> for ButtonSet {
+    fn from(value: Button) -> ButtonSet {
+        ButtonSet(value as u8)
+    }
+}
+
+use std::ops::{BitOr, BitOrAssign};
+
+impl<Rhs> BitOr<Rhs> for Button
+where
+    Rhs: Into<ButtonSet>,
+{
+    type Output = ButtonSet;
+    fn bitor(self, rhs: Rhs) -> Self::Output {
+        ButtonSet::from(self) | rhs.into()
+    }
+}
+
+impl<Rhs> BitOr<Rhs> for ButtonSet
+where
+    Rhs: Into<ButtonSet>,
+{
+    type Output = ButtonSet;
+    fn bitor(self, rhs: Rhs) -> Self::Output {
+        ButtonSet(self.0 | rhs.into().0)
+    }
+}
+
+impl<Rhs> BitOrAssign<Rhs> for ButtonSet
+where
+    Rhs: Into<ButtonSet>,
+{
+    fn bitor_assign(&mut self, rhs: Rhs) {
+        self.0 |= rhs.into().0
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
+#[repr(u8)]
 pub enum Button {
-    A = 0,
-    B = 1,
-    C = 2,
-    D = 3,
+    A = 0b0001,
+    B = 0b0010,
+    C = 0b0100,
+    D = 0b1000,
 }
 
 impl Button {
-    pub fn from_usize(value: usize) -> Self {
+    pub fn from_id(value: usize) -> Self {
         match value {
             0 => Button::A,
             1 => Button::B,
             2 => Button::C,
             3 => Button::D,
             _ => panic!("invalid button value"),
+        }
+    }
+    pub fn as_id(self) -> usize {
+        match self {
+            Button::A => 0,
+            Button::B => 1,
+            Button::C => 2,
+            Button::D => 3,
         }
     }
 }
@@ -146,33 +193,6 @@ pub enum Axis {
 }
 
 impl Axis {
-    pub fn is_horizontal(self) -> bool {
-        match self {
-            Axis::Left | Axis::Right => true,
-            _ => false,
-        }
-    }
-    pub fn is_up(self) -> bool {
-        match self {
-            Axis::Up | Axis::UpLeft | Axis::UpRight => true,
-            _ => false,
-        }
-    }
-    pub fn is_down(self) -> bool {
-        match self {
-            Axis::Down | Axis::DownLeft | Axis::DownRight => true,
-            _ => false,
-        }
-    }
-
-    pub fn get_direction(self) -> Option<Direction> {
-        match self {
-            Axis::UpLeft | Axis::Left | Axis::DownLeft => Some(Direction::Backward),
-            Axis::UpRight | Axis::Right | Axis::DownRight => Some(Direction::Forward),
-            _ => None,
-        }
-    }
-
     pub fn add(self, new: Axis) -> Self {
         match new {
             Axis::UpRight | Axis::UpLeft | Axis::DownRight | Axis::DownLeft => {
@@ -239,7 +259,7 @@ impl Axis {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct InputBuffer {
     buffer: RingBuffer,
 }

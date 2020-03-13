@@ -5,13 +5,11 @@ use crate::roster::generic_character::hit_info::{HitInfo, HitType};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::AttackList;
 use crate::roster::BulletState;
-use crate::roster::{BulletList, Yuyuko, YuyukoState};
+use crate::roster::{BulletList, YuyukoState};
 use crate::typedefs::collision;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use gilrs::{Event, EventType};
-use std::rc::Rc;
 
 // TODO make this generic
 pub struct Player {

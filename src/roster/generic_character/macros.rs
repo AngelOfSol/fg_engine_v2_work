@@ -44,7 +44,7 @@ macro_rules! impl_collision {
                 .hitboxes
                 .at_time(*frame)
                 .collision
-                .with_position(self.position)
+                .with_collision_position(self.position)
         }
     };
 }
@@ -591,7 +591,7 @@ macro_rules! impl_handle_input {
             let state_type = self.data.states[&move_id].state_type;
 
             self.current_state = {
-                let inputs = read_inputs(&input, self.facing);
+                let inputs = read_inputs(input.iter(), self.facing);
                 if move_id == $fly_state {
                     if input.top()[Button::A].is_pressed() && input.top()[Button::B].is_pressed() {
                         (frame, move_id)
