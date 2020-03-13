@@ -143,7 +143,7 @@ macro_rules! impl_would_be_hit {
     () => {
         fn would_be_hit(
             &self,
-            input: &InputBuffer,
+            input: &[InputState],
             touched: bool,
             total_info: Option<HitInfo>,
         ) -> HitType {
@@ -166,7 +166,7 @@ macro_rules! impl_would_be_hit {
 
             let flags = self.current_flags();
             let state_type = self.data.states[&self.current_state.1].state_type;
-            let axis = DirectedAxis::from_facing(input.top().axis, self.facing);
+            let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.facing);
             let counter_hit = flags.can_be_counter_hit && info.can_counter_hit;
 
             if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
@@ -584,16 +584,18 @@ macro_rules! impl_handle_hitstun {
 
 macro_rules! impl_handle_input {
     (fly_start: $fly_start:pat, fly_state: $fly_state:expr, fly_end: $fly_end:expr, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
-        fn handle_input(&mut self, input: &InputBuffer) {
+        fn handle_input(&mut self, input: &[InputState]) {
             let (frame, move_id) = self.current_state;
             let cancels = self.data.states[&move_id].cancels.at_time(frame);
             let flags = self.data.states[&move_id].flags.at_time(frame);
             let state_type = self.data.states[&move_id].state_type;
 
             self.current_state = {
-                let inputs = read_inputs(input.iter(), self.facing);
+                let inputs = read_inputs(input.iter().rev(), self.facing);
                 if move_id == $fly_state {
-                    if input.top()[Button::A].is_pressed() && input.top()[Button::B].is_pressed() {
+                    if input.last().unwrap()[Button::A].is_pressed()
+                        && input.last().unwrap()[Button::B].is_pressed()
+                    {
                         (frame, move_id)
                     } else {
                         (0, $fly_end)
@@ -660,7 +662,7 @@ macro_rules! impl_handle_input {
 
 macro_rules! impl_on_enter_move {
     (fly_start: $fly_start:pat, jump: $jump:pat, super_jump: $super_jump:pat, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
-        fn on_enter_move(&mut self, input: &InputBuffer, move_id: MoveId) {
+        fn on_enter_move(&mut self, input: &[InputState], move_id: MoveId) {
             self.allowed_cancels = AllowedCancel::Always;
             self.last_hit_using = None;
             self.rebeat_chain.insert(move_id);
@@ -668,7 +670,7 @@ macro_rules! impl_on_enter_move {
             match move_id {
                 $border_escape => {
                     self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                        input.top().axis,
+                        input.last().unwrap().axis,
                         self.facing,
                     ));
                     self.crush_orb();
@@ -678,13 +680,14 @@ macro_rules! impl_on_enter_move {
                 }
                 $jump | $super_jump => {
                     self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                        input.top().axis,
+                        input.last().unwrap().axis,
                         self.facing,
                     ));
                 }
                 $fly_start => {
                     self.air_actions -= 1;
-                    let mut dir = DirectedAxis::from_facing(input.top().axis, self.facing);
+                    let mut dir =
+                        DirectedAxis::from_facing(input.last().unwrap().axis, self.facing);
                     if dir.is_backward() {
                         self.facing = self.facing.invert();
                         dir = dir.invert();
@@ -940,7 +943,7 @@ macro_rules! impl_handle_refacing {
 
 macro_rules! impl_update_frame_mut {
     () => {
-        fn update_frame_mut(&mut self, input: &InputBuffer, play_area: &PlayArea) {
+        fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea) {
             if self.hitstop > 0 {
                 self.hitstop -= 1;
             } else {

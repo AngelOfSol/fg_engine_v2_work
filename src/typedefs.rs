@@ -35,7 +35,10 @@ pub mod collision {
 }
 
 pub mod player {
+    use std::convert::From;
+    use std::iter::FromIterator;
     use std::ops::{Deref, DerefMut};
+
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
     pub struct PlayerData<T>([T; 2]);
 
@@ -52,8 +55,6 @@ pub mod player {
         }
     }
 
-    use std::convert::{From, TryFrom};
-
     impl<T> From<[T; 2]> for PlayerData<T> {
         fn from(data: [T; 2]) -> Self {
             Self(data)
@@ -65,16 +66,11 @@ pub mod player {
             Self([data.0, data.1])
         }
     }
-    impl<T> TryFrom<Vec<T>> for PlayerData<T> {
-        type Error = &'static str;
-        fn try_from(mut data: Vec<T>) -> Result<Self, Self::Error> {
-            if data.len() == 2 {
-                let p1 = data.remove(0);
-                let p2 = data.remove(0);
-                Ok(Self([p1, p2]))
-            } else {
-                Err("Tried to convert from non 2 sized vector.")
-            }
+
+    impl<T> FromIterator<T> for PlayerData<T> {
+        fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+            let mut iter = iter.into_iter();
+            PlayerData([iter.next().unwrap(), iter.next().unwrap()])
         }
     }
 
@@ -90,6 +86,15 @@ pub mod player {
         }
         pub fn p2_mut(&mut self) -> &mut T {
             &mut self.0[1]
+        }
+
+        pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> PlayerData<U> {
+            let [l, r] = self.0;
+            Self([f(l), f(r)])
+        }
+
+        pub fn as_ref(&self) -> PlayerData<&T> {
+            PlayerData([&self.0[0], &self.0[1]])
         }
 
         #[allow(dead_code)]

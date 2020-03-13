@@ -1,4 +1,5 @@
-use super::{Axis, Button, ButtonState, InputState};
+use super::button::{Button, ButtonState};
+use super::{Axis, InputState};
 use gilrs::ev::Button as GilButton;
 use gilrs::GamepadId;
 use std::collections::{HashMap, HashSet};

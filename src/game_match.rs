@@ -1,7 +1,7 @@
 mod player;
 
 use crate::hitbox::PositionedHitbox;
-use crate::input::InputBuffer;
+use crate::input::InputState;
 use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::{Yuyuko, YuyukoState};
@@ -36,7 +36,6 @@ impl Match {
             ctx,
             PathBuf::from(".\\resources\\yuyuko.json"),
         )?);
-        dbg!("loaded yuyu");
         let mut p1_state = YuyukoState::new(Rc::clone(&resources));
         let mut p2_state = YuyukoState::new(Rc::clone(&resources));
         p1_state.position.x = -100_00;
@@ -61,7 +60,7 @@ impl Match {
 }
 
 impl Match {
-    pub fn update(&mut self, input: &PlayerData<InputBuffer>) -> GameResult<()> {
+    pub fn update(&mut self, input: PlayerData<&[InputState]>) -> GameResult<()> {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             player.update(input, &self.play_area);
         }
@@ -146,7 +145,7 @@ impl Match {
         fn handle_bullets(
             acting: &mut Player,
             reference: &mut Player,
-            acting_input: &InputBuffer,
+            acting_input: &[InputState],
         ) -> Vec<HitType> {
             let (context, bullets) = reference.bullets_mut();
             bullets
