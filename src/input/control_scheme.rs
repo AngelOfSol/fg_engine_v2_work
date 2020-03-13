@@ -80,7 +80,7 @@ impl ControlScheme<GilButton> {
         ret
     }
 
-    pub fn update_frame(&self, mut input: InputState) -> InputState {
+    pub fn update_frame(&self, input: &mut InputState) {
         for state in input.buttons.iter_mut() {
             *state = match &state {
                 ButtonState::JustPressed => ButtonState::Pressed,
@@ -88,10 +88,9 @@ impl ControlScheme<GilButton> {
                 value => **value,
             }
         }
-        input
     }
 
-    pub fn handle_press(&self, button: GilButton, mut input: InputState) -> InputState {
+    pub fn handle_press(&self, button: GilButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
             input.axis = input.axis.add(self.axis[&button]);
         }
@@ -101,11 +100,9 @@ impl ControlScheme<GilButton> {
                 *state = ButtonState::JustPressed;
             }
         }
-
-        input
     }
 
-    pub fn handle_release(&self, button: GilButton, mut input: InputState) -> InputState {
+    pub fn handle_release(&self, button: GilButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
             input.axis = input.axis.remove(self.axis[&button]);
         }
@@ -115,7 +112,5 @@ impl ControlScheme<GilButton> {
                 *state = ButtonState::JustReleased;
             }
         }
-
-        input
     }
 }
