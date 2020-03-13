@@ -1,7 +1,8 @@
 use super::moves::MoveId;
 use crate::command_list::CommandList;
 #[allow(unused_imports)]
-use crate::input::{Button, DirectedAxis, Direction, Input};
+use crate::input::button::Button;
+use crate::input::{DirectedAxis, Direction, Input};
 use crate::{make_command_list, numpad, read_axis};
 
 pub fn generate_command_list() -> CommandList<MoveId> {

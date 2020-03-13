@@ -12,7 +12,7 @@ use crate::character::components::AttackInfo;
 use crate::character::state::components::Flags;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
-use crate::input::InputBuffer;
+use crate::input::InputState;
 use crate::typedefs::{collision, graphics};
 use extra_data::ExtraData;
 use ggez::{Context, GameResult};
@@ -93,7 +93,7 @@ pub trait GenericCharacterBehaviour {
 
     fn would_be_hit(
         &self,
-        input: &InputBuffer,
+        input: &[InputState],
         touched: bool,
         total_info: Option<HitInfo>,
     ) -> HitType;
@@ -124,9 +124,9 @@ pub trait GenericCharacterBehaviour {
 
     fn handle_hitstun(&mut self);
 
-    fn handle_input(&mut self, input: &InputBuffer);
+    fn handle_input(&mut self, input: &[InputState]);
 
-    fn on_enter_move(&mut self, input: &InputBuffer, move_id: Self::MoveId);
+    fn on_enter_move(&mut self, input: &[InputState], move_id: Self::MoveId);
 
     fn update_velocity(&mut self, play_area: &PlayArea);
     fn update_position(&mut self, play_area: &PlayArea);
@@ -141,7 +141,7 @@ pub trait GenericCharacterBehaviour {
     fn clamp_spirit(&mut self);
 
     fn handle_refacing(&mut self, other_player: collision::Int);
-    fn update_frame_mut(&mut self, input: &InputBuffer, play_area: &PlayArea);
+    fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea);
 
     fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
 

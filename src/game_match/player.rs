@@ -1,6 +1,6 @@
 use super::{PlayArea, Shadow};
 use crate::hitbox::PositionedHitbox;
-use crate::input::InputBuffer;
+use crate::input::InputState;
 use crate::roster::generic_character::hit_info::{HitInfo, HitType};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::AttackList;
@@ -45,7 +45,7 @@ impl Player {
 
     pub fn would_be_hit(
         &self,
-        input: &InputBuffer,
+        input: &[InputState],
         touched: bool,
         info: Option<HitInfo>,
     ) -> HitType {
@@ -76,7 +76,7 @@ impl Player {
     pub fn handle_refacing(&mut self, other_player: collision::Int) {
         self.state.handle_refacing(other_player);
     }
-    pub fn update(&mut self, input: &InputBuffer, play_area: &PlayArea) {
+    pub fn update(&mut self, input: &[InputState], play_area: &PlayArea) {
         self.state.update_frame_mut(input, play_area);
     }
     pub fn draw(

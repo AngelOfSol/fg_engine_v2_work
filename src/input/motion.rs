@@ -1,157 +1,7 @@
-use super::{Axis, Button, ButtonSet, ButtonState, Facing, InputState, MOTION_DIRECTION_SIZE};
-use crate::character::components::Guard;
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum Direction {
-    Forward,
-    Backward,
-}
-
-impl Direction {
-    fn invert(self) -> Self {
-        match self {
-            Direction::Forward => Direction::Backward,
-            Direction::Backward => Direction::Forward,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum DirectedAxis {
-    Up,
-    Down,
-    Forward,
-    Backward,
-    Neutral,
-    UpForward,
-    UpBackward,
-    DownForward,
-    DownBackward,
-}
-
-impl DirectedAxis {
-    pub fn direction_multiplier(self, facing: bool) -> i32 {
-        let facing = if facing { 1 } else { -1 };
-        let self_value = match self {
-            DirectedAxis::Forward | DirectedAxis::UpForward | DirectedAxis::DownForward => 1,
-            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward => -1,
-            _ => 0,
-        };
-        facing * self_value
-    }
-
-    pub fn is_cardinal(self) -> bool {
-        match self {
-            DirectedAxis::Forward
-            | DirectedAxis::Up
-            | DirectedAxis::Backward
-            | DirectedAxis::Down => true,
-            _ => false,
-        }
-    }
-    pub fn matches_cardinal(self, target: DirectedAxis) -> bool {
-        target.is_cardinal()
-            && match target {
-                DirectedAxis::Forward => match self {
-                    DirectedAxis::UpForward | DirectedAxis::DownForward | DirectedAxis::Forward => {
-                        true
-                    }
-                    _ => false,
-                },
-                DirectedAxis::Up => match self {
-                    DirectedAxis::UpForward | DirectedAxis::UpBackward | DirectedAxis::Up => true,
-                    _ => false,
-                },
-                DirectedAxis::Backward => match self {
-                    DirectedAxis::UpBackward
-                    | DirectedAxis::DownBackward
-                    | DirectedAxis::Backward => true,
-                    _ => false,
-                },
-                DirectedAxis::Down => match self {
-                    DirectedAxis::DownForward | DirectedAxis::DownBackward | DirectedAxis::Down => {
-                        true
-                    }
-                    _ => false,
-                },
-                _ => unreachable!(),
-            }
-    }
-
-    pub fn is_backward(self) -> bool {
-        match self {
-            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward => true,
-            _ => false,
-        }
-    }
-    pub fn is_down(self) -> bool {
-        match self {
-            DirectedAxis::Down | DirectedAxis::DownBackward | DirectedAxis::DownForward => true,
-            _ => false,
-        }
-    }
-
-    pub fn invert(self) -> Self {
-        match self {
-            DirectedAxis::Forward => DirectedAxis::Backward,
-            DirectedAxis::DownForward => DirectedAxis::DownBackward,
-            DirectedAxis::UpForward => DirectedAxis::UpBackward,
-            DirectedAxis::Backward => DirectedAxis::Forward,
-            DirectedAxis::DownBackward => DirectedAxis::DownForward,
-            DirectedAxis::UpBackward => DirectedAxis::UpForward,
-            value => value,
-        }
-    }
-    pub fn from_facing(item: Axis, facing: Facing) -> Self {
-        let ret = match item {
-            Axis::Up => DirectedAxis::Up,
-            Axis::Down => DirectedAxis::Down,
-            Axis::Right => DirectedAxis::Forward,
-            Axis::Left => DirectedAxis::Backward,
-            Axis::Neutral => DirectedAxis::Neutral,
-            Axis::UpRight => DirectedAxis::UpForward,
-            Axis::UpLeft => DirectedAxis::UpBackward,
-            Axis::DownRight => DirectedAxis::DownForward,
-            Axis::DownLeft => DirectedAxis::DownBackward,
-        };
-
-        if facing == Facing::Left {
-            ret.invert()
-        } else {
-            ret
-        }
-    }
-
-    pub fn is_horizontal(self) -> bool {
-        match self {
-            DirectedAxis::Up | DirectedAxis::Neutral | DirectedAxis::Down => false,
-            _ => true,
-        }
-    }
-
-    pub fn is_blocking(self, guard: Guard) -> bool {
-        match guard {
-            Guard::Mid => true,
-            Guard::High => !self.is_down(),
-            Guard::Low => self.is_down(),
-        }
-    }
-}
-impl From<Axis> for DirectedAxis {
-    fn from(item: Axis) -> Self {
-        match item {
-            Axis::Up => DirectedAxis::Up,
-            Axis::Down => DirectedAxis::Down,
-            Axis::Right => DirectedAxis::Forward,
-            Axis::Left => DirectedAxis::Backward,
-            Axis::Neutral => DirectedAxis::Neutral,
-            Axis::UpRight => DirectedAxis::UpForward,
-            Axis::UpLeft => DirectedAxis::UpBackward,
-            Axis::DownRight => DirectedAxis::DownForward,
-            Axis::DownLeft => DirectedAxis::DownBackward,
-        }
-    }
-}
+use super::axis::{Axis, DirectedAxis, Direction, Facing};
+use super::button::{Button, ButtonSet, ButtonState};
+use super::input_coalesce::InputCoalesce;
+use super::{InputState, MOTION_DIRECTION_SIZE};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Input {
@@ -192,14 +42,17 @@ fn read_button_set(button_list: [ButtonState; 4], check_state: ButtonState) -> O
     buttons
 }
 
-pub fn read_inputs(buffer: impl Iterator<Item = InputState> + Clone, facing: Facing) -> Vec<Input> {
+pub fn read_inputs<'a>(
+    buffer: impl Iterator<Item = &'a InputState> + Clone,
+    facing: Facing,
+) -> Vec<Input> {
     [
-        read_super_jump_new(buffer.clone()),
-        read_dragon_punch_new(buffer.clone()),
-        read_quarter_circle_new(buffer.clone()),
-        read_button_press_new(buffer.clone()),
-        read_double_tap_new(buffer.clone()),
-        read_idle_new(buffer),
+        read_super_jump(buffer.clone()),
+        read_dragon_punch(buffer.clone()),
+        read_quarter_circle(buffer.clone()),
+        read_button_press(buffer.clone()),
+        read_double_tap(buffer.clone()),
+        read_idle(buffer),
     ]
     .iter()
     .flatten()
@@ -214,10 +67,13 @@ pub fn read_inputs(buffer: impl Iterator<Item = InputState> + Clone, facing: Fac
     .collect()
 }
 
-pub fn read_idle_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+pub fn read_idle<'a>(mut buffer: impl Iterator<Item = &'a InputState> + Clone) -> Option<Input> {
     buffer.next().map(|item| Input::Idle(item.axis.into()))
 }
-pub fn read_double_tap_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+
+pub fn read_double_tap<'a>(
+    mut buffer: impl Iterator<Item = &'a InputState> + Clone,
+) -> Option<Input> {
     for _ in 0..8 {
         let mut buffer = InputCoalesce::new(
             {
@@ -260,7 +116,9 @@ pub fn read_double_tap_new(mut buffer: impl Iterator<Item = InputState> + Clone)
     None
 }
 
-fn read_button_press_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+fn read_button_press<'a>(
+    mut buffer: impl Iterator<Item = &'a InputState> + Clone,
+) -> Option<Input> {
     for _ in 0..8 {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             return Some(Input::PressButton(
@@ -273,8 +131,8 @@ fn read_button_press_new(mut buffer: impl Iterator<Item = InputState> + Clone) -
     None
 }
 
-fn read_recent_button_set(
-    mut buffer: impl Iterator<Item = InputState> + Clone,
+fn read_recent_button_set<'a>(
+    mut buffer: impl Iterator<Item = &'a InputState> + Clone,
 ) -> Option<ButtonSet> {
     buffer
         .next()
@@ -306,7 +164,7 @@ enum ReadInput {
 
 use maplit::hashset;
 
-fn read_super_jump_new(buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+fn read_super_jump<'a>(buffer: impl Iterator<Item = &'a InputState> + Clone) -> Option<Input> {
     let buffer = InputCoalesce::new(buffer.map(|item| item.axis));
 
     let super_jump_right = vec![
@@ -356,7 +214,9 @@ fn read_super_jump_new(buffer: impl Iterator<Item = InputState> + Clone) -> Opti
     None
 }
 
-fn read_dragon_punch_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+fn read_dragon_punch<'a>(
+    mut buffer: impl Iterator<Item = &'a InputState> + Clone,
+) -> Option<Input> {
     for _ in 0..8 {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             let buffer = InputCoalesce::new(
@@ -399,7 +259,9 @@ fn read_dragon_punch_new(mut buffer: impl Iterator<Item = InputState> + Clone) -
     None
 }
 
-fn read_quarter_circle_new(mut buffer: impl Iterator<Item = InputState> + Clone) -> Option<Input> {
+fn read_quarter_circle<'a>(
+    mut buffer: impl Iterator<Item = &'a InputState> + Clone,
+) -> Option<Input> {
     for _ in 0..8 {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             let buffer = InputCoalesce::new(
@@ -488,53 +350,5 @@ impl ReadInput {
                 ReadInputAction::Pass => break true,
             }
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-struct InputCoalesce<I, V> {
-    iter: I,
-    value: Option<V>,
-}
-
-impl<I, V> InputCoalesce<I, V>
-where
-    I: Iterator<Item = V>,
-    V: PartialEq,
-{
-    pub fn new(iter: I) -> Self {
-        Self { iter, value: None }
-    }
-}
-
-use std::iter::Iterator;
-
-impl<I, V> Iterator for InputCoalesce<I, V>
-where
-    I: Iterator<Item = V>,
-    V: PartialEq,
-{
-    type Item = (I::Item, usize);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (mut count, value) = match self.value.take() {
-            Some(value) => (1, value),
-            None => (1, self.iter.next()?),
-        };
-
-        let new_value = loop {
-            if let Some(new_value) = self.iter.next() {
-                if new_value == value {
-                    count += 1;
-                } else {
-                    break Some(new_value);
-                }
-            } else {
-                break None;
-            };
-        };
-        self.value = new_value;
-
-        Some((value, count))
     }
 }

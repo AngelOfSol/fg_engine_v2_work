@@ -4,7 +4,6 @@ use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
-use std::convert::TryInto;
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{Display, EnumCount, EnumIter};
 
@@ -139,22 +138,13 @@ impl AppState for CharacterSelect {
                     Ok(next_state(
                         ctx,
                         self.selected_characters_id
-                            .iter()
-                            .map(|idx| Character::iter().nth(*idx).unwrap())
-                            .collect::<Vec<_>>()
-                            .try_into()
-                            .unwrap(),
-                        self.select_by
-                            .iter()
-                            .map(|item| match item {
-                                SelectBy::Local(gamepad) => control_schemes
-                                    .get(gamepad)
-                                    .cloned()
-                                    .unwrap_or(PadControlScheme::new(*gamepad)),
-                            })
-                            .collect::<Vec<_>>()
-                            .try_into()
-                            .unwrap(),
+                            .map(|idx| Character::iter().nth(idx).unwrap()),
+                        self.select_by.map(|item| match item {
+                            SelectBy::Local(gamepad) => control_schemes
+                                .get(&gamepad)
+                                .cloned()
+                                .unwrap_or(PadControlScheme::new(gamepad)),
+                        }),
                     ))
                 }
                 NextState::Back => Ok(Transition::Pop),

@@ -1,7 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::Match;
 use crate::input::control_scheme::PadControlScheme;
-use crate::input::InputBuffer;
+use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType};
@@ -12,7 +12,7 @@ enum NextState {
 
 pub struct TrainingMode {
     next: Option<NextState>,
-    inputs: PlayerData<InputBuffer>,
+    inputs: PlayerData<Vec<InputState>>,
     controls: PlayerData<PadControlScheme>,
     game_state: Match,
 }
@@ -21,7 +21,7 @@ impl TrainingMode {
     pub fn new(ctx: &mut Context, controls: PlayerData<PadControlScheme>) -> GameResult<Self> {
         Ok(Self {
             next: None,
-            inputs: [InputBuffer::new(), InputBuffer::new()].into(),
+            inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
             controls,
             game_state: Match::new(ctx)?,
         })
@@ -42,7 +42,7 @@ impl AppState for TrainingMode {
 
         // only iterates over the first player
         for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()).take(1) {
-            let mut current_frame = input.top().clone();
+            let mut current_frame = input.last().unwrap().clone();
             for event in events.iter() {
                 let Event { id, event, .. } = event;
                 if *id == control_scheme.gamepad {
@@ -57,13 +57,14 @@ impl AppState for TrainingMode {
                     }
                 }
             }
-            *input.top_mut() = current_frame;
+            *input.last_mut().unwrap() = current_frame;
         }
         while ggez::timer::check_update_time(ctx, 60) {
-            self.game_state.update(&self.inputs)?;
+            self.game_state
+                .update(self.inputs.as_ref().map(|item| item.as_slice()))?;
             for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()) {
-                input.push(input.top().clone());
-                *input.top_mut() = control_scheme.update_frame(*input.top());
+                input.push(input.last().unwrap().clone());
+                *input.last_mut().unwrap() = control_scheme.update_frame(*input.last().unwrap());
             }
         }
 
