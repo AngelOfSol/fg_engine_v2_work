@@ -1,6 +1,8 @@
+use super::gameplay::local_versus::LocalVersus;
 use super::gameplay::training_mode::TrainingMode;
 use super::gameplay::{CharacterSelect, ControllerSelect, SelectBy};
 use super::SettingsMenu;
+
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
@@ -57,6 +59,9 @@ impl AppState for MainMenu {
                     ))))
                 }
                 NextState::VsModeControllerSelect => {
+                    let to_versus = Box::new(|ctx: &mut Context, _, controls| {
+                        Transition::Replace(Box::new(LocalVersus::new(ctx, controls).unwrap()))
+                    });
                     let to_character_select =
                         Box::new(|player_data: PlayerData<Option<GamepadId>>| {
                             Transition::Replace(Box::new(CharacterSelect::new(
@@ -65,7 +70,7 @@ impl AppState for MainMenu {
                                     SelectBy::Local(player_data.p2().unwrap()),
                                 ]
                                 .into(),
-                                Box::new(|_, _, _| Transition::Pop),
+                                to_versus,
                             )))
                         });
                     Ok(Transition::Push(Box::new(ControllerSelect::new(
