@@ -42,29 +42,29 @@ impl AppState for TrainingMode {
 
         // only iterates over the first player
         for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()).take(1) {
-            let mut current_frame = input.last().unwrap().clone();
+            let current_frame = input.last_mut().unwrap();
             for event in events.iter() {
                 let Event { id, event, .. } = event;
                 if *id == control_scheme.gamepad {
                     match event {
                         EventType::ButtonPressed(button, _) => {
-                            current_frame = control_scheme.handle_press(*button, current_frame);
+                            control_scheme.handle_press(*button, current_frame);
                         }
                         EventType::ButtonReleased(button, _) => {
-                            current_frame = control_scheme.handle_release(*button, current_frame);
+                            control_scheme.handle_release(*button, current_frame);
                         }
                         _ => (),
                     }
                 }
             }
-            *input.last_mut().unwrap() = current_frame;
         }
         while ggez::timer::check_update_time(ctx, 60) {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()))?;
             for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()) {
-                input.push(input.last().unwrap().clone());
-                *input.last_mut().unwrap() = control_scheme.update_frame(*input.last().unwrap());
+                let mut last_frame = input.last().unwrap().clone();
+                control_scheme.update_frame(&mut last_frame);
+                input.push(last_frame);
             }
         }
 
