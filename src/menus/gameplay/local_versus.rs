@@ -1,10 +1,11 @@
+use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::Match;
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Event, EventType};
+use gilrs::{Event, EventType, GamepadId};
 
 enum NextState {
     Back,
@@ -13,16 +14,28 @@ enum NextState {
 pub struct LocalVersus {
     next: Option<NextState>,
     inputs: PlayerData<Vec<InputState>>,
-    controls: PlayerData<PadControlScheme>,
+    players: PlayerData<GamepadId>,
     game_state: Match,
+}
+impl FromCharacters<LocalSelect, LocalSelect> for LocalVersus {
+    fn from_characters(
+        ctx: &mut Context,
+        p1: LocalSelect,
+        p2: LocalSelect,
+    ) -> GameResult<Box<Self>> {
+        Ok(Box::new(LocalVersus::new(
+            ctx,
+            [p1.gamepad, p2.gamepad].into(),
+        )?))
+    }
 }
 
 impl LocalVersus {
-    pub fn new(ctx: &mut Context, controls: PlayerData<PadControlScheme>) -> GameResult<Self> {
+    pub fn new(ctx: &mut Context, players: PlayerData<GamepadId>) -> GameResult<Self> {
         Ok(Self {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
-            controls,
+            players,
             game_state: Match::new(ctx)?,
         })
     }
@@ -32,7 +45,11 @@ impl AppState for LocalVersus {
     fn update(
         &mut self,
         ctx: &mut Context,
-        &mut AppContext { ref mut pads, .. }: &mut AppContext,
+        &mut AppContext {
+            ref mut pads,
+            ref control_schemes,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         let mut events = Vec::new();
         while let Some(event) = pads.next_event() {
@@ -41,7 +58,8 @@ impl AppState for LocalVersus {
         let events = events;
 
         // only iterates over the first player
-        for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()) {
+        for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
+            let control_scheme = &control_schemes[player];
             let current_frame = input.last_mut().unwrap();
             for event in events.iter() {
                 let Event { id, event, .. } = event;
@@ -60,8 +78,9 @@ impl AppState for LocalVersus {
         }
         while ggez::timer::check_update_time(ctx, 60) {
             self.game_state
-                .update(self.inputs.as_ref().map(|item| item.as_slice()))?;
-            for (input, control_scheme) in self.inputs.iter_mut().zip(self.controls.iter()) {
+                .update(self.inputs.as_ref().map(|item| item.as_slice()));
+            for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
+                let control_scheme = &control_schemes[player];
                 let mut last_frame = input.last().unwrap().clone();
                 control_scheme.update_frame(&mut last_frame);
                 input.push(last_frame);
@@ -75,7 +94,19 @@ impl AppState for LocalVersus {
             None => Ok(Transition::None),
         }
     }
-    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+    fn on_enter(
+        &mut self,
+        _: &mut Context,
+        &mut AppContext {
+            ref mut control_schemes,
+            ..
+        }: &mut AppContext,
+    ) -> GameResult<()> {
+        for player in self.players.iter() {
+            control_schemes
+                .entry(*player)
+                .or_insert(PadControlScheme::new(*player));
+        }
         Ok(())
     }
     fn draw(&mut self, ctx: &mut Context, AppContext { .. }: &mut AppContext) -> GameResult<()> {

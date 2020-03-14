@@ -4,6 +4,7 @@ use ggez::graphics::{DrawParam, Image};
 use ggez::{Context, GameResult};
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct Stage {
     image: Image,
 }

@@ -2,6 +2,7 @@ mod player;
 
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
+use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::{Yuyuko, YuyukoState};
@@ -16,17 +17,36 @@ use player::Player;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct PlayArea {
     pub width: i32,
 }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 
+#[derive(Clone)]
 pub struct Match {
     players: PlayerData<Player>,
     background: Stage,
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
+}
+
+impl RollbackableGameState for Match {
+    type Input = InputState;
+    type SavedState = Match;
+
+    fn advance_frame(&mut self, input: InputSet<'_, Self::Input>) {
+        self.update([input.inputs[0], input.inputs[1]].into())
+    }
+
+    fn save_state(&self) -> Self::SavedState {
+        self.clone()
+    }
+
+    fn load_state(&mut self, load: Self::SavedState) {
+        *self = load;
+    }
 }
 
 impl Match {
@@ -60,7 +80,7 @@ impl Match {
 }
 
 impl Match {
-    pub fn update(&mut self, input: PlayerData<&[InputState]>) -> GameResult<()> {
+    pub fn update(&mut self, input: PlayerData<&[InputState]>) {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             player.update(input, &self.play_area);
         }
@@ -191,8 +211,6 @@ impl Match {
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.play_area);
         }
-
-        Ok(())
     }
     pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)?;
@@ -255,7 +273,7 @@ impl Match {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        let show_combo = true;
+        let show_combo = false;
         if show_combo {
             self.debug_text.fragments_mut()[0].text = format!(
                 "{}, {}",

@@ -11,6 +11,7 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 
+#[derive(Clone)]
 // TODO make this generic
 pub struct Player {
     pub state: YuyukoState,

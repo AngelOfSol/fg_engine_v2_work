@@ -26,6 +26,7 @@ mod stage;
 mod command_list;
 #[macro_use]
 mod input_macros;
+mod netcode;
 mod app_state;
 
 fn main() {

@@ -1,6 +1,9 @@
 use super::gameplay::local_versus::LocalVersus;
+use super::gameplay::netplay_versus::NetplayVersus;
 use super::gameplay::training_mode::TrainingMode;
-use super::gameplay::{CharacterSelect, ControllerSelect, SelectBy};
+use super::gameplay::{
+    CharacterSelect, ControllerSelect, LocalSelect, NetworkConnect, NetworkSelect,
+};
 use super::SettingsMenu;
 
 use crate::app_state::{AppContext, AppState, Transition};
@@ -17,6 +20,7 @@ enum NextState {
     Settings,
     TrainingModeControllerSelect,
     VsModeControllerSelect,
+    NetworkSelect,
 }
 
 pub struct MainMenu {
@@ -40,18 +44,38 @@ impl AppState for MainMenu {
                 NextState::Quit => Ok(Transition::Pop),
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
-                NextState::TrainingModeControllerSelect => {
-                    let to_training_mode = Box::new(|ctx: &mut Context, _, controls| {
-                        Transition::Replace(Box::new(TrainingMode::new(ctx, controls).unwrap()))
+                NextState::NetworkSelect => {
+                    let to_character_select = Box::new(|p1, id, net, target| {
+                        if p1 {
+                            Transition::Replace(Box::new(
+                                CharacterSelect::<_, _, NetplayVersus>::new(
+                                    LocalSelect::new(id),
+                                    NetworkSelect::new(net, target),
+                                ),
+                            ))
+                        } else {
+                            Transition::Replace(Box::new(
+                                CharacterSelect::<_, _, NetplayVersus>::new(
+                                    NetworkSelect::new(net, target),
+                                    LocalSelect::new(id),
+                                ),
+                            ))
+                        }
                     });
-
+                    //
+                    Ok(Transition::Push(Box::new(NetworkConnect::new(
+                        to_character_select,
+                    )?)))
+                }
+                NextState::TrainingModeControllerSelect => {
                     let to_character_select =
                         Box::new(move |player_data: PlayerData<Option<GamepadId>>| {
-                            Transition::Replace(Box::new(CharacterSelect::new(
-                                [SelectBy::Local(player_data.p1().unwrap()); 2].into(),
-                                to_training_mode,
-                            )))
-                            //
+                            Transition::Replace(Box::new(
+                                CharacterSelect::<_, _, TrainingMode>::new(
+                                    LocalSelect::new(player_data.p1().unwrap()),
+                                    LocalSelect::new(player_data.p1().unwrap()),
+                                ),
+                            ))
                         });
                     Ok(Transition::Push(Box::new(ControllerSelect::new(
                         [true, false].into(),
@@ -59,19 +83,14 @@ impl AppState for MainMenu {
                     ))))
                 }
                 NextState::VsModeControllerSelect => {
-                    let to_versus = Box::new(|ctx: &mut Context, _, controls| {
-                        Transition::Replace(Box::new(LocalVersus::new(ctx, controls).unwrap()))
-                    });
                     let to_character_select =
                         Box::new(|player_data: PlayerData<Option<GamepadId>>| {
-                            Transition::Replace(Box::new(CharacterSelect::new(
-                                [
-                                    SelectBy::Local(player_data.p1().unwrap()),
-                                    SelectBy::Local(player_data.p2().unwrap()),
-                                ]
-                                .into(),
-                                to_versus,
-                            )))
+                            Transition::Replace(Box::new(
+                                CharacterSelect::<_, _, LocalVersus>::new(
+                                    LocalSelect::new(player_data.p1().unwrap()),
+                                    LocalSelect::new(player_data.p2().unwrap()),
+                                ),
+                            ))
                         });
                     Ok(Transition::Push(Box::new(ControllerSelect::new(
                         [true, true].into(),
@@ -101,6 +120,9 @@ impl AppState for MainMenu {
                     }
                     if ui.small_button(im_str!("Training Mode")) {
                         self.next = Some(NextState::TrainingModeControllerSelect);
+                    }
+                    if ui.small_button(im_str!("Network")) {
+                        self.next = Some(NextState::NetworkSelect);
                     }
                     if ui.small_button(im_str!("Settings")) {
                         self.next = Some(NextState::Settings);
