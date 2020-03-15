@@ -7,7 +7,7 @@ use crate::{make_command_list, numpad, read_axis};
 
 pub fn generate_command_list() -> CommandList<MoveId> {
     make_command_list! {
-        numpad!(1 A B), numpad!(2 A B), numpad!(5 A B), numpad!(4 A B), numpad!(6 A B), numpad!(7 A B), numpad!(8 A B), numpad!(9 A B) => MoveId::FlyStart,
+        numpad!(1 A B), numpad!(2 A B), numpad!(3 A B), numpad!(4 A B), numpad!(5 A B), numpad!(6 A B), numpad!(7 A B), numpad!(8 A B), numpad!(9 A B) => MoveId::FlyStart,
 
         numpad!(6 A B), numpad!(66) => MoveId::ForwardDashStart,
         numpad!(4 A B), numpad!(44) => MoveId::BackDash,

@@ -6,7 +6,7 @@ use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
 use laminar::{Config, Packet, Socket, SocketEvent};
 use std::fmt::Display;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::{Duration, Instant};
 
 enum NextState {
@@ -67,8 +67,13 @@ impl NetworkConnect {
                             .find(|item| item.is_ipv4())
                             .cloned()
                     })
-                    .map(|ip| ip.to_string() + ":10800")
-                    .unwrap_or("127.0.0.1:10800".to_owned()),
+                    .map(|ip| vec![ip.to_string() + ":10800", ip.to_string() + ":10801"])
+                    .unwrap_or(vec!["127.0.0.1:10800".to_owned()])
+                    .into_iter()
+                    .flat_map(|item| item.to_socket_addrs().ok())
+                    .flatten()
+                    .collect::<Vec<SocketAddr>>()
+                    .as_slice(),
                 Config {
                     blocking_mode: false,
                     rtt_max_value: 2000,
@@ -204,8 +209,17 @@ impl AppState for NetworkConnect {
 
                     if self.connected {
                         ui.text("Press start on the controller you want to use to continue.");
-                    } else if let PotentialAddress::Address(_) = self.target_addr {
-                        ui.text("Trying to connect.");
+                    } else if let PotentialAddress::Address(addr) = self.target_addr {
+                        if ui.small_button(im_str!("Try to connect!")) {
+                            let _ = self
+                                .socket
+                                .send(Packet::reliable_sequenced(addr, vec![], None))
+                                .map_err(|_| {
+                                    ggez::GameError::EventLoopError(
+                                        "Could not send packet".to_owned(),
+                                    )
+                                });
+                        }
                     }
                 });
             })

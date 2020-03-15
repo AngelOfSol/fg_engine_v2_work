@@ -1,6 +1,6 @@
 use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::Match;
+use crate::game_match::{MatchSettings, NoLogMatch as Match};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
@@ -36,7 +36,7 @@ impl LocalVersus {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
             players,
-            game_state: Match::new(ctx)?,
+            game_state: Match::new(ctx, MatchSettings {}, ().into())?,
         })
     }
 }

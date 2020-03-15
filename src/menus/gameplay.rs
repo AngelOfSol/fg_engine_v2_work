@@ -5,6 +5,7 @@ mod netcode_select;
 pub mod local_versus;
 pub mod netplay_versus;
 pub mod training_mode;
+pub mod watch_replay;
 
 pub use character_select::{
     Character, CharacterSelect, FromCharacters, LocalSelect, NetworkSelect,

@@ -1,6 +1,7 @@
 use super::gameplay::local_versus::LocalVersus;
 use super::gameplay::netplay_versus::NetplayVersus;
 use super::gameplay::training_mode::TrainingMode;
+use super::gameplay::watch_replay::WatchReplay;
 use super::gameplay::{
     CharacterSelect, ControllerSelect, LocalSelect, NetworkConnect, NetworkSelect,
 };
@@ -21,6 +22,7 @@ enum NextState {
     TrainingModeControllerSelect,
     VsModeControllerSelect,
     NetworkSelect,
+    WatchReplay,
 }
 
 pub struct MainMenu {
@@ -36,7 +38,7 @@ impl MainMenu {
 impl AppState for MainMenu {
     fn update(
         &mut self,
-        _: &mut Context,
+        ctx: &mut Context,
         _: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         match std::mem::replace(&mut self.next, None) {
@@ -97,6 +99,10 @@ impl AppState for MainMenu {
                         to_character_select,
                     ))))
                 }
+                NextState::WatchReplay => {
+                    let file = std::io::BufReader::new(std::fs::File::open("test.rep")?);
+                    Ok(Transition::Push(Box::new(WatchReplay::new(ctx, file)?)))
+                }
             },
             None => Ok(Transition::None),
         }
@@ -123,6 +129,9 @@ impl AppState for MainMenu {
                     }
                     if ui.small_button(im_str!("Network")) {
                         self.next = Some(NextState::NetworkSelect);
+                    }
+                    if ui.small_button(im_str!("Watch Replay")) {
+                        self.next = Some(NextState::WatchReplay);
                     }
                     if ui.small_button(im_str!("Settings")) {
                         self.next = Some(NextState::Settings);

@@ -105,18 +105,31 @@ TODO (2/15/2020):
     [x] have it read null input for p2
     [x] pass those to the match
     [x] RENDER
-    [] move to standard array iteration for input buffer
+    [x] move to standard array iteration for input buffer
     [x] increase buffer window on input buffer
         [x] for each button press start in the last X frames
             [x] collate what button presses happened before it within Y frames, and pair them
             [x] check if from that point onward, the motion is valid
                 [x] if so emit the input
+    [] add replay support
+        [] logger to file
+        [] save match settings to file
+        [] save inputs to same file 
+    [] add sound support
+        [] support hit sound slot
+        [] support hit sound
+        [] support block sound
+        [] support wrongblock sound
+        [] support voice slot 
+        [] support counter hit sound
+    [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
     [] add box<character> to gameplay
     [] expose each character to the training_mode so it can reset its hp
     [] reset HP when player hits idle 
     [] superjump macro is 1/2/3AB in neutral
+    [x] rollback netcode
 
 // probably this one cause its more explicit
 https://docs.rs/enum_dispatch/0.2.1/enum_dispatch/
