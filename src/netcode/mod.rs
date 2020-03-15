@@ -75,18 +75,23 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
         }
     }
 
+    #[allow(dead_code)]
     pub fn input_delay(&self) -> usize {
         self.input_delay
     }
     pub fn set_input_delay(&mut self, value: usize) {
         self.input_delay = value;
     }
+
+    #[allow(dead_code)]
     pub fn allowed_rollback(&self) -> usize {
         self.allowed_rollback
     }
     pub fn set_allowed_rollback(&mut self, value: usize) {
         self.allowed_rollback = value;
     }
+
+    #[allow(dead_code)]
     pub fn packet_buffer_size(&self) -> usize {
         self.packet_buffer_size
     }
@@ -111,6 +116,7 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
         self.network_delay.insert(player, value);
     }
 
+    #[allow(dead_code)]
     pub fn current_frame(&self) -> usize {
         self.current_frame
     }
