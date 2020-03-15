@@ -42,7 +42,7 @@ impl LocalVersus {
             players,
             game_state: NetplayMatch::new(
                 ctx,
-                MatchSettings {},
+                MatchSettings::new().build(),
                 crate::replay::create_new_replay_file("local")?,
             )?,
         })
