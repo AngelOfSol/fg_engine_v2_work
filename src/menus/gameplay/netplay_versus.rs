@@ -8,8 +8,6 @@ use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
 use laminar::{Packet as SocketPacket, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::BufWriter;
 use std::net::SocketAddr;
 use std::time::Instant;
 

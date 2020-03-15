@@ -7,9 +7,6 @@ use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
 
-use std::fs::File;
-use std::io::BufWriter;
-
 type TrainingMatch = Match<crate::replay::ReplayWriterFile>;
 
 enum NextState {

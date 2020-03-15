@@ -1,4 +1,8 @@
+mod match_settings;
+mod noop_writer;
 mod player;
+
+pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
 
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
@@ -13,29 +17,11 @@ use crate::typedefs::player::PlayerData;
 use gfx::{self, *};
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
+use noop_writer::NoopWriter;
 use player::Player;
-use serde::{Deserialize, Serialize};
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
-
-pub struct NoopWriter;
-
-impl From<()> for NoopWriter {
-    fn from(_: ()) -> Self {
-        NoopWriter
-    }
-}
-
-impl Write for NoopWriter {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
 
 #[derive(Clone)]
 pub struct PlayArea {
@@ -60,49 +46,6 @@ pub struct Match<Writer> {
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct MatchSettings {
-    replay_version: usize,
-}
-
-pub struct MatchSettingsBuilder {}
-
-pub enum MatchSettingsError {
-    ReplayVersionMismatch,
-    DeserializeError(bincode::Error),
-}
-
-impl From<bincode::Error> for MatchSettingsError {
-    fn from(value: bincode::Error) -> MatchSettingsError {
-        MatchSettingsError::DeserializeError(value)
-    }
-}
-
-impl MatchSettings {
-    pub fn new() -> MatchSettingsBuilder {
-        MatchSettingsBuilder {}
-    }
-
-    pub fn replay_version(&self) -> usize {
-        self.replay_version
-    }
-    pub fn validate(&self) -> Result<(), MatchSettingsError> {
-        if self.replay_version != crate::typedefs::REPLAY_VERSION {
-            return Err(MatchSettingsError::ReplayVersionMismatch);
-        }
-
-        Ok(())
-    }
-}
-
-impl MatchSettingsBuilder {
-    pub fn build(self) -> MatchSettings {
-        MatchSettings {
-            replay_version: crate::typedefs::REPLAY_VERSION,
-        }
-    }
-}
 
 impl<Writer: Write> Match<Writer> {
     pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
