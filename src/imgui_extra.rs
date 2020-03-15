@@ -251,8 +251,10 @@ impl<'a> UiExtensions for Ui<'a> {
 
     fn input_string(&self, label: &ImStr, value: &mut String) -> bool {
         let mut buffer = im_str_owned!("{}", value.clone());
-        buffer.reserve_exact(16);
-        let changed = self.input_text(label, &mut buffer).build();
+        let changed = self
+            .input_text(label, &mut buffer)
+            .resize_buffer(true)
+            .build();
         if changed {
             *value = buffer.to_str().to_owned();
         }

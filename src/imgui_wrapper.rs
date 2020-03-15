@@ -1,14 +1,40 @@
+use clipboard::ClipboardProvider;
 use gfx_core::{handle::RenderTargetView, memory::Typed};
 use gfx_device_gl;
 use ggez::graphics;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::Context;
 use imgui::*;
+use imgui::{ImStr, ImString};
 use imgui_gfx_renderer::*;
 use std::marker::PhantomData;
 use std::time::Instant;
 
 type RendererType = imgui_gfx_renderer::Renderer<gfx::format::Rgba8, gfx_device_gl::Resources>;
+
+struct ClipboardBackend {
+    ctx: clipboard::ClipboardContext,
+}
+
+impl ClipboardBackend {
+    fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        //TODO log clipboard errors
+        Ok(ClipboardBackend {
+            ctx: clipboard::ClipboardContext::new()?,
+        })
+    }
+}
+
+impl imgui::ClipboardBackend for ClipboardBackend {
+    fn get(&mut self) -> Option<ImString> {
+        //TODO log clipboard errors
+        Some(im_str!("{}", self.ctx.get_contents().ok()?))
+    }
+    fn set(&mut self, value: &ImStr) {
+        //TODO log clipboard errors
+        let _ = self.ctx.set_contents(value.to_str().to_owned());
+    }
+}
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 struct MouseState {
@@ -75,6 +101,10 @@ impl ImGuiWrapper {
     pub fn new(ctx: &mut Context) -> Self {
         // Create the imgui object
         let mut imgui = imgui::Context::create();
+
+        if let Ok(ctx) = ClipboardBackend::new() {
+            imgui.set_clipboard_backend(Box::new(ctx));
+        }
 
         let mut io = imgui.io_mut();
         io.key_map[Key::Tab as usize] = KeyCode::Tab as u32;
