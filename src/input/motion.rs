@@ -1,7 +1,7 @@
 use super::axis::{Axis, DirectedAxis, Direction, Facing};
 use super::button::{Button, ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
-use super::{InputState, MOTION_DIRECTION_SIZE};
+use super::{InputState, FORGIVENESS, MOTION_DIRECTION_SIZE};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Input {
@@ -74,7 +74,7 @@ pub fn read_idle<'a>(mut buffer: impl Iterator<Item = &'a InputState> + Clone) -
 pub fn read_double_tap<'a>(
     mut buffer: impl Iterator<Item = &'a InputState> + Clone,
 ) -> Option<Input> {
-    for _ in 0..8 {
+    for _ in 0..FORGIVENESS {
         let mut buffer = InputCoalesce::new(
             {
                 let new_buffer = buffer.clone();
@@ -119,7 +119,7 @@ pub fn read_double_tap<'a>(
 fn read_button_press<'a>(
     mut buffer: impl Iterator<Item = &'a InputState> + Clone,
 ) -> Option<Input> {
-    for _ in 0..8 {
+    for _ in 0..FORGIVENESS {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             return Some(Input::PressButton(
                 buffer.next().unwrap().axis.into(),
@@ -217,7 +217,7 @@ fn read_super_jump<'a>(buffer: impl Iterator<Item = &'a InputState> + Clone) -> 
 fn read_dragon_punch<'a>(
     mut buffer: impl Iterator<Item = &'a InputState> + Clone,
 ) -> Option<Input> {
-    for _ in 0..8 {
+    for _ in 0..FORGIVENESS {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             let buffer = InputCoalesce::new(
                 {
@@ -262,7 +262,7 @@ fn read_dragon_punch<'a>(
 fn read_quarter_circle<'a>(
     mut buffer: impl Iterator<Item = &'a InputState> + Clone,
 ) -> Option<Input> {
-    for _ in 0..8 {
+    for _ in 0..FORGIVENESS {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             let buffer = InputCoalesce::new(
                 {

@@ -169,6 +169,9 @@ impl AppState for NetworkConnect {
         frame
             .run(|ui| {
                 imgui::Window::new(im_str!("Network")).build(ui, || {
+                    if ui.small_button(im_str!("Back")) {
+                        self.next = Some(NextState::Back);
+                    }
                     ui.combo_items(
                         im_str!("Mode"),
                         &mut self.mode,

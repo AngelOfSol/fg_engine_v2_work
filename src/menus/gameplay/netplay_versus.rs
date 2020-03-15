@@ -13,7 +13,7 @@ use std::io::BufWriter;
 use std::net::SocketAddr;
 use std::time::Instant;
 
-type NetplayMatch = Match<BufWriter<File>>;
+type NetplayMatch = Match<crate::replay::ReplayWriterFile>;
 
 type NetcodeClient =
     Client<InputState, <NetplayMatch as crate::netcode::RollbackableGameState>::SavedState>;
@@ -146,7 +146,7 @@ impl NetplayVersus {
             game_state: NetplayMatch::new(
                 ctx,
                 MatchSettings {},
-                BufWriter::new(crate::replay::create_new_replay_file("netplay")?),
+                crate::replay::create_new_replay_file("netplay")?,
             )?,
             client,
             socket,

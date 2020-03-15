@@ -22,7 +22,7 @@ enum NextState {
     TrainingModeControllerSelect,
     VsModeControllerSelect,
     NetworkSelect,
-    WatchReplay(std::fs::File),
+    WatchReplay(crate::replay::ReplayReaderFile),
 }
 
 pub struct MainMenu {
@@ -133,7 +133,7 @@ impl AppState for MainMenu {
                     if ui.small_button(im_str!("Watch Replay")) {
                         let test = nfd::open_file_dialog(Some("rep"), None);
                         if let Ok(nfd::Response::Okay(file)) = test {
-                            if let Ok(file) = std::fs::File::open(&file) {
+                            if let Ok(file) = crate::replay::open_replay_file(&file) {
                                 self.next = Some(NextState::WatchReplay(file));
                             }
                         }

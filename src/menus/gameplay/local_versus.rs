@@ -9,7 +9,7 @@ use gilrs::{Event, EventType, GamepadId};
 use std::fs::File;
 use std::io::BufWriter;
 
-type NetplayMatch = Match<BufWriter<File>>;
+type NetplayMatch = Match<crate::replay::ReplayWriterFile>;
 
 enum NextState {
     Back,
@@ -43,7 +43,7 @@ impl LocalVersus {
             game_state: NetplayMatch::new(
                 ctx,
                 MatchSettings {},
-                BufWriter::new(crate::replay::create_new_replay_file("local")?),
+                crate::replay::create_new_replay_file("local")?,
             )?,
         })
     }
