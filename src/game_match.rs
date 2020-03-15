@@ -62,7 +62,47 @@ pub struct Match<Writer> {
 pub type NoLogMatch = Match<NoopWriter>;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct MatchSettings {}
+pub struct MatchSettings {
+    replay_version: usize,
+}
+
+pub struct MatchSettingsBuilder {}
+
+pub enum MatchSettingsError {
+    ReplayVersionMismatch,
+    DeserializeError(bincode::Error),
+}
+
+impl From<bincode::Error> for MatchSettingsError {
+    fn from(value: bincode::Error) -> MatchSettingsError {
+        MatchSettingsError::DeserializeError(value)
+    }
+}
+
+impl MatchSettings {
+    pub fn new() -> MatchSettingsBuilder {
+        MatchSettingsBuilder {}
+    }
+
+    pub fn replay_version(&self) -> usize {
+        self.replay_version
+    }
+    pub fn validate(&self) -> Result<(), MatchSettingsError> {
+        if self.replay_version != crate::typedefs::REPLAY_VERSION {
+            return Err(MatchSettingsError::ReplayVersionMismatch);
+        }
+
+        Ok(())
+    }
+}
+
+impl MatchSettingsBuilder {
+    pub fn build(self) -> MatchSettings {
+        MatchSettings {
+            replay_version: crate::typedefs::REPLAY_VERSION,
+        }
+    }
+}
 
 impl<Writer: Write> Match<Writer> {
     pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {

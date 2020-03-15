@@ -22,7 +22,10 @@ enum NextState {
     TrainingModeControllerSelect,
     VsModeControllerSelect,
     NetworkSelect,
-    WatchReplay(crate::replay::ReplayReaderFile),
+    WatchReplay(
+        crate::game_match::MatchSettings,
+        crate::replay::ReplayReaderFile,
+    ),
 }
 
 pub struct MainMenu {
@@ -99,9 +102,11 @@ impl AppState for MainMenu {
                         to_character_select,
                     ))))
                 }
-                NextState::WatchReplay(file) => {
+                NextState::WatchReplay(settings, file) => {
                     let file = std::io::BufReader::new(file);
-                    Ok(Transition::Push(Box::new(WatchReplay::new(ctx, file)?)))
+                    Ok(Transition::Push(Box::new(WatchReplay::new(
+                        ctx, settings, file,
+                    )?)))
                 }
             },
             None => Ok(Transition::None),
@@ -133,8 +138,24 @@ impl AppState for MainMenu {
                     if ui.small_button(im_str!("Watch Replay")) {
                         let test = nfd::open_file_dialog(Some("rep"), None);
                         if let Ok(nfd::Response::Okay(file)) = test {
-                            if let Ok(file) = crate::replay::open_replay_file(&file) {
-                                self.next = Some(NextState::WatchReplay(file));
+                            if let Ok(mut file) = crate::replay::open_replay_file(&file) {
+                                let settings = WatchReplay::read_match_settings(&mut file);
+                                match settings {
+                                    Ok(settings) => {
+                                        self.next = Some(NextState::WatchReplay(settings, file));
+                                    }
+                                    Err(err) => {
+                                        use crate::game_match::MatchSettingsError::*;
+                                        match err {
+                                            ReplayVersionMismatch => {
+                                                ui.open_popup(im_str!("Replay Error###ORF"))
+                                            }
+                                            DeserializeError(_) => {
+                                                ui.open_popup(im_str!("Replay Error###IRF"))
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -147,6 +168,19 @@ impl AppState for MainMenu {
                     if ui.small_button(im_str!("Quit")) {
                         self.next = Some(NextState::Quit);
                     }
+
+                    ui.popup_modal(im_str!("Replay Error###IRF")).build(|| {
+                        ui.text(im_str!("Invalid replay file."));
+                        if ui.small_button(im_str!("Close")) {
+                            ui.close_current_popup();
+                        }
+                    });
+                    ui.popup_modal(im_str!("Replay Error###ORF")).build(|| {
+                        ui.text(im_str!("Old replay file."));
+                        if ui.small_button(im_str!("Close")) {
+                            ui.close_current_popup();
+                        }
+                    });
                 });
             })
             .render(ctx);

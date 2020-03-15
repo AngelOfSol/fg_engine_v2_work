@@ -111,6 +111,10 @@ TODO (2/15/2020):
             [x] collate what button presses happened before it within Y frames, and pair them
             [x] check if from that point onward, the motion is valid
                 [x] if so emit the input
+
+    [] ASK TWITTER ABOUT SINGLE vs 2/3 ROUNDS
+
+
     [x] add replay support
         [x] logger to file
             [x] training_mode
@@ -120,6 +124,7 @@ TODO (2/15/2020):
         [x] load arbitrary file
         [x] save match settings to file
         [x] save inputs to same file
+        [x] compression 
         [] add versioning to it
     [] add sound support
         [] support hit sound slot
@@ -133,10 +138,12 @@ TODO (2/15/2020):
     [] add pause menu
     [] add box<character> to gameplay
     [] expose each character to the training_mode so it can reset its hp
-    [] reset HP when player hits idle 
+    [] reset HP when player hits idle
+    [] have replays handle multiple rounds
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
     [x] rollback netcode
+    [x] fix copy paste 
 
 // probably this one cause its more explicit
 https://docs.rs/enum_dispatch/0.2.1/enum_dispatch/

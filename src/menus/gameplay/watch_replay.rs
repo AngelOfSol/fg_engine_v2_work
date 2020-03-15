@@ -1,5 +1,5 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::NoLogMatch;
+use crate::game_match::{MatchSettings, MatchSettingsError, NoLogMatch};
 use crate::input::InputState;
 use crate::netcode::RollbackableGameState;
 use crate::typedefs::player::PlayerData;
@@ -23,9 +23,7 @@ pub struct WatchReplay<Reader> {
 }
 
 impl<Reader: Read> WatchReplay<Reader> {
-    pub fn new(ctx: &mut Context, mut reader: Reader) -> GameResult<Self> {
-        let settings = bincode::deserialize_from(&mut reader).unwrap();
-
+    pub fn new(ctx: &mut Context, settings: MatchSettings, reader: Reader) -> GameResult<Self> {
         Ok(Self {
             next: None,
             inputs: [vec![], vec![]].into(),
@@ -33,6 +31,13 @@ impl<Reader: Read> WatchReplay<Reader> {
             reader,
             game_state: ReplayMatch::new(ctx, settings, ().into())?,
         })
+    }
+
+    pub fn read_match_settings(mut reader: Reader) -> Result<MatchSettings, MatchSettingsError> {
+        let settings: MatchSettings = bincode::deserialize_from(&mut reader)?;
+        settings.validate()?;
+
+        Ok(settings)
     }
 }
 
@@ -44,7 +49,6 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
     ) -> GameResult<crate::app_state::Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             'stream_inputs: loop {
-                //value: Io(Custom { kind: UnexpectedEof, error: "failed to fill whole buffer"
                 let next_frame: i16 = match bincode::deserialize_from(&mut self.reader) {
                     Ok(value) => value,
                     Err(kind) => {
