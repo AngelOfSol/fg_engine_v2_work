@@ -22,7 +22,7 @@ use std::rc::Rc;
 pub struct NoopWriter;
 
 impl From<()> for NoopWriter {
-    fn from(value: ()) -> Self {
+    fn from(_: ()) -> Self {
         NoopWriter
     }
 }

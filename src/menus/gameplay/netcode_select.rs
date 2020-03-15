@@ -1,6 +1,5 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
-use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
@@ -86,7 +85,7 @@ impl NetworkConnect {
                 ggez::GameError::EventLoopError("Could not connect to socket.".to_owned())
             })?,
             connected: false,
-            target_addr: PotentialAddress::Almost(String::new()),
+            target_addr: PotentialAddress::Almost(String::with_capacity(30)),
             mode: Mode::Host,
             next_state,
         })
@@ -104,25 +103,22 @@ impl AppState for NetworkConnect {
         while let Some(packet) = self.socket.recv() {
             match packet {
                 SocketEvent::Packet(_) => self.connected = true,
-                SocketEvent::Connect(address) => {
+                SocketEvent::Connect(addr) => {
                     if self.mode == Mode::Host {
-                        self.target_addr = PotentialAddress::Address(address);
+                        self.target_addr = PotentialAddress::Address(addr);
                     }
-                    self.connected = true
+                    self.connected = true;
+                    self.socket
+                        .send(Packet::reliable_sequenced(addr, vec![], None))
+                        .map_err(|_| {
+                            ggez::GameError::EventLoopError("Could not send packet".to_owned())
+                        })?;
                 }
                 SocketEvent::Timeout(_) => self.connected = false,
             }
         }
 
-        while ggez::timer::check_update_time(ctx, 2) {
-            if let PotentialAddress::Address(addr) = self.target_addr {
-                self.socket
-                    .send(Packet::reliable_sequenced(addr, vec![], None))
-                    .map_err(|_| {
-                        ggez::GameError::EventLoopError("Could not send packet".to_owned())
-                    })?;
-            }
-        }
+        while ggez::timer::check_update_time(ctx, 2) {}
 
         while let Some(event) = pads.next_event() {
             match event.event {

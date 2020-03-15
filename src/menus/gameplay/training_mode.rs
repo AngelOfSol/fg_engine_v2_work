@@ -45,7 +45,7 @@ impl TrainingMode {
             game_state: TrainingMatch::new(
                 ctx,
                 MatchSettings {},
-                BufWriter::new(File::create("test.rep")?),
+                BufWriter::new(crate::replay::create_new_replay_file("training")?),
             )?,
         })
     }

@@ -1,6 +1,6 @@
 use super::{FromCharacters, LocalSelect, NetworkSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::{MatchSettings, NoLogMatch as Match};
+use crate::game_match::{Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
 use crate::netcode::{NetcodeClient as Client, Packet as NetcodeClientPacket, PlayerHandle};
@@ -8,11 +8,15 @@ use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
 use laminar::{Packet as SocketPacket, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::BufWriter;
 use std::net::SocketAddr;
 use std::time::Instant;
 
+type NetplayMatch = Match<BufWriter<File>>;
+
 type NetcodeClient =
-    Client<InputState, <Match as crate::netcode::RollbackableGameState>::SavedState>;
+    Client<InputState, <NetplayMatch as crate::netcode::RollbackableGameState>::SavedState>;
 
 enum NextState {
     Back,
@@ -27,14 +31,14 @@ pub struct NetplayVersus {
 
     start_time: Instant,
 
-    game_state: Match,
+    game_state: NetplayMatch,
     client: NetcodeClient,
 }
 impl FromCharacters<LocalSelect, LocalSelect> for NetplayVersus {
     fn from_characters(
         ctx: &mut Context,
         p1: LocalSelect,
-        p2: LocalSelect,
+        _: LocalSelect,
     ) -> GameResult<Box<Self>> {
         let mut client = NetcodeClient::new(60);
 
@@ -139,7 +143,11 @@ impl NetplayVersus {
             next: None,
             local_players,
             network_players,
-            game_state: Match::new(ctx, MatchSettings {}, ().into())?,
+            game_state: NetplayMatch::new(
+                ctx,
+                MatchSettings {},
+                BufWriter::new(crate::replay::create_new_replay_file("netplay")?),
+            )?,
             client,
             socket,
             start_time: Instant::now(),

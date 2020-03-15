@@ -88,16 +88,16 @@ TODO (2/15/2020):
 [x] character select
     [x] contains selected characters
     [x] selection_type
-        [] local(GamePadId)
-        [] network()
+        [x] local(GamePadId)
+        [x] network()
     [x] p1: SelectionType
     [x] p2: SelectionType
         [x] when both p1 and p2 have the same local(GamePadId)
             [x] p1 is controlled as long as p1 is unselected
             [x] while p2, if the gamepad presses back and it hasn't selected a character
                 [x] deselect p1 and return control
-    [] TBD: Handle Network selection
-        [] 
+    [x] TBD: Handle Network selection
+        [x] 
 
 [] hookup training mode
     [x] create training mode appstate
@@ -111,10 +111,16 @@ TODO (2/15/2020):
             [x] collate what button presses happened before it within Y frames, and pair them
             [x] check if from that point onward, the motion is valid
                 [x] if so emit the input
-    [] add replay support
-        [] logger to file
-        [] save match settings to file
-        [] save inputs to same file 
+    [x] add replay support
+        [x] logger to file
+            [x] training_mode
+                [x] to training mode folder
+            [x] local_vs
+            [x] netplay
+        [x] load arbitrary file
+        [x] save match settings to file
+        [x] save inputs to same file
+        [] add versioning to it
     [] add sound support
         [] support hit sound slot
         [] support hit sound
@@ -128,7 +134,8 @@ TODO (2/15/2020):
     [] add box<character> to gameplay
     [] expose each character to the training_mode so it can reset its hp
     [] reset HP when player hits idle 
-    [] superjump macro is 1/2/3AB in neutral
+    [x] superjump macro is 1/2/3AB in neutral
+        [] remove this
     [x] rollback netcode
 
 // probably this one cause its more explicit
