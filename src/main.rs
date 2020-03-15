@@ -26,8 +26,9 @@ mod stage;
 mod command_list;
 #[macro_use]
 mod input_macros;
-mod netcode;
 mod app_state;
+mod netcode;
+mod replay;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
@@ -80,5 +81,5 @@ fn main() {
     // use when setting your game up.
     let main_menu = crate::menus::MainMenu::new();
     let mut runner = crate::app_state::AppStateRunner::new(&mut ctx, Box::new(main_menu)).unwrap();
-    ggez::event::run(&mut ctx, &mut event_loop, &mut runner).ok();
+    ggez::event::run(&mut ctx, &mut event_loop, &mut runner).unwrap();
 }

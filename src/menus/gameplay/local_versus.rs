@@ -1,11 +1,15 @@
 use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::{MatchSettings, NoLogMatch as Match};
+use crate::game_match::{Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
+use std::fs::File;
+use std::io::BufWriter;
+
+type NetplayMatch = Match<BufWriter<File>>;
 
 enum NextState {
     Back,
@@ -15,7 +19,7 @@ pub struct LocalVersus {
     next: Option<NextState>,
     inputs: PlayerData<Vec<InputState>>,
     players: PlayerData<GamepadId>,
-    game_state: Match,
+    game_state: NetplayMatch,
 }
 impl FromCharacters<LocalSelect, LocalSelect> for LocalVersus {
     fn from_characters(
@@ -36,7 +40,11 @@ impl LocalVersus {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
             players,
-            game_state: Match::new(ctx, MatchSettings {}, ().into())?,
+            game_state: NetplayMatch::new(
+                ctx,
+                MatchSettings {},
+                BufWriter::new(crate::replay::create_new_replay_file("local")?),
+            )?,
         })
     }
 }

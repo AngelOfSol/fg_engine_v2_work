@@ -22,7 +22,7 @@ enum NextState {
     TrainingModeControllerSelect,
     VsModeControllerSelect,
     NetworkSelect,
-    WatchReplay,
+    WatchReplay(std::fs::File),
 }
 
 pub struct MainMenu {
@@ -99,8 +99,8 @@ impl AppState for MainMenu {
                         to_character_select,
                     ))))
                 }
-                NextState::WatchReplay => {
-                    let file = std::io::BufReader::new(std::fs::File::open("test.rep")?);
+                NextState::WatchReplay(file) => {
+                    let file = std::io::BufReader::new(file);
                     Ok(Transition::Push(Box::new(WatchReplay::new(ctx, file)?)))
                 }
             },
@@ -131,7 +131,12 @@ impl AppState for MainMenu {
                         self.next = Some(NextState::NetworkSelect);
                     }
                     if ui.small_button(im_str!("Watch Replay")) {
-                        self.next = Some(NextState::WatchReplay);
+                        let test = nfd::open_file_dialog(Some("rep"), None);
+                        if let Ok(nfd::Response::Okay(file)) = test {
+                            if let Ok(file) = std::fs::File::open(&file) {
+                                self.next = Some(NextState::WatchReplay(file));
+                            }
+                        }
                     }
                     if ui.small_button(im_str!("Settings")) {
                         self.next = Some(NextState::Settings);
