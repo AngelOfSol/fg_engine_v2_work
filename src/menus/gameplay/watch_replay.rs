@@ -97,6 +97,8 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
             self.previous_states.push(self.game_state.save_state());
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
+
+            self.game_state.render_sounds(60)?;
         }
 
         match std::mem::replace(&mut self.next, None) {

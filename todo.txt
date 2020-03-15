@@ -127,8 +127,8 @@ TODO (2/15/2020):
         [x] compression 
         [] add versioning to it
     [] add sound support
-        [] support hit sound slot
-        [] support hit sound
+        [x] support hit sound slot
+        [x] support hit sound
         [] support block sound
         [] support wrongblock sound
         [] support voice slot 

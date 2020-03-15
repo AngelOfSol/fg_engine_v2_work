@@ -1,6 +1,7 @@
 mod match_settings;
 mod noop_writer;
 mod player;
+pub mod sounds;
 
 pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
 
@@ -19,6 +20,7 @@ use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
 use player::Player;
+use sounds::{PlayerSoundRenderer, SoundList};
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -43,6 +45,9 @@ pub struct Match<Writer> {
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
     writer: Writer,
+    sounds: SoundList,
+
+    sound_renderers: PlayerData<PlayerSoundRenderer>,
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
@@ -59,7 +64,28 @@ impl<Writer: Write> Match<Writer> {
         p1_state.position.x = -100_00;
         p2_state.position.x = 100_00;
 
+        let sound_path = PathBuf::from(".\\resources\\sound.mp3");
+        let source = rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(
+            &sound_path,
+        )?))
+        .unwrap();
+        let mut sounds = SoundList::new();
+
+        use rodio::source::Source;
+
+        let source = rodio::buffer::SamplesBuffer::new(
+            source.channels(),
+            source.sample_rate(),
+            source.convert_samples().collect::<Vec<_>>(),
+        );
+
+        sounds
+            .hits
+            .insert(sounds::HitSoundType::Block, source.buffered());
+
         let _ = bincode::serialize_into(&mut writer, &settings);
+
+        let audio_device = rodio::default_output_device().unwrap();
 
         Ok(Self {
             players: [Player { state: p1_state }, Player { state: p2_state }].into(),
@@ -78,6 +104,12 @@ impl<Writer: Write> Match<Writer> {
                 Some(&[graphics::BlendMode::Alpha]),
             )?,
             writer,
+            sounds,
+            sound_renderers: [
+                PlayerSoundRenderer::new(&audio_device),
+                PlayerSoundRenderer::new(&audio_device),
+            ]
+            .into(),
         })
     }
 
@@ -308,6 +340,15 @@ impl<Writer: Write> Match<Writer> {
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())
+    }
+
+    pub fn render_sounds(&mut self, fps: u32) -> GameResult<()> {
+        let audio_device = rodio::default_output_device().unwrap();
+        for (player, render) in self.players.iter().zip(self.sound_renderers.iter_mut()) {
+            render.render_frame(&audio_device, &self.sounds, &player.state.sound_state, fps)?;
+        }
+        Ok(())
+        //
     }
 }
 

@@ -266,6 +266,10 @@ macro_rules! impl_take_hit {
 
                     self.update_combo_state(&attack_data, false, false);
                     let current_combo = self.current_combo.as_ref().unwrap();
+
+                    self.sound_state
+                        .play_hit_sound(crate::game_match::sounds::HitSoundType::Block);
+
                     self.health -= current_combo.last_hit_damage;
                 }
                 HitType::CounterHit(info) => {
@@ -958,6 +962,7 @@ macro_rules! impl_update_frame_mut {
             self.update_spirit();
             self.update_particles();
             self.update_bullets(play_area);
+            self.sound_state.update();
             self.hitstop = i32::max(0, self.hitstop);
         }
     };

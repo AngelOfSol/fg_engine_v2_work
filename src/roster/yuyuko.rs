@@ -155,7 +155,9 @@ pub struct YuyukoState {
     pub should_pushback: bool,
     pub crushed_orbs: i32,
     pub uncrush_timer: i32,
+    pub sound_state: PlayerSoundState,
 }
+use crate::game_match::sounds::PlayerSoundState;
 
 impl GenericCharacterBehaviour for YuyukoState {
     type MoveId = MoveId;
@@ -185,6 +187,7 @@ impl GenericCharacterBehaviour for YuyukoState {
             crushed_orbs: 0,
             uncrush_timer: 0,
             data,
+            sound_state: PlayerSoundState::new(),
         }
     }
 
