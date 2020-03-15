@@ -1,15 +1,18 @@
 use super::{FromCharacters, LocalSelect, NetworkSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::Match;
+use crate::game_match::{MatchSettings, NoLogMatch as Match};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
-use crate::netcode::{NetcodeClient, Packet as NetcodeClientPacket, PlayerHandle};
+use crate::netcode::{NetcodeClient as Client, Packet as NetcodeClientPacket, PlayerHandle};
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
 use laminar::{Packet as SocketPacket, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Instant;
+
+type NetcodeClient =
+    Client<InputState, <Match as crate::netcode::RollbackableGameState>::SavedState>;
 
 enum NextState {
     Back,
@@ -25,7 +28,7 @@ pub struct NetplayVersus {
     start_time: Instant,
 
     game_state: Match,
-    client: NetcodeClient<InputState, Match>,
+    client: NetcodeClient,
 }
 impl FromCharacters<LocalSelect, LocalSelect> for NetplayVersus {
     fn from_characters(
@@ -126,7 +129,7 @@ impl NetplayVersus {
         local_players: Vec<(GamepadId, InputState, PlayerHandle)>,
         network_players: Vec<(SocketAddr, PlayerHandle, f32)>,
         socket: Socket,
-        mut client: NetcodeClient<InputState, Match>,
+        mut client: NetcodeClient,
     ) -> GameResult<Self> {
         client.set_input_delay(3);
         client.set_allowed_rollback(8);
@@ -136,7 +139,7 @@ impl NetplayVersus {
             next: None,
             local_players,
             network_players,
-            game_state: Match::new(ctx)?,
+            game_state: Match::new(ctx, MatchSettings {}, ().into())?,
             client,
             socket,
             start_time: Instant::now(),

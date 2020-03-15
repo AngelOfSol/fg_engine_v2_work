@@ -14,8 +14,28 @@ use gfx::{self, *};
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use player::Player;
+use serde::{Deserialize, Serialize};
+use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
+
+pub struct NoopWriter;
+
+impl From<()> for NoopWriter {
+    fn from(value: ()) -> Self {
+        NoopWriter
+    }
+}
+
+impl Write for NoopWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
 
 #[derive(Clone)]
 pub struct PlayArea {
@@ -23,34 +43,29 @@ pub struct PlayArea {
 }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 
-#[derive(Clone)]
-pub struct Match {
+#[derive(Debug, Clone)]
+pub struct GameState {
+    current_frame: i16,
+}
+
+pub struct Match<Writer> {
     players: PlayerData<Player>,
+    game_state: GameState,
+
     background: Stage,
     debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
+    writer: Writer,
 }
 
-impl RollbackableGameState for Match {
-    type Input = InputState;
-    type SavedState = Match;
+pub type NoLogMatch = Match<NoopWriter>;
 
-    fn advance_frame(&mut self, input: InputSet<'_, Self::Input>) {
-        self.update([input.inputs[0], input.inputs[1]].into())
-    }
+#[derive(Clone, Serialize, Deserialize)]
+pub struct MatchSettings {}
 
-    fn save_state(&self) -> Self::SavedState {
-        self.clone()
-    }
-
-    fn load_state(&mut self, load: Self::SavedState) {
-        *self = load;
-    }
-}
-
-impl Match {
-    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+impl<Writer: Write> Match<Writer> {
+    pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
         let background = Stage::new(ctx, "\\bg_14.png")?;
         let resources = Rc::new(Yuyuko::new_with_path(
             ctx,
@@ -60,8 +75,12 @@ impl Match {
         let mut p2_state = YuyukoState::new(Rc::clone(&resources));
         p1_state.position.x = -100_00;
         p2_state.position.x = 100_00;
+
+        let _ = bincode::serialize_into(&mut writer, &settings);
+
         Ok(Self {
             players: [Player { state: p1_state }, Player { state: p2_state }].into(),
+            game_state: GameState { current_frame: 0 },
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
@@ -75,14 +94,24 @@ impl Match {
                 "Shadow",
                 Some(&[graphics::BlendMode::Alpha]),
             )?,
+            writer,
         })
     }
-}
 
-impl Match {
+    pub fn current_frame(&self) -> i16 {
+        self.game_state.current_frame
+    }
+
     pub fn update(&mut self, input: PlayerData<&[InputState]>) {
+        let _ = bincode::serialize_into(&mut self.writer, &self.game_state.current_frame);
+
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
-            player.update(input, &self.play_area);
+            if let Some(last_input) = &input.last() {
+                let _ = bincode::serialize_into(&mut self.writer, &last_input);
+                player.update(input, &self.play_area);
+            } else {
+                dbg!("skipped a frame");
+            }
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -211,6 +240,8 @@ impl Match {
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.play_area);
         }
+
+        self.game_state.current_frame += 1;
     }
     pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)?;
@@ -294,5 +325,23 @@ impl Match {
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())
+    }
+}
+
+impl<Writer: Write> RollbackableGameState for Match<Writer> {
+    type Input = InputState;
+    type SavedState = (PlayerData<Player>, GameState);
+
+    fn advance_frame(&mut self, input: InputSet<'_, Self::Input>) {
+        self.update([input.inputs[0], input.inputs[1]].into())
+    }
+
+    fn save_state(&self) -> Self::SavedState {
+        (self.players.clone(), self.game_state.clone())
+    }
+
+    fn load_state(&mut self, (players, game_state): Self::SavedState) {
+        self.players = players;
+        self.game_state = game_state;
     }
 }

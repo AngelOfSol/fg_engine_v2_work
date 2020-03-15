@@ -21,6 +21,35 @@ pub enum Axis {
 }
 
 impl Axis {
+    pub fn into_bits(self) -> u8 {
+        match self {
+            Axis::Up => 0b0000,
+            Axis::Down => 0b0001,
+            Axis::Right => 0b0010,
+            Axis::Left => 0b0011,
+            Axis::Neutral => 0b0100,
+            Axis::UpRight => 0b0101,
+            Axis::UpLeft => 0b0110,
+            Axis::DownRight => 0b0111,
+            Axis::DownLeft => 0b1000,
+        }
+    }
+
+    pub fn from_bits(value: u8) -> Option<Axis> {
+        match value {
+            0b0000 => Some(Axis::Up),
+            0b0001 => Some(Axis::Down),
+            0b0010 => Some(Axis::Right),
+            0b0011 => Some(Axis::Left),
+            0b0100 => Some(Axis::Neutral),
+            0b0101 => Some(Axis::UpRight),
+            0b0110 => Some(Axis::UpLeft),
+            0b0111 => Some(Axis::DownRight),
+            0b1000 => Some(Axis::DownLeft),
+            _ => None,
+        }
+    }
+
     pub fn add(self, new: Axis) -> Self {
         match new {
             Axis::UpRight | Axis::UpLeft | Axis::DownRight | Axis::DownLeft => {

@@ -1,12 +1,16 @@
 use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::Match;
+use crate::game_match::{Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
-
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Event, EventType, GamepadId};
+
+use std::fs::File;
+use std::io::BufWriter;
+
+type TrainingMatch = Match<BufWriter<File>>;
 
 enum NextState {
     Back,
@@ -16,7 +20,7 @@ pub struct TrainingMode {
     next: Option<NextState>,
     inputs: PlayerData<Vec<InputState>>,
     players: PlayerData<GamepadId>,
-    game_state: Match,
+    game_state: TrainingMatch,
 }
 
 impl FromCharacters<LocalSelect, LocalSelect> for TrainingMode {
@@ -38,7 +42,11 @@ impl TrainingMode {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
             players,
-            game_state: Match::new(ctx)?,
+            game_state: TrainingMatch::new(
+                ctx,
+                MatchSettings {},
+                BufWriter::new(File::create("test.rep")?),
+            )?,
         })
     }
 }
