@@ -10,7 +10,7 @@ use gilrs::{Event, EventType, GamepadId};
 use std::fs::File;
 use std::io::BufWriter;
 
-type TrainingMatch = Match<BufWriter<File>>;
+type TrainingMatch = Match<crate::replay::ReplayWriterFile>;
 
 enum NextState {
     Back,
@@ -45,7 +45,7 @@ impl TrainingMode {
             game_state: TrainingMatch::new(
                 ctx,
                 MatchSettings {},
-                BufWriter::new(crate::replay::create_new_replay_file("training")?),
+                crate::replay::create_new_replay_file("training")?,
             )?,
         })
     }
