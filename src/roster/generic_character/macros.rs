@@ -267,10 +267,9 @@ macro_rules! impl_take_hit {
                     self.update_combo_state(&attack_data, false, false);
                     let current_combo = self.current_combo.as_ref().unwrap();
 
-                    self.sound_state
-                        .play_hit_sound(crate::game_match::sounds::HitSoundType::Block);
-
                     self.health -= current_combo.last_hit_damage;
+                    self.sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::Block.into());
                 }
                 HitType::CounterHit(info) => {
                     let hit_direction = info.get_facing();
@@ -325,6 +324,9 @@ macro_rules! impl_take_hit {
                     self.hitstop = on_block.defender_stop;
                     self.should_pushback = info.should_pushback();
                     self.health -= attack_data.chip_damage;
+
+                    self.sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::Block.into());
 
                     if self.spirit_gauge <= 0 {
                         self.guard_crush(info);
