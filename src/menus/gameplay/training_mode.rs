@@ -87,6 +87,7 @@ impl AppState for TrainingMode {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
             self.game_state.render_sounds(60)?;
+
             for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
                 let control_scheme = &control_schemes[player];
                 let mut last_frame = input.last().unwrap().clone();

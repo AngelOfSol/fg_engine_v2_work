@@ -10,6 +10,7 @@ pub mod macros;
 
 use crate::character::components::AttackInfo;
 use crate::character::state::components::Flags;
+use crate::game_match::sounds::SoundList;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
@@ -17,7 +18,9 @@ use crate::typedefs::{collision, graphics};
 use extra_data::ExtraData;
 use ggez::{Context, GameResult};
 use hit_info::{HitInfo, HitType};
+use rodio::Device;
 use std::rc::Rc;
+
 /* Example structures.
 #[derive(Debug, Clone)]
 pub struct [Character]State {
@@ -70,6 +73,7 @@ pub struct [Character]Resources {
 pub trait GenericCharacterBehaviour {
     type ParticleId;
     type MoveId;
+    type SoundId;
     type Resources;
     type Properties;
 
@@ -150,4 +154,6 @@ pub trait GenericCharacterBehaviour {
 
     fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
     fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+
+    fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> ();
 }

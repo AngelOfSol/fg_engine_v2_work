@@ -261,6 +261,7 @@ impl AppState for NetplayVersus {
             }
 
             self.client.update(&mut self.game_state);
+            self.game_state.render_sounds(60)?;
         }
 
         match std::mem::replace(&mut self.next, None) {

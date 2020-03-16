@@ -9,6 +9,9 @@ use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
+use crate::game_match::sounds::{
+    AudioBuffer, ChannelName, GlobalSound, PlayerSoundRenderer, SoundList,
+};
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
@@ -30,6 +33,7 @@ pub use bullets::BulletState;
 use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::Particle;
+use rodio::Device;
 use serde::Deserialize;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
@@ -61,7 +65,7 @@ pub struct Properties {
     max_air_actions: usize,
     max_spirit_gauge: i32,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Yuyuko {
     pub assets: Assets,
     pub states: HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>,
@@ -70,6 +74,12 @@ pub struct Yuyuko {
     pub attacks: HashMap<AttackId, AttackInfo>,
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
+    pub sounds: HashMap<YuyukoSound, AudioBuffer>,
+}
+impl std::fmt::Debug for Yuyuko {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.states)
+    }
 }
 
 type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>;
@@ -88,6 +98,8 @@ impl Yuyuko {
             attacks: data.attacks,
             bullets: data.bullets,
             command_list: command_list::generate_command_list(),
+            //T TODO load this from data
+            sounds: HashMap::new(),
         })
     }
 }
@@ -132,10 +144,20 @@ impl YuyukoData {
         Ok(character)
     }
 }
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum YuyukoSound {}
 
+pub struct YuyukoPlayer {
+    pub data: Rc<Yuyuko>,
+    pub sound_renderer: Rc<RefCell<PlayerSoundRenderer<YuyukoSound>>>,
+    pub state: YuyukoState,
+}
+
+use std::cell::RefCell;
 #[derive(Debug, Clone)]
 pub struct YuyukoState {
     pub data: Rc<Yuyuko>,
+    pub sound_renderer: Rc<RefCell<PlayerSoundRenderer<YuyukoSound>>>,
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
@@ -155,12 +177,13 @@ pub struct YuyukoState {
     pub should_pushback: bool,
     pub crushed_orbs: i32,
     pub uncrush_timer: i32,
-    pub sound_state: PlayerSoundState,
+    pub sound_state: PlayerSoundState<YuyukoSound>,
 }
 use crate::game_match::sounds::PlayerSoundState;
 
 impl GenericCharacterBehaviour for YuyukoState {
     type MoveId = MoveId;
+    type SoundId = YuyukoSound;
     type ParticleId = Particle;
     type Resources = Yuyuko;
     type Properties = Properties;
@@ -186,8 +209,9 @@ impl GenericCharacterBehaviour for YuyukoState {
             should_pushback: true,
             crushed_orbs: 0,
             uncrush_timer: 0,
-            data,
             sound_state: PlayerSoundState::new(),
+            data,
+            sound_renderer: Rc::new(RefCell::new(PlayerSoundRenderer::new())),
         }
     }
 
@@ -272,4 +296,14 @@ impl GenericCharacterBehaviour for YuyukoState {
     impl_draw_particles!();
     impl_draw_bullets!();
     impl_draw_shadow!();
+
+    fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> () {
+        self.sound_renderer.borrow_mut().render_frame(
+            &audio_device,
+            &self.data.sounds,
+            &sound_list.data,
+            &self.sound_state,
+            fps,
+        );
+    }
 }

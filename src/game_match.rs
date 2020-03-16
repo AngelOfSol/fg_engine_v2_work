@@ -46,8 +46,6 @@ pub struct Match<Writer> {
     play_area: PlayArea,
     writer: Writer,
     sounds: SoundList,
-
-    sound_renderers: PlayerData<PlayerSoundRenderer>,
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
@@ -80,8 +78,8 @@ impl<Writer: Write> Match<Writer> {
         );
 
         sounds
-            .hits
-            .insert(sounds::HitSoundType::Block, source.buffered());
+            .data
+            .insert(sounds::GlobalSound::Block, source.buffered());
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 
@@ -105,11 +103,6 @@ impl<Writer: Write> Match<Writer> {
             )?,
             writer,
             sounds,
-            sound_renderers: [
-                PlayerSoundRenderer::new(&audio_device),
-                PlayerSoundRenderer::new(&audio_device),
-            ]
-            .into(),
         })
     }
 
@@ -344,11 +337,10 @@ impl<Writer: Write> Match<Writer> {
 
     pub fn render_sounds(&mut self, fps: u32) -> GameResult<()> {
         let audio_device = rodio::default_output_device().unwrap();
-        for (player, render) in self.players.iter().zip(self.sound_renderers.iter_mut()) {
-            render.render_frame(&audio_device, &self.sounds, &player.state.sound_state, fps)?;
+        for player in self.players.iter_mut() {
+            player.state.render_sound(&audio_device, &self.sounds, fps);
         }
         Ok(())
-        //
     }
 }
 

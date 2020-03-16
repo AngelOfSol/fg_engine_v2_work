@@ -129,10 +129,50 @@ TODO (2/15/2020):
     [] add sound support
         [x] support hit sound slot
         [x] support hit sound
-        [] support block sound
-        [] support wrongblock sound
-        [] support voice slot 
-        [] support counter hit sound
+        [x] support block sound
+        [x] support wrongblock sound
+        [x] support voice slot 
+        [x] support counter hit sound
+        [x] handle sound rendering in player_state (so PlayerState generic can be saved properly)
+        [] move sound data for character specific sounds behind an Rc or in the OG Rc        
+        [] consider rewriting all the macros so that the resource data is in a different spot than the game state
+        [] update editor for global and character sounds
+            [] global
+            [] character
+        [] remove the Player class
+        [] add character specific sounds
+        [] make the damage dealer provide the hit sounds
+        [] make the bullets provide their own hit sounds
+    [] deprecate the current particle effect system for hits
+    [] add super flash support
+        [] add super flash
+        [] make sure if 2 people super flash at the same time, both play their animation
+        [] add guard crush flash?
+    [] add meter
+        [] add meter that slowly generates to 100 out of 200
+        [] render it
+        [] have dealing wrongblocks increase the meter
+        [] have it slowly decrease after its above 100
+        [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
+        [] add vorpal state
+        [] add chain_shift
+        [] add veil off?
+        [] add defensive lock debuff
+            [] add mechanic
+            [] add ui
+    [] create object system
+        [] decide on structure and how to process
+            [] decide on how to determine state transitions
+        [] migrate all particles and bullets into objects
+        [] create simple particle class (for basic particles)
+        []
+    [] update attack AttackInfo
+        [] add head/foot/body
+        [] remove attack levels, change to manual hitstun/blockstun selection
+            [] hit
+            [] block
+            [] wrongblock
+            [] airblock
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
