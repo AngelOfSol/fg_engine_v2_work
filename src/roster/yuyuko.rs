@@ -144,24 +144,21 @@ impl YuyukoData {
         Ok(character)
     }
 }
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum YuyukoSound {}
 
 pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
-    pub sound_renderer: Rc<RefCell<PlayerSoundRenderer<YuyukoSound>>>,
+    pub sound_renderer: PlayerSoundRenderer<YuyukoSound>,
     pub state: YuyukoState,
 }
-
-use std::cell::RefCell;
-#[derive(Debug, Clone)]
+use serde::Serialize;
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct YuyukoState {
-    pub data: Rc<Yuyuko>,
-    pub sound_renderer: Rc<RefCell<PlayerSoundRenderer<YuyukoSound>>>,
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
-    extra_data: ExtraData,
+    pub extra_data: ExtraData,
     pub particles: Vec<(usize, collision::Vec2, Particle)>,
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
@@ -179,16 +176,9 @@ pub struct YuyukoState {
     pub uncrush_timer: i32,
     pub sound_state: PlayerSoundState<YuyukoSound>,
 }
-use crate::game_match::sounds::PlayerSoundState;
 
-impl GenericCharacterBehaviour for YuyukoState {
-    type MoveId = MoveId;
-    type SoundId = YuyukoSound;
-    type ParticleId = Particle;
-    type Resources = Yuyuko;
-    type Properties = Properties;
-
-    fn new(data: Rc<Yuyuko>) -> Self {
+impl YuyukoState {
+    fn new(data: &Yuyuko) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
@@ -210,8 +200,24 @@ impl GenericCharacterBehaviour for YuyukoState {
             crushed_orbs: 0,
             uncrush_timer: 0,
             sound_state: PlayerSoundState::new(),
+        }
+    }
+}
+
+use crate::game_match::sounds::PlayerSoundState;
+
+impl GenericCharacterBehaviour for YuyukoPlayer {
+    type MoveId = MoveId;
+    type SoundId = YuyukoSound;
+    type ParticleId = Particle;
+    type Resources = Yuyuko;
+    type Properties = Properties;
+
+    fn new(data: Rc<Yuyuko>) -> Self {
+        Self {
+            state: YuyukoState::new(&data),
             data,
-            sound_renderer: Rc::new(RefCell::new(PlayerSoundRenderer::new())),
+            sound_renderer: PlayerSoundRenderer::new(),
         }
     }
 
@@ -297,13 +303,79 @@ impl GenericCharacterBehaviour for YuyukoState {
     impl_draw_bullets!();
     impl_draw_shadow!();
 
+    impl_getters!();
+
     fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> () {
-        self.sound_renderer.borrow_mut().render_frame(
+        self.sound_renderer.render_frame(
             &audio_device,
             &self.data.sounds,
             &sound_list.data,
-            &self.sound_state,
+            &self.state.sound_state,
             fps,
         );
+    }
+    fn bullets_mut<'a>(&'a mut self) -> super::generic_character::OpaqueBulletIterator<'a> {
+        super::generic_character::OpaqueBulletIterator::YuyukoIter(YuyukoBulletIterator {
+            iter: self.state.bullets.iter_mut(),
+            bullet_list: &self.data.bullets,
+            attacks: &self.data.attacks,
+        })
+    }
+    fn save(&self) -> GameResult<Vec<u8>> {
+        bincode::serialize(&self.state).map_err(|_| {
+            ggez::GameError::EventLoopError("Saving a player's state had an error.".to_owned())
+        })
+    }
+    fn load(&mut self, value: &[u8]) -> GameResult<()> {
+        self.state = bincode::deserialize(value).map_err(|_| {
+            ggez::GameError::EventLoopError("Loading a player's state had an error.".to_owned())
+        })?;
+        Ok(())
+    }
+}
+
+pub struct YuyukoBulletIterator<'a> {
+    iter: std::slice::IterMut<'a, BulletState>,
+    bullet_list: &'a BulletList,
+    attacks: &'a AttackList,
+}
+
+impl<'a> Iterator for YuyukoBulletIterator<'a> {
+    type Item = super::generic_character::OpaqueBullet<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|state| {
+            YuyukoBulletMut {
+                state,
+                list: self.bullet_list,
+                attacks: self.attacks,
+            }
+            .into()
+        })
+    }
+}
+
+//impl<'a> super::generic_character::BulletIterator<'a> for YuyukoBulletIterator<'a> {}
+
+use super::generic_character::BulletMut;
+
+pub struct YuyukoBulletMut<'a> {
+    state: &'a mut BulletState,
+    list: &'a BulletList,
+    attacks: &'a AttackList,
+}
+
+impl<'a> BulletMut for YuyukoBulletMut<'a> {
+    fn hitboxes(&self) -> Vec<PositionedHitbox> {
+        self.state.hitbox(self.list)
+    }
+    fn on_touch_bullet(&mut self, value: ()) {
+        self.state.on_touch_bullet(&self.list, value);
+    }
+    fn attack_data(&self) -> HitInfo {
+        self.state.attack_data(&self.list, &self.attacks)
+    }
+    fn on_touch(&mut self, hit: &HitType) {
+        self.state.on_touch(&self.list, hit)
     }
 }

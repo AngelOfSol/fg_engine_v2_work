@@ -1,6 +1,6 @@
 use crate::input::DirectedAxis;
-
-#[derive(Debug, Clone, Copy)]
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ExtraData {
     JumpDirection(DirectedAxis),
     FlyDirection(DirectedAxis),
