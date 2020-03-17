@@ -144,7 +144,7 @@ impl<Writer: Write> Match<Writer> {
 
         let (p1, p2) = self.players.both_mut();
 
-        let touched = vec![
+        let touched = [
             PositionedHitbox::overlaps_any(&p2.hitboxes(), &p1.hurtboxes()),
             PositionedHitbox::overlaps_any(&p1.hitboxes(), &p2.hurtboxes()),
         ];
@@ -158,11 +158,11 @@ impl<Writer: Write> Match<Writer> {
         let hit_types: Vec<_> = self
             .players
             .iter()
-            .zip(touched.into_iter())
+            .zip(touched.iter())
             .zip(attack_data.into_iter().rev())
             .zip(input.iter())
             .map(|(((player, touched), attack_data), input)| {
-                player.would_be_hit(input, touched, attack_data)
+                player.would_be_hit(input, *touched, attack_data)
             })
             .collect();
 

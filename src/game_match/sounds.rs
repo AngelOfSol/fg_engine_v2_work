@@ -13,6 +13,10 @@ pub type AudioBuffer = Buffered<SamplesBuffer<f32>>;
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
 pub enum GlobalSound {
     Block,
+    WrongBlock,
+    Hit,
+    GuardCrush,
+    CounterHit,
 }
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
 pub enum SoundPath<LocalPath> {

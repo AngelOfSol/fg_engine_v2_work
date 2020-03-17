@@ -215,7 +215,6 @@ impl YuyukoPlayer {
         }
     }
     impl_handle_fly!(fly_start: MoveId::FlyStart);
-
     impl_handle_jump!(
         jump: MoveId::Jump,
         super_jump: MoveId::SuperJump,
@@ -229,42 +228,15 @@ impl YuyukoPlayer {
         melee_restitution: MoveId::MeleeRestitution
     );
     impl_spawn_particle!();
-}
-
-impl GenericCharacterBehaviour for YuyukoPlayer {
-    impl_in_corner!();
-    impl_apply_pushback!();
-    impl_get_pushback!();
-    impl_collision!();
-
-    impl_hitboxes!();
-    impl_hurtboxes!();
-
-    impl_get_attack_data!();
-    impl_prune_bullets!();
-    impl_current_flags!();
-    impl_would_be_hit!();
-
     impl_guard_crush!(
         hitstun_air: MoveId::HitstunAirStart,
         hitstun_ground: MoveId::HitstunStandStart
     );
-
+    impl_in_corner!();
+    impl_current_flags!();
     impl_crush_orb!();
-    impl_take_hit!(
-        hitstun_air: MoveId::HitstunAirStart,
-        hitstun_ground: MoveId::HitstunStandStart,
-        blockstun_air: MoveId::BlockstunAirStart,
-        blockstun_stand: MoveId::BlockstunStandStart,
-        blockstun_crouch: MoveId::BlockstunCrouchStart,
-        wrongblock_stand: MoveId::WrongblockStandStart,
-        wrongblock_crouch: MoveId::WrongblockCrouchStart
-    );
-    impl_deal_hit!(on_hit_particle: Particle::HitEffect);
-
     impl_handle_combo_state!();
     impl_handle_rebeat_data!();
-
     impl_update_combo_state!();
     impl_handle_expire!();
     impl_handle_hitstun!(
@@ -279,17 +251,36 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         border_escape: MoveId::BorderEscapeJump,
         melee_restitution: MoveId::MeleeRestitution
     );
+    impl_update_particles!();
+
+    impl_update_bullets!();
+    impl_update_spirit!(fly_end: MoveId::FlyEnd);
+    impl_clamp_spirit!();
     impl_update_velocity!(fly_start: MoveId::FlyStart, fly_state: MoveId::Fly);
     impl_update_position!(
         knockdown_start: MoveId::HitGround,
         hitstun_air: MoveId::HitstunAirStart,
         stand_idle: MoveId::Stand
     );
-    impl_update_particles!();
+}
 
-    impl_update_bullets!();
-    impl_update_spirit!(fly_end: MoveId::FlyEnd);
-    impl_clamp_spirit!();
+impl GenericCharacterBehaviour for YuyukoPlayer {
+    impl_apply_pushback!();
+
+    impl_prune_bullets!();
+    impl_would_be_hit!();
+
+    impl_take_hit!(
+        hitstun_air: MoveId::HitstunAirStart,
+        hitstun_ground: MoveId::HitstunStandStart,
+        blockstun_air: MoveId::BlockstunAirStart,
+        blockstun_stand: MoveId::BlockstunStandStart,
+        blockstun_crouch: MoveId::BlockstunCrouchStart,
+        wrongblock_stand: MoveId::WrongblockStandStart,
+        wrongblock_crouch: MoveId::WrongblockCrouchStart
+    );
+    impl_deal_hit!(on_hit_particle: Particle::HitEffect);
+
     impl_handle_refacing!();
     impl_update_frame_mut!();
 
@@ -299,7 +290,17 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     impl_draw_bullets!();
     impl_draw_shadow!();
 
-    impl_getters!();
+    impl_get_pushback!();
+    impl_collision!();
+
+    impl_hitboxes!();
+    impl_hurtboxes!();
+
+    impl_get_attack_data!();
+
+    impl_facing!();
+    impl_velocity!();
+    impl_position!();
 
     fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> () {
         self.sound_renderer.render_frame(

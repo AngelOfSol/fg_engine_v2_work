@@ -154,6 +154,7 @@ TODO (2/15/2020):
         [] make the damage dealer provide the hit sounds
         [] make the bullets provide their own hit sounds
     [] deprecate the current particle effect system for hits
+    [] add loading screen
     [] add super flash support
         [] add super flash
         [] make sure if 2 people super flash at the same time, both play their animation
