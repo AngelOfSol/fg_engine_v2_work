@@ -10,7 +10,7 @@ use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::CharacterBehavior;
-use crate::roster::{Yuyuko, YuyukoPlayer, YuyukoState};
+use crate::roster::{Yuyuko, YuyukoPlayer};
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
@@ -40,7 +40,6 @@ pub struct Match<Writer> {
     game_state: GameState,
 
     background: Stage,
-    debug_text: graphics::Text,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
     writer: Writer,
@@ -85,7 +84,6 @@ impl<Writer: Write> Match<Writer> {
         Ok(Self {
             players: [p1, p2].into(),
             game_state: GameState { current_frame: 0 },
-            debug_text: graphics::Text::new(""),
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
             },

@@ -206,21 +206,32 @@ impl YuyukoState {
 
 use crate::game_match::sounds::PlayerSoundState;
 
-impl GenericCharacterBehaviour for YuyukoPlayer {
-    type MoveId = MoveId;
-    type SoundId = YuyukoSound;
-    type ParticleId = Particle;
-    type Resources = Yuyuko;
-    type Properties = Properties;
-
-    fn new(data: Rc<Yuyuko>) -> Self {
+impl YuyukoPlayer {
+    pub fn new(data: Rc<Yuyuko>) -> Self {
         Self {
             state: YuyukoState::new(&data),
             data,
             sound_renderer: PlayerSoundRenderer::new(),
         }
     }
+    impl_handle_fly!(fly_start: MoveId::FlyStart);
 
+    impl_handle_jump!(
+        jump: MoveId::Jump,
+        super_jump: MoveId::SuperJump,
+        border_escape: MoveId::BorderEscapeJump
+    );
+    impl_on_enter_move!(
+        fly_start: MoveId::FlyStart,
+        jump: MoveId::Jump,
+        super_jump: MoveId::SuperJump,
+        border_escape: MoveId::BorderEscapeJump,
+        melee_restitution: MoveId::MeleeRestitution
+    );
+    impl_spawn_particle!();
+}
+
+impl GenericCharacterBehaviour for YuyukoPlayer {
     impl_in_corner!();
     impl_apply_pushback!();
     impl_get_pushback!();
@@ -251,13 +262,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     );
     impl_deal_hit!(on_hit_particle: Particle::HitEffect);
 
-    impl_handle_fly!(fly_start: MoveId::FlyStart);
-
-    impl_handle_jump!(
-        jump: MoveId::Jump,
-        super_jump: MoveId::SuperJump,
-        border_escape: MoveId::BorderEscapeJump
-    );
     impl_handle_combo_state!();
     impl_handle_rebeat_data!();
 
@@ -275,13 +279,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         border_escape: MoveId::BorderEscapeJump,
         melee_restitution: MoveId::MeleeRestitution
     );
-    impl_on_enter_move!(
-        fly_start: MoveId::FlyStart,
-        jump: MoveId::Jump,
-        super_jump: MoveId::SuperJump,
-        border_escape: MoveId::BorderEscapeJump,
-        melee_restitution: MoveId::MeleeRestitution
-    );
     impl_update_velocity!(fly_start: MoveId::FlyStart, fly_state: MoveId::Fly);
     impl_update_position!(
         knockdown_start: MoveId::HitGround,
@@ -289,7 +286,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         stand_idle: MoveId::Stand
     );
     impl_update_particles!();
-    impl_spawn_particle!();
 
     impl_update_bullets!();
     impl_update_spirit!(fly_end: MoveId::FlyEnd);
