@@ -112,7 +112,7 @@ TODO (2/15/2020):
             [x] check if from that point onward, the motion is valid
                 [x] if so emit the input
 
-    [] ASK TWITTER ABOUT SINGLE vs 2/3 ROUNDS
+    [x] ASK TWITTER ABOUT SINGLE vs 2/3 ROUNDS
 
 
     [x] add replay support
@@ -125,7 +125,17 @@ TODO (2/15/2020):
         [x] save match settings to file
         [x] save inputs to same file
         [x] compression 
-        [] add versioning to it
+        [x] add versioning to it
+
+
+    [] rework for dynamic characters
+        [] move to enum basis for everything
+        [] rework macro impls to CharacterTrait with enum_dispatch
+        [] move more impls to macro.rs
+        [] split each macro into its own file
+
+
+
     [] add sound support
         [x] support hit sound slot
         [x] support hit sound
@@ -139,7 +149,7 @@ TODO (2/15/2020):
         [] update editor for global and character sounds
             [] global
             [] character
-        [] remove the Player class
+        [x] remove the Player class
         [] add character specific sounds
         [] make the damage dealer provide the hit sounds
         [] make the bullets provide their own hit sounds
