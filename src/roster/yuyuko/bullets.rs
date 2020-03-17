@@ -25,7 +25,7 @@ pub enum BulletId {
 pub enum BulletSpawn {
     Butterfly(ButterflySpawn),
 }
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum BulletState {
     Butterfly(ButterflyState),
 }

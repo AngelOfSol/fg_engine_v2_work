@@ -1,7 +1,8 @@
 use super::{Axis, Facing};
 use crate::character::components::Guard;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DirectedAxis {
     Up,
     Down,

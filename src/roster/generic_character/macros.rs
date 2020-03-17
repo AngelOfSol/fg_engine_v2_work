@@ -2,7 +2,7 @@ macro_rules! impl_in_corner {
     () => {
         fn in_corner(&self, play_area: &PlayArea) -> bool {
             let collision = self.collision();
-            i32::abs(self.position.x) >= play_area.width / 2 - collision.half_size.x
+            i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
         }
     };
 }
@@ -11,7 +11,7 @@ macro_rules! impl_apply_pushback {
         fn apply_pushback(&mut self, force: collision::Int) {
             let flags = self.current_flags();
             if !flags.airborne {
-                self.position.x += force;
+                self.state.position.x += force;
             }
         }
     };
@@ -20,15 +20,15 @@ macro_rules! impl_apply_pushback {
 macro_rules! impl_get_pushback {
     () => {
         fn get_pushback(&self, play_area: &PlayArea) -> collision::Int {
-            let (_, move_id) = &self.current_state;
+            let (_, move_id) = &self.state.current_state;
             let state = &self.data.states[&move_id];
 
             if state.state_type.is_stun()
                 && self.in_corner(play_area)
-                && self.hitstop == 0
-                && self.should_pushback
+                && self.state.hitstop == 0
+                && self.state.should_pushback
             {
-                -self.velocity.x
+                -self.state.velocity.x
             } else {
                 0
             }
@@ -39,12 +39,12 @@ macro_rules! impl_get_pushback {
 macro_rules! impl_collision {
     () => {
         fn collision(&self) -> PositionedHitbox {
-            let (frame, move_id) = &self.current_state;
+            let (frame, move_id) = &self.state.current_state;
             self.data.states[move_id]
                 .hitboxes
                 .at_time(*frame)
                 .collision
-                .with_collision_position(self.position)
+                .with_collision_position(self.state.position)
         }
     };
 }
@@ -52,7 +52,7 @@ macro_rules! impl_collision {
 macro_rules! impl_hitboxes {
     () => {
         fn hitboxes(&self) -> Vec<PositionedHitbox> {
-            let (frame, move_id) = &self.current_state;
+            let (frame, move_id) = &self.state.current_state;
             self.data.states[move_id]
                 .hitboxes
                 .at_time(*frame)
@@ -61,7 +61,9 @@ macro_rules! impl_hitboxes {
                 .map(|data| {
                     data.boxes
                         .iter()
-                        .map(|item| item.with_position_and_facing(self.position, self.facing))
+                        .map(|item| {
+                            item.with_position_and_facing(self.state.position, self.state.facing)
+                        })
                         .collect::<Vec<_>>()
                 })
                 .flatten()
@@ -73,13 +75,13 @@ macro_rules! impl_hitboxes {
 macro_rules! impl_hurtboxes {
     () => {
         fn hurtboxes(&self) -> Vec<PositionedHitbox> {
-            let (frame, move_id) = &self.current_state;
+            let (frame, move_id) = &self.state.current_state;
             self.data.states[move_id]
                 .hitboxes
                 .at_time(*frame)
                 .hurtbox
                 .iter()
-                .map(|item| item.with_position_and_facing(self.position, self.facing))
+                .map(|item| item.with_position_and_facing(self.state.position, self.state.facing))
                 .collect()
         }
     };
@@ -88,7 +90,7 @@ macro_rules! impl_hurtboxes {
 macro_rules! impl_get_attack_data {
     () => {
         fn get_attack_data(&self) -> Option<HitInfo> {
-            let (frame, move_id) = &self.current_state;
+            let (frame, move_id) = &self.state.current_state;
 
             self.data.states[move_id]
                 .hitboxes
@@ -96,7 +98,7 @@ macro_rules! impl_get_attack_data {
                 .hitbox
                 .as_ref()
                 .and_then(|item| {
-                    if let Some(new_hash) = self.last_hit_using {
+                    if let Some(new_hash) = self.state.last_hit_using {
                         let mut hasher = DefaultHasher::new();
                         (move_id, item.id).hash(&mut hasher);
                         let old_hash = hasher.finish();
@@ -111,7 +113,7 @@ macro_rules! impl_get_attack_data {
                     let mut hasher = DefaultHasher::new();
                     (move_id, item.id).hash(&mut hasher);
                     HitInfo::Character {
-                        facing: self.facing,
+                        facing: self.state.facing,
                         info: self.data.attacks[&item.data_id].clone(),
                         hit_hash: hasher.finish(),
                     }
@@ -124,7 +126,8 @@ macro_rules! impl_prune_bullets {
     () => {
         fn prune_bullets(&mut self, play_area: &PlayArea) {
             let bullet_data = &self.data;
-            self.bullets
+            self.state
+                .bullets
                 .retain(|item| item.alive(bullet_data, play_area));
         }
     };
@@ -133,7 +136,7 @@ macro_rules! impl_prune_bullets {
 macro_rules! impl_current_flags {
     () => {
         fn current_flags(&self) -> &Flags {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             self.data.states[&move_id].flags.at_time(frame)
         }
     };
@@ -150,6 +153,7 @@ macro_rules! impl_would_be_hit {
             if !touched
                 || total_info.is_none()
                 || self
+                    .state
                     .current_combo
                     .as_ref()
                     .map(|item| item.available_limit <= 0)
@@ -165,8 +169,8 @@ macro_rules! impl_would_be_hit {
             };
 
             let flags = self.current_flags();
-            let state_type = self.data.states[&self.current_state.1].state_type;
-            let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.facing);
+            let state_type = self.data.states[&self.state.current_state.1].state_type;
+            let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
             let counter_hit = flags.can_be_counter_hit && info.can_counter_hit;
 
             if !info.melee && flags.bullet.is_invuln() || info.melee && flags.melee.is_invuln() {
@@ -197,20 +201,20 @@ macro_rules! impl_would_be_hit {
 macro_rules! impl_guard_crush {
     (hitstun_air: $hitstun_air:expr, hitstun_ground: $hitstun_ground:expr) => {
         fn guard_crush(&mut self, info: &HitInfo) {
-            if self.spirit_gauge <= 0 {
+            if self.state.spirit_gauge <= 0 {
                 let attack_data = info.get_attack_data();
                 let flags = self.current_flags();
                 let hit_direction = info.get_facing();
                 let on_hit = &attack_data.on_hit;
                 // guard crush time!!!!!!!!!!
                 if flags.airborne {
-                    self.current_state = (0, $hitstun_air);
+                    self.state.current_state = (0, $hitstun_air);
                     //TODO crush velocity mutliplier
-                    self.velocity = hit_direction.fix_collision(on_hit.air_force) * 3;
+                    self.state.velocity = hit_direction.fix_collision(on_hit.air_force) * 3;
                 } else {
-                    self.current_state = (0, $hitstun_ground);
+                    self.state.current_state = (0, $hitstun_ground);
                 }
-                self.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
+                self.state.extra_data = ExtraData::Stun(attack_data.level.crush_stun());
                 self.update_combo_state(&attack_data, true, false);
 
                 self.crush_orb();
@@ -222,10 +226,10 @@ macro_rules! impl_guard_crush {
 macro_rules! impl_crush_orb {
     () => {
         fn crush_orb(&mut self) {
-            self.crushed_orbs += 1;
-            self.crushed_orbs = i32::min(5, self.crushed_orbs);
+            self.state.crushed_orbs += 1;
+            self.state.crushed_orbs = i32::min(5, self.state.crushed_orbs);
             // move this to own file/type/function
-            self.uncrush_timer = match self.crushed_orbs {
+            self.state.uncrush_timer = match self.state.crushed_orbs {
                 1 => 13,
                 2 => 8,
                 3 => 5,
@@ -234,7 +238,8 @@ macro_rules! impl_crush_orb {
                 _ => unreachable!(),
             } * 60;
             // TODO move "100" to crushed_orb_value or to max_spirit_gauge / 5
-            self.spirit_gauge = self.data.properties.max_spirit_gauge - self.crushed_orbs * 100;
+            self.state.spirit_gauge =
+                self.data.properties.max_spirit_gauge - self.state.crushed_orbs * 100;
         }
     };
 }
@@ -253,22 +258,23 @@ macro_rules! impl_take_hit {
 
                     let on_hit = &attack_data.on_hit;
                     if flags.airborne || attack_data.launcher {
-                        self.current_state = (0, $hitstun_air);
-                        self.velocity = hit_direction.fix_collision(on_hit.air_force);
+                        self.state.current_state = (0, $hitstun_air);
+                        self.state.velocity = hit_direction.fix_collision(on_hit.air_force);
                     } else {
-                        self.current_state = (0, $hitstun_ground);
-                        self.velocity = hit_direction
+                        self.state.current_state = (0, $hitstun_ground);
+                        self.state.velocity = hit_direction
                             .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                     }
-                    self.extra_data = ExtraData::Stun(attack_data.level.hitstun());
-                    self.hitstop = on_hit.defender_stop;
-                    self.should_pushback = info.should_pushback();
+                    self.state.extra_data = ExtraData::Stun(attack_data.level.hitstun());
+                    self.state.hitstop = on_hit.defender_stop;
+                    self.state.should_pushback = info.should_pushback();
 
                     self.update_combo_state(&attack_data, false, false);
-                    let current_combo = self.current_combo.as_ref().unwrap();
+                    let current_combo = self.state.current_combo.as_ref().unwrap();
 
-                    self.health -= current_combo.last_hit_damage;
-                    self.sound_state
+                    self.state.health -= current_combo.last_hit_damage;
+                    self.state
+                        .sound_state
                         .play_sound(ChannelName::Hit, GlobalSound::Block.into());
                 }
                 HitType::CounterHit(info) => {
@@ -277,20 +283,20 @@ macro_rules! impl_take_hit {
 
                     let on_hit = &attack_data.on_hit;
                     if flags.airborne || attack_data.launcher {
-                        self.current_state = (0, $hitstun_air);
-                        self.velocity = hit_direction.fix_collision(on_hit.air_force);
+                        self.state.current_state = (0, $hitstun_air);
+                        self.state.velocity = hit_direction.fix_collision(on_hit.air_force);
                     } else {
-                        self.current_state = (0, $hitstun_ground);
-                        self.velocity = hit_direction
+                        self.state.current_state = (0, $hitstun_ground);
+                        self.state.velocity = hit_direction
                             .fix_collision(collision::Vec2::new(on_hit.ground_pushback, 0_00));
                     }
-                    self.extra_data = ExtraData::Stun(attack_data.level.counter_hitstun());
-                    self.hitstop = on_hit.defender_stop;
-                    self.should_pushback = info.should_pushback();
+                    self.state.extra_data = ExtraData::Stun(attack_data.level.counter_hitstun());
+                    self.state.hitstop = on_hit.defender_stop;
+                    self.state.should_pushback = info.should_pushback();
 
                     self.update_combo_state(&attack_data, false, true);
-                    let current_combo = self.current_combo.as_ref().unwrap();
-                    self.health -= current_combo.last_hit_damage;
+                    let current_combo = self.state.current_combo.as_ref().unwrap();
+                    self.state.health -= current_combo.last_hit_damage;
                 }
                 HitType::Block(info) => {
                     let hit_direction = info.get_facing();
@@ -298,10 +304,10 @@ macro_rules! impl_take_hit {
 
                     let on_block = &attack_data.on_block;
                     if flags.airborne {
-                        self.current_state = (0, $blockstun_air);
-                        self.velocity = hit_direction.fix_collision(on_block.air_force);
+                        self.state.current_state = (0, $blockstun_air);
+                        self.state.velocity = hit_direction.fix_collision(on_block.air_force);
                     } else {
-                        self.current_state = (
+                        self.state.current_state = (
                             0,
                             if flags.crouching {
                                 $blockstun_crouch
@@ -309,26 +315,27 @@ macro_rules! impl_take_hit {
                                 $blockstun_stand
                             },
                         );
-                        self.velocity = hit_direction
+                        self.state.velocity = hit_direction
                             .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
                     }
 
-                    self.spirit_gauge -= attack_data.spirit_cost;
-                    self.spirit_gauge = i32::max(0, self.spirit_gauge);
+                    self.state.spirit_gauge -= attack_data.spirit_cost;
+                    self.state.spirit_gauge = i32::max(0, self.state.spirit_gauge);
                     if attack_data.reset_spirit_delay {
-                        self.spirit_delay = 0;
+                        self.state.spirit_delay = 0;
                     }
-                    self.spirit_delay += attack_data.spirit_delay;
+                    self.state.spirit_delay += attack_data.spirit_delay;
 
-                    self.extra_data = ExtraData::Stun(attack_data.level.blockstun());
-                    self.hitstop = on_block.defender_stop;
-                    self.should_pushback = info.should_pushback();
-                    self.health -= attack_data.chip_damage;
+                    self.state.extra_data = ExtraData::Stun(attack_data.level.blockstun());
+                    self.state.hitstop = on_block.defender_stop;
+                    self.state.should_pushback = info.should_pushback();
+                    self.state.health -= attack_data.chip_damage;
 
-                    self.sound_state
+                    self.state
+                        .sound_state
                         .play_sound(ChannelName::Hit, GlobalSound::Block.into());
 
-                    if self.spirit_gauge <= 0 {
+                    if self.state.spirit_gauge <= 0 {
                         self.guard_crush(info);
                     }
                 }
@@ -337,7 +344,7 @@ macro_rules! impl_take_hit {
                     let attack_data = info.get_attack_data();
 
                     let on_block = &attack_data.on_block;
-                    self.current_state = (
+                    self.state.current_state = (
                         0,
                         if flags.crouching {
                             $wrongblock_crouch
@@ -345,19 +352,19 @@ macro_rules! impl_take_hit {
                             $wrongblock_stand
                         },
                     );
-                    self.velocity = hit_direction
+                    self.state.velocity = hit_direction
                         .fix_collision(collision::Vec2::new(on_block.ground_pushback, 0_00));
 
-                    self.spirit_delay = attack_data.level.wrongblock_delay();
-                    self.spirit_gauge -= attack_data.level.wrongblock_cost();
-                    self.spirit_gauge = i32::max(0, self.spirit_gauge);
+                    self.state.spirit_delay = attack_data.level.wrongblock_delay();
+                    self.state.spirit_gauge -= attack_data.level.wrongblock_cost();
+                    self.state.spirit_gauge = i32::max(0, self.state.spirit_gauge);
 
-                    self.extra_data = ExtraData::Stun(attack_data.level.wrongblockstun());
-                    self.hitstop = on_block.defender_stop;
-                    self.should_pushback = info.should_pushback();
-                    self.health -= attack_data.chip_damage;
+                    self.state.extra_data = ExtraData::Stun(attack_data.level.wrongblockstun());
+                    self.state.hitstop = on_block.defender_stop;
+                    self.state.should_pushback = info.should_pushback();
+                    self.state.health -= attack_data.chip_damage;
 
-                    if self.spirit_gauge <= 0 {
+                    if self.state.spirit_gauge <= 0 {
                         self.guard_crush(info);
                     }
                 }
@@ -375,13 +382,13 @@ macro_rules! impl_deal_hit {
             match info {
                 HitType::Hit(info) | HitType::CounterHit(info) => {
                     if let Some(last_hit) = info.get_hit_by_data() {
-                        self.last_hit_using = Some(last_hit);
+                        self.state.last_hit_using = Some(last_hit);
                     }
                     let info = info.get_attack_data();
                     let on_hit = &info.on_hit;
 
-                    self.hitstop = on_hit.attacker_stop;
-                    self.allowed_cancels = AllowedCancel::Hit;
+                    self.state.hitstop = on_hit.attacker_stop;
+                    self.state.allowed_cancels = AllowedCancel::Hit;
 
                     if !boxes.is_empty() {
                         // TODO improve hit effect particle spawning determination
@@ -394,13 +401,13 @@ macro_rules! impl_deal_hit {
                 }
                 HitType::Block(info) | HitType::WrongBlock(info) => {
                     if let Some(last_hit) = info.get_hit_by_data() {
-                        self.last_hit_using = Some(last_hit);
+                        self.state.last_hit_using = Some(last_hit);
                     }
                     let info = info.get_attack_data();
                     let on_block = &info.on_block;
 
-                    self.allowed_cancels = AllowedCancel::Block;
-                    self.hitstop = on_block.attacker_stop;
+                    self.state.allowed_cancels = AllowedCancel::Block;
+                    self.state.hitstop = on_block.attacker_stop;
                 }
                 HitType::Whiff | HitType::Graze(_) => {}
             }
@@ -478,10 +485,10 @@ macro_rules! impl_handle_jump {
 macro_rules! impl_handle_combo_state {
     () => {
         fn handle_combo_state(&mut self) {
-            let (_, move_id) = self.current_state;
+            let (_, move_id) = self.state.current_state;
             let current_state_type = self.data.states[&move_id].state_type;
             if !current_state_type.is_stun() {
-                self.current_combo = None;
+                self.state.current_combo = None;
             }
         }
     };
@@ -490,10 +497,10 @@ macro_rules! impl_handle_combo_state {
 macro_rules! impl_handle_rebeat_data {
     () => {
         fn handle_rebeat_data(&mut self) {
-            let (_, move_id) = self.current_state;
+            let (_, move_id) = self.state.current_state;
 
             if !self.data.states[&move_id].state_type.is_attack() {
-                self.rebeat_chain.clear();
+                self.state.rebeat_chain.clear();
             }
         }
     };
@@ -503,7 +510,7 @@ macro_rules! impl_handle_rebeat_data {
 macro_rules! impl_update_combo_state {
     () => {
         fn update_combo_state(&mut self, info: &AttackInfo, guard_crush: bool, counter_hit: bool) {
-            self.current_combo = Some(match &self.current_combo {
+            self.state.current_combo = Some(match &self.state.current_combo {
                 Some(state) => {
                     // 20 is minimum proration
                     let proration = i32::max(info.proration * state.proration / 100, 20);
@@ -540,13 +547,13 @@ macro_rules! impl_update_combo_state {
 macro_rules! impl_handle_expire {
     () => {
         fn handle_expire(&mut self) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
 
             // if the next frame would be out of bounds
-            self.current_state = if frame >= self.data.states[&move_id].duration() - 1 {
-                self.allowed_cancels = AllowedCancel::Always;
-                self.last_hit_using = None;
-                self.rebeat_chain.clear();
+            self.state.current_state = if frame >= self.data.states[&move_id].duration() - 1 {
+                self.state.allowed_cancels = AllowedCancel::Always;
+                self.state.last_hit_using = None;
+                self.state.rebeat_chain.clear();
                 (0, self.data.states[&move_id].on_expire_state)
             } else {
                 (frame + 1, move_id)
@@ -558,16 +565,16 @@ macro_rules! impl_handle_expire {
 macro_rules! impl_handle_hitstun {
     (air_idle: $air_idle:expr, stand_idle: $stand_idle:expr, crouch_idle: $crouch_idle:expr) => {
         fn handle_hitstun(&mut self) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             let flags = self.data.states[&move_id].flags.at_time(frame);
             let state_type = self.data.states[&move_id].state_type;
 
             if state_type.is_stun() {
-                let hitstun = self.extra_data.unwrap_stun_mut();
+                let hitstun = self.state.extra_data.unwrap_stun_mut();
                 *hitstun -= 1;
                 if *hitstun == 0 {
                     if !flags.airborne {
-                        self.current_state = (
+                        self.state.current_state = (
                             0,
                             if flags.crouching {
                                 $crouch_idle
@@ -576,7 +583,7 @@ macro_rules! impl_handle_hitstun {
                             },
                         );
                     } else {
-                        self.current_state = if state_type.is_blockstun() {
+                        self.state.current_state = if state_type.is_blockstun() {
                             (0, $air_idle)
                         } else {
                             (frame, move_id)
@@ -591,13 +598,13 @@ macro_rules! impl_handle_hitstun {
 macro_rules! impl_handle_input {
     (fly_start: $fly_start:pat, fly_state: $fly_state:expr, fly_end: $fly_end:expr, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
         fn handle_input(&mut self, input: &[InputState]) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             let cancels = self.data.states[&move_id].cancels.at_time(frame);
             let flags = self.data.states[&move_id].flags.at_time(frame);
             let state_type = self.data.states[&move_id].state_type;
 
-            self.current_state = {
-                let inputs = read_inputs(input.iter().rev(), self.facing);
+            self.state.current_state = {
+                let inputs = read_inputs(input.iter().rev(), self.state.facing);
                 if move_id == $fly_state {
                     if input.last().unwrap()[Button::A].is_pressed()
                         && input.last().unwrap()[Button::B].is_pressed()
@@ -616,7 +623,7 @@ macro_rules! impl_handle_input {
                         .filter(|new_move_id| {
                             let is_not_self = *new_move_id != move_id;
 
-                            let is_allowed_cancel = match self.allowed_cancels {
+                            let is_allowed_cancel = match self.state.allowed_cancels {
                                 AllowedCancel::Hit => cancels
                                     .hit
                                     .contains(&self.data.states[&new_move_id].state_type),
@@ -629,11 +636,11 @@ macro_rules! impl_handle_input {
                                 .contains(&self.data.states[&new_move_id].state_type)
                                 && !cancels.disallow.contains(&new_move_id);
 
-                            let can_rebeat = !self.rebeat_chain.contains(&new_move_id);
+                            let can_rebeat = !self.state.rebeat_chain.contains(&new_move_id);
 
-                            let has_air_actions = self.air_actions != 0;
+                            let has_air_actions = self.state.air_actions != 0;
 
-                            let has_required_spirit = self.spirit_gauge
+                            let has_required_spirit = self.state.spirit_gauge
                                 >= self.data.states[&new_move_id].minimum_spirit_required;
 
                             let in_blockstun = state_type == MoveType::Blockstun;
@@ -669,15 +676,15 @@ macro_rules! impl_handle_input {
 macro_rules! impl_on_enter_move {
     (fly_start: $fly_start:pat, jump: $jump:pat, super_jump: $super_jump:pat, border_escape: $border_escape:pat, melee_restitution: $melee_restitution:pat) => {
         fn on_enter_move(&mut self, input: &[InputState], move_id: MoveId) {
-            self.allowed_cancels = AllowedCancel::Always;
-            self.last_hit_using = None;
-            self.rebeat_chain.insert(move_id);
+            self.state.allowed_cancels = AllowedCancel::Always;
+            self.state.last_hit_using = None;
+            self.state.rebeat_chain.insert(move_id);
 
             match move_id {
                 $border_escape => {
-                    self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                         input.last().unwrap().axis,
-                        self.facing,
+                        self.state.facing,
                     ));
                     self.crush_orb();
                 }
@@ -685,24 +692,25 @@ macro_rules! impl_on_enter_move {
                     self.crush_orb();
                 }
                 $jump | $super_jump => {
-                    self.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                         input.last().unwrap().axis,
-                        self.facing,
+                        self.state.facing,
                     ));
                 }
                 $fly_start => {
-                    self.air_actions -= 1;
+                    self.state.air_actions -= 1;
                     let mut dir =
-                        DirectedAxis::from_facing(input.last().unwrap().axis, self.facing);
+                        DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
                     if dir.is_backward() {
-                        self.facing = self.facing.invert();
+                        self.state.facing = self.state.facing.invert();
                         dir = dir.invert();
                     }
-                    self.extra_data = ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
-                        DirectedAxis::Forward
-                    } else {
-                        dir
-                    });
+                    self.state.extra_data =
+                        ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
+                            DirectedAxis::Forward
+                        } else {
+                            dir
+                        });
                 }
                 _ => (),
             }
@@ -713,13 +721,13 @@ macro_rules! impl_on_enter_move {
 macro_rules! impl_update_velocity {
     (fly_start: $fly_start:expr, fly_state: $fly_state:expr) => {
         fn update_velocity(&mut self, play_area: &PlayArea) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             let flags = self.data.states[&move_id].flags.at_time(frame);
 
             let base_velocity = if flags.reset_velocity {
                 collision::Vec2::zeros()
             } else {
-                self.velocity
+                self.state.velocity
             };
 
             // we only run gravity if the move doesn't want to reset velocity, because that [resetting velocity] means the move has a trajectory in mind
@@ -741,17 +749,18 @@ macro_rules! impl_update_velocity {
                 collision::Vec2::zeros()
             };
 
-            let accel = self.facing.fix_collision(flags.accel)
+            let accel = self.state.facing.fix_collision(flags.accel)
                 + self
+                    .state
                     .facing
-                    .fix_collision(Self::handle_fly(move_id, &mut self.extra_data))
-                + self.facing.fix_collision(Self::handle_jump(
+                    .fix_collision(Self::handle_fly(move_id, &mut self.state.extra_data))
+                + self.state.facing.fix_collision(Self::handle_jump(
                     flags,
                     &self.data.properties,
                     move_id,
-                    &mut self.extra_data,
+                    &mut self.state.extra_data,
                 ));
-            self.velocity = base_velocity + accel + friction + gravity;
+            self.state.velocity = base_velocity + accel + friction + gravity;
         }
     };
 }
@@ -759,24 +768,24 @@ macro_rules! impl_update_velocity {
 macro_rules! impl_update_position {
     (knockdown_start: $knockdown_start:expr, hitstun_air: $hitstun_air:expr, stand_idle: $stand_idle:expr) => {
         fn update_position(&mut self, play_area: &PlayArea) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             let state = &self.data.states[&move_id];
             let flags = state.flags.at_time(frame);
             let hitboxes = state.hitboxes.at_time(frame);
             let collision = &hitboxes.collision;
 
-            self.position += self.velocity;
+            self.state.position += self.state.velocity;
 
             // handle landing
-            if flags.airborne && self.position.y - collision.half_size.y <= -4 {
+            if flags.airborne && self.state.position.y - collision.half_size.y <= -4 {
                 let mut reset_hitstun = true;
                 let mut reset_velocity = true;
-                self.current_state = if state.state_type == MoveType::Hitstun {
-                    match self.current_combo.as_ref().unwrap().ground_action {
+                self.state.current_state = if state.state_type == MoveType::Hitstun {
+                    match self.state.current_combo.as_ref().unwrap().ground_action {
                         GroundAction::Knockdown => (0, $knockdown_start),
                         GroundAction::GroundSlam => {
-                            self.velocity.y *= -1;
-                            self.current_combo.as_mut().unwrap().ground_action =
+                            self.state.velocity.y *= -1;
+                            self.state.current_combo.as_mut().unwrap().ground_action =
                                 GroundAction::Knockdown;
                             reset_hitstun = false;
                             reset_velocity = false;
@@ -788,24 +797,24 @@ macro_rules! impl_update_position {
                     (0, $stand_idle)
                 };
                 if reset_hitstun {
-                    self.extra_data = ExtraData::None;
+                    self.state.extra_data = ExtraData::None;
                 }
                 if reset_velocity {
-                    self.velocity = collision::Vec2::zeros();
+                    self.state.velocity = collision::Vec2::zeros();
                 }
-                self.position.y = hitboxes.collision.half_size.y;
-                self.air_actions = self.data.properties.max_air_actions;
+                self.state.position.y = hitboxes.collision.half_size.y;
+                self.state.air_actions = self.data.properties.max_air_actions;
             }
 
             // handle stage sides
-            if i32::abs(self.position.x) > play_area.width / 2 - collision.half_size.x {
-                self.position.x =
-                    i32::signum(self.position.x) * (play_area.width / 2 - collision.half_size.x);
+            if i32::abs(self.state.position.x) > play_area.width / 2 - collision.half_size.x {
+                self.state.position.x = i32::signum(self.state.position.x)
+                    * (play_area.width / 2 - collision.half_size.x);
             }
 
             // if not airborne, make sure the character is locked to the ground properly
             if !flags.airborne {
-                self.position.y = hitboxes.collision.half_size.y;
+                self.state.position.y = hitboxes.collision.half_size.y;
             }
         }
     };
@@ -814,22 +823,23 @@ macro_rules! impl_update_position {
 macro_rules! impl_update_particles {
     () => {
         fn update_particles(&mut self) {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             let particle_data = &self.data.particles;
             let state_particles = &self.data.states[&move_id].particles;
 
-            for (ref mut frame, _, _) in self.particles.iter_mut() {
+            for (ref mut frame, _, _) in self.state.particles.iter_mut() {
                 *frame += 1;
             }
-            self.particles
+            self.state
+                .particles
                 .retain(|item| item.0 < particle_data[&item.2].frames.duration());
             for (particle_id, position) in state_particles
                 .iter()
                 .filter(|item| item.frame == frame)
-                .map(|particle| (particle.particle_id, self.position + particle.offset))
+                .map(|particle| (particle.particle_id, self.state.position + particle.offset))
                 .collect::<Vec<_>>()
             {
-                self.particles.push((0, position, particle_id));
+                self.state.particles.push((0, position, particle_id));
             }
         }
     };
@@ -838,7 +848,7 @@ macro_rules! impl_update_particles {
 macro_rules! impl_spawn_particle {
     () => {
         fn spawn_particle(&mut self, particle: Particle, offset: collision::Vec2) {
-            self.particles.push((0, offset, particle));
+            self.state.particles.push((0, offset, particle));
         }
     };
 }
@@ -847,21 +857,22 @@ macro_rules! impl_update_bullets {
     () => {
         fn update_bullets(&mut self, play_area: &PlayArea) {
             // first update all active bullets
-            for bullet in self.bullets.iter_mut() {
+            for bullet in self.state.bullets.iter_mut() {
                 bullet.update(&self.data);
             }
 
             self.prune_bullets(play_area);
 
             // then spawn bullets
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
             for spawn in self.data.states[&move_id]
                 .bullets
                 .iter()
                 .filter(|item| item.get_spawn_frame() == frame)
             {
-                self.bullets
-                    .push(spawn.instantiate(self.position, self.facing));
+                self.state
+                    .bullets
+                    .push(spawn.instantiate(self.state.position, self.state.facing));
             }
         }
     };
@@ -870,36 +881,36 @@ macro_rules! impl_update_bullets {
 macro_rules! impl_update_spirit {
     (fly_end: $fly_end:expr) => {
         fn update_spirit(&mut self) {
-            let (ref mut frame, ref mut move_id) = &mut self.current_state;
+            let (ref mut frame, ref mut move_id) = &mut self.state.current_state;
             let move_data = &self.data.states[move_id];
             let flags = move_data.flags.at_time(*frame);
 
             if move_data.state_type == MoveType::Fly {
-                self.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
-                if self.spirit_gauge == 0 {
+                self.state.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
+                if self.state.spirit_gauge == 0 {
                     *move_id = $fly_end;
                     *frame = 0;
                 }
             } else {
-                self.spirit_gauge -= flags.spirit_cost;
+                self.state.spirit_gauge -= flags.spirit_cost;
 
                 if flags.reset_spirit_delay {
-                    self.spirit_delay = 0;
+                    self.state.spirit_delay = 0;
                 }
-                self.spirit_delay += flags.spirit_delay;
-                self.spirit_delay -= 1;
-                self.spirit_delay = std::cmp::max(self.spirit_delay, 0);
+                self.state.spirit_delay += flags.spirit_delay;
+                self.state.spirit_delay -= 1;
+                self.state.spirit_delay = std::cmp::max(self.state.spirit_delay, 0);
 
-                if self.spirit_delay == 0 {
-                    self.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
+                if self.state.spirit_delay == 0 {
+                    self.state.spirit_gauge += 5; // TODO: move this spirit regen to an editor value
                 }
             }
 
-            if self.crushed_orbs > 0 {
-                self.uncrush_timer -= 1;
-                if self.uncrush_timer <= 0 {
-                    self.crushed_orbs -= 1;
-                    self.uncrush_timer = match self.crushed_orbs {
+            if self.state.crushed_orbs > 0 {
+                self.state.uncrush_timer -= 1;
+                if self.state.uncrush_timer <= 0 {
+                    self.state.crushed_orbs -= 1;
+                    self.state.uncrush_timer = match self.state.crushed_orbs {
                         0 => 0,
                         1 => 13,
                         2 => 8,
@@ -918,10 +929,10 @@ macro_rules! impl_update_spirit {
 macro_rules! impl_clamp_spirit {
     () => {
         fn clamp_spirit(&mut self) {
-            self.spirit_gauge = std::cmp::max(
+            self.state.spirit_gauge = std::cmp::max(
                 std::cmp::min(
-                    self.spirit_gauge,
-                    self.data.properties.max_spirit_gauge - self.crushed_orbs * 100,
+                    self.state.spirit_gauge,
+                    self.data.properties.max_spirit_gauge - self.state.crushed_orbs * 100,
                 ),
                 0,
             );
@@ -932,15 +943,17 @@ macro_rules! impl_clamp_spirit {
 macro_rules! impl_handle_refacing {
     () => {
         fn handle_refacing(&mut self, other_player: collision::Int) {
-            let (frame, move_id) = self.current_state;
-            let flags = self.data.states[&move_id].flags.at_time(frame);
+            let flags = self.current_flags();
             if flags.allow_reface {
-                self.facing = if self.position.x > other_player && self.facing == Facing::Right {
+                self.state.facing = if self.state.position.x > other_player
+                    && self.state.facing == Facing::Right
+                {
                     Facing::Left
-                } else if self.position.x < other_player && self.facing == Facing::Left {
+                } else if self.state.position.x < other_player && self.state.facing == Facing::Left
+                {
                     Facing::Right
                 } else {
-                    self.facing
+                    self.state.facing
                 }
             }
         }
@@ -950,8 +963,8 @@ macro_rules! impl_handle_refacing {
 macro_rules! impl_update_frame_mut {
     () => {
         fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea) {
-            if self.hitstop > 0 {
-                self.hitstop -= 1;
+            if self.state.hitstop > 0 {
+                self.state.hitstop -= 1;
             } else {
                 self.handle_expire();
                 self.handle_rebeat_data();
@@ -964,8 +977,8 @@ macro_rules! impl_update_frame_mut {
             self.update_spirit();
             self.update_particles();
             self.update_bullets(play_area);
-            self.sound_state.update();
-            self.hitstop = i32::max(0, self.hitstop);
+            self.state.sound_state.update();
+            self.state.hitstop = i32::max(0, self.state.hitstop);
         }
     };
 }
@@ -980,7 +993,8 @@ macro_rules! impl_draw_ui {
             let spirit_current = ggez::graphics::Rect::new(
                 0.0,
                 0.0,
-                100.0 * self.spirit_gauge as f32 / self.data.properties.max_spirit_gauge as f32,
+                100.0 * self.state.spirit_gauge as f32
+                    / self.data.properties.max_spirit_gauge as f32,
                 20.0,
             );
             let spirit_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
@@ -1026,7 +1040,7 @@ macro_rules! impl_draw_ui {
             let hp_current = ggez::graphics::Rect::new(
                 0.0,
                 0.0,
-                hp_length * self.health as f32 / self.data.properties.health as f32,
+                hp_length * self.state.health as f32 / self.data.properties.health as f32,
                 20.0,
             );
             let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, hp_length, 20.0);
@@ -1067,12 +1081,12 @@ macro_rules! impl_draw_ui {
 macro_rules! impl_draw {
     () => {
         fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
 
             let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
             let position = world
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    self.position.into_graphical(),
+                    self.state.position.into_graphical(),
                 ));
 
             self.data.states[&move_id].draw_at_time(
@@ -1081,10 +1095,12 @@ macro_rules! impl_draw {
                 frame,
                 position
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                        self.facing.fix_graphics(-collision.center.into_graphical()),
+                        self.state
+                            .facing
+                            .fix_graphics(-collision.center.into_graphical()),
                     ))
                     * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
-                        self.facing.graphics_multiplier(),
+                        self.state.facing.graphics_multiplier(),
                     )),
             )?;
 
@@ -1096,7 +1112,7 @@ macro_rules! impl_draw {
 macro_rules! impl_draw_particles {
     () => {
         fn draw_particles(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
-            for (frame, position, id) in &self.particles {
+            for (frame, position, id) in &self.state.particles {
                 self.data.particles[&id].draw_at_time(
                     ctx,
                     &self.data.assets,
@@ -1116,7 +1132,7 @@ macro_rules! impl_draw_particles {
 macro_rules! impl_draw_bullets {
     () => {
         fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
-            for bullet in &self.bullets {
+            for bullet in &self.state.bullets {
                 bullet.draw(ctx, &self.data, &self.data.assets, world)?;
             }
 
@@ -1128,12 +1144,12 @@ macro_rules! impl_draw_bullets {
 macro_rules! impl_draw_shadow {
     () => {
         fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
-            let (frame, move_id) = self.current_state;
+            let (frame, move_id) = self.state.current_state;
 
             let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
             let position = world
                 * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                    self.position.into_graphical(),
+                    self.state.position.into_graphical(),
                 ));
 
             self.data.states[&move_id].draw_shadow_at_time(
@@ -1142,13 +1158,33 @@ macro_rules! impl_draw_shadow {
                 frame,
                 position
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                        self.facing.fix_graphics(-collision.center.into_graphical()),
+                        self.state
+                            .facing
+                            .fix_graphics(-collision.center.into_graphical()),
                     ))
                     * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
-                        self.facing.graphics_multiplier(),
+                        self.state.facing.graphics_multiplier(),
                     )),
             )?;
             Ok(())
+        }
+    };
+}
+
+macro_rules! impl_getters {
+    () => {
+        fn position(&self) -> collision::Vec2 {
+            self.state.position
+        }
+        fn position_mut(&mut self) -> &mut collision::Vec2 {
+            &mut self.state.position
+        }
+
+        fn velocity(&self) -> collision::Vec2 {
+            self.state.velocity
+        }
+        fn facing(&self) -> Facing {
+            self.state.facing
         }
     };
 }

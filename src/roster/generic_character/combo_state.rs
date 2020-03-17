@@ -1,6 +1,7 @@
 use crate::character::components::GroundAction;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComboState {
     pub hits: u32,
     pub total_damage: i32,
@@ -10,7 +11,7 @@ pub struct ComboState {
     pub available_limit: i32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AllowedCancel {
     Always,
     Hit,

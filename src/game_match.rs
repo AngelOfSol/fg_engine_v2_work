@@ -1,6 +1,5 @@
 mod match_settings;
 mod noop_writer;
-mod player;
 pub mod sounds;
 
 pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
@@ -10,7 +9,8 @@ use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::hit_info::HitType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
-use crate::roster::{Yuyuko, YuyukoState};
+use crate::roster::CharacterBehavior;
+use crate::roster::{Yuyuko, YuyukoPlayer, YuyukoState};
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
@@ -19,8 +19,7 @@ use gfx::{self, *};
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
-use player::Player;
-use sounds::{PlayerSoundRenderer, SoundList};
+use sounds::SoundList;
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -37,7 +36,7 @@ pub struct GameState {
 }
 
 pub struct Match<Writer> {
-    players: PlayerData<Player>,
+    players: PlayerData<CharacterBehavior>,
     game_state: GameState,
 
     background: Stage,
@@ -57,10 +56,10 @@ impl<Writer: Write> Match<Writer> {
             ctx,
             PathBuf::from(".\\resources\\yuyuko.json"),
         )?);
-        let mut p1_state = YuyukoState::new(Rc::clone(&resources));
-        let mut p2_state = YuyukoState::new(Rc::clone(&resources));
-        p1_state.position.x = -100_00;
-        p2_state.position.x = 100_00;
+        let mut p1: CharacterBehavior = YuyukoPlayer::new(Rc::clone(&resources)).into();
+        let mut p2: CharacterBehavior = YuyukoPlayer::new(Rc::clone(&resources)).into();
+        p1.position_mut().x = -100_00;
+        p2.position_mut().x = 100_00;
 
         let sound_path = PathBuf::from(".\\resources\\sound.mp3");
         let source = rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(
@@ -83,10 +82,8 @@ impl<Writer: Write> Match<Writer> {
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 
-        let audio_device = rodio::default_output_device().unwrap();
-
         Ok(Self {
-            players: [Player { state: p1_state }, Player { state: p2_state }].into(),
+            players: [p1, p2].into(),
             game_state: GameState { current_frame: 0 },
             debug_text: graphics::Text::new(""),
             play_area: PlayArea {
@@ -116,7 +113,7 @@ impl<Writer: Write> Match<Writer> {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             if let Some(last_input) = &input.last() {
                 let _ = bincode::serialize_into(&mut self.writer, &last_input);
-                player.update(input, &self.play_area);
+                player.update_frame_mut(input, &self.play_area);
             } else {
                 dbg!("skipped a frame");
             }
@@ -140,8 +137,8 @@ impl<Writer: Write> Match<Writer> {
             let (p1_mod, p2_mod) = p1.collision().fix_distances(
                 p2.collision(),
                 &self.play_area,
-                (p1.state.velocity.x, p2.state.velocity.x),
-                p1.state.facing,
+                (p1.velocity().x, p2.velocity().x),
+                p1.facing(),
             );
             p1.position_mut().x += p1_mod;
             p2.position_mut().x += p2_mod;
@@ -179,18 +176,15 @@ impl<Writer: Write> Match<Writer> {
         }
 
         let (p1, p2) = self.players.both_mut();
-        let (p1_context, p1_bullets) = p1.bullets_mut();
-        let (p2_context, p2_bullets) = p2.bullets_mut();
 
-        for p1_bullet in p1_bullets.iter_mut() {
-            for p2_bullet in p2_bullets.iter_mut() {
-                if PositionedHitbox::overlaps_any(
-                    &p1_bullet.hitbox(p1_context.bullets),
-                    &p2_bullet.hitbox(p2_context.bullets),
-                ) {
+        use crate::roster::generic_character::BulletMut;
+
+        for mut p1_bullet in p1.bullets_mut() {
+            for mut p2_bullet in p2.bullets_mut() {
+                if PositionedHitbox::overlaps_any(&p1_bullet.hitboxes(), &p2_bullet.hitboxes()) {
                     // TODO, replace unit parameter with bullet tier/hp system
-                    p1_bullet.on_touch_bullet(p1_context.bullets, ());
-                    p2_bullet.on_touch_bullet(p2_context.bullets, ());
+                    p1_bullet.on_touch_bullet(());
+                    p2_bullet.on_touch_bullet(());
                 }
             }
         }
@@ -200,27 +194,20 @@ impl<Writer: Write> Match<Writer> {
         }
 
         fn handle_bullets(
-            acting: &mut Player,
-            reference: &mut Player,
+            acting: &mut CharacterBehavior,
+            reference: &mut CharacterBehavior,
             acting_input: &[InputState],
         ) -> Vec<HitType> {
-            let (context, bullets) = reference.bullets_mut();
+            let bullets = reference.bullets_mut();
             bullets
-                .iter_mut()
                 .filter(|bullet| {
-                    PositionedHitbox::overlaps_any(
-                        &bullet.hitbox(context.bullets),
-                        &acting.hurtboxes(),
-                    )
+                    PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
                 })
-                .map(|bullet| {
-                    let result = acting.would_be_hit(
-                        acting_input,
-                        true,
-                        Some(bullet.attack_data(context.bullets, context.attacks)),
-                    );
+                .map(|mut bullet| {
+                    let result =
+                        acting.would_be_hit(acting_input, true, Some(bullet.attack_data()));
                     // side effect
-                    bullet.on_touch(context.bullets, &result);
+                    bullet.on_touch(&result);
 
                     result
                 })
@@ -296,7 +283,23 @@ impl<Writer: Write> Match<Writer> {
         self.background.draw(ctx, world)?;
 
         for player in self.players.iter() {
-            player.draw(ctx, &self.shader, world)?;
+            {
+                let _lock = graphics::use_shader(ctx, &self.shader);
+                let skew = Matrix4::new(
+                    1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                );
+                let world =
+                    world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
+
+                player.draw_shadow(ctx, world)?;
+            }
+
+            player.draw(ctx, world)?;
+
+            graphics::set_transform(ctx, Matrix4::identity());
+            graphics::apply_transformations(ctx)?;
+
+            graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
         }
 
         for player in self.players.iter() {
@@ -311,16 +314,6 @@ impl<Writer: Write> Match<Writer> {
         graphics::apply_transformations(ctx)?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-
-        let show_combo = false;
-        if show_combo {
-            self.debug_text.fragments_mut()[0].text = format!(
-                "{}, {}",
-                self.players.p1().state.current_state.1,
-                self.players.p2().state.current_state.1
-            );
-            graphics::draw(ctx, &self.debug_text, graphics::DrawParam::default())?;
-        }
 
         self.players
             .p1_mut()
@@ -338,7 +331,7 @@ impl<Writer: Write> Match<Writer> {
     pub fn render_sounds(&mut self, fps: u32) -> GameResult<()> {
         let audio_device = rodio::default_output_device().unwrap();
         for player in self.players.iter_mut() {
-            player.state.render_sound(&audio_device, &self.sounds, fps);
+            player.render_sound(&audio_device, &self.sounds, fps);
         }
         Ok(())
     }
@@ -346,18 +339,24 @@ impl<Writer: Write> Match<Writer> {
 
 impl<Writer: Write> RollbackableGameState for Match<Writer> {
     type Input = InputState;
-    type SavedState = (PlayerData<Player>, GameState);
+    type SavedState = (PlayerData<Vec<u8>>, GameState);
 
     fn advance_frame(&mut self, input: InputSet<'_, Self::Input>) {
         self.update([input.inputs[0], input.inputs[1]].into())
     }
 
     fn save_state(&self) -> Self::SavedState {
-        (self.players.clone(), self.game_state.clone())
+        (
+            self.players.as_ref().map(|player| player.save().unwrap()),
+            self.game_state.clone(),
+        )
     }
 
     fn load_state(&mut self, (players, game_state): Self::SavedState) {
-        self.players = players;
+        for (player, new_state) in self.players.iter_mut().zip(players.iter().cloned()) {
+            let _ = player.load(&new_state);
+            // TODO log load error
+        }
         self.game_state = game_state;
     }
 }

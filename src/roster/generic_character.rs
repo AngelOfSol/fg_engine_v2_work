@@ -13,8 +13,9 @@ use crate::character::state::components::Flags;
 use crate::game_match::sounds::SoundList;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
-use crate::input::InputState;
+use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
+use enum_dispatch::enum_dispatch;
 use extra_data::ExtraData;
 use ggez::{Context, GameResult};
 use hit_info::{HitInfo, HitType};
@@ -70,6 +71,15 @@ pub struct [Character]Resources {
     pub command_list: CommandList<MoveId>,
 }*/
 
+#[enum_dispatch]
+pub trait BulletMut {
+    fn hitboxes(&self) -> Vec<PositionedHitbox>;
+    fn on_touch_bullet(&mut self, value: ());
+    fn attack_data(&self) -> HitInfo;
+    fn on_touch(&mut self, hit: &HitType);
+}
+
+#[enum_dispatch]
 pub trait GenericCharacterBehaviour {
     type ParticleId;
     type MoveId;
@@ -156,4 +166,35 @@ pub trait GenericCharacterBehaviour {
     fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
 
     fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> ();
+
+    fn position(&self) -> collision::Vec2;
+    fn position_mut(&mut self) -> &mut collision::Vec2;
+
+    fn velocity(&self) -> collision::Vec2;
+    fn facing(&self) -> Facing;
+    fn bullets_mut<'a>(&'a mut self) -> OpaqueBulletIterator<'a>;
+
+    fn save(&self) -> GameResult<Vec<u8>>;
+    fn load(&mut self, value: &[u8]) -> GameResult<()>;
+}
+
+use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut};
+
+pub enum OpaqueBulletIterator<'a> {
+    YuyukoIter(YuyukoBulletIterator<'a>),
+}
+
+impl<'a> Iterator for OpaqueBulletIterator<'a> {
+    type Item = OpaqueBullet<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            OpaqueBulletIterator::YuyukoIter(iter) => iter.next(),
+        }
+    }
+}
+
+#[enum_dispatch(BulletMut)]
+pub enum OpaqueBullet<'a> {
+    YuyukoBulletMut(YuyukoBulletMut<'a>),
 }

@@ -1,6 +1,7 @@
 use crate::typedefs::{collision, graphics};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Facing {
     Left,
     Right,

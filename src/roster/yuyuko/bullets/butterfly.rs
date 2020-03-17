@@ -37,7 +37,7 @@ impl ButterflySpawn {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct ButterflyState {
     position: Vec2,
     velocity: Vec2,

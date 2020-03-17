@@ -3,17 +3,18 @@ use rodio::source::Buffered;
 use rodio::source::Source;
 use rodio::Device;
 use rodio::SpatialSink;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
 pub type AudioBuffer = Buffered<SamplesBuffer<f32>>;
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
 pub enum GlobalSound {
     Block,
 }
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
 pub enum SoundPath<LocalPath> {
     Local(LocalPath),
     Global(GlobalSound),
@@ -38,7 +39,7 @@ impl<T> From<GlobalSound> for SoundPath<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SoundState<T> {
     path: T,
     current_frame: u32,
@@ -55,7 +56,7 @@ impl<T: std::cmp::PartialEq> SoundState<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Display, EnumIter)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Display, EnumIter, Serialize, Deserialize)]
 pub enum ChannelName {
     Hit,
     Announcer,
@@ -135,7 +136,7 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlayerSoundState<LocalPath> {
     channels: HashMap<ChannelName, SoundState<SoundPath<LocalPath>>>,
 }
