@@ -70,6 +70,12 @@ impl DirectedAxis {
             _ => false,
         }
     }
+    pub fn is_forward(self) -> bool {
+        match self {
+            DirectedAxis::Forward | DirectedAxis::UpForward | DirectedAxis::DownForward => true,
+            _ => false,
+        }
+    }
     pub fn is_down(self) -> bool {
         match self {
             DirectedAxis::Down | DirectedAxis::DownBackward | DirectedAxis::DownForward => true,
@@ -115,11 +121,19 @@ impl DirectedAxis {
         }
     }
 
-    pub fn is_blocking(self, guard: Guard) -> bool {
+    pub fn is_guarding(self, guard: Guard) -> bool {
         match guard {
             Guard::Mid => true,
             Guard::High => !self.is_down(),
             Guard::Low => self.is_down(),
+        }
+    }
+
+    pub fn is_blocking(self, crossup: bool) -> bool {
+        if !crossup {
+            self.is_backward()
+        } else {
+            self.is_forward()
         }
     }
 }
