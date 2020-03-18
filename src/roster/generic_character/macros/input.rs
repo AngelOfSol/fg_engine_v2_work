@@ -7,7 +7,11 @@ macro_rules! impl_handle_input {
             let state_type = self.data.states[&move_id].state_type;
 
             self.state.current_state = {
-                let inputs = read_inputs(input.iter().rev(), self.state.facing);
+                let inputs = read_inputs(
+                    input.iter().rev(),
+                    self.state.facing,
+                    state_type.buffer_window(),
+                );
                 if move_id == $fly_state {
                     if input.last().unwrap()[Button::A].is_pressed()
                         && input.last().unwrap()[Button::B].is_pressed()
