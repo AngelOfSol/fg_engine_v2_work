@@ -12,18 +12,21 @@ use crate::game_match::sounds::SoundList;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
+use crate::roster::AttackInfo;
 use crate::typedefs::{collision, graphics};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hit_info::{HitInfo, HitType};
+use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
 
 #[enum_dispatch(OpaqueBullet)]
 pub trait BulletMut {
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
     fn on_touch_bullet(&mut self, value: ());
-    fn attack_data(&self) -> HitInfo;
-    fn on_touch(&mut self, hit: &HitType);
+    fn attack_data(&self) -> AttackInfo;
+    fn deal_hit(&mut self, hit: &HitResult);
+    fn hash(&self) -> u64;
+    fn facing(&self) -> Facing;
 }
 
 #[enum_dispatch(CharacterBehavior)]
@@ -35,19 +38,19 @@ pub trait GenericCharacterBehaviour {
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
     fn hurtboxes(&self) -> Vec<PositionedHitbox>;
 
-    fn get_attack_data(&self) -> Option<HitInfo>;
+    fn get_attack_data(&self) -> Option<HitAction>;
 
     fn prune_bullets(&mut self, play_area: &PlayArea);
 
     fn would_be_hit(
         &self,
         input: &[InputState],
-        touched: bool,
-        total_info: Option<HitInfo>,
-    ) -> HitType;
+        total_info: HitAction,
+        effect: Option<HitEffect>,
+    ) -> (Option<HitEffect>, Option<HitResult>);
 
-    fn take_hit(&mut self, info: &HitType);
-    fn deal_hit(&mut self, info: &HitType);
+    fn take_hit(&mut self, info: HitEffect);
+    fn deal_hit(&mut self, info: &HitResult);
 
     fn handle_refacing(&mut self, other_player: collision::Int);
     fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea);

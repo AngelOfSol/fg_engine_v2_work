@@ -2,7 +2,7 @@ use super::{AttackLevel, GroundAction, Guard};
 use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct AttackInfo {
     pub level: AttackLevel,
     #[serde(default)]
@@ -49,7 +49,7 @@ pub struct AttackInfo {
     pub chip_damage: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct HitInfo {
     #[serde(default = "default_hitstop")]
     pub attacker_stop: i32,

@@ -51,7 +51,7 @@ macro_rules! impl_hurtboxes {
 
 macro_rules! impl_get_attack_data {
     () => {
-        fn get_attack_data(&self) -> Option<HitInfo> {
+        fn get_attack_data(&self) -> Option<HitAction> {
             let (frame, move_id) = &self.state.current_state;
 
             self.data.states[move_id]
@@ -74,10 +74,11 @@ macro_rules! impl_get_attack_data {
                 .map(|item| {
                     let mut hasher = DefaultHasher::new();
                     (move_id, item.id).hash(&mut hasher);
-                    HitInfo::Character {
+                    HitAction {
                         facing: self.state.facing,
-                        info: self.data.attacks[&item.data_id].clone(),
-                        hit_hash: hasher.finish(),
+                        attack_info: self.data.attacks[&item.data_id].clone(),
+                        hash: hasher.finish(),
+                        source: HitSource::Character,
                     }
                 })
         }
