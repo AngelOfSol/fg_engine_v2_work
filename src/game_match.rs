@@ -43,7 +43,7 @@ pub struct Match<Writer> {
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
     writer: Writer,
-    sounds: SoundList,
+    sounds: SoundList<sounds::GlobalSound>,
 }
 
 pub type NoLogMatch = Match<NoopWriter>;

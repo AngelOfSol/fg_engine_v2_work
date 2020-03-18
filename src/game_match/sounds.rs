@@ -1,230 +1,87 @@
+mod channel;
+mod path;
+mod renderer;
+mod sound_state;
+
+pub use channel::ChannelName;
+pub use path::{GlobalSound, SoundPath};
+pub use renderer::PlayerSoundRenderer;
+pub use sound_state::PlayerSoundState;
+
+use channel::Channel;
+use sound_state::SoundState;
+
+use ggez::{GameError, GameResult};
 use rodio::buffer::SamplesBuffer;
 use rodio::source::Buffered;
 use rodio::source::Source;
-use rodio::Device;
-use rodio::SpatialSink;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
 
 pub type AudioBuffer = Buffered<SamplesBuffer<f32>>;
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
-pub enum GlobalSound {
-    Block,
-    WrongBlock,
-    Hit,
-    GuardCrush,
-    CounterHit,
-}
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
-pub enum SoundPath<LocalPath> {
-    Local(LocalPath),
-    Global(GlobalSound),
+#[derive(Serialize)]
+pub struct SoundListInfo<T> {
+    #[serde(bound(serialize = "HashMap<T, String>: Serialize",))]
+    pub paths: HashMap<T, String>,
 }
 
-impl<LocalPath: std::hash::Hash + std::cmp::Eq> SoundPath<LocalPath> {
-    fn get<'a>(
-        &self,
-        local: &'a HashMap<LocalPath, AudioBuffer>,
-        global: &'a HashMap<GlobalSound, AudioBuffer>,
-    ) -> Option<&'a AudioBuffer> {
-        match self {
-            SoundPath::Local(key) => local.get(key),
-            SoundPath::Global(key) => global.get(key),
-        }
-    }
-}
-
-impl<T> From<GlobalSound> for SoundPath<T> {
-    fn from(sound: GlobalSound) -> Self {
-        Self::Global(sound)
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SoundState<T> {
-    path: T,
-    current_frame: u32,
-}
-
-impl<T: std::cmp::PartialEq> SoundState<T> {
-    pub fn is_continuance(&self, prev: &Self) -> bool {
-        self.path == prev.path
-            && prev
-                .current_frame
-                .checked_add(1)
-                .map(|future_prev| future_prev == self.current_frame)
-                .unwrap_or(false)
-    }
-}
-
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Display, EnumIter, Serialize, Deserialize)]
-pub enum ChannelName {
-    Hit,
-    Announcer,
-    System,
-    Attack,
-    Movement,
-    Voice,
-    Projectile,
-}
-
-struct Channel<LocalPath> {
-    sink: SpatialSink,
-    state: SoundState<SoundPath<LocalPath>>,
-}
-
-impl<LocalPath: std::fmt::Debug> std::fmt::Debug for Channel<LocalPath> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.state)
-    }
-}
-
-impl<LocalPath> Channel<LocalPath>
+impl<'de, T> Deserialize<'de> for SoundListInfo<T>
 where
-    LocalPath: std::hash::Hash + std::cmp::Eq + std::fmt::Debug,
-    SoundState<SoundPath<LocalPath>>: std::cmp::PartialEq + Clone,
+    HashMap<T, String>: Deserialize<'de>,
+    T: std::hash::Hash + std::cmp::Eq + IntoEnumIterator,
 {
-    pub fn new(
-        state: SoundState<SoundPath<LocalPath>>,
-        local: &HashMap<LocalPath, AudioBuffer>,
-        global: &HashMap<GlobalSound, AudioBuffer>,
-        device: &Device,
-        fps: u32,
-    ) -> Self {
-        let sink = SpatialSink::new(device, [0.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
-        if let Some(buffer) = state.path.get(local, global) {
-            sink.append(skip_samples(state.current_frame, fps, buffer.clone()));
-        }
-        Self { sink, state }
-    }
-    fn handle(
-        &mut self,
-        next: Option<&SoundState<SoundPath<LocalPath>>>,
-        local: &HashMap<LocalPath, AudioBuffer>,
-        global: &HashMap<GlobalSound, AudioBuffer>,
-        device: &Device,
-        fps: u32,
-    ) {
-        if next.map(|hit| hit == &self.state).unwrap_or(false) {
-            self.sink.pause();
-        } else if next
-            .map(|hit| !hit.is_continuance(&self.state))
-            .unwrap_or(true)
-        {
-            self.sink.stop();
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let paths: HashMap<T, String> = HashMap::deserialize(deserializer)?;
 
-            if let Some(new_hit) = next {
-                if let Some(source) = new_hit.path.get(local, global) {
-                    self.sink = SpatialSink::new(
-                        device,
-                        [0.0, 0.0, 0.0],
-                        [-1.0, 0.0, 0.0],
-                        [1.0, 0.0, 0.0],
-                    );
-                    let source = source.clone();
-                    let source = skip_samples(new_hit.current_frame, fps, source);
-
-                    self.sink.append(source);
-                }
-            }
+        if T::iter().all(|path| paths.contains_key(&path)) {
+            Ok(SoundListInfo { paths })
         } else {
-            self.sink.play();
-
-            if let Some(new_hit) = next {
-                self.state = new_hit.clone();
-            }
+            Err(serde::de::Error::custom("Missing paths from sound list."))
         }
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PlayerSoundState<LocalPath> {
-    channels: HashMap<ChannelName, SoundState<SoundPath<LocalPath>>>,
-}
+impl<'de, T> SoundListInfo<T>
+where
+    HashMap<T, String>: Deserialize<'de>,
+    T: std::hash::Hash + std::cmp::Eq + IntoEnumIterator,
+{
+    pub fn load(self) -> GameResult<SoundList<T>> {
+        Ok(SoundList {
+            data: self
+                .paths
+                .into_iter()
+                .map(|(sound, path)| -> GameResult<_> {
+                    let source = rodio::decoder::Decoder::new(std::io::BufReader::new(
+                        std::fs::File::open(&path)?,
+                    ))
+                    .map_err(|_| {
+                        GameError::ResourceLoadError("Attempted to parse sound file.".to_owned())
+                    })?;
 
-impl<LocalPath> PlayerSoundState<LocalPath> {
-    pub fn new() -> Self {
-        Self {
-            channels: HashMap::new(),
-        }
-    }
-    pub fn update(&mut self) {
-        for value in self.channels.values_mut() {
-            value.current_frame += 1;
-        }
-    }
-    pub fn play_sound(&mut self, slot: ChannelName, path: SoundPath<LocalPath>) {
-        self.channels.insert(
-            slot,
-            SoundState {
-                current_frame: 0,
-                path,
-            },
-        );
-    }
-}
+                    let source = rodio::buffer::SamplesBuffer::new(
+                        source.channels(),
+                        source.sample_rate(),
+                        source.convert_samples().collect::<Vec<_>>(),
+                    );
 
-#[derive(Debug)]
-pub struct PlayerSoundRenderer<LocalPath> {
-    channels: HashMap<ChannelName, Channel<LocalPath>>,
-}
-
-impl<T: Copy + Eq + std::hash::Hash + std::fmt::Debug> PlayerSoundRenderer<T> {
-    pub fn new() -> Self {
-        Self {
-            channels: HashMap::new(),
-        }
-    }
-
-    pub fn render_frame(
-        &mut self,
-        device: &Device,
-        local: &HashMap<T, AudioBuffer>,
-        global: &HashMap<GlobalSound, AudioBuffer>,
-        new: &PlayerSoundState<T>,
-        fps: u32,
-    ) {
-        for channel in ChannelName::iter() {
-            let new = new.channels.get(&channel);
-            use std::collections::hash_map::Entry::*;
-            match self.channels.entry(channel) {
-                Occupied(mut occupied) => {
-                    occupied.get_mut().handle(new, local, global, device, fps);
-                }
-                Vacant(vacant) => {
-                    if let Some(new) = new {
-                        vacant.insert(Channel::new(new.clone(), local, global, device, fps));
-                    }
-                }
-            };
-        }
-
-        //self.prev = new.clone();
+                    Ok((sound, source.buffered()))
+                })
+                .collect::<Result<_, _>>()?,
+        })
     }
 }
 
-fn skip_samples<Sample: rodio::Sample, S: Source<Item = Sample>>(
-    frames: u32,
-    fps: u32,
-    mut source: S,
-) -> S {
-    let skip_count = frames * source.sample_rate() * source.channels() as u32 / fps;
-    if skip_count > 0 {}
-    for _ in 0..skip_count {
-        source.next();
-    }
-
-    source
+pub struct SoundList<T> {
+    pub data: HashMap<T, AudioBuffer>,
 }
 
-pub struct SoundList {
-    pub data: HashMap<GlobalSound, AudioBuffer>,
-}
-
-impl SoundList {
+impl<T> SoundList<T> {
     pub fn new() -> Self {
         SoundList {
             data: HashMap::new(),
