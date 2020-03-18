@@ -128,21 +128,16 @@ TODO (2/15/2020):
         [x] add versioning to it
 
 
-    [] rework for dynamic characters
+    [x] rework for dynamic characters
         [x] move to enum basis for everything
         [x] rework macro impls to CharacterTrait with enum_dispatch
-        [] move more impls to macro.rs
+        [x] move more impls to macro.rs
         [x] split each macro into its own file
-    [] would_be_hit should generate the entire set of changes so both players can react based off them
-        [] design datastructure 
-        [] each hit creates an action
-        [] combine all the actions into one effect
-        [] for guard crush, we can choose what thing causes the guard crush and ignore the rest of the 
-4 x { spirit_damage: 0.25 } <- what things are hitting on this frame
-whats happening  { guard_crush: true } <- passed to both players to react
-1 spirit left
-1 x { spirit_damage : 1, guard_crush: true }
-
+    [x] would_be_hit should generate the entire set of changes so both players can react based off them
+        [x] design datastructure 
+        [x] each hit creates an action
+        [x] combine all the actions into one effect
+        [x] for guard crush, we can choose what thing causes the guard crush and ignore the rest of the 
 https://www.gresearch.co.uk/article/defunctionalisation/
 
     [] add sound support
@@ -153,18 +148,19 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] support voice slot 
         [x] support counter hit sound
         [x] handle sound rendering in player_state (so PlayerState generic can be saved properly)
-        [] move sound data for character specific sounds behind an Rc or in the OG Rc        
-        [] consider rewriting all the macros so that the resource data is in a different spot than the game state
+        [x] move sound data for character specific sounds behind an Rc or in the OG Rc        
+        [x] consider rewriting all the macros so that the resource data is in a different spot than the game state
+        [x] add config for getting sounds
         [] update editor for global and character sounds
             [] global
             [] character
         [x] remove the Player class
         [] add character specific sounds
-        [] make the damage dealer provide the hit sounds
+        [x] make the damage dealer provide the hit sounds
         [] make the bullets provide their own hit sounds
-    
-    [] deprecate the current particle effect system for hits
     [] add loading screen
+    [x] deprecate the current particle effect system for hits
+    [] move to SDL2 for controller support
     [] add super flash support
         [] add super flash
         [] make sure if 2 people super flash at the same time, both play their animation

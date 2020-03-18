@@ -8,7 +8,7 @@ pub mod particle_id;
 #[macro_use]
 pub mod macros;
 
-use crate::game_match::sounds::SoundList;
+use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
@@ -63,7 +63,12 @@ pub trait GenericCharacterBehaviour {
     fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
     fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
 
-    fn render_sound(&mut self, audio_device: &Device, sound_list: &SoundList, fps: u32) -> ();
+    fn render_sound(
+        &mut self,
+        audio_device: &Device,
+        sound_list: &SoundList<GlobalSound>,
+        fps: u32,
+    ) -> ();
 
     fn position(&self) -> collision::Vec2;
     fn position_mut(&mut self) -> &mut collision::Vec2;
