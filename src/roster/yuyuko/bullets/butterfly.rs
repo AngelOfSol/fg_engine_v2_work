@@ -4,7 +4,8 @@ use crate::assets::Assets;
 use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
-use crate::roster::generic_character::hit_info::{HitInfo, HitType};
+use crate::roster::generic_character::hit_info::{HitEffectType, HitResult};
+use crate::roster::AttackInfo;
 use crate::typedefs::collision::*;
 use crate::typedefs::graphics::{self, Float};
 use ggez::{Context, GameResult};
@@ -67,22 +68,27 @@ impl ButterflyState {
         vec![bullets.butterfly.hitbox.with_position(self.position)]
     }
 
-    pub fn attack_data(&self, bullets: &BulletList, attacks: &AttackList) -> HitInfo {
-        HitInfo::Bullet(attacks[&bullets.butterfly.attack_id].clone(), self.facing)
+    pub fn attack_data(&self, bullets: &BulletList, attacks: &AttackList) -> AttackInfo {
+        attacks[&bullets.butterfly.attack_id].clone()
     }
 
-    // TODO, make this return a HitType too, that way it can determine if it can hit again
-    // for the purpose of multi hit bullets
-    pub fn on_touch(&mut self, _: &BulletList, hit_type: &HitType) {
-        match hit_type {
-            HitType::Block(_)
-            | HitType::WrongBlock(_)
-            | HitType::Graze(_)
-            | HitType::Hit(_)
-            | HitType::CounterHit(_) => self.alive = false,
-
-            HitType::Whiff => (),
+    pub fn deal_hit(&mut self, _: &BulletList, hit_result: &HitResult) {
+        match hit_result.hit_type {
+            HitEffectType::Block
+            | HitEffectType::WrongBlock
+            | HitEffectType::Hit
+            | HitEffectType::CounterHit
+            | HitEffectType::GuardCrush
+            | HitEffectType::GrazeCrush
+            | HitEffectType::Graze => self.alive = false,
         }
+    }
+    pub fn hash(&self) -> u64 {
+        0
+    }
+
+    pub fn facing(&self) -> Facing {
+        self.facing
     }
 
     pub fn on_touch_bullet(&mut self, _: &BulletList, _: ()) {

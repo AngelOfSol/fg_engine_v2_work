@@ -7,7 +7,7 @@ pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
-use crate::roster::generic_character::hit_info::HitType;
+use crate::roster::generic_character::hit_info::{HitAction, HitEffect, HitResult, HitSource};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::CharacterBehavior;
 use crate::roster::{Yuyuko, YuyukoPlayer};
@@ -77,7 +77,7 @@ impl<Writer: Write> Match<Writer> {
 
         sounds
             .data
-            .insert(sounds::GlobalSound::Block, source.buffered());
+            .insert(sounds::GlobalSound::Hit, source.buffered());
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 
@@ -155,22 +155,27 @@ impl<Writer: Write> Match<Writer> {
             .map(|player| player.get_attack_data())
             .collect();
 
-        let hit_types: Vec<_> = self
+        let (hit_effects, hit_results): (Vec<_>, Vec<_>) = self
             .players
             .iter()
             .zip(touched.iter())
             .zip(attack_data.into_iter().rev())
             .zip(input.iter())
             .map(|(((player, touched), attack_data), input)| {
-                player.would_be_hit(input, *touched, attack_data)
+                if *touched && attack_data.is_some() {
+                    player.would_be_hit(input, attack_data.unwrap(), None)
+                } else {
+                    (None, None)
+                }
             })
-            .collect();
+            .unzip();
 
-        for (player, hit_type) in self.players.iter_mut().zip(hit_types.iter().rev()) {
-            player.deal_hit(hit_type);
-        }
-        for (player, hit_type) in self.players.iter_mut().zip(hit_types.iter()) {
-            player.take_hit(hit_type);
+        for (ref mut player, ref result) in
+            self.players.iter_mut().zip(hit_results.into_iter().rev())
+        {
+            if let Some(result) = result {
+                player.deal_hit(result);
+            }
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -195,39 +200,52 @@ impl<Writer: Write> Match<Writer> {
             acting: &mut CharacterBehavior,
             reference: &mut CharacterBehavior,
             acting_input: &[InputState],
-        ) -> Vec<HitType> {
-            let bullets = reference.bullets_mut();
-            bullets
-                .filter(|bullet| {
-                    PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
-                })
-                .map(|mut bullet| {
-                    let result =
-                        acting.would_be_hit(acting_input, true, Some(bullet.attack_data()));
-                    // side effect
-                    bullet.on_touch(&result);
-
-                    result
-                })
-                .collect()
+            mut effect: Option<HitEffect>,
+        ) -> (Option<HitEffect>, Vec<HitResult>) {
+            let mut results = Vec::new();
+            for mut bullet in reference.bullets_mut().filter(|bullet| {
+                PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
+            }) {
+                let result = acting.would_be_hit(
+                    acting_input,
+                    HitAction {
+                        attack_info: bullet.attack_data(),
+                        hash: bullet.hash(),
+                        facing: bullet.facing(),
+                        source: HitSource::Object,
+                    },
+                    effect,
+                );
+                if let Some(result) = result.1 {
+                    bullet.deal_hit(&result);
+                    results.push(result);
+                }
+                effect = result.0;
+            }
+            (effect, results)
         }
 
         let (p1, p2) = self.players.both_mut();
-        let hit_info = vec![
-            handle_bullets(p1, p2, input.p1()),
-            handle_bullets(p2, p1, input.p2()),
-        ];
+        let (hit_effects, hit_results): (Vec<_>, Vec<_>) = vec![
+            handle_bullets(p1, p2, input.p1(), hit_effects[0]),
+            handle_bullets(p2, p1, input.p2(), hit_effects[1]),
+        ]
+        .into_iter()
+        .unzip();
 
-        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter()) {
-            for hit_info in hit_info.iter() {
-                player.take_hit(&hit_info);
+        for (player, results) in self.players.iter_mut().zip(hit_results.into_iter().rev()) {
+            for result in results.into_iter() {
+                player.deal_hit(&result);
             }
         }
 
-        for (player, hit_info) in self.players.iter_mut().zip(hit_info.iter().rev()) {
-            for hit_info in hit_info.iter() {
-                player.deal_hit(&hit_info);
-            }
+        for (player, effect) in self
+            .players
+            .iter_mut()
+            .zip(hit_effects.into_iter())
+            .flat_map(|(player, item)| item.map(|item| (player, item)))
+        {
+            player.take_hit(effect);
         }
 
         for player in self.players.iter_mut() {

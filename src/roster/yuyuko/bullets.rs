@@ -6,7 +6,8 @@ use crate::game_match::PlayArea;
 use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
 use crate::roster::generic_character::bullet::{GenericBulletSpawn, GenericBulletState};
-use crate::roster::generic_character::hit_info::{HitInfo, HitType};
+use crate::roster::generic_character::hit_info::HitResult;
+use crate::roster::AttackInfo;
 use crate::typedefs::collision::Vec2;
 use crate::typedefs::graphics;
 use butterfly::{ButterflySpawn, ButterflyState};
@@ -76,15 +77,25 @@ impl BulletState {
             BulletState::Butterfly(state) => state.hitbox(data),
         }
     }
-    pub fn attack_data(&self, data: &BulletList, attacks: &AttackList) -> HitInfo {
+    pub fn attack_data(&self, data: &BulletList, attacks: &AttackList) -> AttackInfo {
         match self {
             BulletState::Butterfly(state) => state.attack_data(data, attacks),
         }
     }
 
-    pub fn on_touch(&mut self, bullets: &BulletList, hit_type: &HitType) {
+    pub fn deal_hit(&mut self, bullets: &BulletList, hit_type: &HitResult) {
         match self {
-            BulletState::Butterfly(state) => state.on_touch(bullets, hit_type),
+            BulletState::Butterfly(state) => state.deal_hit(bullets, hit_type),
+        }
+    }
+    pub fn hash(&self) -> u64 {
+        match self {
+            BulletState::Butterfly(state) => state.hash(),
+        }
+    }
+    pub fn facing(&self) -> Facing {
+        match self {
+            BulletState::Butterfly(state) => state.facing(),
         }
     }
     // REMOVE when actually passing damage in

@@ -129,12 +129,21 @@ TODO (2/15/2020):
 
 
     [] rework for dynamic characters
-        [] move to enum basis for everything
-        [] rework macro impls to CharacterTrait with enum_dispatch
+        [x] move to enum basis for everything
+        [x] rework macro impls to CharacterTrait with enum_dispatch
         [] move more impls to macro.rs
-        [] split each macro into its own file
+        [x] split each macro into its own file
+    [] would_be_hit should generate the entire set of changes so both players can react based off them
+        [] design datastructure 
+        [] each hit creates an action
+        [] combine all the actions into one effect
+        [] for guard crush, we can choose what thing causes the guard crush and ignore the rest of the 
+4 x { spirit_damage: 0.25 } <- what things are hitting on this frame
+whats happening  { guard_crush: true } <- passed to both players to react
+1 spirit left
+1 x { spirit_damage : 1, guard_crush: true }
 
-
+https://www.gresearch.co.uk/article/defunctionalisation/
 
     [] add sound support
         [x] support hit sound slot
@@ -153,6 +162,7 @@ TODO (2/15/2020):
         [] add character specific sounds
         [] make the damage dealer provide the hit sounds
         [] make the bullets provide their own hit sounds
+    
     [] deprecate the current particle effect system for hits
     [] add loading screen
     [] add super flash support
