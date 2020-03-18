@@ -173,7 +173,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
         [] add vorpal state
         [] add chain_shift
-        [] add veil off?
+        [] add veil off
         [] add defensive lock debuff
             [] add mechanic
             [] add ui

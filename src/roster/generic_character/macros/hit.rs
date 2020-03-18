@@ -26,7 +26,7 @@ macro_rules! impl_would_be_hit {
                     HitEffectType::Block | HitEffectType::WrongBlock => {
                         Some(if attack_info.air_unblockable && flags.airborne {
                             Some(HitEffectType::Hit)
-                        } else if flags.airborne || axis.is_blocking(attack_info.guard) {
+                        } else if flags.airborne || axis.is_guarding(attack_info.guard) {
                             Some(HitEffectType::Block)
                         } else {
                             Some(HitEffectType::WrongBlock)
@@ -47,10 +47,16 @@ macro_rules! impl_would_be_hit {
                             None
                         } else if attack_info.grazeable && flags.grazing {
                             Some(HitEffectType::Graze)
-                        } else if (state_type.is_blockstun() || (flags.can_block && axis.is_backward()))
+                        } else if (state_type.is_blockstun()
+                            || (flags.can_block
+                                // this is crossup protection
+                                // if the attack is facing the same direction you're facing
+                                // then the attack should be able to be blocked by holding both back
+                                // and forward.
+                                && (axis.is_blocking(false) || axis.is_blocking(self.state.facing == info.facing))))
                             && !(attack_info.air_unblockable && flags.airborne)
                         {
-                            if flags.airborne || axis.is_blocking(attack_info.guard) {
+                            if flags.airborne || axis.is_guarding(attack_info.guard) {
                                 Some(HitEffectType::Block)
                             } else {
                                 Some(HitEffectType::WrongBlock)
