@@ -37,6 +37,7 @@ use moves::MoveId;
 use particles::Particle;
 use rodio::Device;
 use serde::Deserialize;
+use serde::Serialize;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -44,6 +45,7 @@ use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
+use strum_macros::EnumIter;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletData {
@@ -146,7 +148,7 @@ impl YuyukoData {
         Ok(character)
     }
 }
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter)]
 pub enum YuyukoSound {}
 
 pub struct YuyukoPlayer {
@@ -154,7 +156,6 @@ pub struct YuyukoPlayer {
     pub sound_renderer: PlayerSoundRenderer<YuyukoSound>,
     pub state: YuyukoState,
 }
-use serde::Serialize;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct YuyukoState {
     pub velocity: collision::Vec2,

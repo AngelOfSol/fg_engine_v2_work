@@ -14,4 +14,3 @@ pub use motion::{read_inputs, Input};
 use axis::Axis;
 
 const MOTION_DIRECTION_SIZE: usize = 10;
-const FORGIVENESS: usize = 8;

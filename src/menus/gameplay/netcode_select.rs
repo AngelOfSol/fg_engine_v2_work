@@ -101,7 +101,7 @@ impl AppState for NetworkConnect {
         self.socket.manual_poll(Instant::now());
 
         while let Some(packet) = self.socket.recv() {
-            match packet {
+            match dbg!(packet) {
                 SocketEvent::Packet(_) => self.connected = true,
                 SocketEvent::Connect(addr) => {
                     if self.mode == Mode::Host {
@@ -123,7 +123,7 @@ impl AppState for NetworkConnect {
         while let Some(event) = pads.next_event() {
             match event.event {
                 EventType::ButtonPressed(button, _) => {
-                    if button == Button::Start {
+                    if button == Button::Start && self.connected {
                         self.next = Some(NextState::Next(event.id));
                     }
                 }
@@ -210,14 +210,14 @@ impl AppState for NetworkConnect {
                         ui.text("Press start on the controller you want to use to continue.");
                     } else if let PotentialAddress::Address(addr) = self.target_addr {
                         if ui.small_button(im_str!("Try to connect!")) {
-                            let _ = self
+                            let _ = dbg!(self
                                 .socket
                                 .send(Packet::reliable_sequenced(addr, vec![], None))
                                 .map_err(|_| {
                                     ggez::GameError::EventLoopError(
                                         "Could not send packet".to_owned(),
                                     )
-                                });
+                                }));
                         }
                     }
                 });

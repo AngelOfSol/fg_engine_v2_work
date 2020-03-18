@@ -58,6 +58,14 @@ impl MoveType {
         &ALL_MOVE_TYPES
     }
 
+    pub fn buffer_window(self) -> usize {
+        if self.is_attack() {
+            16
+        } else {
+            8
+        }
+    }
+
     pub fn is_attack(self) -> bool {
         match self {
             MoveType::Melee
