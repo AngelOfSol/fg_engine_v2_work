@@ -1,10 +1,6 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
-
-use std::sync::mpsc::{Receiver, Sender};
 
 pub struct LoadingScreen {
     next: Transition,
@@ -26,11 +22,7 @@ impl AppState for LoadingScreen {
         ctx: &mut Context,
         AppContext { .. }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        let mut mut_extra_frames = 0;
-        while ggez::timer::check_update_time(ctx, 60) {
-            mut_extra_frames += 1;
-        }
-        dbg!((mut_extra_frames as f32 / 60.0 * 100.0).ceil() / 100.0);
+        while ggez::timer::check_update_time(ctx, 60) {}
 
         Ok(std::mem::replace(&mut self.next, Transition::None))
     }

@@ -158,7 +158,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] add character specific sounds
         [x] make the damage dealer provide the hit sounds
         [x] make the bullets provide their own hit sounds
-    [] add loading screen
+    [x] add loading screen
     [x] deprecate the current particle effect system for hits
     [] move to SDL2 for controller support
     [] add super flash support
