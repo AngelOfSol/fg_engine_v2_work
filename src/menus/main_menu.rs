@@ -104,9 +104,13 @@ impl AppState for MainMenu {
                 }
                 NextState::WatchReplay(settings, file) => {
                     let file = std::io::BufReader::new(file);
-                    Ok(Transition::Push(Box::new(WatchReplay::new(
-                        ctx, settings, file,
-                    )?)))
+
+                    let next = crate::menus::loading_screen::LoadingScreen::new(
+                        "".to_owned(),
+                        Transition::Replace(Box::new(WatchReplay::new(ctx, settings, file)?)),
+                    );
+
+                    Ok(Transition::Push(Box::new(next)))
                 }
             },
             None => Ok(Transition::None),
