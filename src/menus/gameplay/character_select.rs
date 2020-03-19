@@ -259,12 +259,18 @@ where
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Next => {
-                    let test = Target::from_characters(
+                    let next = Target::from_characters(
                         ctx,
                         self.p1.take().unwrap(),
                         self.p2.take().unwrap(),
                     )?;
-                    Ok(Transition::Replace(test))
+
+                    let next = crate::menus::loading_screen::LoadingScreen::new(
+                        "".to_owned(),
+                        Transition::Replace(next),
+                    );
+
+                    Ok(Transition::Replace(Box::new(next)))
                 }
                 NextState::Back => Ok(Transition::Pop),
             },

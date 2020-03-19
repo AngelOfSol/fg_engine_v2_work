@@ -1,7 +1,7 @@
 mod button_check;
 mod display_settings;
 pub mod gameplay;
-mod loading_screen;
+pub mod loading_screen;
 mod main_menu;
 mod settings_menu;
 
