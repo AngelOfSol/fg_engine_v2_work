@@ -2,10 +2,10 @@ use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
+use crate::input::pads_context::{Event, EventType, GamepadId};
 use crate::input::InputState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Event, EventType, GamepadId};
 
 type NetplayMatch = Match<crate::replay::ReplayWriterFile>;
 
@@ -54,6 +54,7 @@ impl AppState for LocalVersus {
         &mut AppContext {
             ref mut pads,
             ref control_schemes,
+            ref audio,
             ..
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
@@ -71,13 +72,12 @@ impl AppState for LocalVersus {
                 let Event { id, event, .. } = event;
                 if *id == control_scheme.gamepad {
                     match event {
-                        EventType::ButtonPressed(button, _) => {
+                        EventType::ButtonPressed(button) => {
                             control_scheme.handle_press(*button, current_frame);
                         }
-                        EventType::ButtonReleased(button, _) => {
+                        EventType::ButtonReleased(button) => {
                             control_scheme.handle_release(*button, current_frame);
                         }
-                        _ => (),
                     }
                 }
             }
@@ -85,7 +85,7 @@ impl AppState for LocalVersus {
         while ggez::timer::check_update_time(ctx, 60) {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
-            self.game_state.render_sounds(60)?;
+            self.game_state.render_sounds(60, audio)?;
 
             for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
                 let control_scheme = &control_schemes[player];

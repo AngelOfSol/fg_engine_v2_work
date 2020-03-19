@@ -20,6 +20,25 @@ pub enum Axis {
     DownLeft,
 }
 
+impl From<[i8; 2]> for Axis {
+    fn from([x, y]: [i8; 2]) -> Self {
+        if x > 0 {
+            Axis::Right
+        } else if x < 0 {
+            Axis::Left
+        } else {
+            Axis::Neutral
+        }
+        .add(if y > 0 {
+            Axis::Up
+        } else if y < 0 {
+            Axis::Down
+        } else {
+            Axis::Neutral
+        })
+    }
+}
+
 impl Axis {
     pub fn into_bits(self) -> u8 {
         match self {

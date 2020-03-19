@@ -2,10 +2,10 @@ use super::{FromCharacters, LocalSelect, NetworkSelect};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
+use crate::input::pads_context::{Event, EventType, GamepadId};
 use crate::input::InputState;
 use crate::netcode::{NetcodeClient as Client, Packet as NetcodeClientPacket, PlayerHandle};
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Event, EventType, GamepadId};
 use laminar::{Packet as SocketPacket, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -160,6 +160,7 @@ impl AppState for NetplayVersus {
         &mut AppContext {
             ref mut pads,
             ref control_schemes,
+            ref audio,
             ..
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
@@ -176,13 +177,12 @@ impl AppState for NetplayVersus {
                 let Event { id, event, .. } = event;
                 if *id == control_scheme.gamepad {
                     match event {
-                        EventType::ButtonPressed(button, _) => {
+                        EventType::ButtonPressed(button) => {
                             control_scheme.handle_press(*button, current_frame);
                         }
-                        EventType::ButtonReleased(button, _) => {
+                        EventType::ButtonReleased(button) => {
                             control_scheme.handle_release(*button, current_frame);
                         }
-                        _ => (),
                     }
                 }
             }
@@ -261,7 +261,7 @@ impl AppState for NetplayVersus {
             }
 
             self.client.update(&mut self.game_state);
-            self.game_state.render_sounds(60)?;
+            self.game_state.render_sounds(60, audio)?;
         }
 
         match std::mem::replace(&mut self.next, None) {

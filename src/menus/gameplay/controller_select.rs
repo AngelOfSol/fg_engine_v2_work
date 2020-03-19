@@ -1,7 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::input::pads_context::{Button, EventType, GamepadId};
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
 
 enum NextState {
@@ -38,7 +38,7 @@ impl AppState for ControllerSelect {
     ) -> GameResult<crate::app_state::Transition> {
         while let Some(event) = pads.next_event() {
             match event.event {
-                EventType::ButtonPressed(button, _) => match button {
+                EventType::ButtonPressed(button) => match button {
                     Button::DPadLeft => {
                         if &Some(event.id) == self.selected_gamepad.p2() {
                             *self.selected_gamepad.p2_mut() = None;
@@ -53,7 +53,7 @@ impl AppState for ControllerSelect {
                             *self.selected_gamepad.p2_mut() = Some(event.id);
                         }
                     }
-                    Button::East => {
+                    Button::B => {
                         if &Some(event.id) == self.selected_gamepad.p1() {
                             *self.selected_gamepad.p1_mut() = None;
                         } else if &Some(event.id) == self.selected_gamepad.p2() {
@@ -62,7 +62,7 @@ impl AppState for ControllerSelect {
                             self.next = Some(NextState::Back);
                         }
                     }
-                    Button::Start | Button::South => {
+                    Button::Start | Button::A => {
                         if self
                             .selectable
                             .iter()

@@ -1,10 +1,11 @@
 use super::button::{Button, ButtonState};
 use super::{Axis, InputState};
-use gilrs::ev::Button as GilButton;
-use gilrs::GamepadId;
 use std::collections::{HashMap, HashSet};
 
-pub type PadControlScheme = ControlScheme<GilButton>;
+use crate::input::pads_context::GamepadId;
+use sdl2::controller::Button as SdlButton;
+
+pub type PadControlScheme = ControlScheme<SdlButton>;
 
 #[derive(Clone, Debug)]
 pub struct ControlScheme<ButtonCode> {
@@ -13,33 +14,29 @@ pub struct ControlScheme<ButtonCode> {
     pub gamepad: GamepadId,
 }
 
-pub fn is_valid_input_button(button: GilButton) -> bool {
+pub fn is_valid_input_button(button: SdlButton) -> bool {
     match button {
-        GilButton::South
-        | GilButton::East
-        | GilButton::West
-        | GilButton::North
-        | GilButton::RightTrigger
-        | GilButton::RightTrigger2
-        | GilButton::LeftTrigger
-        | GilButton::LeftTrigger2 => true,
+        SdlButton::A
+        | SdlButton::B
+        | SdlButton::X
+        | SdlButton::Y
+        | SdlButton::LeftShoulder
+        | SdlButton::RightShoulder => true,
         _ => false,
     }
 }
 
-pub fn render_button_list(list: &HashSet<GilButton>) -> String {
+pub fn render_button_list(list: &HashSet<SdlButton>) -> String {
     let mut ret = "".to_owned();
 
     for value in list.iter() {
         let string_value = match value {
-            GilButton::South => "A",
-            GilButton::East => "B",
-            GilButton::West => "X",
-            GilButton::North => "Y",
-            GilButton::RightTrigger => "R1",
-            GilButton::RightTrigger2 => "R2",
-            GilButton::LeftTrigger => "L1",
-            GilButton::LeftTrigger2 => "L2",
+            SdlButton::A => "A",
+            SdlButton::B => "B",
+            SdlButton::X => "X",
+            SdlButton::Y => "Y",
+            SdlButton::LeftShoulder => "L1",
+            SdlButton::RightShoulder => "R1",
             _ => "invalid",
         };
         if ret == "" {
@@ -52,7 +49,7 @@ pub fn render_button_list(list: &HashSet<GilButton>) -> String {
     ret
 }
 
-impl ControlScheme<GilButton> {
+impl ControlScheme<SdlButton> {
     pub fn new(id: GamepadId) -> Self {
         let mut ret = Self {
             axis: HashMap::new(),
@@ -65,17 +62,17 @@ impl ControlScheme<GilButton> {
             gamepad: id,
         };
 
-        ret.buttons[Button::A.as_id()].insert(GilButton::West);
-        ret.buttons[Button::A.as_id()].insert(GilButton::RightTrigger);
-        ret.buttons[Button::B.as_id()].insert(GilButton::North);
-        ret.buttons[Button::B.as_id()].insert(GilButton::RightTrigger);
-        ret.buttons[Button::C.as_id()].insert(GilButton::East);
-        ret.buttons[Button::D.as_id()].insert(GilButton::South);
+        ret.buttons[Button::A.as_id()].insert(SdlButton::X);
+        ret.buttons[Button::A.as_id()].insert(SdlButton::RightShoulder);
+        ret.buttons[Button::B.as_id()].insert(SdlButton::Y);
+        ret.buttons[Button::B.as_id()].insert(SdlButton::RightShoulder);
+        ret.buttons[Button::C.as_id()].insert(SdlButton::B);
+        ret.buttons[Button::D.as_id()].insert(SdlButton::A);
 
-        ret.axis.insert(GilButton::DPadUp, Axis::Up);
-        ret.axis.insert(GilButton::DPadDown, Axis::Down);
-        ret.axis.insert(GilButton::DPadRight, Axis::Right);
-        ret.axis.insert(GilButton::DPadLeft, Axis::Left);
+        ret.axis.insert(SdlButton::DPadUp, Axis::Up);
+        ret.axis.insert(SdlButton::DPadDown, Axis::Down);
+        ret.axis.insert(SdlButton::DPadRight, Axis::Right);
+        ret.axis.insert(SdlButton::DPadLeft, Axis::Left);
 
         ret
     }
@@ -90,7 +87,7 @@ impl ControlScheme<GilButton> {
         }
     }
 
-    pub fn handle_press(&self, button: GilButton, input: &mut InputState) {
+    pub fn handle_press(&self, button: SdlButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
             input.axis = input.axis.add(self.axis[&button]);
         }
@@ -102,7 +99,7 @@ impl ControlScheme<GilButton> {
         }
     }
 
-    pub fn handle_release(&self, button: GilButton, input: &mut InputState) {
+    pub fn handle_release(&self, button: SdlButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
             input.axis = input.axis.remove(self.axis[&button]);
         }

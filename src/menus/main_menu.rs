@@ -8,11 +8,11 @@ use super::gameplay::{
 use super::SettingsMenu;
 
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::input::pads_context::GamepadId;
 use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use gilrs::GamepadId;
 use imgui::im_str;
 
 enum NextState {

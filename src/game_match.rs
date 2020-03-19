@@ -345,8 +345,7 @@ impl<Writer: Write> Match<Writer> {
         Ok(())
     }
 
-    pub fn render_sounds(&mut self, fps: u32) -> GameResult<()> {
-        let audio_device = rodio::default_output_device().unwrap();
+    pub fn render_sounds(&mut self, fps: u32, audio_device: &rodio::Device) -> GameResult<()> {
         for player in self.players.iter_mut() {
             player.render_sound(&audio_device, &self.sounds, fps);
         }

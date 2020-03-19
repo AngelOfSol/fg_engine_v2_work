@@ -92,7 +92,7 @@ pub mod player {
 
         pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> PlayerData<U> {
             let [l, r] = self.0;
-            Self([f(l), f(r)])
+            PlayerData([f(l), f(r)])
         }
 
         pub fn as_ref(&self) -> PlayerData<&T> {
