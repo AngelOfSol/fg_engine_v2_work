@@ -1,7 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
+use crate::input::pads_context::{Button, EventType, GamepadId};
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
 use laminar::{Config, Packet, Socket, SocketEvent};
 use std::fmt::Display;
@@ -122,7 +122,7 @@ impl AppState for NetworkConnect {
 
         while let Some(event) = pads.next_event() {
             match event.event {
-                EventType::ButtonPressed(button, _) => {
+                EventType::ButtonPressed(button) => {
                     if button == Button::Start && self.connected {
                         self.next = Some(NextState::Next(event.id));
                     }

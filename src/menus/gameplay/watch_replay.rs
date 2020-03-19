@@ -45,7 +45,7 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
     fn update(
         &mut self,
         ctx: &mut Context,
-        &mut AppContext { .. }: &mut AppContext,
+        &mut AppContext { ref audio, .. }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             'stream_inputs: loop {
@@ -98,7 +98,7 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
 
-            self.game_state.render_sounds(60)?;
+            self.game_state.render_sounds(60, audio)?;
         }
 
         match std::mem::replace(&mut self.next, None) {

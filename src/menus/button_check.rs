@@ -1,10 +1,11 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::input::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
+use crate::input::pads_context::{Event, EventType, GamepadId, PadsContext};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
-use gilrs::{Button, Event, EventType, GamepadId, Gilrs};
 use imgui::*;
+use sdl2::controller::Button;
 
 pub struct ButtonCheck {
     active_control_schemes: Vec<CreateScheme>,
@@ -61,9 +62,9 @@ impl CreateScheme {
         }
     }
 
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, pads: &Gilrs) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, pads: &PadsContext) {
         let gamepad = pads.gamepad(self.scheme.gamepad);
-        let id = ui.push_id(&format!("{}", gamepad.id()));
+        let id = ui.push_id(&format!("{}", gamepad.instance_id()));
 
         ui.text(format!("Gamepad: {}", gamepad.name()));
 
@@ -145,7 +146,7 @@ impl AppState for ButtonCheck {
             while let Some(event) = pads.next_event() {
                 // let id = event.id;
                 let Event { id, event, .. } = event;
-                if let EventType::ButtonPressed(button, _) = event {
+                if let EventType::ButtonPressed(button) = event {
                     match button {
                         Button::Start => {
                             if !self

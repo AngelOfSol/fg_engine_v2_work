@@ -1,9 +1,9 @@
 use crate::imgui_wrapper::ImGuiWrapper;
 use crate::input::control_scheme::PadControlScheme;
+use crate::input::pads_context::{GamepadId, PadsContext};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
-use gilrs::{Button, EventType, GamepadId, Gilrs, GilrsBuilder};
 use std::collections::HashMap;
 
 pub enum Transition {
@@ -14,9 +14,12 @@ pub enum Transition {
 }
 
 pub struct AppContext {
-    pub pads: Gilrs,
+    pub pads: PadsContext,
     pub imgui: ImGuiWrapper,
     pub control_schemes: HashMap<GamepadId, PadControlScheme>,
+    pub audio: rodio::Device,
+    _sdl: sdl2::Sdl,
+    pub sdl_events: sdl2::EventPump,
 }
 
 pub trait AppState {
@@ -32,10 +35,20 @@ pub struct AppStateRunner {
 
 impl AppStateRunner {
     pub fn new(ctx: &mut Context, mut start: Box<dyn AppState>) -> GameResult<Self> {
+        let audio = rodio::default_output_device().unwrap();
+
+        let _sdl = sdl2::init().unwrap();
+
+        let sdl_events = _sdl.event_pump().unwrap();
+        let sdl_controller = _sdl.game_controller().unwrap();
+
         let mut app_ctx = AppContext {
-            pads: GilrsBuilder::new().build()?,
+            pads: PadsContext::new(sdl_controller),
             imgui: ImGuiWrapper::new(ctx),
             control_schemes: HashMap::new(),
+            audio,
+            _sdl,
+            sdl_events,
         };
         start.on_enter(ctx, &mut app_ctx)?;
         Ok(AppStateRunner {
@@ -47,57 +60,50 @@ impl AppStateRunner {
 
 impl EventHandler for AppStateRunner {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let mut events = Vec::new();
-
-        while let Some(event) = self.app_ctx.pads.next_event() {
-            match &event.event {
-                EventType::ButtonPressed(button, _) => {
+        for event in self.app_ctx.sdl_events.poll_iter() {
+            self.app_ctx.pads.handle(event.clone());
+            match event {
+                sdl2::event::Event::ControllerButtonDown { button, .. } => {
                     let nav_input = match button {
-                        Button::South => Some(imgui::NavInput::Activate),
-                        Button::East => Some(imgui::NavInput::Cancel),
-                        Button::West => Some(imgui::NavInput::Input),
-                        Button::North => Some(imgui::NavInput::Menu),
-                        Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
-                        Button::DPadRight => Some(imgui::NavInput::DpadRight),
-                        Button::DPadUp => Some(imgui::NavInput::DpadUp),
-                        Button::DPadDown => Some(imgui::NavInput::DpadDown),
-                        Button::LeftTrigger => Some(imgui::NavInput::FocusPrev),
-                        Button::RightTrigger => Some(imgui::NavInput::FocusNext),
-                        Button::LeftTrigger2 => Some(imgui::NavInput::TweakSlow),
-                        Button::RightTrigger2 => Some(imgui::NavInput::TweakFast),
+                        sdl2::controller::Button::A => Some(imgui::NavInput::Activate),
+                        sdl2::controller::Button::X => Some(imgui::NavInput::Cancel),
+                        sdl2::controller::Button::B => Some(imgui::NavInput::Input),
+                        sdl2::controller::Button::Y => Some(imgui::NavInput::Menu),
+                        sdl2::controller::Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
+                        sdl2::controller::Button::DPadRight => Some(imgui::NavInput::DpadRight),
+                        sdl2::controller::Button::DPadUp => Some(imgui::NavInput::DpadUp),
+                        sdl2::controller::Button::DPadDown => Some(imgui::NavInput::DpadDown),
+                        sdl2::controller::Button::LeftShoulder => Some(imgui::NavInput::FocusPrev),
+                        sdl2::controller::Button::RightShoulder => Some(imgui::NavInput::FocusNext),
                         _ => None,
                     };
+
                     if let Some(nav_input) = nav_input {
                         self.app_ctx.imgui.handle_gamepad_input(nav_input, 1.0);
                     }
                 }
-                EventType::ButtonReleased(button, _) => {
+                sdl2::event::Event::ControllerButtonUp { button, .. } => {
                     let nav_input = match button {
-                        Button::South => Some(imgui::NavInput::Activate),
-                        Button::East => Some(imgui::NavInput::Cancel),
-                        Button::West => Some(imgui::NavInput::Input),
-                        Button::North => Some(imgui::NavInput::Menu),
-                        Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
-                        Button::DPadRight => Some(imgui::NavInput::DpadRight),
-                        Button::DPadUp => Some(imgui::NavInput::DpadUp),
-                        Button::DPadDown => Some(imgui::NavInput::DpadDown),
-                        Button::LeftTrigger => Some(imgui::NavInput::FocusPrev),
-                        Button::RightTrigger => Some(imgui::NavInput::FocusNext),
-                        Button::LeftTrigger2 => Some(imgui::NavInput::TweakSlow),
-                        Button::RightTrigger2 => Some(imgui::NavInput::TweakFast),
+                        sdl2::controller::Button::A => Some(imgui::NavInput::Activate),
+                        sdl2::controller::Button::X => Some(imgui::NavInput::Cancel),
+                        sdl2::controller::Button::B => Some(imgui::NavInput::Input),
+                        sdl2::controller::Button::Y => Some(imgui::NavInput::Menu),
+                        sdl2::controller::Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
+                        sdl2::controller::Button::DPadRight => Some(imgui::NavInput::DpadRight),
+                        sdl2::controller::Button::DPadUp => Some(imgui::NavInput::DpadUp),
+                        sdl2::controller::Button::DPadDown => Some(imgui::NavInput::DpadDown),
+                        sdl2::controller::Button::LeftShoulder => Some(imgui::NavInput::FocusPrev),
+                        sdl2::controller::Button::RightShoulder => Some(imgui::NavInput::FocusNext),
                         _ => None,
                     };
+
                     if let Some(nav_input) = nav_input {
                         self.app_ctx.imgui.handle_gamepad_input(nav_input, 0.0);
                     }
                 }
-                _ => {}
+                _ => (),
             }
-            events.push(event);
-        }
-
-        for event in events {
-            self.app_ctx.pads.insert_event(event);
+            //
         }
 
         if let Some(state) = self.history.last_mut() {
@@ -108,8 +114,6 @@ impl EventHandler for AppStateRunner {
                         .last_mut()
                         .unwrap()
                         .on_enter(ctx, &mut self.app_ctx)?;
-
-                    while let Some(_) = self.app_ctx.pads.next_event() {}
                 }
                 Transition::Replace(new_state) => {
                     self.history.pop();
@@ -118,13 +122,11 @@ impl EventHandler for AppStateRunner {
                         .last_mut()
                         .unwrap()
                         .on_enter(ctx, &mut self.app_ctx)?;
-                    while let Some(_) = self.app_ctx.pads.next_event() {}
                 }
                 Transition::Pop => {
                     self.history.pop();
                     if let Some(ref mut state) = self.history.last_mut() {
                         state.on_enter(ctx, &mut self.app_ctx)?;
-                        while let Some(_) = self.app_ctx.pads.next_event() {}
                     }
                 }
                 Transition::None => (),

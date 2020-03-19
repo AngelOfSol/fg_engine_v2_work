@@ -1,7 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::input::pads_context::{Button, Event, EventType, GamepadId};
 use crate::roster::Character;
 use ggez::{graphics, Context, GameResult};
-use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
 use laminar::{Packet, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
@@ -68,13 +68,13 @@ pub struct LocalSelect {
 }
 
 impl PlayerType for LocalSelect {
-    fn handle_gamepad_input(&mut self, event: gilrs::Event) -> Option<NetAction> {
+    fn handle_gamepad_input(&mut self, event: Event) -> Option<NetAction> {
         if event.id != self.gamepad {
             return None;
         }
 
         match event.event {
-            EventType::ButtonPressed(button, _) => match button {
+            EventType::ButtonPressed(button) => match button {
                 Button::DPadUp => {
                     if self.confirmed == Status::None {
                         self.selected = self.selected.checked_sub(1).unwrap_or(0);
@@ -87,7 +87,7 @@ impl PlayerType for LocalSelect {
                         return Some(NetAction::ChangeCharacter(self.selected_character()));
                     }
                 }
-                Button::East => match self.confirmed {
+                Button::B => match self.confirmed {
                     Status::None => {
                         self.confirmed = Status::Quit;
                         return Some(NetAction::ChangeConfirmation(self.confirmed));
@@ -98,7 +98,7 @@ impl PlayerType for LocalSelect {
                     }
                     _ => (),
                 },
-                Button::Start | Button::South => {
+                Button::Start | Button::A => {
                     if self.confirmed == Status::None {
                         self.confirmed = Status::Confirmed;
                         return Some(NetAction::ChangeConfirmation(self.confirmed));
@@ -122,7 +122,7 @@ impl PlayerType for LocalSelect {
 }
 
 impl PlayerType for NetworkSelect {
-    fn handle_gamepad_input(&mut self, _: gilrs::Event) -> Option<NetAction> {
+    fn handle_gamepad_input(&mut self, _: Event) -> Option<NetAction> {
         None
     }
     fn send_net_action(&mut self, action: NetAction) {
@@ -165,7 +165,7 @@ impl PlayerType for NetworkSelect {
 }
 
 pub trait PlayerType {
-    fn handle_gamepad_input(&mut self, event: gilrs::Event) -> Option<NetAction>;
+    fn handle_gamepad_input(&mut self, event: Event) -> Option<NetAction>;
     fn send_net_action(&mut self, action: NetAction);
     fn idle(&mut self);
     fn confirmed(&self) -> Status;
