@@ -8,11 +8,26 @@ macro_rules! impl_render_sound {
         ) -> () {
             self.sound_renderer.render_frame(
                 &audio_device,
-                &self.data.sounds,
+                &self.data.sounds.data,
                 &sound_list.data,
                 &self.state.sound_state,
                 fps,
             );
+        }
+    };
+}
+
+macro_rules! impl_update_sound {
+    () => {
+        fn update_sound(&mut self) {
+            let (frame, move_id) = self.state.current_state;
+            let sounds = &self.data.states[&move_id].sounds;
+
+            for sound in sounds.iter().filter(|item| item.frame == frame) {
+                self.state
+                    .sound_state
+                    .play_sound(sound.channel, sound.name.into());
+            }
         }
     };
 }

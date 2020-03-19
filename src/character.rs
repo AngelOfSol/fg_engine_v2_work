@@ -8,11 +8,12 @@ use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use state::State;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct PlayerCharacter {
     pub states: EditorStates,
     pub properties: Properties,
@@ -22,6 +23,8 @@ pub struct PlayerCharacter {
     pub bullets: Bullets,
     #[serde(default)]
     pub attacks: Attacks,
+    #[serde(default)]
+    pub sounds: HashSet<String>,
 }
 
 impl PlayerCharacter {
@@ -32,6 +35,7 @@ impl PlayerCharacter {
             particles: Particles::new(),
             bullets: Bullets::new(),
             attacks: Attacks::new(),
+            sounds: HashSet::new(),
         }
     }
 
@@ -62,10 +66,12 @@ impl PlayerCharacter {
         mut path: PathBuf,
     ) -> GameResult<()> {
         path.push(&character_file_name);
+        path.push("states");
 
         for (name, state) in player_character.states.rest.iter_mut() {
             State::load(ctx, assets, state, name, path.clone())?;
         }
+        path.pop();
         path.push("particles");
         for (_, animation) in player_character.particles.particles.iter_mut() {
             Animation::load(ctx, assets, animation, path.clone())?;
@@ -75,6 +81,7 @@ impl PlayerCharacter {
         for (_, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter_mut() {
             Animation::load(ctx, assets, animation, path.clone())?;
         }
+
         Ok(())
     }
     pub fn save(
@@ -90,6 +97,7 @@ impl PlayerCharacter {
 
         path.pop();
         path.push(&character_file_name);
+        path.push("states");
 
         if path.exists() {
             std::fs::remove_dir_all(&path)?;
@@ -101,7 +109,12 @@ impl PlayerCharacter {
             State::save(ctx, assets, state, path.clone())?;
             path.pop();
         }
+        path.pop();
+
         path.push("particles");
+        if path.exists() {
+            std::fs::remove_dir_all(&path)?;
+        }
         std::fs::create_dir_all(&path)?;
         for (name, animation) in player_character.particles.particles.iter() {
             path.push(format!("{}.json", name));
@@ -110,12 +123,20 @@ impl PlayerCharacter {
         }
         path.pop();
         path.push("bullets");
+        if path.exists() {
+            std::fs::remove_dir_all(&path)?;
+        }
         std::fs::create_dir_all(&path)?;
         for (key, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter() {
             path.push(format!("{}.json", key));
             Animation::save(ctx, assets, animation, path.clone())?;
             path.pop();
         }
+        path.pop();
+
+        path.push("sounds");
+        std::fs::create_dir_all(&path)?;
+
         Ok(())
     }
 }

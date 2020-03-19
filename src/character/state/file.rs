@@ -15,23 +15,24 @@ pub fn load_from_json<
     ParticleId: DeserializeOwned + Serialize + Default,
     BulletSpawnInfo: DeserializeOwned + Serialize + Default,
     AttackId: DeserializeOwned + Serialize + Default,
+    SoundType: DeserializeOwned + Serialize + Default,
 >(
     ctx: &mut Context,
     assets: &mut Assets,
     mut path: PathBuf,
-) -> GameResult<State<Id, ParticleId, BulletSpawnInfo, AttackId>> {
+) -> GameResult<State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let mut state = serde_json::from_reader::<_, State<_, _, _, _>>(buf_read).unwrap();
+    let mut state = serde_json::from_reader::<_, State<_, _, _, _, _>>(buf_read).unwrap();
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     path.pop();
     State::load(ctx, assets, &mut state, &name, path)?;
     Ok(state)
 }
-pub fn load<Id, ParticleId, BulletSpawnInfo, AttackId>(
+pub fn load<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &mut State<Id, ParticleId, BulletSpawnInfo, AttackId>,
+    state: &mut State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>,
     name: &str,
     mut path: PathBuf,
 ) -> GameResult<()> {
@@ -46,10 +47,11 @@ pub fn save<
     ParticleId: Serialize,
     BulletSpawnInfo: Serialize,
     AttackId: Serialize,
+    SoundType: Serialize,
 >(
     ctx: &mut Context,
     assets: &mut Assets,
-    state: &State<Id, ParticleId, BulletSpawnInfo, AttackId>,
+    state: &State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>,
     mut path: PathBuf,
 ) -> GameResult<()> {
     let name = path.file_stem().unwrap().to_str().unwrap().to_owned();

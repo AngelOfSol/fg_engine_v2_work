@@ -9,9 +9,8 @@ use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
-use crate::game_match::sounds::{
-    AudioBuffer, ChannelName, GlobalSound, PlayerSoundRenderer, SoundList,
-};
+use crate::game_match::sounds::SoundPath;
+use crate::game_match::sounds::{ChannelName, GlobalSound, PlayerSoundRenderer, SoundList};
 use crate::game_match::PlayArea;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
@@ -45,7 +44,8 @@ use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
-use strum_macros::EnumIter;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletData {
@@ -69,16 +69,16 @@ pub struct Properties {
     max_air_actions: usize,
     max_spirit_gauge: i32,
 }
-#[derive(Clone)]
+
 pub struct Yuyuko {
     pub assets: Assets,
-    pub states: HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>,
+    pub states: HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId, YuyukoSound>>,
     pub particles: HashMap<Particle, Animation>,
     pub bullets: BulletList,
     pub attacks: HashMap<AttackId, AttackInfo>,
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
-    pub sounds: HashMap<YuyukoSound, AudioBuffer>,
+    pub sounds: SoundList<YuyukoSound>,
 }
 impl std::fmt::Debug for Yuyuko {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -86,7 +86,7 @@ impl std::fmt::Debug for Yuyuko {
     }
 }
 
-type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId>>;
+type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId, YuyukoSound>>;
 type ParticleList = HashMap<Particle, Animation>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
@@ -102,19 +102,21 @@ impl Yuyuko {
             attacks: data.attacks,
             bullets: data.bullets,
             command_list: command_list::generate_command_list(),
-            //T TODO load this from data
-            sounds: HashMap::new(),
+            sounds: data.sounds,
         })
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct YuyukoData {
     states: StateList,
     particles: ParticleList,
     bullets: BulletList,
     properties: Properties,
     attacks: AttackList,
+    #[serde(skip)]
+    #[serde(default = "SoundList::new")]
+    sounds: SoundList<YuyukoSound>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -128,9 +130,11 @@ impl YuyukoData {
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
         path.push(&name);
+        path.push("states");
         for (name, state) in character.states.iter_mut() {
             State::load(ctx, assets, state, &name.file_name(), path.clone())?;
         }
+        path.pop();
 
         path.push("particles");
         for (_name, particle) in character.particles.iter_mut() {
@@ -145,11 +149,43 @@ impl YuyukoData {
             path.clone(),
         )?;
 
+        path.pop();
+        path.push("sounds");
+        for sound in YuyukoSound::iter() {
+            path.push(format!("{}.mp3", sound));
+            use rodio::source::Source;
+            let source =
+                rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(&path)?))
+                    .unwrap();
+            let source = rodio::buffer::SamplesBuffer::new(
+                source.channels(),
+                source.sample_rate(),
+                source.convert_samples().collect::<Vec<_>>(),
+            )
+            .buffered();
+
+            character.sounds.data.insert(sound, source);
+            path.pop();
+        }
+
         Ok(character)
     }
 }
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter)]
-pub enum YuyukoSound {}
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
+pub enum YuyukoSound {
+    Grunt,
+}
+impl Into<SoundPath<YuyukoSound>> for YuyukoSound {
+    fn into(self) -> SoundPath<YuyukoSound> {
+        SoundPath::Local(self)
+    }
+}
+
+impl Default for YuyukoSound {
+    fn default() -> Self {
+        Self::Grunt
+    }
+}
 
 pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
@@ -260,6 +296,7 @@ impl YuyukoPlayer {
         hitstun_air: MoveId::HitstunAirStart,
         stand_idle: MoveId::Stand
     );
+    impl_update_sound!();
 }
 
 impl GenericCharacterBehaviour for YuyukoPlayer {

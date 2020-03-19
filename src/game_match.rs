@@ -19,10 +19,11 @@ use gfx::{self, *};
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
-use sounds::SoundList;
+use sounds::{GlobalSound, SoundList};
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
+use strum::IntoEnumIterator;
 
 #[derive(Clone)]
 pub struct PlayArea {
@@ -60,24 +61,24 @@ impl<Writer: Write> Match<Writer> {
         p1.position_mut().x = -100_00;
         p2.position_mut().x = 100_00;
 
-        let sound_path = PathBuf::from(".\\resources\\sound.mp3");
-        let source = rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(
-            &sound_path,
-        )?))
-        .unwrap();
         let mut sounds = SoundList::new();
+        let mut path = PathBuf::from(".\\resources\\sounds");
+        for sound in GlobalSound::iter() {
+            path.push(format!("{}.mp3", sound));
+            use rodio::source::Source;
+            let source =
+                rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(&path)?))
+                    .unwrap();
+            let source = rodio::buffer::SamplesBuffer::new(
+                source.channels(),
+                source.sample_rate(),
+                source.convert_samples().collect::<Vec<_>>(),
+            )
+            .buffered();
 
-        use rodio::source::Source;
-
-        let source = rodio::buffer::SamplesBuffer::new(
-            source.channels(),
-            source.sample_rate(),
-            source.convert_samples().collect::<Vec<_>>(),
-        );
-
-        sounds
-            .data
-            .insert(sounds::GlobalSound::Hit, source.buffered());
+            sounds.data.insert(sound, source);
+            path.pop();
+        }
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 

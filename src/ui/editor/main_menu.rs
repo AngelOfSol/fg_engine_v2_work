@@ -51,9 +51,7 @@ impl AppState for EditorMenu {
                                 PathBuf::from(path),
                             );
                             let character = character.map(|result| Rc::new(RefCell::new(result)));
-                            if character.is_err() {
-                                dbg!(character.as_ref().unwrap_err());
-                            }
+                            if character.is_err() {}
                             if let Ok(character) = character {
                                 self.next = Transition::Push(Box::new(CharacterEditor::new(
                                     character, assets,

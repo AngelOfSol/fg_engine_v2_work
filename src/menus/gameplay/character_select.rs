@@ -1,4 +1,5 @@
 use crate::app_state::{AppContext, AppState, Transition};
+use crate::roster::Character;
 use ggez::{graphics, Context, GameResult};
 use gilrs::{Button, EventType, GamepadId};
 use imgui::im_str;
@@ -6,17 +7,12 @@ use laminar::{Packet, Socket, SocketEvent};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use strum::{EnumCount, IntoEnumIterator};
-use strum_macros::{Display, EnumCount, EnumIter};
 
 enum NextState {
     Next,
     Back,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
-pub enum Character {
-    Yuyuko,
-}
 #[derive(Serialize, Deserialize)]
 pub enum NetAction {
     ChangeConfirmation(Status),

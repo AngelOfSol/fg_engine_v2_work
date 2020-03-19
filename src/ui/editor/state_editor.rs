@@ -65,7 +65,7 @@ impl AppState for StateEditor {
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
-        let (state_list, particles_list, bullet_list, attack_ids) = {
+        let (state_list, particles_list, bullet_list, attack_ids, sounds_list) = {
             let character_data = self.character_data.borrow();
 
             let state_list = {
@@ -90,7 +90,19 @@ impl AppState for StateEditor {
 
             let attack_ids: Vec<_> = character_data.attacks.attacks.keys().cloned().collect();
 
-            (state_list, particles_list, bullet_list, attack_ids)
+            let sounds_list: Vec<_> = character_data
+                .properties
+                .character
+                .sound_name_iterator()
+                .collect();
+
+            (
+                state_list,
+                particles_list,
+                bullet_list,
+                attack_ids,
+                sounds_list,
+            )
         };
         imgui
             .frame()
@@ -190,6 +202,17 @@ impl AppState for StateEditor {
                             ui,
                             &bullet_list,
                             &mut self.resource.borrow_mut().bullets,
+                        );
+                    });
+                imgui::Window::new(im_str!("Sounds##State"))
+                    .size([300.0, 400.0], Condition::Once)
+                    .position([300.0, 323.0], Condition::Once)
+                    .collapsed(true, Condition::Once)
+                    .build(ui, || {
+                        self.ui_data.draw_sounds_editor(
+                            ui,
+                            &sounds_list,
+                            &mut self.resource.borrow_mut().sounds,
                         );
                     });
                 imgui::Window::new(im_str!("Flags"))
