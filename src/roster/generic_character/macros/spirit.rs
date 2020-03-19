@@ -5,9 +5,9 @@ macro_rules! impl_update_spirit {
             let move_data = &self.data.states[move_id];
             let flags = move_data.flags.at_time(*frame);
 
-            if move_data.state_type == MoveType::Fly {
-                self.state.spirit_gauge -= 10; // TODO, move this spirit cost to an editor value
-                if self.state.spirit_gauge == 0 {
+            if move_data.state_type == MoveType::Fly && *move_id != $fly_end {
+                self.state.spirit_gauge -= 5; // TODO, move this spirit cost to an editor value
+                if self.state.spirit_gauge <= 0 {
                     *move_id = $fly_end;
                     *frame = 0;
                 }
