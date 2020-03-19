@@ -151,13 +151,13 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] move sound data for character specific sounds behind an Rc or in the OG Rc        
         [x] consider rewriting all the macros so that the resource data is in a different spot than the game state
         [x] add config for getting sounds
-        [] update editor for global and character sounds
-            [] global
-            [] character
+        [x] update editor for global and character sounds
+            [x] global
+            [x] character
         [x] remove the Player class
-        [] add character specific sounds
+        [x] add character specific sounds
         [x] make the damage dealer provide the hit sounds
-        [] make the bullets provide their own hit sounds
+        [x] make the bullets provide their own hit sounds
     [] add loading screen
     [x] deprecate the current particle effect system for hits
     [] move to SDL2 for controller support

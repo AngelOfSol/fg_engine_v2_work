@@ -16,8 +16,33 @@ use crate::typedefs::{collision, graphics};
 use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumCount, EnumIter};
 
 #[enum_dispatch]
 pub enum CharacterBehavior {
     YuyukoPlayer,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
+pub enum Character {
+    Yuyuko,
+}
+
+impl Default for Character {
+    fn default() -> Self {
+        Self::Yuyuko
+    }
+}
+
+impl Character {
+    pub fn sound_name_iterator(self) -> impl Iterator<Item = String> {
+        match self {
+            Character::Yuyuko => YuyukoSound::iter()
+                //.collect::<Vec<_>>()
+                //.into_iter()
+                .map(|item| item.to_string()),
+        }
+    }
 }

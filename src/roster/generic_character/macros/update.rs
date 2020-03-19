@@ -10,6 +10,7 @@ macro_rules! impl_update_frame_mut {
                 self.handle_input(input);
                 self.update_velocity(play_area);
                 self.update_position(play_area);
+                self.update_sound();
             }
             self.handle_combo_state();
             self.update_spirit();

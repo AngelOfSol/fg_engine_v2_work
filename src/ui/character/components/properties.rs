@@ -1,6 +1,8 @@
 use crate::character::components::Properties;
 use crate::imgui_extra::UiExtensions;
+use crate::roster::Character;
 use imgui::*;
+use strum::IntoEnumIterator;
 
 pub struct PropertiesUi {}
 impl PropertiesUi {
@@ -24,6 +26,13 @@ impl PropertiesUi {
         ui.input_vec2_whole(
             im_str!("Directed Super Jump"),
             &mut data.directed_super_jump_accel,
+        );
+
+        ui.combo_items(
+            im_str!("Character"),
+            &mut data.character,
+            &Character::iter().collect::<Vec<_>>(),
+            &|item| im_str!("{}", item.to_string()).into(),
         );
     }
 }

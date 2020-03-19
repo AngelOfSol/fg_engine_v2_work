@@ -7,8 +7,6 @@ pub mod netplay_versus;
 pub mod training_mode;
 pub mod watch_replay;
 
-pub use character_select::{
-    Character, CharacterSelect, FromCharacters, LocalSelect, NetworkSelect,
-};
+pub use character_select::{CharacterSelect, FromCharacters, LocalSelect, NetworkSelect};
 pub use controller_select::ControllerSelect;
 pub use netcode_select::NetworkConnect;

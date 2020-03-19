@@ -1,6 +1,9 @@
-use super::{AnimationDataUi, BulletSpawnUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi};
+use super::{
+    AnimationDataUi, BulletSpawnUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi,
+    SoundPlayInfoUi,
+};
 use crate::character::state::components::{
-    AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn,
+    AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
 };
 
 use crate::assets::Assets;
@@ -169,6 +172,29 @@ impl StateUi {
                 5,
             ) {
                 BulletSpawnUi::draw_ui(ui, bullet, &bullet_list);
+            }
+            id.pop(ui);
+        }
+    }
+    pub fn draw_sounds_editor(
+        &mut self,
+        ui: &Ui<'_>,
+        sounds_list: &[String],
+        data: &mut Vec<SoundPlayInfo<String>>,
+    ) {
+        if !sounds_list.is_empty() {
+            let id = ui.push_id("Sounds");
+            let default_bullet = sounds_list[0].clone();
+            if let (_, Some(sound)) = ui.new_delete_list_box(
+                im_str!("List"),
+                &mut self.current_bullet,
+                data,
+                |item| im_str!("{} @ {} (frame {})", item.name, item.channel, item.frame),
+                || SoundPlayInfo::new(default_bullet.clone()),
+                |_| {},
+                5,
+            ) {
+                SoundPlayInfoUi::draw_ui(ui, sounds_list, sound);
             }
             id.pop(ui);
         }

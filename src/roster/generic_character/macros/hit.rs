@@ -489,6 +489,26 @@ macro_rules! impl_deal_hit {
                         .sound_state
                         .play_sound(ChannelName::Hit, GlobalSound::Hit.into());
                 }
+                HitEffectType::CounterHit => {
+                    self.state
+                        .sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::CounterHit.into());
+                }
+                HitEffectType::GuardCrush => {
+                    self.state
+                        .sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::GuardCrush.into());
+                }
+                HitEffectType::Block => {
+                    self.state
+                        .sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::Block.into());
+                }
+                HitEffectType::WrongBlock => {
+                    self.state
+                        .sound_state
+                        .play_sound(ChannelName::Hit, GlobalSound::WrongBlock.into());
+                }
                 _ => (),
             }
 

@@ -1,3 +1,4 @@
+use crate::roster::Character;
 use crate::typedefs::collision::Vec2;
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +21,9 @@ pub struct Properties {
     pub max_air_actions: usize,
     #[serde(default = "default_max_spirit_gauge")]
     pub max_spirit_gauge: usize,
+
+    #[serde(default)]
+    pub character: Character,
 
     #[serde(skip)]
     _secret: (),
@@ -56,6 +60,7 @@ impl Properties {
             directed_super_jump_accel: default_directed_super_jump_accel(),
             max_air_actions: default_max_air_actions(),
             max_spirit_gauge: default_max_spirit_gauge(),
+            character: Default::default(),
             _secret: (),
         }
     }

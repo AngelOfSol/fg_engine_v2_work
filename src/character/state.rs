@@ -4,6 +4,7 @@ mod cancel_set;
 mod flags;
 mod hitbox_set;
 mod particle_spawn_data;
+mod sound_play_info;
 
 mod file;
 
@@ -14,6 +15,7 @@ pub mod components {
     pub use super::flags::*;
     pub use super::hitbox_set::*;
     pub use super::particle_spawn_data::*;
+    pub use super::sound_play_info::*;
 }
 
 use crate::assets::Assets;
@@ -28,12 +30,13 @@ use hitbox_set::HitboxSet;
 use particle_spawn_data::ParticleSpawn;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use sound_play_info::SoundPlayInfo;
 use std::cmp;
 use std::hash::Hash;
 use std::path::PathBuf;
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId> {
+pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
     pub animations: Vec<AnimationData>,
     pub flags: Timeline<Flags>,
     #[serde(bound(
@@ -46,6 +49,8 @@ pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId> {
     pub particles: Vec<ParticleSpawn<ParticleId>>,
     #[serde(default)]
     pub bullets: Vec<BulletSpawnInfo>,
+    #[serde(default)]
+    pub sounds: Vec<SoundPlayInfo<SoundType>>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
     #[serde(default)]
@@ -54,8 +59,8 @@ pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId> {
     pub minimum_spirit_required: i32,
 }
 
-impl<Id, ParticleId, BulletSpawnInfo, AttackId> PartialEq
-    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> PartialEq
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
 where
     Id: PartialEq,
     ParticleId: PartialEq,
@@ -77,8 +82,8 @@ where
                 .eq(&rhs.minimum_spirit_required)
     }
 }
-impl<Id, ParticleId, BulletSpawnInfo, AttackId> Eq
-    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> Eq
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
 where
     Id: PartialEq,
     ParticleId: PartialEq,
@@ -88,8 +93,8 @@ where
 {
 }
 
-impl<Id, ParticleId, BulletSpawnInfo, AttackId> std::fmt::Debug
-    for State<Id, ParticleId, BulletSpawnInfo, AttackId>
+impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> std::fmt::Debug
+    for State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
 where
     Id: std::fmt::Debug,
     ParticleId: std::fmt::Debug,
@@ -111,7 +116,7 @@ where
     }
 }
 
-pub type EditorCharacterState = State<String, String, BulletSpawn, String>;
+pub type EditorCharacterState = State<String, String, BulletSpawn, String, String>;
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
@@ -120,7 +125,8 @@ impl<
         ParticleId: Serialize + DeserializeOwned + Default,
         BulletSpawnInfo: Serialize + DeserializeOwned + Default,
         AttackId: Serialize + DeserializeOwned + Default,
-    > State<Id, ParticleId, BulletSpawnInfo, AttackId>
+        SoundType: Serialize + DeserializeOwned + Default,
+    > State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
 {
     pub fn load_from_json(
         ctx: &mut Context,
@@ -222,6 +228,7 @@ impl EditorCharacterState {
             minimum_spirit_required: 0,
             particles: Vec::new(),
             bullets: Vec::new(),
+            sounds: Vec::new(),
         }
     }
 }
