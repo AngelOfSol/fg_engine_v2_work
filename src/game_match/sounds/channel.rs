@@ -79,10 +79,9 @@ where
             }
         } else {
             self.sink.play();
-
-            if let Some(new_hit) = next {
-                self.state = new_hit.clone();
-            }
+        }
+        if let Some(new_hit) = next {
+            self.state = new_hit.clone();
         }
     }
 }
