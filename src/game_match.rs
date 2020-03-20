@@ -106,12 +106,9 @@ impl<Writer: Write> Match<Writer> {
         self.game_state.current_frame
     }
 
-    pub fn update(&mut self, input: PlayerData<&[InputState]>) {
-        let _ = bincode::serialize_into(&mut self.writer, &self.game_state.current_frame);
-
+    fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             if let Some(last_input) = &input.last() {
-                let _ = bincode::serialize_into(&mut self.writer, &last_input);
                 player.update_frame_mut(input, &self.play_area);
             } else {
                 dbg!("skipped a frame");
@@ -251,6 +248,25 @@ impl<Writer: Write> Match<Writer> {
 
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.play_area);
+        }
+    }
+
+    pub fn update(&mut self, input: PlayerData<&[InputState]>) {
+        if input.iter().any(|input| input.is_empty()) {
+            return;
+        }
+
+        let _ = bincode::serialize_into(&mut self.writer, &self.game_state.current_frame);
+        for input in input.iter() {
+            let _ = bincode::serialize_into(&mut self.writer, &input.last().unwrap());
+        }
+        // if !self.players.iter().any(|player| player.in_cutscene())
+        if self.players.iter().any(|player| player.in_cutscene()) {
+            for player in self.players.iter_mut() {
+                player.update_cutscene();
+            }
+        } else {
+            self.update_normal(input);
         }
 
         self.game_state.current_frame += 1;

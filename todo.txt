@@ -160,7 +160,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] make the bullets provide their own hit sounds
     [x] add loading screen
     [x] deprecate the current particle effect system for hits
-    [] move to SDL2 for controller support
+    [x] move to SDL2 for controller support
     [] add super flash support
         [] add super flash
         [] make sure if 2 people super flash at the same time, both play their animation

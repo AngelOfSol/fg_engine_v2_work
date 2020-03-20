@@ -349,6 +349,22 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             attacks: &self.data.attacks,
         })
     }
+
+    fn update_cutscene(&mut self) {
+        if self.in_cutscene() {
+            self.handle_expire();
+        }
+        self.state.sound_state.update();
+    }
+
+    fn in_cutscene(&self) -> bool {
+        let (current_frame, move_id) = self.state.current_state;
+        self.data.states[&move_id]
+            .flags
+            .try_time(current_frame + 1)
+            .map(|item| item.cutscene)
+            .unwrap_or(false)
+    }
 }
 
 pub struct YuyukoBulletIterator<'a> {

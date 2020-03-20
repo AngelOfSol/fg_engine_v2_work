@@ -44,6 +44,8 @@ pub struct Flags {
     pub accel: Vec2,
     #[serde(default = "default_friction")]
     pub friction: Int,
+    #[serde(default)]
+    pub cutscene: bool,
 }
 
 fn default_friction() -> Int {
@@ -84,6 +86,7 @@ impl Flags {
             can_be_counter_hit: false,
             accel: Vec2::zeros(),
             friction: default_friction(),
+            cutscene: false,
         }
     }
 
