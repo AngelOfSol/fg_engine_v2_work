@@ -69,6 +69,7 @@ pub enum MoveId {
     BorderEscapeJump,
     MeleeRestitution,
     ChainShift,
+    GuardCrush,
 }
 
 impl Default for MoveId {

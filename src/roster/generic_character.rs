@@ -54,7 +54,7 @@ pub trait GenericCharacterBehaviour {
 
     fn handle_refacing(&mut self, other_player: collision::Int);
     fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea);
-    fn update_cutscene(&mut self);
+    fn update_cutscene(&mut self, play_area: &PlayArea);
 
     fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
 

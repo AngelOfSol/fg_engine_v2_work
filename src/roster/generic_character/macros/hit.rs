@@ -401,7 +401,7 @@ macro_rules! impl_would_be_hit {
 macro_rules! impl_take_hit {
     (hitstun_air: $hitstun_air:expr, hitstun_ground: $hitstun_ground:expr,
         blockstun_air: $blockstun_air:expr, blockstun_stand: $blockstun_stand:expr, blockstun_crouch: $blockstun_crouch:expr,
-        wrongblock_stand: $wrongblock_stand:expr, wrongblock_crouch: $wrongblock_crouch:expr) => {
+        wrongblock_stand: $wrongblock_stand:expr, wrongblock_crouch: $wrongblock_crouch:expr, guard_crush_ground: $guard_crush_ground:expr, guard_crush_air: $guard_crush_air:expr) => {
         fn take_hit(&mut self, info: HitEffect) {
             let flags = self.current_flags();
 
@@ -458,14 +458,18 @@ macro_rules! impl_take_hit {
                         self.state.current_state = (0, $blockstun_stand);
                     }
                 }
-                HitEffectType::Hit
-                | HitEffectType::CounterHit
-                | HitEffectType::GuardCrush
-                | HitEffectType::GrazeCrush => {
+                HitEffectType::Hit | HitEffectType::CounterHit | HitEffectType::GrazeCrush => {
                     if airborne {
                         self.state.current_state = (0, $hitstun_air);
                     } else {
                         self.state.current_state = (0, $hitstun_ground);
+                    }
+                }
+                HitEffectType::GuardCrush => {
+                    if airborne {
+                        self.state.current_state = (0, $guard_crush_air);
+                    } else {
+                        self.state.current_state = (0, $guard_crush_ground);
                     }
                 }
             }

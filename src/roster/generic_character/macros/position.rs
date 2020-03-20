@@ -86,6 +86,19 @@ macro_rules! impl_update_position {
                 self.state.air_actions = self.data.properties.max_air_actions;
             }
 
+            self.validate_position(play_area);
+        }
+    };
+}
+
+macro_rules! impl_validate_position {
+    () => {
+        fn validate_position(&mut self, play_area: &PlayArea) {
+            let (frame, move_id) = self.state.current_state;
+            let state = &self.data.states[&move_id];
+            let flags = state.flags.at_time(frame);
+            let hitboxes = state.hitboxes.at_time(frame);
+            let collision = &hitboxes.collision;
             // handle stage sides
             if i32::abs(self.state.position.x) > play_area.width / 2 - collision.half_size.x {
                 self.state.position.x = i32::signum(self.state.position.x)

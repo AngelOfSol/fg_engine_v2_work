@@ -108,11 +108,7 @@ impl<Writer: Write> Match<Writer> {
 
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
-            if let Some(last_input) = &input.last() {
-                player.update_frame_mut(input, &self.play_area);
-            } else {
-                dbg!("skipped a frame");
-            }
+            player.update_frame_mut(input, &self.play_area);
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -263,7 +259,7 @@ impl<Writer: Write> Match<Writer> {
         // if !self.players.iter().any(|player| player.in_cutscene())
         if self.players.iter().any(|player| player.in_cutscene()) {
             for player in self.players.iter_mut() {
-                player.update_cutscene();
+                player.update_cutscene(&self.play_area);
             }
         } else {
             self.update_normal(input);

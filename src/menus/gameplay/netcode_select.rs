@@ -101,7 +101,7 @@ impl AppState for NetworkConnect {
         self.socket.manual_poll(Instant::now());
 
         while let Some(packet) = self.socket.recv() {
-            match dbg!(packet) {
+            match packet {
                 SocketEvent::Packet(_) => self.connected = true,
                 SocketEvent::Connect(addr) => {
                     if self.mode == Mode::Host {
