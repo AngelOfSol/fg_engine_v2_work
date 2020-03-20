@@ -161,10 +161,14 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [x] add loading screen
     [x] deprecate the current particle effect system for hits
     [x] move to SDL2 for controller support
-    [] add super flash support
-        [] add super flash
-        [] make sure if 2 people super flash at the same time, both play their animation
-        [] add guard crush flash?
+    [X] add super flash support
+        [x] add super flash
+        [x] make sure if 2 people super flash at the same time, both play their animation
+        [] add guard crush cutscene
+        [] implement super flash
+        [] implement guard crush flash
+        [] implement partial super flash
+        [] implement super flash sound
     [] add meter
         [] add meter that slowly generates to 100 out of 200
         [] render it
@@ -195,15 +199,13 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] add pause menu
     [] add box<character> to gameplay
     [] expose each character to the training_mode so it can reset its hp
+        [] expose training mode options via additional methods on game_match?
+        [] expose it via character behavior, and just expose the characters instead?
     [] reset HP when player hits idle
     [] have replays handle multiple rounds
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
     [x] rollback netcode
     [x] fix copy paste 
-
-// probably this one cause its more explicit
-https://docs.rs/enum_dispatch/0.2.1/enum_dispatch/
-https://docs.rs/enumerate/0.1.1/enumerate/
 
 random key: 4D 6D 9C 6C 2B

@@ -296,6 +296,8 @@ impl YuyukoPlayer {
         hitstun_air: MoveId::HitstunAirStart,
         stand_idle: MoveId::Stand
     );
+    impl_validate_position!();
+
     impl_update_sound!();
 }
 
@@ -312,7 +314,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         blockstun_stand: MoveId::BlockstunStandStart,
         blockstun_crouch: MoveId::BlockstunCrouchStart,
         wrongblock_stand: MoveId::WrongblockStandStart,
-        wrongblock_crouch: MoveId::WrongblockCrouchStart
+        wrongblock_crouch: MoveId::WrongblockCrouchStart,
+        guard_crush_ground: MoveId::GuardCrush,
+        guard_crush_air: MoveId::HitstunAirStart
     );
     impl_deal_hit!(on_hit_particle: Particle::HitEffect);
 
@@ -350,10 +354,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         })
     }
 
-    fn update_cutscene(&mut self) {
+    fn update_cutscene(&mut self, play_area: &PlayArea) {
         if self.in_cutscene() {
             self.handle_expire();
         }
+        self.validate_position(play_area);
         self.state.sound_state.update();
     }
 
