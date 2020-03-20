@@ -54,6 +54,7 @@ pub trait GenericCharacterBehaviour {
 
     fn handle_refacing(&mut self, other_player: collision::Int);
     fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea);
+    fn update_cutscene(&mut self);
 
     fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
 
@@ -76,6 +77,7 @@ pub trait GenericCharacterBehaviour {
     fn velocity(&self) -> collision::Vec2;
     fn facing(&self) -> Facing;
     fn bullets_mut<'a>(&'a mut self) -> OpaqueBulletIterator<'a>;
+    fn in_cutscene(&self) -> bool;
 
     fn save(&self) -> GameResult<Vec<u8>>;
     fn load(&mut self, value: &[u8]) -> GameResult<()>;

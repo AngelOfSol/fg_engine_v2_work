@@ -67,7 +67,9 @@ impl ControlScheme<SdlButton> {
         ret.buttons[Button::B.as_id()].insert(SdlButton::Y);
         ret.buttons[Button::B.as_id()].insert(SdlButton::RightShoulder);
         ret.buttons[Button::C.as_id()].insert(SdlButton::B);
+        ret.buttons[Button::C.as_id()].insert(SdlButton::LeftShoulder);
         ret.buttons[Button::D.as_id()].insert(SdlButton::A);
+        ret.buttons[Button::D.as_id()].insert(SdlButton::LeftShoulder);
 
         ret.axis.insert(SdlButton::DPadUp, Axis::Up);
         ret.axis.insert(SdlButton::DPadDown, Axis::Down);

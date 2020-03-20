@@ -52,7 +52,7 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                 let next_frame: i16 = match bincode::deserialize_from(&mut self.reader) {
                     Ok(value) => value,
                     Err(kind) => {
-                        match *kind {
+                        match kind.as_ref() {
                             bincode::ErrorKind::Io(err) => match err.kind() {
                                 std::io::ErrorKind::UnexpectedEof => {
                                     self.next = Some(NextState::Back);
@@ -66,7 +66,6 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                         break 'stream_inputs;
                     }
                 };
-
                 let p1_input: InputState = bincode::deserialize_from(&mut self.reader).unwrap();
                 let p2_input: InputState = bincode::deserialize_from(&mut self.reader).unwrap();
                 if next_frame == self.game_state.current_frame() {
@@ -89,6 +88,7 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                         self.previous_states[next_frame] = self.game_state.save_state();
                     }
                 } else {
+                    dbg!("skipped/missing frame");
                     self.next = Some(NextState::Error);
                     break 'stream_inputs;
                 }

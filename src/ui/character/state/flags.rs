@@ -14,6 +14,7 @@ impl FlagsUi {
         ui.checkbox(im_str!("Reset Velocity"), &mut data.reset_velocity);
         ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
         ui.checkbox(im_str!("Allow Reface"), &mut data.allow_reface);
+        ui.checkbox(im_str!("Cutscene"), &mut data.cutscene);
         ui.separator();
 
         ui.input_whole(im_str!("Spirit Cost"), &mut data.spirit_cost)
