@@ -11,7 +11,7 @@ use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, PlayerSoundRenderer, SoundList};
-use crate::game_match::PlayArea;
+use crate::game_match::{FlashType, PlayArea};
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
 use crate::hitbox::PositionedHitbox;
@@ -369,6 +369,10 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             .try_time(current_frame + 1)
             .map(|item| item.cutscene)
             .unwrap_or(false)
+    }
+
+    fn get_flash(&self) -> Option<FlashType> {
+        self.current_flags().flash
     }
 }
 

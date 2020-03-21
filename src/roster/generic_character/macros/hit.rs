@@ -402,7 +402,7 @@ macro_rules! impl_take_hit {
     (hitstun_air: $hitstun_air:expr, hitstun_ground: $hitstun_ground:expr,
         blockstun_air: $blockstun_air:expr, blockstun_stand: $blockstun_stand:expr, blockstun_crouch: $blockstun_crouch:expr,
         wrongblock_stand: $wrongblock_stand:expr, wrongblock_crouch: $wrongblock_crouch:expr, guard_crush_ground: $guard_crush_ground:expr, guard_crush_air: $guard_crush_air:expr) => {
-        fn take_hit(&mut self, info: HitEffect) {
+        fn take_hit(&mut self, info: HitEffect, play_area: &PlayArea) {
             let flags = self.current_flags();
 
             let hit_type = info.hit_type;
@@ -473,6 +473,8 @@ macro_rules! impl_take_hit {
                     }
                 }
             }
+
+            self.validate_position(play_area);
 
             match hit_type {
                 HitEffectType::GuardCrush => {

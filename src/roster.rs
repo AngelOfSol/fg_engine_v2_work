@@ -9,7 +9,7 @@ pub use yuyuko::*;
 
 use crate::character::components::AttackInfo;
 use crate::game_match::sounds::{GlobalSound, SoundList};
-use crate::game_match::PlayArea;
+use crate::game_match::{FlashType, PlayArea};
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
