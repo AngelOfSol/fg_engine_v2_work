@@ -164,7 +164,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [X] add super flash support
         [x] add super flash
         [x] make sure if 2 people super flash at the same time, both play their animation
-        [] add guard crush cutscene
+        [x] add guard crush cutscene
         [] implement super flash
         [] implement guard crush flash
         [] implement partial super flash

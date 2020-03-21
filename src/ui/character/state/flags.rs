@@ -1,4 +1,5 @@
 use crate::character::state::components::{Flags, Hittable, MovementData};
+use crate::game_match::FlashType;
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -15,6 +16,28 @@ impl FlagsUi {
         ui.checkbox(im_str!("Jump Start"), &mut data.jump_start);
         ui.checkbox(im_str!("Allow Reface"), &mut data.allow_reface);
         ui.checkbox(im_str!("Cutscene"), &mut data.cutscene);
+        ui.separator();
+
+        ui.combo_items(
+            im_str!("Play Flash"),
+            &mut data.flash,
+            &[
+                None,
+                Some(FlashType::GuardCrush),
+                Some(FlashType::Super),
+                Some(FlashType::PartialSuper),
+                Some(FlashType::ChainShift),
+            ],
+            &|item| {
+                im_str!(
+                    "{}",
+                    item.map(|item| item.to_string())
+                        .unwrap_or("None".to_owned())
+                )
+                .into()
+            },
+        );
+
         ui.separator();
 
         ui.input_whole(im_str!("Spirit Cost"), &mut data.spirit_cost)

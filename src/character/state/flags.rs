@@ -1,3 +1,4 @@
+use crate::game_match::FlashType;
 use crate::typedefs::collision::{Int, Vec2};
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +47,8 @@ pub struct Flags {
     pub friction: Int,
     #[serde(default)]
     pub cutscene: bool,
+    #[serde(default)]
+    pub flash: Option<FlashType>,
 }
 
 fn default_friction() -> Int {
@@ -87,6 +90,7 @@ impl Flags {
             accel: Vec2::zeros(),
             friction: default_friction(),
             cutscene: false,
+            flash: None,
         }
     }
 

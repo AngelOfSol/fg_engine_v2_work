@@ -1,13 +1,17 @@
+mod flash;
 mod match_settings;
 mod noop_writer;
 pub mod sounds;
 
+pub use flash::FlashType;
 pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
 
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
-use crate::roster::generic_character::hit_info::{HitAction, HitEffect, HitResult, HitSource};
+use crate::roster::generic_character::hit_info::{
+    HitAction, HitEffect, HitEffectType, HitResult, HitSource,
+};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::CharacterBehavior;
 use crate::roster::{Yuyuko, YuyukoPlayer};
@@ -15,6 +19,7 @@ use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
+use flash::FlashOverlay;
 use gfx::{self, *};
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
@@ -34,6 +39,7 @@ gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
 #[derive(Debug, Clone)]
 pub struct GameState {
     current_frame: i16,
+    flash: Option<FlashOverlay>,
 }
 
 pub struct Match<Writer> {
@@ -84,7 +90,10 @@ impl<Writer: Write> Match<Writer> {
 
         Ok(Self {
             players: [p1, p2].into(),
-            game_state: GameState { current_frame: 0 },
+            game_state: GameState {
+                current_frame: 0,
+                flash: None,
+            },
             play_area: PlayArea {
                 width: background.width() as i32 * 100, //- 50_00,
             },
@@ -239,7 +248,13 @@ impl<Writer: Write> Match<Writer> {
             .zip(hit_effects.into_iter())
             .flat_map(|(player, item)| item.map(|item| (player, item)))
         {
-            player.take_hit(effect);
+            match effect.hit_type {
+                HitEffectType::GuardCrush => {
+                    self.game_state.flash = Some(FlashType::GuardCrush.into())
+                }
+                _ => (),
+            }
+            player.take_hit(effect, &self.play_area);
         }
 
         for player in self.players.iter_mut() {
@@ -263,6 +278,14 @@ impl<Writer: Write> Match<Writer> {
             }
         } else {
             self.update_normal(input);
+        }
+
+        self.game_state.flash = self.game_state.flash.take().and_then(|item| item.update());
+        for player in self.players.iter() {
+            self.game_state.flash = player
+                .get_flash()
+                .map(|item| item.into())
+                .or(self.game_state.flash.take());
         }
 
         self.game_state.current_frame += 1;
@@ -310,6 +333,14 @@ impl<Writer: Write> Match<Writer> {
             * Matrix4::new_translation(&Vec3::new(-translate, 0.0, 0.0));
 
         self.background.draw(ctx, world)?;
+
+        if let Some(flash) = &self.game_state.flash {
+            let overlay = graphics::Image::solid(ctx, 1280, flash.color())?;
+
+            graphics::set_transform(ctx, Matrix4::identity());
+            graphics::apply_transformations(ctx)?;
+            graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+        }
 
         for player in self.players.iter() {
             {

@@ -9,7 +9,7 @@ pub mod particle_id;
 pub mod macros;
 
 use crate::game_match::sounds::{GlobalSound, SoundList};
-use crate::game_match::PlayArea;
+use crate::game_match::{FlashType, PlayArea};
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::roster::AttackInfo;
@@ -49,7 +49,7 @@ pub trait GenericCharacterBehaviour {
         effect: Option<HitEffect>,
     ) -> (Option<HitEffect>, Option<HitResult>);
 
-    fn take_hit(&mut self, info: HitEffect);
+    fn take_hit(&mut self, info: HitEffect, play_area: &PlayArea);
     fn deal_hit(&mut self, info: &HitResult);
 
     fn handle_refacing(&mut self, other_player: collision::Int);
@@ -81,6 +81,8 @@ pub trait GenericCharacterBehaviour {
 
     fn save(&self) -> GameResult<Vec<u8>>;
     fn load(&mut self, value: &[u8]) -> GameResult<()>;
+
+    fn get_flash(&self) -> Option<FlashType>;
 }
 
 use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut};
