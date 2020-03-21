@@ -42,12 +42,19 @@ pub enum Packet<Input> {
     Request(usize),
     Provide(Vec<(PlayerHandle, usize, Vec<Input>)>),
 }
+
+struct SkipFrames {
+    count: usize,
+    from_frame: usize,
+}
+
 pub struct NetcodeClient<Input, GameState> {
     local_players: HashMap<PlayerHandle, LocalHistory<Input>>,
     net_players: HashMap<PlayerHandle, NetworkedHistory<Input>>,
     current_frame: usize,
     held_input_count: usize,
-    skip_frames: usize,
+    // old impl: Option<usize> that got checked every frame.
+    skip_frames: SkipFrames,
     saved_rollback_states: HashMap<usize, GameState>,
     rollback_to: Option<(usize, GameState)>,
     players: Vec<PlayerInfo>,
@@ -64,7 +71,10 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
             net_players: HashMap::new(),
             current_frame: 0,
             held_input_count,
-            skip_frames: 0,
+            skip_frames: SkipFrames {
+                count: 0,
+                from_frame: 0,
+            },
             packet_buffer_size: 10,
             input_delay: 1,
             network_delay: HashMap::new(),
@@ -240,12 +250,16 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
                     self.players[player_handle.0].player_type == PlayerType::Net,
                     "Must handle networked input for a networked player."
                 );
+                if sent_on_frame >= self.skip_frames.from_frame {
+                    self.skip_frames = SkipFrames {
+                        from_frame: sent_on_frame,
+                        count: self
+                            .current_frame
+                            .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
+                            .unwrap_or(0),
+                    }
+                }
 
-                self.skip_frames = self
-                    .current_frame
-                    .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
-                    .unwrap_or(0)
-                    .max(self.skip_frames);
                 for (idx, input) in inputs.into_iter().enumerate() {
                     let frame = start_frame + idx;
                     self.handle_net_input(frame, input, player_handle);
@@ -351,8 +365,8 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
             .and_then(|frame| self.current_frame.checked_sub(*frame))
             .unwrap_or(0);
 
-        if self.skip_frames > 0 {
-            self.skip_frames -= 1;
+        if self.skip_frames.count > 0 {
+            self.skip_frames.count -= 1;
             None
         } else if self
             .local_players

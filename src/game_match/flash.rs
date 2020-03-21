@@ -32,8 +32,7 @@ impl FlashOverlay {
     pub fn color(&self) -> Color {
         let mut alpha = keyframes! {
             (0.0, 0.0, EaseOutQuint),
-            (1.0, 4.0, EaseOutQuint),
-            (0.75, 8.0, EaseOutQuint),
+            (1.0, 4.0, EaseInQuint),
             (0.0, self.duration() as f64)
         };
         alpha.advance_to(self.current_time as f64);
@@ -41,7 +40,7 @@ impl FlashOverlay {
         match self.flash_type {
             FlashType::GuardCrush => Color::new(0.7, 0.0, 0.1, 0.7 * alpha.now()),
             FlashType::Super | FlashType::ChainShift => {
-                Color::new(0.0, 0.0, 0.0, 0.7 * alpha.now())
+                Color::new(0.0, 0.0, 0.0, 0.85 * alpha.now())
             }
             FlashType::PartialSuper => Color::new(0.00, 0.0, 0.0, 0.4 * alpha.now()),
         }
@@ -51,7 +50,7 @@ impl FlashOverlay {
         match self.flash_type {
             FlashType::GuardCrush => 40,
             FlashType::Super => 20,
-            FlashType::PartialSuper => 12,
+            FlashType::PartialSuper => 10,
             FlashType::ChainShift => 40,
         }
     }
