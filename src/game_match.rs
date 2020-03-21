@@ -118,6 +118,10 @@ impl<Writer: Write> Match<Writer> {
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
             player.update_frame_mut(input, &self.play_area);
+            self.game_state.flash = player
+                .get_flash()
+                .map(|item| item.into())
+                .or(self.game_state.flash.take());
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -275,18 +279,16 @@ impl<Writer: Write> Match<Writer> {
         if self.players.iter().any(|player| player.in_cutscene()) {
             for player in self.players.iter_mut() {
                 player.update_cutscene(&self.play_area);
+                self.game_state.flash = player
+                    .get_flash()
+                    .map(|item| item.into())
+                    .or(self.game_state.flash.take());
             }
         } else {
             self.update_normal(input);
         }
 
         self.game_state.flash = self.game_state.flash.take().and_then(|item| item.update());
-        for player in self.players.iter() {
-            self.game_state.flash = player
-                .get_flash()
-                .map(|item| item.into())
-                .or(self.game_state.flash.take());
-        }
 
         self.game_state.current_frame += 1;
     }

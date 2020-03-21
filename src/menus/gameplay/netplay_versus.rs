@@ -133,8 +133,8 @@ impl NetplayVersus {
         socket: Socket,
         mut client: NetcodeClient,
     ) -> GameResult<Self> {
-        client.set_input_delay(3);
-        client.set_allowed_rollback(8);
+        client.set_input_delay(0);
+        client.set_allowed_rollback(11);
         client.set_packet_buffer_size(11);
 
         Ok(Self {
@@ -211,11 +211,9 @@ impl AppState for NetplayVersus {
                                 .iter_mut()
                                 .filter(|(addr, _, _)| *addr == packet.addr())
                             {
-                                *ping = *ping * 0.9 + ping_time as f32 * 0.1;
-                                self.client.set_network_delay(
-                                    ((*ping + 3.0) / 32.0).ceil() as usize,
-                                    *handle,
-                                );
+                                *ping = *ping * 0.9 + (ping_time as f32 / 2.0) * 0.1;
+                                self.client
+                                    .set_network_delay(((*ping) / 16.0).ceil() as usize, *handle);
                             }
                         }
                     }
@@ -241,9 +239,11 @@ impl AppState for NetplayVersus {
                 if let Some(output) = output {
                     let output = NetworkData::Client(output);
                     for (addr, _, _) in self.network_players.iter() {
+                        //let _ = self.socket.send(SocketPacket::unreliable_sequenced(
                         let _ = self.socket.send(SocketPacket::unreliable(
                             *addr,
                             bincode::serialize(&output).unwrap(),
+                            //   Some(1),
                         ));
                     }
                 }

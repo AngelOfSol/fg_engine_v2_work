@@ -165,10 +165,11 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] add super flash
         [x] make sure if 2 people super flash at the same time, both play their animation
         [x] add guard crush cutscene
-        [] implement super flash
-        [] implement guard crush flash
+        [x] implement super flash
+        [x] implement guard crush flash
         [] implement partial super flash
         [] implement super flash sound
+            [] add global sounds
     [] add meter
         [] add meter that slowly generates to 100 out of 200
         [] render it
@@ -198,11 +199,16 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
     [] add box<character> to gameplay
+    [] add self chaining for 2a/5a
     [] expose each character to the training_mode so it can reset its hp
         [] expose training mode options via additional methods on game_match?
         [] expose it via character behavior, and just expose the characters instead?
     [] reset HP when player hits idle
+    [] handle standing reset limit
+        [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
+    [] treat triggers as buttons for the purpose of htis game
     [] have replays handle multiple rounds
+    [] 4ab to 6ab 
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
     [x] rollback netcode
