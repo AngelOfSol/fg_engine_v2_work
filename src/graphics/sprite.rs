@@ -1,11 +1,9 @@
 mod file;
-mod version;
-
-pub use version::{deserialize_versioned, SpriteVersioned};
+pub mod version;
 
 use super::keyframe::Modifiers;
 use crate::assets::Assets;
-use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
@@ -21,10 +19,6 @@ pub struct SpriteV1 {
     pub image: Option<Image>,
 
     pub modifiers: Modifiers,
-}
-
-fn default_scale() -> Vec2 {
-    Vec2::new(1.0, 1.0)
 }
 
 impl Sprite {

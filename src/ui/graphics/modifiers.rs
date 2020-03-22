@@ -1,11 +1,6 @@
-use crate::assets::Assets;
 use crate::graphics::keyframe::{Coordinates, EaseType, Keyframe, Keyframes, Modifiers};
-use crate::graphics::Sprite;
 use crate::imgui_extra::UiExtensions;
-use ggez::Context;
-use ggez::GameResult;
 use imgui::*;
-use nfd::Response;
 use strum::IntoEnumIterator;
 
 pub struct ModifiersUi;
@@ -61,7 +56,13 @@ impl ModifiersUi {
         {
             let id = ui.push_id("Offset");
             if ui
-                .collapsing_header(im_str!("X"))
+                .collapsing_header(&im_str!(
+                    "{}",
+                    match mods.coord_type {
+                        Coordinates::Cartesian => "X",
+                        Coordinates::Polar => "Radius",
+                    }
+                ))
                 .default_open(false)
                 .build()
             {
@@ -70,7 +71,13 @@ impl ModifiersUi {
                 id.pop(ui);
             }
             if ui
-                .collapsing_header(im_str!("Y"))
+                .collapsing_header(&im_str!(
+                    "{}",
+                    match mods.coord_type {
+                        Coordinates::Cartesian => "Y",
+                        Coordinates::Polar => "Theta",
+                    }
+                ))
                 .default_open(false)
                 .build()
             {

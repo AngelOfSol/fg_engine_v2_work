@@ -1,4 +1,3 @@
-mod animation_data;
 mod bullet_spawn_data;
 mod cancel_set;
 mod flags;
@@ -9,7 +8,6 @@ mod sound_play_info;
 mod file;
 
 pub mod components {
-    pub use super::animation_data::*;
     pub use super::bullet_spawn_data::*;
     pub use super::cancel_set::*;
     pub use super::flags::*;
@@ -19,9 +17,9 @@ pub mod components {
 }
 
 use crate::assets::Assets;
+use crate::graphics::{self, Animation};
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
-use animation_data::AnimationData;
 use bullet_spawn_data::BulletSpawn;
 use cancel_set::{CancelSet, MoveType};
 use flags::Flags;
@@ -37,7 +35,8 @@ use std::path::PathBuf;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
-    pub animations: Vec<AnimationData>,
+    #[serde(deserialize_with = "graphics::animation::version::vec::deserialize")]
+    pub animations: Vec<Animation>,
     pub flags: Timeline<Flags>,
     #[serde(bound(
         serialize = "CancelSet<Id>: Serialize",
@@ -193,7 +192,7 @@ impl<
             for animation in self
                 .animations
                 .iter()
-                .filter(|item| item.animation.blend_mode == crate::graphics::BlendMode::Alpha)
+                .filter(|item| item.blend_mode == crate::graphics::BlendMode::Alpha)
             {
                 animation.draw_at_time(ctx, assets, time, world)?
             }

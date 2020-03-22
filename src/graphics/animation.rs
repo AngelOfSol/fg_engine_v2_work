@@ -1,39 +1,40 @@
 mod file;
+pub mod version;
 
-use super::sprite::{Sprite, SpriteVersioned};
+use super::keyframe::Modifiers;
+use super::sprite::{self, Sprite};
 use super::BlendMode;
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-pub fn deserialize_versioned_frames<'de, D>(deserializer: D) -> Result<Timeline<Sprite>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(Timeline::<SpriteVersioned>::deserialize(deserializer)?
-        .into_iter()
-        .map(|(sprite, time)| (sprite.to_modern(), time))
-        .collect())
-}
+pub type Animation = AnimationV1;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Animation {
+pub struct AnimationV1 {
     pub name: String,
-    #[serde(deserialize_with = "deserialize_versioned_frames")]
+    #[serde(deserialize_with = "sprite::version::vec::deserialize")]
     pub frames: Timeline<Sprite>,
-    #[serde(default = "default_blend_mode")]
     pub blend_mode: BlendMode,
-}
-
-fn default_blend_mode() -> BlendMode {
-    BlendMode::Alpha
+    #[serde(default)]
+    pub modifiers: Modifiers,
+    #[serde(default)]
+    pub delay: usize,
 }
 
 impl Animation {
+    pub fn to_modern(self) -> Animation {
+        self
+    }
+
+    pub fn duration(&self) -> usize {
+        self.frames.duration()
+    }
+
     pub fn get_path_to_image(&self, idx: usize) -> String {
         format!("{}-{:03}.png", &self.name, idx)
     }
@@ -42,6 +43,8 @@ impl Animation {
             name: name.into(),
             frames: Timeline::new(),
             blend_mode: BlendMode::Alpha,
+            modifiers: Modifiers::new(),
+            delay: 0,
         }
     }
     pub fn load_from_json(
@@ -70,6 +73,7 @@ impl Animation {
         let data = self.frames.get(index);
         if let Some((ref sprite, _)) = data {
             graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+
             sprite.draw(ctx, assets, world, 0)
         } else {
             Ok(())
@@ -98,8 +102,19 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        let (image, remaining) = self.frames.at_time_with_remaining(time);
-        image.draw(ctx, assets, world, remaining)
+
+        let time = if let Some(time) = time.checked_sub(self.delay) {
+            time
+        } else {
+            return Ok(());
+        };
+
+        if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
+            let transform = self.modifiers.matrix_at_time(time);
+            image.draw(ctx, assets, world * transform, remaining)
+        } else {
+            Ok(())
+        }
     }
     pub fn draw_at_time_debug(
         &self,
@@ -109,8 +124,19 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        let (image, remaining) = self.frames.at_time_with_remaining(time);
-        image.draw_debug(ctx, assets, world, remaining)
+
+        let time = if let Some(time) = time.checked_sub(self.delay) {
+            time
+        } else {
+            return Ok(());
+        };
+
+        if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
+            let transform = self.modifiers.matrix_at_time(time);
+            image.draw_debug(ctx, assets, world * transform, remaining)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn load(

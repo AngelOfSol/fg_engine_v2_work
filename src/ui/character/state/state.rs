@@ -1,9 +1,8 @@
 use super::{
-    AnimationDataUi, BulletSpawnUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi,
-    SoundPlayInfoUi,
+    AnimationUi, BulletSpawnUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi, SoundPlayInfoUi,
 };
 use crate::character::state::components::{
-    AnimationData, BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
+    BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
 };
 
 use crate::assets::Assets;
@@ -77,7 +76,7 @@ impl StateUi {
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
-        data: &mut Vec<AnimationData>,
+        data: &mut Vec<Animation>,
     ) -> Option<String> {
         let mut ret = None;
 
@@ -86,7 +85,7 @@ impl StateUi {
             im_str!("List"),
             &mut self.current_animation,
             data,
-            |item| im_str!("{}", item.name().to_owned()),
+            |item| im_str!("{}", item.name.to_owned()),
             5,
         );
         if ui.small_button(im_str!("Load")) {
@@ -96,23 +95,21 @@ impl StateUi {
                 _ => vec![],
             };
             for path in paths {
-                data.push(AnimationData::new(
-                    Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap(),
-                ));
+                data.push(Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap());
             }
         }
 
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             // TODO add popup?
-            data.push(AnimationData::new(Animation::new("new")));
+            data.push(Animation::new("new"));
         }
 
         if let Some(animation) = self.current_animation {
             if let Some(animation) = data.get_mut(animation) {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("Edit")) {
-                    ret = Some(animation.animation.name.clone());
+                    ret = Some(animation.name.clone());
                 }
             }
             ui.same_line(0.0);
@@ -121,7 +118,7 @@ impl StateUi {
             }
             if let Some(animation) = data.get_mut(animation) {
                 ui.separator();
-                AnimationDataUi::draw_ui(ui, animation);
+                AnimationUi::draw_ui(ui, animation);
             }
         }
         id.pop(ui);

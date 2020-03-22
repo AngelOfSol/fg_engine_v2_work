@@ -167,6 +167,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] add guard crush cutscene
         [x] implement super flash
         [x] implement guard crush flash
+        [] implement new VFX system ecsk dee
         [] implement partial super flash
         [] implement super flash sound
             [] add global sounds
@@ -185,13 +186,13 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] create object system
         [] decide on structure and how to process
             [] decide on how to determine state transitions
-        [] migrate all particles and bullets into objects
-        [] create simple particle class (for basic particles)
-        []
+        [] migrate all bullets into objects
     [] update attack AttackInfo
         [] add head/foot/body
         [] remove attack levels, change to manual hitstun/blockstun selection
             [] hit
+            [] airhit
+            [] counterhit
             [] block
             [] wrongblock
             [] airblock
@@ -209,6 +210,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] treat triggers as buttons for the purpose of htis game
     [] have replays handle multiple rounds
     [x] 4ab to 6ab 
+    [] implement SMP
     [] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
