@@ -53,7 +53,7 @@ pub struct NetcodeClient<Input, GameState> {
     net_players: HashMap<PlayerHandle, NetworkedHistory<Input>>,
     current_frame: usize,
     held_input_count: usize,
-    // old impl: Option<usize> that got checked every frame.
+    // move this into the net_players list, because we need to maintain this for netplayers
     skip_frames: SkipFrames,
     saved_rollback_states: HashMap<usize, GameState>,
     rollback_to: Option<(usize, GameState)>,
@@ -253,6 +253,8 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
                 if sent_on_frame >= self.skip_frames.from_frame {
                     self.skip_frames = SkipFrames {
                         from_frame: sent_on_frame,
+                        // doesn't currently handle multiple players properly
+                        // this needs to be a variable for each player
                         count: self
                             .current_frame
                             .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
