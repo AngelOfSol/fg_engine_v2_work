@@ -64,7 +64,7 @@ impl AttackInfoUi {
                 .unwrap();
             ui.separator();
 
-            ui.text(im_str!("Guard As:"));
+            ui.text(im_str!("Knockdown As:"));
             ui.radio_button(
                 im_str!("Knockdown"),
                 &mut data.ground_action,
