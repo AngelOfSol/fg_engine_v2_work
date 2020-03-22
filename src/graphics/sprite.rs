@@ -1,5 +1,9 @@
 mod file;
+mod version;
 
+pub use version::{deserialize_versioned, SpriteVersioned};
+
+use super::keyframe::Modifiers;
 use crate::assets::Assets;
 use crate::typedefs::graphics::{up_dimension, Matrix4, Vec2, Vec3};
 use ggez::graphics;
@@ -8,15 +12,15 @@ use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+pub type Sprite = SpriteV1;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Sprite {
-    pub offset: Vec2,
+pub struct SpriteV1 {
     #[serde(default)]
     #[serde(skip)]
     pub image: Option<Image>,
-    pub rotation: f32,
-    #[serde(default = "default_scale")]
-    pub scale: Vec2,
+
+    pub modifiers: Modifiers,
 }
 
 fn default_scale() -> Vec2 {
@@ -24,6 +28,10 @@ fn default_scale() -> Vec2 {
 }
 
 impl Sprite {
+    fn to_modern(self) -> Self {
+        self
+    }
+
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -48,6 +56,7 @@ impl Sprite {
         ctx: &mut Context,
         _assets: &Assets,
         world: Matrix4,
+        time: usize,
         debug: bool,
     ) -> GameResult<()> {
         let image = self.image.as_ref().unwrap();
@@ -58,11 +67,9 @@ impl Sprite {
             0.0,
         ));
 
-        let sprite_scale = Matrix4::new_nonuniform_scaling(&up_dimension(self.scale));
+        let sprite_transform = self.modifiers.matrix_at_time(time);
 
-        let sprite_offset = Matrix4::new_translation(&Vec3::new(self.offset.x, self.offset.y, 0.0));
-
-        let transform = world * sprite_scale * image_offset * sprite_offset;
+        let transform = world * sprite_transform * image_offset;
 
         graphics::set_transform(ctx, transform);
         graphics::apply_transformations(ctx)?;
@@ -88,19 +95,29 @@ impl Sprite {
 
         Ok(())
     }
-    pub fn draw_debug(&self, ctx: &mut Context, assets: &Assets, world: Matrix4) -> GameResult<()> {
-        self.draw_ex(ctx, assets, world, true)
+    pub fn draw_debug(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: Matrix4,
+        time: usize,
+    ) -> GameResult<()> {
+        self.draw_ex(ctx, assets, world, time, true)
     }
 
-    pub fn draw(&self, ctx: &mut Context, assets: &Assets, world: Matrix4) -> GameResult<()> {
-        self.draw_ex(ctx, assets, world, false)
+    pub fn draw(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: Matrix4,
+        time: usize,
+    ) -> GameResult<()> {
+        self.draw_ex(ctx, assets, world, time, false)
     }
     pub fn new() -> Self {
         Self {
-            offset: nalgebra::zero(),
             image: None,
-            rotation: 0.0,
-            scale: default_scale(),
+            modifiers: Modifiers::new(),
         }
     }
 

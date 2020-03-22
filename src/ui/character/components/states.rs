@@ -46,6 +46,8 @@ impl StatesUi {
         let mut to_delete = None;
         let mut to_change = None;
 
+        let mut sort = false;
+
         for (idx, name) in self.state_name_keys.iter().enumerate() {
             let value = data.rest.get_mut(name).unwrap();
 
@@ -54,6 +56,10 @@ impl StatesUi {
             if ui.input_string(im_str!("Name"), &mut buffer) {
                 to_change = Some((name.clone(), buffer));
             }
+            if ui.is_item_deactivated_after_edit() {
+                sort = true;
+            }
+
             ui.next_column();
             if ui.small_button(im_str!("Edit")) {
                 ret = Some(name.clone());
@@ -101,6 +107,9 @@ impl StatesUi {
             }
         }
 
+        if sort {
+            self.state_name_keys.sort();
+        }
         Ok(ret)
     }
 }
