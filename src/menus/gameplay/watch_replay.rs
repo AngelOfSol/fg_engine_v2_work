@@ -108,11 +108,13 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
             }
         }
         let end = chrono::Utc::now() - start;
-        println!(
-            "total frames {} ran in {}ms",
-            frames_ran,
-            end.num_milliseconds()
-        );
+        if frames_ran > 0 {
+            println!(
+                "total frames {} ran in {}ms",
+                frames_ran,
+                end.num_milliseconds()
+            );
+        }
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {

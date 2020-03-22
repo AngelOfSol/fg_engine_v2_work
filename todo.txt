@@ -208,7 +208,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
     [] treat triggers as buttons for the purpose of htis game
     [] have replays handle multiple rounds
-    [] 4ab to 6ab 
+    [x] 4ab to 6ab 
+    [] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
     [x] rollback netcode

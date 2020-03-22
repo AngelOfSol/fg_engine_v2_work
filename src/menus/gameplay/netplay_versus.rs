@@ -133,8 +133,8 @@ impl NetplayVersus {
         socket: Socket,
         mut client: NetcodeClient,
     ) -> GameResult<Self> {
-        client.set_input_delay(0);
-        client.set_allowed_rollback(11);
+        client.set_input_delay(3);
+        client.set_allowed_rollback(8);
         client.set_packet_buffer_size(11);
 
         Ok(Self {

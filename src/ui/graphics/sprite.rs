@@ -1,3 +1,4 @@
+use super::modifiers::ModifiersUi;
 use crate::assets::Assets;
 use crate::graphics::Sprite;
 use crate::imgui_extra::UiExtensions;
@@ -14,7 +15,9 @@ impl SpriteUi {
         ui: &Ui<'_>,
         sprite: &mut Sprite,
     ) -> GameResult<()> {
+        ModifiersUi::draw_ui(ui, &mut sprite.modifiers);
         //ui.label_text(im_str!("Name##Frame"), &im_str!("{}", sprite.image.clone()));
+        /*
         ui.input_vec2_float(im_str!("Offset"), &mut sprite.offset);
         ui.separator();
 
@@ -24,6 +27,8 @@ impl SpriteUi {
         ui.input_float(im_str!("Rotation"), &mut sprite.rotation)
             .build();
         ui.separator();
+
+        */
 
         if ui.small_button(im_str!("Load New Image")) {
             let result = nfd::open_file_dialog(Some("png"), None);

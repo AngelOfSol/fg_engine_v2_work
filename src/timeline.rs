@@ -2,7 +2,9 @@ pub type Timeline<T> = Vec<(T, usize)>;
 
 pub trait AtTime<T> {
     fn at_time(&self, time: usize) -> &T;
+    fn at_time_with_remaining(&self, time: usize) -> (&T, usize);
     fn try_time(&self, time: usize) -> Option<&T>;
+    fn try_time_with_remaining(&self, time: usize) -> Option<(&T, usize)>;
     fn fix_duration(&mut self, duration: usize);
     fn duration(&self) -> usize;
 }
@@ -21,6 +23,23 @@ impl<T> AtTime<T> for Timeline<T> {
         }
         None
     }
+
+    fn at_time_with_remaining(&self, time: usize) -> (&T, usize) {
+        self.try_time_with_remaining(time)
+            .expect("Time out of bounds.")
+    }
+
+    fn try_time_with_remaining(&self, mut time: usize) -> Option<(&T, usize)> {
+        for (data, duration) in self {
+            if time < *duration {
+                return Some((data, time));
+            } else {
+                time -= *duration;
+            }
+        }
+        None
+    }
+
     fn duration(&self) -> usize {
         self.iter().map(|(_, duration)| duration).sum()
     }

@@ -1,6 +1,7 @@
 mod animation;
 #[allow(clippy::module_inception)]
 mod graphics;
+pub mod keyframe;
 mod sprite;
 
 pub use animation::Animation;

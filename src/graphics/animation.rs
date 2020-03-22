@@ -1,18 +1,29 @@
 mod file;
 
-use super::sprite::Sprite;
+use super::sprite::{Sprite, SpriteVersioned};
 use super::BlendMode;
 use crate::assets::Assets;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::path::PathBuf;
+
+pub fn deserialize_versioned_frames<'de, D>(deserializer: D) -> Result<Timeline<Sprite>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Timeline::<SpriteVersioned>::deserialize(deserializer)?
+        .into_iter()
+        .map(|(sprite, time)| (sprite.to_modern(), time))
+        .collect())
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Animation {
     pub name: String,
+    #[serde(deserialize_with = "deserialize_versioned_frames")]
     pub frames: Timeline<Sprite>,
     #[serde(default = "default_blend_mode")]
     pub blend_mode: BlendMode,
@@ -59,7 +70,7 @@ impl Animation {
         let data = self.frames.get(index);
         if let Some((ref sprite, _)) = data {
             graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-            sprite.draw(ctx, assets, world)
+            sprite.draw(ctx, assets, world, 0)
         } else {
             Ok(())
         }
@@ -73,7 +84,7 @@ impl Animation {
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
         for sprite in self.frames.iter().map(|(ref sprite, _)| sprite) {
-            sprite.draw_debug(ctx, assets, world)?
+            sprite.draw_debug(ctx, assets, world, 0)?
         }
 
         Ok(())
@@ -87,8 +98,8 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        let image = self.frames.at_time(time);
-        image.draw(ctx, assets, world)
+        let (image, remaining) = self.frames.at_time_with_remaining(time);
+        image.draw(ctx, assets, world, remaining)
     }
     pub fn draw_at_time_debug(
         &self,
@@ -98,8 +109,8 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        let image = self.frames.at_time(time);
-        image.draw_debug(ctx, assets, world)
+        let (image, remaining) = self.frames.at_time_with_remaining(time);
+        image.draw_debug(ctx, assets, world, remaining)
     }
 
     pub fn load(
