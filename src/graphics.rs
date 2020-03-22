@@ -1,4 +1,5 @@
-mod animation;
+pub mod animation;
+pub mod animation_data;
 #[allow(clippy::module_inception)]
 mod graphics;
 pub mod keyframe;

@@ -1,4 +1,4 @@
-use crate::typedefs::graphics::{Matrix4, Vec3};
+use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
 
@@ -16,8 +16,8 @@ pub struct Modifiers {
     pub coord_type: Coordinates,
 }
 
-impl Modifiers {
-    pub fn new() -> Self {
+impl Default for Modifiers {
+    fn default() -> Self {
         let default = Keyframes::new(Default::default());
         let scale_default = Keyframes::new(Keyframe {
             value: 1.0,
@@ -29,6 +29,47 @@ impl Modifiers {
             scale: [scale_default.clone(), scale_default],
             rotation: default,
         }
+    }
+}
+
+impl Modifiers {
+    pub fn with_basic(rotation: f32, scale: Vec2, coords: Vec2) -> Self {
+        Modifiers {
+            rotation: Keyframes::new(Keyframe {
+                frame: 0,
+                value: rotation,
+                function: EaseType::Constant,
+            }),
+            coords: [
+                Keyframes::new(Keyframe {
+                    frame: 0,
+                    value: coords.x,
+                    function: EaseType::Constant,
+                }),
+                Keyframes::new(Keyframe {
+                    frame: 0,
+                    value: coords.y,
+                    function: EaseType::Constant,
+                }),
+            ],
+            scale: [
+                Keyframes::new(Keyframe {
+                    frame: 0,
+                    value: scale.x,
+                    function: EaseType::Constant,
+                }),
+                Keyframes::new(Keyframe {
+                    frame: 0,
+                    value: scale.y,
+                    function: EaseType::Constant,
+                }),
+            ],
+            coord_type: Coordinates::Cartesian,
+        }
+    }
+
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn matrix_at_time(&self, time: usize) -> Matrix4 {

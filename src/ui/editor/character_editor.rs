@@ -161,18 +161,13 @@ impl ItemResource for StateAnimationResource {
     type Output = crate::graphics::Animation;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
         let state = self.data.borrow();
-        if state
-            .animations
-            .iter()
-            .any(|item| item.animation.name == self.name)
-        {
+        if state.animations.iter().any(|item| item.name == self.name) {
             Some(Ref::map(state, |state| {
-                &state
+                state
                     .animations
                     .iter()
-                    .find(|item| item.animation.name == self.name)
+                    .find(|item| item.name == self.name)
                     .unwrap()
-                    .animation
             }))
         } else {
             None
@@ -180,18 +175,13 @@ impl ItemResource for StateAnimationResource {
     }
     fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
         let state = self.data.borrow_mut();
-        if state
-            .animations
-            .iter()
-            .any(|item| item.animation.name == self.name)
-        {
+        if state.animations.iter().any(|item| item.name == self.name) {
             Some(RefMut::map(state, |state| {
-                &mut state
+                state
                     .animations
                     .iter_mut()
-                    .find(|item| item.animation.name == self.name)
+                    .find(|item| item.name == self.name)
                     .unwrap()
-                    .animation
             }))
         } else {
             None

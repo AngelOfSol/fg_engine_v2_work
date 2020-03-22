@@ -38,7 +38,7 @@ pub fn load<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>(
 ) -> GameResult<()> {
     path.push(name);
     for animation in state.animations.iter_mut() {
-        Animation::load(ctx, assets, &mut animation.animation, path.clone())?;
+        Animation::load(ctx, assets, animation, path.clone())?;
     }
     Ok(())
 }
@@ -64,8 +64,8 @@ pub fn save<
     path.push(&name);
     std::fs::create_dir_all(&path)?;
     for animation in &state.animations {
-        path.push(&format!("{}.json", &animation.animation.name));
-        Animation::save(ctx, assets, &animation.animation, path.clone())?;
+        path.push(&format!("{}.json", &animation.name));
+        Animation::save(ctx, assets, &animation, path.clone())?;
         path.pop();
     }
     Ok(())

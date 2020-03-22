@@ -6,9 +6,7 @@ edition = "2018"
 
 [dependencies]
 ggez = { git = "https://github.com/AngelOfSol/ggez" } 
-winit = "0.21.0"
 nalgebra = { version = "0.19.0", features = ["serde-serialize", "mint"] }
-mint = "0.5.4"
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
 gfx_core = "0.9.2"
@@ -17,8 +15,6 @@ imgui = "0.3.0"
 imgui-gfx-renderer = "0.3.0"
 imgui-sys = "0.3.0"
 nfd = "0.0.4"
-rgb = "0.8.16"
-tar = "0.4.26"
 image = "0.23.0"
 gfx = "0.18.2"
 strum = "0.18.0"
@@ -32,6 +28,5 @@ clipboard = "0.5.0"
 flate2 = "1.0.13"
 rodio = "0.10.0"
 enum_dispatch = "0.2.1"
-hidapi = "1.2.1"
 sdl2 = { version = "0.33.0", features = [ "bundled", "static-link" ] }
 keyframe = "1.0.2"

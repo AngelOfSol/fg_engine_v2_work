@@ -10,7 +10,6 @@ use nfd::Response;
 pub struct AnimationUi {
     pub current_sprite: Option<usize>,
 }
-//sprite.rename(format!("{}-{:03}.png", animation.name, idx), assets)
 impl AnimationUi {
     pub fn new() -> Self {
         Self {

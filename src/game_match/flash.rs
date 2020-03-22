@@ -1,6 +1,6 @@
 use ggez::graphics::Color;
 use keyframe::{
-    functions::{EaseInOutQuint, EaseInQuint, EaseOutQuint},
+    functions::{EaseInQuint, EaseOutQuint},
     keyframes, AnimationSequence,
 };
 use serde::{Deserialize, Serialize};
