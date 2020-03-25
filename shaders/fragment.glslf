@@ -16,6 +16,6 @@ layout (std140) uniform Shadow {
 
 void main() {
     float value = 1.0 - texture(t_Texture, v_Uv).a;
-    float transparency = texture(t_Texture, v_Uv).a * 0.6;
+    float transparency = texture(t_Texture, v_Uv).a * u_Rate;
     Target0 = vec4(value, value, value, transparency);
 }

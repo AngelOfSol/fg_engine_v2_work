@@ -2,6 +2,7 @@ pub mod components;
 pub mod state;
 
 use crate::assets::Assets;
+use crate::graphics::particle::Particle;
 use crate::graphics::Animation;
 use components::{Attacks, BulletInfo, Bullets, EditorStates, Particles, Properties, States};
 use ggez::GameError;
@@ -73,8 +74,10 @@ impl PlayerCharacter {
         }
         path.pop();
         path.push("particles");
-        for (_, animation) in player_character.particles.particles.iter_mut() {
-            Animation::load(ctx, assets, animation, path.clone())?;
+        for (key, animation) in player_character.particles.particles.iter_mut() {
+            path.push(key);
+            Particle::load(ctx, assets, animation, path.clone())?;
+            path.pop();
         }
         path.pop();
         path.push("bullets");
@@ -116,9 +119,9 @@ impl PlayerCharacter {
             std::fs::remove_dir_all(&path)?;
         }
         std::fs::create_dir_all(&path)?;
-        for (name, animation) in player_character.particles.particles.iter() {
+        for (name, particle) in player_character.particles.particles.iter() {
             path.push(format!("{}.json", name));
-            Animation::save(ctx, assets, animation, path.clone())?;
+            Particle::save(ctx, assets, particle, path.clone())?;
             path.pop();
         }
         path.pop();

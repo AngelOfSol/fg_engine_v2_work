@@ -102,7 +102,7 @@ impl<Writer: Write> Match<Writer> {
                 ctx,
                 "/shaders/vertex.glslv",
                 "/shaders/fragment.glslf",
-                Shadow { rate: 1.0 },
+                Shadow { rate: 0.7 },
                 "Shadow",
                 Some(&[graphics::BlendMode::Alpha]),
             )?,

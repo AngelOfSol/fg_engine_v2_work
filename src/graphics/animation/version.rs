@@ -3,6 +3,19 @@ use crate::graphics::keyframe::Modifiers;
 use crate::typedefs::graphics::Vec2;
 use serde::Deserialize;
 
+pub mod single {
+    use super::{Animation, AnimationVersioned};
+
+    use serde::{Deserialize, Deserializer};
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Animation, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(AnimationVersioned::deserialize(deserializer)?.to_modern())
+    }
+}
+
 pub mod vec {
     use super::{Animation, AnimationVersioned};
 

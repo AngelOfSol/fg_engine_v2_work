@@ -4,7 +4,7 @@ use crate::character::components::{AttackInfo, BulletInfo};
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
 use crate::ui::character::components::{AttacksUi, BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
-use crate::ui::editor::{AnimationEditor, AttackInfoEditor, BulletInfoEditor, StateEditor};
+use crate::ui::editor::{AttackInfoEditor, BulletInfoEditor, ParticleEditor, StateEditor};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -104,12 +104,41 @@ impl ItemResource for StateResource {
 }
 
 pub struct ParticleAnimationResource {
-    pub particle: String,
-    pub data: Rc<RefCell<PlayerCharacter>>,
+    pub animation: String,
+    pub data: Rc<RefCell<crate::graphics::particle::Particle>>,
 }
 
 impl ItemResource for ParticleAnimationResource {
     type Output = crate::graphics::Animation;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let particle = self.data.borrow();
+        Some(Ref::map(particle, |particle| {
+            particle
+                .animations
+                .iter()
+                .find(|item| item.name == self.animation)
+                .unwrap()
+        }))
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let particle = self.data.borrow_mut();
+        Some(RefMut::map(particle, |particle| {
+            particle
+                .animations
+                .iter_mut()
+                .find(|item| item.name == self.animation)
+                .unwrap()
+        }))
+    }
+}
+
+pub struct ParticleResource {
+    pub particle: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+
+impl ItemResource for ParticleResource {
+    type Output = crate::graphics::particle::Particle;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
         let character = self.data.borrow();
         if character.particles.particles.contains_key(&self.particle) {
@@ -260,14 +289,14 @@ impl AppState for CharacterEditor {
                             ui,
                             &mut self.resource.borrow_mut().particles,
                         );
-                        if let Some(animation_name) = should_edit {
+                        if let Some(particle_name) = should_edit {
                             self.transition = Transition::Push(Box::new(
-                                AnimationEditor::new(
+                                ParticleEditor::new(
                                     self.assets.clone(),
-                                    Box::new(ParticleAnimationResource {
+                                    ParticleResource {
                                         data: self.resource.clone(),
-                                        particle: animation_name,
-                                    }),
+                                        particle: particle_name,
+                                    },
                                 )
                                 .unwrap(),
                             ));
