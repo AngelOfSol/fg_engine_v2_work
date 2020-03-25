@@ -1,6 +1,6 @@
 use crate::assets::Assets;
 use crate::character::components::Particles;
-use crate::graphics::Animation;
+use crate::graphics::particle::Particle;
 use crate::imgui_extra::UiExtensions;
 use ggez::Context;
 use imgui::*;
@@ -42,18 +42,27 @@ impl ParticlesUi {
                 Ok(path) => match path {
                     Response::Cancel => (),
                     Response::Okay(path) => {
-                        let animation =
-                            Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap();
-                        self.particle_keys.push(animation.name.clone());
-                        data.particles.insert(animation.name.clone(), animation);
+                        let path = PathBuf::from(path);
+                        let name = path
+                            .file_name()
+                            .and_then(|path| path.to_str())
+                            .unwrap()
+                            .to_owned();
+                        let animation = Particle::load_from_json(ctx, assets, path).unwrap();
+                        self.particle_keys.push(name.clone());
+                        data.particles.insert(name.clone(), animation);
                     }
                     Response::OkayMultiple(paths) => {
                         for path in paths {
-                            let animation =
-                                Animation::load_from_json(ctx, assets, PathBuf::from(path))
-                                    .unwrap();
-                            self.particle_keys.push(animation.name.clone());
-                            data.particles.insert(animation.name.clone(), animation);
+                            let path = PathBuf::from(path);
+                            let name = path
+                                .file_name()
+                                .and_then(|path| path.to_str())
+                                .unwrap()
+                                .to_owned();
+                            let animation = Particle::load_from_json(ctx, assets, path).unwrap();
+                            self.particle_keys.push(name.clone());
+                            data.particles.insert(name.clone(), animation);
                         }
                     }
                 },
@@ -65,7 +74,7 @@ impl ParticlesUi {
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             data.particles
-                .insert("new_particle".to_owned(), Animation::new("new_particle"));
+                .insert("new_particle".to_owned(), Particle::new());
             self.particle_keys.push("new_particle".to_owned());
             self.particle_keys.sort();
         }
@@ -75,18 +84,17 @@ impl ParticlesUi {
             let particle_key = &self.particle_keys[particle];
             let id = ui.push_id(&particle_key);
             let mut new_key = particle_key.to_owned();
-            let fix_name = if let Some(particle) = &mut data.particles.get_mut(particle_key) {
+            let fix_name = if data.particles.contains_key(particle_key) {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("Edit")) {
-                    ret = Some(particle.name.clone());
+                    ret = Some(particle_key.clone());
                 }
                 ui.input_string(im_str!("Name"), &mut new_key)
             } else {
                 false
             };
             if fix_name {
-                let mut particle_data = data.particles.remove(particle_key).unwrap();
-                particle_data.name = new_key.clone();
+                let particle_data = data.particles.remove(particle_key).unwrap();
                 data.particles.insert(new_key.clone(), particle_data);
                 self.particle_keys[particle] = new_key;
             }

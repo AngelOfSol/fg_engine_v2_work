@@ -88,6 +88,26 @@ impl ModifiersUi {
 
             id.pop(ui);
         }
+
+        if ui
+            .collapsing_header(im_str!("Alpha##Modifier"))
+            .default_open(false)
+            .build()
+        {
+            let id = ui.push_id("Alpha##Modifier");
+            draw_ui_keyframes(ui, &mut mods.alpha);
+            id.pop(ui);
+        }
+
+        if ui
+            .collapsing_header(im_str!("Value"))
+            .default_open(false)
+            .build()
+        {
+            let id = ui.push_id("Value");
+            draw_ui_keyframes(ui, &mut mods.value);
+            id.pop(ui);
+        }
     }
 }
 fn draw_ui_keyframes(ui: &Ui<'_>, frames: &mut Keyframes) {

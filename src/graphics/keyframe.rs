@@ -14,20 +14,26 @@ pub struct Modifiers {
     pub scale: [Keyframes; 2],
     pub coords: [Keyframes; 2],
     pub coord_type: Coordinates,
+    // TODO use this
+    pub alpha: Keyframes,
+    // TODO use this
+    pub value: Keyframes,
 }
 
 impl Default for Modifiers {
     fn default() -> Self {
         let default = Keyframes::new(Default::default());
-        let scale_default = Keyframes::new(Keyframe {
+        let percentage_default = Keyframes::new(Keyframe {
             value: 1.0,
             ..Default::default()
         });
         Self {
             coord_type: Coordinates::Cartesian,
             coords: [default.clone(), default.clone()],
-            scale: [scale_default.clone(), scale_default],
+            scale: [percentage_default.clone(), percentage_default.clone()],
             rotation: default,
+            alpha: percentage_default.clone(),
+            value: percentage_default.clone(),
         }
     }
 }
@@ -64,7 +70,7 @@ impl Modifiers {
                     function: EaseType::Constant,
                 }),
             ],
-            coord_type: Coordinates::Cartesian,
+            ..Default::default()
         }
     }
 
