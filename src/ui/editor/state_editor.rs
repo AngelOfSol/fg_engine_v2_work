@@ -1,7 +1,7 @@
 use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
-use crate::character::state::components::MovementData;
+use crate::character::state::components::{MovementData, ParticlePath};
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
@@ -369,6 +369,26 @@ impl AppState for StateEditor {
             resource.draw_at_time(ctx, assets, self.frame, offset)?;
         }
 
+        for particle_spawn in resource.particles.iter() {
+            let current_frame = self.frame.checked_sub(particle_spawn.frame);
+            if let Some(current_frame) = current_frame {
+                let offset = offset
+                    * Matrix4::new_translation(&Vec3::new(
+                        particle_spawn.offset.into_graphical().x,
+                        particle_spawn.offset.into_graphical().y,
+                        0.0,
+                    ));
+                if let ParticlePath::Local(particle) = &particle_spawn.particle_id {
+                    self.character_data.borrow().particles.particles[particle].draw_at_time(
+                        ctx,
+                        assets,
+                        current_frame,
+                        offset,
+                    )?;
+                }
+            }
+        }
+
         let offset = {
             let mut offset = Vec3::zeros();
             if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
@@ -429,6 +449,8 @@ impl AppState for StateEditor {
         {
             let offset = particle_spawn.offset.into_graphical();
             draw_cross(ctx, offset)?;
+
+            // TODO draw particles too
         }
         for bullet_spawn in resource
             .bullets

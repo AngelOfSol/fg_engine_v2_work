@@ -6,6 +6,9 @@ pub mod sounds;
 pub use flash::FlashType;
 pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
 
+use crate::assets::Assets;
+use crate::character::state::components::GlobalParticle;
+use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
@@ -25,9 +28,9 @@ use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
 use sounds::{GlobalSound, SoundList};
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
-use std::rc::Rc;
 use strum::IntoEnumIterator;
 
 #[derive(Clone)]
@@ -46,29 +49,30 @@ pub struct Match<Writer> {
     players: PlayerData<CharacterBehavior>,
     game_state: GameState,
 
+    assets: Assets,
+
     background: Stage,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
     writer: Writer,
     sounds: SoundList<sounds::GlobalSound>,
+    particles: HashMap<GlobalParticle, Particle>,
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
 
 impl<Writer: Write> Match<Writer> {
     pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
+        let mut assets = Assets::new();
         let background = Stage::new(ctx, "\\bg_14.png")?;
-        let resources = Rc::new(Yuyuko::new_with_path(
-            ctx,
-            PathBuf::from(".\\resources\\yuyuko.json"),
-        )?);
-        let mut p1: CharacterBehavior = YuyukoPlayer::new(Rc::clone(&resources)).into();
-        let mut p2: CharacterBehavior = YuyukoPlayer::new(Rc::clone(&resources)).into();
+        let resources = Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?;
+        let mut p1: CharacterBehavior = YuyukoPlayer::new(resources.clone()).into();
+        let mut p2: CharacterBehavior = YuyukoPlayer::new(resources.clone()).into();
         p1.position_mut().x = -100_00;
         p2.position_mut().x = 100_00;
 
         let mut sounds = SoundList::new();
-        let mut path = PathBuf::from(".\\resources\\sounds");
+        let mut path = PathBuf::from(".\\resources\\global\\sounds");
         for sound in GlobalSound::iter() {
             path.push(format!("{}.mp3", sound));
             use rodio::source::Source;
@@ -83,6 +87,19 @@ impl<Writer: Write> Match<Writer> {
             .buffered();
 
             sounds.data.insert(sound, source);
+            path.pop();
+        }
+
+        let mut particles = HashMap::new();
+        let mut path = PathBuf::from(".\\resources\\global\\particles");
+        for particle in GlobalParticle::iter() {
+            path.push(format!("{}.json", particle));
+
+            particles.insert(
+                particle,
+                Particle::load_from_json(ctx, &mut assets, path.clone())?,
+            );
+
             path.pop();
         }
 
@@ -108,6 +125,8 @@ impl<Writer: Write> Match<Writer> {
             )?,
             writer,
             sounds,
+            particles,
+            assets,
         })
     }
 
@@ -117,7 +136,7 @@ impl<Writer: Write> Match<Writer> {
 
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
         for (player, input) in self.players.iter_mut().zip(input.iter()) {
-            player.update_frame_mut(input, &self.play_area);
+            player.update_frame_mut(input, &self.play_area, &self.particles);
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
@@ -365,7 +384,7 @@ impl<Writer: Write> Match<Writer> {
         }
 
         for player in self.players.iter() {
-            player.draw_particles(ctx, world)?;
+            player.draw_particles(ctx, world, &self.particles)?;
         }
 
         for player in self.players.iter() {

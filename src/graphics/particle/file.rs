@@ -14,7 +14,9 @@ pub fn load_from_json(
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
     let mut particle = serde_json::from_reader::<_, Particle>(buf_read).unwrap();
+    let sub_path = path.file_stem().unwrap().to_owned();
     path.pop();
+    path.push(sub_path);
     load(ctx, assets, &mut particle, path)?;
     Ok(particle)
 }
@@ -26,12 +28,10 @@ pub fn load(
     mut path: PathBuf,
 ) -> GameResult<()> {
     for animation in particle.animations.iter_mut() {
-        path.push(&animation.name);
         match Animation::load(ctx, assets, animation, path.clone()) {
             Ok(_) => (),
             Err(_) => {
                 let mut path = path.clone();
-                path.pop();
                 path.pop();
                 Animation::load(ctx, assets, animation, path)?
             }
@@ -48,14 +48,18 @@ pub fn save(
     particle: &Particle,
     mut path: PathBuf,
 ) -> GameResult<()> {
+    let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
     let mut json = File::create(&path)?;
     serde_json::to_writer(&mut json, &particle)
         .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
     path.pop();
+    path.push(&name);
+    std::fs::create_dir_all(&path)?;
 
     for animation in particle.animations.iter() {
-        path.push(&animation.name);
+        path.push(&format!("{}.json", &animation.name));
         Animation::save(ctx, assets, animation, path.clone())?;
+
         path.pop();
     }
 

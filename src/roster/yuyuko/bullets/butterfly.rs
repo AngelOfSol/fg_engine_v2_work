@@ -1,4 +1,4 @@
-use super::super::particles::Particle;
+use super::super::particles::ParticleId;
 use super::super::{AttackList, BulletList, Yuyuko};
 use crate::assets::Assets;
 use crate::game_match::PlayArea;
@@ -107,7 +107,7 @@ impl ButterflyState {
                 self.position.into_graphical(),
             ));
         let scale = f32::cos(self.alive_duration as f32 / 25.0);
-        data.particles[&Particle::ButterflyFlare].draw_frame(
+        data.particles[&ParticleId::ButterflyFlare].draw_frame(
             ctx,
             assets,
             self.color,

@@ -8,8 +8,10 @@ pub mod particle_id;
 #[macro_use]
 pub mod macros;
 
+use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea};
+use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::roster::AttackInfo;
@@ -18,6 +20,7 @@ use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
+use std::collections::HashMap;
 
 #[enum_dispatch(OpaqueBullet)]
 pub trait BulletMut {
@@ -53,13 +56,23 @@ pub trait GenericCharacterBehaviour {
     fn deal_hit(&mut self, info: &HitResult);
 
     fn handle_refacing(&mut self, other_player: collision::Int);
-    fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea);
+    fn update_frame_mut(
+        &mut self,
+        input: &[InputState],
+        play_area: &PlayArea,
+        global_particles: &HashMap<GlobalParticle, Particle>,
+    );
     fn update_cutscene(&mut self, play_area: &PlayArea);
 
     fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
 
     fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
-    fn draw_particles(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+    fn draw_particles(
+        &self,
+        ctx: &mut Context,
+        world: graphics::Matrix4,
+        global_particles: &HashMap<GlobalParticle, Particle>,
+    ) -> GameResult<()>;
 
     fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
     fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;

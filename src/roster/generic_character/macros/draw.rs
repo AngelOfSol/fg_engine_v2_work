@@ -126,9 +126,16 @@ macro_rules! impl_draw {
 
 macro_rules! impl_draw_particles {
     () => {
-        fn draw_particles(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
+        fn draw_particles(
+            &self,
+            ctx: &mut Context,
+            world: graphics::Matrix4,
+            global_particles: &HashMap<GlobalParticle, Particle>,
+        ) -> GameResult<()> {
             for (frame, position, id) in &self.state.particles {
-                self.data.particles[&id].draw_at_time(
+                let particle = id.get(&self.data.particles, global_particles);
+
+                particle.draw_at_time(
                     ctx,
                     &self.data.assets,
                     *frame,

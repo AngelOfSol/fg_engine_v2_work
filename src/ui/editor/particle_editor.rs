@@ -1,7 +1,6 @@
-use super::character_editor::{ItemResource, ParticleAnimationResource, ParticleResource};
+use super::character_editor::{ItemResource, ParticleAnimationResource};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
-use crate::character::PlayerCharacter;
 use crate::graphics::particle::Particle;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
@@ -12,6 +11,7 @@ use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
 use std::cell::RefCell;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 enum Status {
@@ -22,7 +22,7 @@ enum Status {
 
 pub struct ParticleEditor {
     frame: usize,
-    path: ParticleResource,
+    path: Box<dyn ItemResource<Output = Particle>>,
     resource: Rc<RefCell<Particle>>,
     ui_data: ParticleUi,
     done: Status,
@@ -104,10 +104,38 @@ impl AppState for ParticleEditor {
 
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Bullet Info Editor"), true, || {
-                        if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
+                        if imgui::MenuItem::new(im_str!("New")).build(ui) {
                             *self.resource.borrow_mut() = Particle::new();
                             self.ui_data = ParticleUi::new();
                         }
+                        ui.separator();
+                        if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_save_dialog(Some("json"), None)
+                            {
+                                let mut path = PathBuf::from(path);
+                                path.set_extension("json");
+                                let assets = &mut self.assets.borrow_mut();
+                                // TODO: use this error
+                                let _ = Particle::save(ctx, assets, &self.resource.borrow(), path);
+                            }
+                        }
+                        if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_file_dialog(Some("json"), None)
+                            {
+                                let assets = &mut self.assets.borrow_mut();
+                                // TODO: use this error
+                                match Particle::load_from_json(ctx, assets, PathBuf::from(path)) {
+                                    Ok(state) => {
+                                        *self.resource.borrow_mut() = state;
+                                        self.ui_data = ParticleUi::new();
+                                    }
+                                    Err(_) => (),
+                                }
+                            }
+                        }
+                        ui.separator();
                         ui.separator();
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
                             self.done = Status::DoneAndSave;
@@ -157,12 +185,14 @@ impl AppState for ParticleEditor {
 
         let resource = self.resource.borrow();
 
-        resource.draw_at_time_debug(
-            ctx,
-            &self.assets.borrow(),
-            self.frame % resource.duration(),
-            offset,
-        )?;
+        if resource.duration() > 0 {
+            resource.draw_at_time_debug(
+                ctx,
+                &self.assets.borrow(),
+                self.frame % resource.duration(),
+                offset,
+            )?;
+        }
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
@@ -172,7 +202,10 @@ impl AppState for ParticleEditor {
 }
 
 impl ParticleEditor {
-    pub fn new(assets: Rc<RefCell<Assets>>, path: ParticleResource) -> Option<Self> {
+    pub fn new(
+        assets: Rc<RefCell<Assets>>,
+        path: Box<dyn ItemResource<Output = Particle>>,
+    ) -> Option<Self> {
         let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
         Some(Self {
             assets,

@@ -165,6 +165,28 @@ impl ItemResource for ParticleResource {
     }
 }
 
+pub struct StandaloneParticleResource {
+    pub particle: Rc<RefCell<crate::graphics::particle::Particle>>,
+}
+
+impl From<crate::graphics::particle::Particle> for StandaloneParticleResource {
+    fn from(value: crate::graphics::particle::Particle) -> Self {
+        Self {
+            particle: Rc::new(RefCell::new(value)),
+        }
+    }
+}
+
+impl ItemResource for StandaloneParticleResource {
+    type Output = crate::graphics::particle::Particle;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        Some(self.particle.borrow())
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        Some(self.particle.borrow_mut())
+    }
+}
+
 pub struct BulletAnimationResource {
     pub data: Rc<RefCell<BulletInfo>>,
 }
@@ -293,10 +315,10 @@ impl AppState for CharacterEditor {
                             self.transition = Transition::Push(Box::new(
                                 ParticleEditor::new(
                                     self.assets.clone(),
-                                    ParticleResource {
+                                    Box::new(ParticleResource {
                                         data: self.resource.clone(),
                                         particle: particle_name,
-                                    },
+                                    }),
                                 )
                                 .unwrap(),
                             ));

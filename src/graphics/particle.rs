@@ -36,6 +36,19 @@ impl Particle {
             .map(|item| item.delay + item.duration())
             .fold(0, std::cmp::max)
     }
+    pub fn draw_frame(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        frame: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        for animation in self.animations.iter() {
+            animation.draw_frame(ctx, assets, frame, world)?
+        }
+
+        Ok(())
+    }
 
     pub fn draw_at_time(
         &self,

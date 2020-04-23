@@ -137,9 +137,6 @@ impl PlayerCharacter {
         }
         path.pop();
 
-        path.push("sounds");
-        std::fs::create_dir_all(&path)?;
-
         Ok(())
     }
 }

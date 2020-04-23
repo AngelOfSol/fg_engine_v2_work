@@ -8,8 +8,10 @@ pub use generic_character::*;
 pub use yuyuko::*;
 
 use crate::character::components::AttackInfo;
+use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea};
+use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
@@ -17,6 +19,7 @@ use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumCount, EnumIter};
 

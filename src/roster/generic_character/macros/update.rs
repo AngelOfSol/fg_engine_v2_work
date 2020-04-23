@@ -1,6 +1,11 @@
 macro_rules! impl_update_frame_mut {
     () => {
-        fn update_frame_mut(&mut self, input: &[InputState], play_area: &PlayArea) {
+        fn update_frame_mut(
+            &mut self,
+            input: &[InputState],
+            play_area: &PlayArea,
+            global_particles: &HashMap<GlobalParticle, Particle>,
+        ) {
             if self.state.hitstop > 0 {
                 self.state.hitstop -= 1;
             } else {
@@ -14,7 +19,7 @@ macro_rules! impl_update_frame_mut {
             }
             self.handle_combo_state();
             self.update_spirit();
-            self.update_particles();
+            self.update_particles(global_particles);
             self.update_bullets(play_area);
             self.state.sound_state.update();
             self.state.hitstop = i32::max(0, self.state.hitstop);

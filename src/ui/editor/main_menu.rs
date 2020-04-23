@@ -1,7 +1,9 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
-use crate::ui::editor::CharacterEditor;
+use crate::graphics::particle::Particle;
+use crate::ui::editor::character_editor::StandaloneParticleResource;
+use crate::ui::editor::{CharacterEditor, ParticleEditor};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -55,6 +57,42 @@ impl AppState for EditorMenu {
                                 self.next = Transition::Push(Box::new(CharacterEditor::new(
                                     character, assets,
                                 )));
+                            }
+                        }
+                    }
+                    if ui.small_button(im_str!("New Particle")) {
+                        let particle = Particle::new();
+                        let assets = Rc::new(RefCell::new(Assets::new()));
+                        self.next = Transition::Push(Box::new(
+                            ParticleEditor::new(
+                                assets,
+                                Box::new(StandaloneParticleResource::from(particle)),
+                            )
+                            .unwrap(),
+                        ));
+                    }
+                    if ui.small_button(im_str!("Load Particle")) {
+                        if let Ok(nfd::Response::Okay(path)) =
+                            nfd::open_file_dialog(Some("json"), None)
+                        {
+                            let assets = Rc::new(RefCell::new(Assets::new()));
+                            let particle = Particle::load_from_json(
+                                ctx,
+                                &mut assets.borrow_mut(),
+                                PathBuf::from(path),
+                            );
+                            let particle = particle.map(|result| result);
+
+                            if let Ok(particle) = particle {
+                                self.next = Transition::Push(Box::new(
+                                    ParticleEditor::new(
+                                        assets,
+                                        Box::new(StandaloneParticleResource::from(particle)),
+                                    )
+                                    .unwrap(),
+                                ));
+                            } else if let Err(err) = particle {
+                                dbg!(err);
                             }
                         }
                     }

@@ -17,6 +17,7 @@ use std::collections::HashMap;
 
 pub type AudioBuffer = Buffered<SamplesBuffer<f32>>;
 
+#[derive(Clone)]
 pub struct SoundList<T> {
     pub data: HashMap<T, AudioBuffer>,
 }
