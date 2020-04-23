@@ -140,7 +140,7 @@ impl StateUi {
                 &mut self.current_particle,
                 data,
                 |item| im_str!("{}", item.particle_id.clone()),
-                || ParticleSpawn::new(default_particle.clone()),
+                || ParticleSpawn::new(default_particle.clone().into()),
                 |_| {},
                 5,
             ) {

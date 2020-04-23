@@ -6,12 +6,13 @@ mod particles;
 
 use crate::assets::Assets;
 use crate::character::components::{AttackInfo, GroundAction};
-use crate::character::state::components::{Flags, MoveType};
+use crate::character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath};
 use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, PlayerSoundRenderer, SoundList};
 use crate::game_match::{FlashType, PlayArea};
+use crate::graphics::particle::Particle;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
 use crate::hitbox::PositionedHitbox;
@@ -33,7 +34,7 @@ use bullets::BulletSpawn;
 pub use bullets::BulletState;
 use ggez::{Context, GameResult};
 use moves::MoveId;
-use particles::Particle;
+use particles::ParticleId;
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
@@ -43,7 +44,6 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
@@ -61,7 +61,6 @@ pub struct BulletList {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Properties {
     health: i32,
-    name: String,
     neutral_jump_accel: collision::Vec2,
     neutral_super_jump_accel: collision::Vec2,
     directed_jump_accel: collision::Vec2,
@@ -70,12 +69,13 @@ pub struct Properties {
     max_spirit_gauge: i32,
 }
 
+#[derive(Clone)]
 pub struct Yuyuko {
     pub assets: Assets,
-    pub states: HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId, YuyukoSound>>,
-    pub particles: HashMap<Particle, Animation>,
+    pub states: StateList,
+    pub particles: ParticleList,
     pub bullets: BulletList,
-    pub attacks: HashMap<AttackId, AttackInfo>,
+    pub attacks: AttackList,
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
     pub sounds: SoundList<YuyukoSound>,
@@ -86,8 +86,8 @@ impl std::fmt::Debug for Yuyuko {
     }
 }
 
-type StateList = HashMap<MoveId, State<MoveId, Particle, BulletSpawn, AttackId, YuyukoSound>>;
-type ParticleList = HashMap<Particle, Animation>;
+type StateList = HashMap<MoveId, State<MoveId, ParticleId, BulletSpawn, AttackId, YuyukoSound>>;
+type ParticleList = HashMap<ParticleId, Particle>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
@@ -137,8 +137,10 @@ impl YuyukoData {
         path.pop();
 
         path.push("particles");
-        for (_name, particle) in character.particles.iter_mut() {
-            Animation::load(ctx, assets, particle, path.clone())?;
+        for (name, particle) in character.particles.iter_mut() {
+            path.push(name.file_name());
+            Particle::load(ctx, assets, particle, path.clone())?;
+            path.pop();
         }
         path.pop();
         path.push("bullets");
@@ -188,7 +190,7 @@ impl Default for YuyukoSound {
 }
 
 pub struct YuyukoPlayer {
-    pub data: Rc<Yuyuko>,
+    pub data: Yuyuko,
     pub sound_renderer: PlayerSoundRenderer<YuyukoSound>,
     pub state: YuyukoState,
 }
@@ -198,7 +200,7 @@ pub struct YuyukoState {
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
     pub extra_data: ExtraData,
-    pub particles: Vec<(usize, collision::Vec2, Particle)>,
+    pub particles: Vec<(usize, collision::Vec2, ParticlePath<ParticleId>)>,
     pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
@@ -246,7 +248,7 @@ impl YuyukoState {
 use crate::game_match::sounds::PlayerSoundState;
 
 impl YuyukoPlayer {
-    pub fn new(data: Rc<Yuyuko>) -> Self {
+    pub fn new(data: Yuyuko) -> Self {
         Self {
             state: YuyukoState::new(&data),
             data,
@@ -266,7 +268,6 @@ impl YuyukoPlayer {
         border_escape: MoveId::BorderEscapeJump,
         melee_restitution: MoveId::MeleeRestitution
     );
-    impl_spawn_particle!();
     impl_in_corner!();
     impl_current_flags!();
     impl_crush_orb!();

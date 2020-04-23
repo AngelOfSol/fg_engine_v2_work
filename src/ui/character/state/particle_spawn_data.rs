@@ -1,6 +1,7 @@
-use crate::character::state::components::ParticleSpawn;
+use crate::character::state::components::{GlobalParticle, ParticlePath, ParticleSpawn};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
+use strum::IntoEnumIterator;
 
 pub struct ParticleSpawnUi {}
 
@@ -17,7 +18,11 @@ impl ParticleSpawnUi {
         ui.combo_items(
             im_str!("ID"),
             &mut data.particle_id,
-            &particle_list_ids,
+            &particle_list_ids
+                .iter()
+                .map(|item| ParticlePath::Local(item.clone()))
+                .chain(GlobalParticle::iter().map(|item| item.into()))
+                .collect::<Vec<_>>(),
             &|item| im_str!("{}", item).into(),
         );
 
