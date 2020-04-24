@@ -12,10 +12,19 @@ pub enum GlobalSound {
     GuardCrush,
     CounterHit,
 }
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum SoundPath<LocalPath> {
     Local(LocalPath),
     Global(GlobalSound),
+}
+impl<LocalPath: std::fmt::Display> std::fmt::Display for SoundPath<LocalPath> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Local(id) => write!(f, "{}", &id),
+            Self::Global(id) => write!(f, "global::{}", &id),
+        }
+    }
 }
 
 impl<LocalPath: std::hash::Hash + std::cmp::Eq> SoundPath<LocalPath> {
@@ -28,6 +37,12 @@ impl<LocalPath: std::hash::Hash + std::cmp::Eq> SoundPath<LocalPath> {
             SoundPath::Local(key) => local.get(key),
             SoundPath::Global(key) => global.get(key),
         }
+    }
+}
+
+impl From<String> for SoundPath<String> {
+    fn from(sound: String) -> Self {
+        Self::Local(sound)
     }
 }
 
