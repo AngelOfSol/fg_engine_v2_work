@@ -133,10 +133,19 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] add global particle list
         [] implement partial super flash
         [] implement super flash sound
-            [] add global sounds to editor for character states
+            [x] add global sounds to editor for character states
     [] add meter
         [] add meter that slowly generates to 100 out of 200
         [] render it
+        [] rework AttackInfo
+            [] remove attack level
+            [] on hit
+            [] on block
+            [] on graze
+            [] on wrongblock
+            [] on counterhit
+            [] on guard crush
+            [] all of the above have different values for all relevant data
         [] have dealing wrongblocks increase the meter
         [] have it slowly decrease after its above 100
         [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock

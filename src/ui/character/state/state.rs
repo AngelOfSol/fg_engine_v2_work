@@ -187,7 +187,7 @@ impl StateUi {
                 &mut self.current_bullet,
                 data,
                 |item| im_str!("{} @ {} (frame {})", item.name, item.channel, item.frame),
-                || SoundPlayInfo::new(default_bullet.clone()),
+                || SoundPlayInfo::new(default_bullet.clone().into()),
                 |_| {},
                 5,
             ) {
