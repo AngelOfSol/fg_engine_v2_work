@@ -134,18 +134,23 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] implement partial super flash
         [] implement super flash sound
             [x] add global sounds to editor for character states
+    [] add desync checking via hashing gamestate
+        [x] FIX DESYNCS by fixing saving loading data
     [] add meter
         [] add meter that slowly generates to 100 out of 200
         [] render it
         [] rework AttackInfo
-            [] remove attack level
-            [] on hit
-            [] on block
-            [] on graze
-            [] on wrongblock
-            [] on counterhit
-            [] on guard crush
-            [] all of the above have different values for all relevant data
+            [x] remove attack level
+            [x] edit every property for every hit type manually
+            [x] on hit
+            [x] on block
+            [x] on graze
+            [x] on wrongblock
+            [x] on counterhit
+            [x] on guard crush
+            [x] on air block
+            [x] on air guardcrush
+            [x] all of the above have different values for all relevant data
         [] have dealing wrongblocks increase the meter
         [] have it slowly decrease after its above 100
         [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
@@ -155,6 +160,12 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] add defensive lock debuff
             [] add mechanic
             [] add ui
+    [] add self chaining for 2a/5a
+    [] rework chaining description
+        [] hit
+            [] allow based on move type
+            [] allow based on specific state
+            [] disallow based on specific state overrides allow based on move type
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
     [] create object system
@@ -170,22 +181,23 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] block
             [] wrongblock
             [] airblock
+    [] implement SMP
+        [] more like same move limit
+    [] add hardlimits on velocity due to gravity
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
     [] add box<character> to gameplay
-    [] add self chaining for 2a/5a
+        [x] done with enum dispatch
     [] expose each character to the training_mode so it can reset its hp
         [] expose training mode options via additional methods on game_match?
         [] expose it via character behavior, and just expose the characters instead?
     [] reset HP when player hits idle
     [] handle standing reset limit
         [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
-    [] treat triggers as buttons for the purpose of htis game
+    [] treat triggers as buttons for the purpose of this game
     [] have replays handle multiple rounds
     [x] 4ab to 6ab 
-    [] implement SMP
-        [] more like same move limit
     [] add better knockdowns
     [] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
         [] add two things to shader as a uniform (mimic u_Rate)
@@ -195,7 +207,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] Modifiers struct has parameters for these fields which default to Constant(time=0.0, value=1.0)
     [] remove depedency "keyframe" and use own impl
     [] use left stick/right stick for directional input too
-    [] make golden style particle effects
+    [] make goldensun style particle effects
     [] move editor to a special version of training mode
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this

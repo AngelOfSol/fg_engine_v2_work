@@ -84,12 +84,13 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                         self.game_state
                             .load_state(self.previous_states[next_frame].clone());
                         while self.game_state.current_frame() < target_frame {
+                            self.previous_states[self.game_state.current_frame() as usize] =
+                                self.game_state.save_state();
                             self.game_state.update(
                                 self.inputs
                                     .as_ref()
                                     .map(|item| &item[..=self.game_state.current_frame() as usize]),
                             );
-                            self.previous_states[next_frame] = self.game_state.save_state();
                             frames_ran += 1;
                         }
                     } else {
@@ -100,15 +101,18 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                 }
 
                 self.previous_states.push(self.game_state.save_state());
-                self.game_state
-                    .update(self.inputs.as_ref().map(|item| item.as_slice()));
+                self.game_state.update(
+                    self.inputs
+                        .as_ref()
+                        .map(|item| &item[..=self.game_state.current_frame() as usize]),
+                );
                 frames_ran += 1;
 
                 self.game_state.render_sounds(60 * speed, audio)?;
             }
         }
         let end = chrono::Utc::now() - start;
-        if frames_ran > 0 {
+        if frames_ran > 0 && false {
             println!(
                 "total frames {} ran in {}ms",
                 frames_ran,
@@ -117,13 +121,17 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
         }
 
         match std::mem::replace(&mut self.next, None) {
-            Some(state) => match state {
-                NextState::Error => {
-                    dbg!("an error occured during replays.");
-                    Ok(Transition::Pop)
+            Some(state) => {
+                let mut test = std::fs::File::create("test.json").unwrap();
+                serde_json::to_writer(&mut test, &self.inputs).unwrap();
+                match state {
+                    NextState::Error => {
+                        dbg!("an error occured during replays.");
+                        Ok(Transition::Pop)
+                    }
+                    NextState::Back => Ok(Transition::Pop),
                 }
-                NextState::Back => Ok(Transition::Pop),
-            },
+            }
             None => Ok(Transition::None),
         }
     }

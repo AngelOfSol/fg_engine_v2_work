@@ -75,62 +75,68 @@ impl EffectData {
     pub fn guard_crush(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
         let current_combo = ComboState::update(None, &info.attack_info, HitModifier::GuardCrush);
 
+        let guard_crush_info = &info.attack_info.on_guard_crush;
+        let will_be_airborne = airborne || guard_crush_info.launcher;
+
         EffectData::new()
-            .set_force(if airborne || info.attack_info.launcher {
-                Force::Airborne(info.facing.fix_collision(info.attack_info.on_hit.air_force))
+            .set_force(if will_be_airborne {
+                Force::Airborne(info.facing.fix_collision(guard_crush_info.air_force))
             } else {
-                Force::Grounded(info.facing.fix_collision(collision::Vec2::new(
-                    info.attack_info.on_hit.ground_pushback,
-                    0_00,
-                )))
+                Force::Grounded(
+                    info.facing.fix_collision(collision::Vec2::new(
+                        guard_crush_info.ground_pushback,
+                        0_00,
+                    )),
+                )
             })
-            .set_stop(info.attack_info.on_hit.defender_stop)
-            .set_stun(info.attack_info.level.crush_stun())
+            .set_stop(guard_crush_info.defender_stop)
+            .set_stun(if will_be_airborne {
+                guard_crush_info.air_stun
+            } else {
+                guard_crush_info.stun
+            })
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)
     }
     pub fn block(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
+        let block_info = &info.attack_info.on_block;
+
         EffectData::new()
             .set_force(if airborne {
-                Force::Airborne(
-                    info.facing
-                        .fix_collision(info.attack_info.on_block.air_force),
-                )
+                Force::Airborne(info.facing.fix_collision(block_info.air_force))
             } else {
-                Force::Grounded(info.facing.fix_collision(collision::Vec2::new(
-                    info.attack_info.on_block.ground_pushback,
-                    0_00,
-                )))
+                Force::Grounded(
+                    info.facing
+                        .fix_collision(collision::Vec2::new(block_info.ground_pushback, 0_00)),
+                )
             })
-            .set_stop(info.attack_info.on_block.defender_stop)
-            .set_stun(info.attack_info.level.blockstun())
-            .reset_spirit_delay(info.attack_info.reset_spirit_delay)
-            .add_spirit_delay(info.attack_info.spirit_delay)
-            .take_spirit_gauge(info.attack_info.spirit_cost)
+            .set_stop(block_info.defender_stop)
+            .set_stun(if airborne {
+                block_info.air_stun
+            } else {
+                block_info.stun
+            })
+            .reset_spirit_delay(block_info.reset_spirit_delay)
+            .add_spirit_delay(block_info.spirit_delay)
+            .take_spirit_gauge(block_info.spirit_cost)
             .set_should_pushback(info.source == HitSource::Character)
-            .take_damage(info.attack_info.chip_damage)
+            .take_damage(block_info.damage)
     }
-    pub fn wrong_block(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
+    pub fn wrong_block(info: &HitAction) -> EffectDataBuilder<Force> {
+        let wrongblock_info = &info.attack_info.on_wrongblock;
+
         EffectData::new()
-            .set_force(if airborne {
-                Force::Airborne(
-                    info.facing
-                        .fix_collision(info.attack_info.on_block.air_force),
-                )
-            } else {
-                Force::Grounded(info.facing.fix_collision(collision::Vec2::new(
-                    info.attack_info.on_block.ground_pushback,
-                    0_00,
-                )))
-            })
-            .set_stop(info.attack_info.on_block.defender_stop)
-            .set_stun(info.attack_info.level.wrongblockstun())
-            .reset_spirit_delay(true)
-            .add_spirit_delay(info.attack_info.level.wrongblock_delay())
-            .take_spirit_gauge(info.attack_info.level.wrongblock_cost())
+            .set_force(Force::Grounded(info.facing.fix_collision(
+                collision::Vec2::new(wrongblock_info.ground_pushback, 0_00),
+            )))
+            .set_stop(wrongblock_info.defender_stop)
+            .set_stun(wrongblock_info.stun)
+            .reset_spirit_delay(wrongblock_info.reset_spirit_delay)
+            .add_spirit_delay(wrongblock_info.spirit_delay)
+            .take_spirit_gauge(wrongblock_info.spirit_cost)
             .set_should_pushback(info.source == HitSource::Character)
-            .take_damage(info.attack_info.chip_damage)
+            .take_damage(wrongblock_info.damage)
     }
 
     pub fn hit(
@@ -138,18 +144,25 @@ impl EffectData {
         current_combo: Option<ComboState>,
         airborne: bool,
     ) -> EffectDataBuilder<Force> {
+        let hit_info = &info.attack_info.on_hit;
+        let will_be_airborne = airborne || hit_info.launcher;
+
         let current_combo = ComboState::update(current_combo, &info.attack_info, HitModifier::None);
         EffectData::new()
-            .set_force(if airborne || info.attack_info.launcher {
-                Force::Airborne(info.facing.fix_collision(info.attack_info.on_hit.air_force))
+            .set_force(if will_be_airborne {
+                Force::Airborne(info.facing.fix_collision(hit_info.air_force))
             } else {
-                Force::Grounded(info.facing.fix_collision(collision::Vec2::new(
-                    info.attack_info.on_hit.ground_pushback,
-                    0_00,
-                )))
+                Force::Grounded(
+                    info.facing
+                        .fix_collision(collision::Vec2::new(hit_info.ground_pushback, 0_00)),
+                )
             })
-            .set_stop(info.attack_info.on_hit.defender_stop)
-            .set_stun(info.attack_info.level.hitstun())
+            .set_stop(hit_info.defender_stop)
+            .set_stun(if will_be_airborne {
+                hit_info.air_stun
+            } else {
+                hit_info.stun
+            })
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)
@@ -159,19 +172,28 @@ impl EffectData {
         current_combo: Option<ComboState>,
         airborne: bool,
     ) -> EffectDataBuilder<Force> {
+        let counter_hit_info = &info.attack_info.on_counter_hit;
+        let will_be_airborne = airborne || counter_hit_info.launcher;
+
         let current_combo =
             ComboState::update(current_combo, &info.attack_info, HitModifier::CounterHit);
         EffectData::new()
-            .set_force(if airborne || info.attack_info.launcher {
-                Force::Airborne(info.facing.fix_collision(info.attack_info.on_hit.air_force))
+            .set_force(if will_be_airborne {
+                Force::Airborne(info.facing.fix_collision(counter_hit_info.air_force))
             } else {
-                Force::Grounded(info.facing.fix_collision(collision::Vec2::new(
-                    info.attack_info.on_hit.ground_pushback,
-                    0_00,
-                )))
+                Force::Grounded(
+                    info.facing.fix_collision(collision::Vec2::new(
+                        counter_hit_info.ground_pushback,
+                        0_00,
+                    )),
+                )
             })
-            .set_stop(info.attack_info.on_hit.defender_stop)
-            .set_stun(info.attack_info.level.counter_hitstun())
+            .set_stop(counter_hit_info.defender_stop)
+            .set_stun(if will_be_airborne {
+                counter_hit_info.air_stun
+            } else {
+                counter_hit_info.stun
+            })
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)

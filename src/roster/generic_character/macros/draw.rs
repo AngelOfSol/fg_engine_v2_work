@@ -119,6 +119,22 @@ macro_rules! impl_draw {
                     )),
             )?;
 
+            /*
+            let test = ggez::graphics::Text::new(format!(
+                "{}, {}",
+                self.state.current_state.0, self.state.current_state.1
+            ));
+
+            ggez::graphics::set_transform(
+                ctx,
+                position
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(-25.0, -100.0, 0.0)),
+            );
+            ggez::graphics::apply_transformations(ctx)?;
+
+            ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default());
+            */
+
             Ok(())
         }
     };

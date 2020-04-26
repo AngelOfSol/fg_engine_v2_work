@@ -42,6 +42,7 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
         // data thats immediately necessary
         let relative_frame = self.adjust_frame(frame);
         if relative_frame.is_none() {
+            dbg!("got data from the past");
             // input is too far in the past, so we can't actually care about it.
             return PredictionResult::Unpredicted;
         }
@@ -60,7 +61,15 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
             PredictionResult::Unpredicted
         } else {
             match self.canon[relative_frame] {
-                Canon::Canon => PredictionResult::Unpredicted,
+                Canon::Canon => {
+                    //
+                    if self.data[relative_frame] == data {
+                    } else {
+                        dbg!("canon data is different than recieved data");
+                    }
+
+                    PredictionResult::Unpredicted
+                }
                 Canon::Empty => {
                     self.canon[relative_frame] = Canon::Canon;
                     self.data[relative_frame] = data;

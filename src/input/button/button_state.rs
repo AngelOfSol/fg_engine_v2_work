@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Display)]
 pub enum ButtonState {
     Released,
     JustReleased,

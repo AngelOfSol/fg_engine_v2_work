@@ -22,8 +22,9 @@ impl ComboState {
     pub fn update(previous: Option<ComboState>, info: &AttackInfo, modifier: HitModifier) -> Self {
         match previous {
             Some(state) => {
+                let info = info.on_hit;
                 let proration = i32::max(info.proration * state.proration / 100, 20);
-                let last_hit_damage = info.hit_damage * state.proration / 100;
+                let last_hit_damage = info.damage * state.proration / 100;
                 ComboState {
                     hits: state.hits + 1,
                     total_damage: state.total_damage + last_hit_damage,
@@ -33,25 +34,41 @@ impl ComboState {
                     available_limit: state.available_limit - info.limit_cost,
                 }
             }
-            None => {
-                let initial_hit_damage = if modifier == HitModifier::GuardCrush {
-                    0
-                } else {
-                    info.hit_damage
-                };
-                ComboState {
-                    hits: 1,
-                    total_damage: initial_hit_damage,
-                    last_hit_damage: initial_hit_damage,
-                    proration: info.proration,
-                    ground_action: info.ground_action,
-                    available_limit: if modifier == HitModifier::CounterHit {
-                        info.counter_hit_limit
-                    } else {
-                        info.starter_limit
-                    },
+            None => match modifier {
+                HitModifier::None => {
+                    let info = info.on_hit;
+                    ComboState {
+                        hits: 1,
+                        total_damage: info.damage,
+                        last_hit_damage: info.damage,
+                        proration: info.proration,
+                        ground_action: info.ground_action,
+                        available_limit: info.starter_limit,
+                    }
                 }
-            }
+                HitModifier::GuardCrush => {
+                    let info = info.on_guard_crush;
+                    ComboState {
+                        hits: 1,
+                        total_damage: info.damage,
+                        last_hit_damage: info.damage,
+                        proration: info.proration,
+                        ground_action: info.ground_action,
+                        available_limit: info.starter_limit,
+                    }
+                }
+                HitModifier::CounterHit => {
+                    let info = info.on_counter_hit;
+                    ComboState {
+                        hits: 1,
+                        total_damage: info.damage,
+                        last_hit_damage: info.damage,
+                        proration: info.proration,
+                        ground_action: info.ground_action,
+                        available_limit: info.starter_limit,
+                    }
+                }
+            },
         }
     }
 }

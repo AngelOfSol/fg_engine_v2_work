@@ -64,7 +64,9 @@ pub struct NetcodeClient<Input, GameState> {
     packet_buffer_size: usize,
 }
 
-impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameState> {
+impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
+    NetcodeClient<Input, GameState>
+{
     pub fn new(held_input_count: usize) -> Self {
         Self {
             local_players: HashMap::new(),
@@ -250,15 +252,16 @@ impl<Input: Clone + Default + PartialEq, GameState> NetcodeClient<Input, GameSta
                     self.players[player_handle.0].player_type == PlayerType::Net,
                     "Must handle networked input for a networked player."
                 );
-                if sent_on_frame >= self.skip_frames.from_frame {
+                if sent_on_frame > self.skip_frames.from_frame {
+                    let adjust_frames = self
+                        .current_frame
+                        .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
+                        .unwrap_or(0);
                     self.skip_frames = SkipFrames {
                         from_frame: sent_on_frame,
                         // doesn't currently handle multiple players properly
                         // this needs to be a variable for each player
-                        count: self
-                            .current_frame
-                            .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
-                            .unwrap_or(0),
+                        count: if adjust_frames > 1 { adjust_frames } else { 0 },
                     }
                 }
 

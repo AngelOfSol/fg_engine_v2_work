@@ -29,7 +29,7 @@ impl AppState for AttackInfoEditor {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
                 let mut overwrite_target = self.path.get_from_mut().unwrap();
-                *overwrite_target = std::mem::replace(&mut self.resource, AttackInfo::new());
+                *overwrite_target = std::mem::replace(&mut self.resource, AttackInfo::default());
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),
@@ -58,7 +58,7 @@ impl AppState for AttackInfoEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Attack Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = AttackInfo::new();
+                            self.resource = AttackInfo::default();
                             self.ui_data = AttackInfoUi::new();
                         }
                         ui.separator();

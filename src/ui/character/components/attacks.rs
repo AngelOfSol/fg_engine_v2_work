@@ -20,7 +20,7 @@ impl AttacksUi {
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             let key = data.guarentee_unique_key("new attack");
-            data.attacks.insert(key.clone(), AttackInfo::new());
+            data.attacks.insert(key.clone(), AttackInfo::default());
             self.attack_names.insert(0, key);
         }
         ui.separator();

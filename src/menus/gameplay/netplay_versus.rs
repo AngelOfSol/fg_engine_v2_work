@@ -134,8 +134,8 @@ impl NetplayVersus {
         mut client: NetcodeClient,
     ) -> GameResult<Self> {
         client.set_input_delay(3);
-        client.set_allowed_rollback(8);
-        client.set_packet_buffer_size(11);
+        client.set_allowed_rollback(10);
+        client.set_packet_buffer_size(13);
 
         Ok(Self {
             next: None,
@@ -189,18 +189,23 @@ impl AppState for NetplayVersus {
         }
 
         self.socket.manual_poll(Instant::now());
-
         while let Some(event) = self.socket.recv() {
             match event {
                 SocketEvent::Packet(packet) => {
                     match bincode::deserialize(packet.payload()).unwrap() {
-                        NetworkData::Client(packet) => {
-                            self.client.handle_packet(packet);
+                        NetworkData::Client(client_packet) => {
+                            if let Some(response) = self.client.handle_packet(client_packet) {
+                                let _ = self.socket.send(SocketPacket::unreliable(
+                                    packet.addr(),
+                                    bincode::serialize(&NetworkData::Client(response)).unwrap(),
+                                ));
+                            }
                         }
                         NetworkData::Ping(ping_time) => {
-                            let _ = self.socket.send(SocketPacket::unreliable(
+                            let _ = self.socket.send(SocketPacket::unreliable_sequenced(
                                 packet.addr(),
                                 bincode::serialize(&NetworkData::Pong(ping_time)).unwrap(),
+                                Some(2),
                             ));
                         }
                         NetworkData::Pong(pong_time) => {
@@ -211,7 +216,7 @@ impl AppState for NetplayVersus {
                                 .iter_mut()
                                 .filter(|(addr, _, _)| *addr == packet.addr())
                             {
-                                *ping = *ping * 0.9 + (ping_time as f32 / 2.0) * 0.1;
+                                *ping = *ping * 0.5 + (ping_time as f32 / 2.0) * 0.5;
                                 self.client
                                     .set_network_delay(((*ping) / 16.0).ceil() as usize, *handle);
                             }
@@ -239,11 +244,9 @@ impl AppState for NetplayVersus {
                 if let Some(output) = output {
                     let output = NetworkData::Client(output);
                     for (addr, _, _) in self.network_players.iter() {
-                        //let _ = self.socket.send(SocketPacket::unreliable_sequenced(
                         let _ = self.socket.send(SocketPacket::unreliable(
                             *addr,
                             bincode::serialize(&output).unwrap(),
-                            //   Some(1),
                         ));
                     }
                 }
@@ -254,9 +257,10 @@ impl AppState for NetplayVersus {
             let time = (Instant::now() - self.start_time).as_millis();
             let ping_packet = NetworkData::Ping(time);
             for (addr, _, _) in self.network_players.iter() {
-                let _ = self.socket.send(SocketPacket::unreliable(
+                let _ = self.socket.send(SocketPacket::unreliable_sequenced(
                     *addr,
                     bincode::serialize(&ping_packet).unwrap(),
+                    Some(1),
                 ));
             }
 

@@ -131,7 +131,8 @@ macro_rules! impl_would_be_hit {
                 },
                 Some(HitEffectType::Block) => match effect {
                     None => {
-                        if self.state.spirit_gauge - attack_info.spirit_cost <= 0 {
+                        let block_info = attack_info.on_block;
+                        if self.state.spirit_gauge - block_info.spirit_cost <= 0 {
                             let effect = EffectData::guard_crush(&info, flags.airborne).build();
                             (
                                 Some(HitEffect {
@@ -166,11 +167,12 @@ macro_rules! impl_would_be_hit {
                             ..
                         },
                     ) => {
+                        let block_info = info.attack_info.on_block;
                         let effect = old_effect
                             .effect
                             .into_builder()
-                            .take_spirit_gauge(info.attack_info.spirit_cost)
-                            .take_damage(info.attack_info.chip_damage)
+                            .take_spirit_gauge(block_info.spirit_cost)
+                            .take_damage(block_info.damage)
                             .build();
 
                         if self.state.spirit_gauge - effect.take_spirit_gauge <= 0 {
@@ -209,8 +211,9 @@ macro_rules! impl_would_be_hit {
                 },
                 Some(HitEffectType::WrongBlock) => match effect {
                     None => {
+                        let wrongblock_info = &info.attack_info.on_wrongblock;
                         // TODO write getters for attaack_info for block_cost and wrongblock_cost
-                        if self.state.spirit_gauge - attack_info.level.wrongblock_cost() <= 0 {
+                        if self.state.spirit_gauge - wrongblock_info.spirit_cost <= 0 {
                             let effect = EffectData::guard_crush(&info, flags.airborne).build();
                             (
                                 Some(HitEffect {
@@ -223,7 +226,7 @@ macro_rules! impl_would_be_hit {
                                 }),
                             )
                         } else {
-                            let effect = EffectData::wrong_block(&info, flags.airborne).build();
+                            let effect = EffectData::wrong_block(&info).build();
                             (
                                 Some(HitEffect {
                                     hit_type: HitEffectType::WrongBlock,
@@ -244,7 +247,7 @@ macro_rules! impl_would_be_hit {
                             ..
                         },
                     ) => {
-                        let effect = EffectData::wrong_block(&info, flags.airborne)
+                        let effect = EffectData::wrong_block(&info)
                             .take_spirit_gauge(old_effect.effect.take_spirit_gauge)
                             .take_damage(old_effect.effect.take_damage)
                             .build();
@@ -284,11 +287,12 @@ macro_rules! impl_would_be_hit {
                             ..
                         },
                     ) => {
+                        let wrongblock_info = &info.attack_info.on_wrongblock;
                         let effect = old_effect
                             .effect
                             .into_builder()
-                            .take_spirit_gauge(info.attack_info.spirit_cost)
-                            .take_damage(info.attack_info.chip_damage)
+                            .take_spirit_gauge(wrongblock_info.spirit_cost)
+                            .take_damage(wrongblock_info.damage)
                             .build();
 
                         if self.state.spirit_gauge - effect.take_spirit_gauge <= 0 {

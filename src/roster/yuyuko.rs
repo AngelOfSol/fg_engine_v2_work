@@ -25,6 +25,7 @@ use crate::roster::generic_character::hit_info::{
     EffectData, Force, HitAction, HitEffect, HitEffectType, HitResult, HitSource,
 };
 use crate::roster::generic_character::GenericCharacterBehaviour;
+use crate::roster::generic_character::OpaqueStateData;
 use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::collision::IntoGraphical;
