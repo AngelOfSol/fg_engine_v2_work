@@ -24,9 +24,7 @@ macro_rules! impl_update_sound {
             let sounds = &self.data.states[&move_id].sounds;
 
             for sound in sounds.iter().filter(|item| item.frame == frame) {
-                self.state
-                    .sound_state
-                    .play_sound(sound.channel, sound.name.into());
+                self.state.sound_state.play_sound(sound.channel, sound.name);
             }
         }
     };

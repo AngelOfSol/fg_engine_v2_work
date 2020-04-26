@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use strum_macros::{Display, EnumIter};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Display, EnumIter, Copy, Hash)]
-
 pub enum GlobalParticle {
     SuperJump,
 }
@@ -15,7 +14,7 @@ impl<Id> From<GlobalParticle> for ParticlePath<Id> {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Hash)]
 #[serde(untagged)]
 pub enum ParticlePath<Id> {
     Local(Id),

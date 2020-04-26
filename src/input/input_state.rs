@@ -9,6 +9,16 @@ pub struct InputState {
     pub buttons: [ButtonState; 4],
 }
 
+impl std::fmt::Display for InputState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Axis: {}, A: {}, B: {}, C: {}, D: {})",
+            self.axis, self.buttons[0], self.buttons[1], self.buttons[2], self.buttons[3],
+        )
+    }
+}
+
 impl Serialize for InputState {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

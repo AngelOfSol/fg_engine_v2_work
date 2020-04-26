@@ -12,7 +12,10 @@ use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Attacks {
-    #[serde(flatten)]
+    #[serde(
+        flatten,
+        deserialize_with = "attack_info::version::hashmap::deserialize"
+    )]
     pub attacks: HashMap<String, AttackInfo>,
 }
 

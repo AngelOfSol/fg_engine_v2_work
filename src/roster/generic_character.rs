@@ -92,13 +92,21 @@ pub trait GenericCharacterBehaviour {
     fn bullets_mut<'a>(&'a mut self) -> OpaqueBulletIterator<'a>;
     fn in_cutscene(&self) -> bool;
 
-    fn save(&self) -> GameResult<Vec<u8>>;
-    fn load(&mut self, value: &[u8]) -> GameResult<()>;
+    fn save(&self) -> GameResult<OpaqueStateData>;
+    fn load(&mut self, value: OpaqueStateData) -> GameResult<()>;
 
     fn get_flash(&self) -> Option<FlashType>;
 }
 
-use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut};
+use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};
+
+#[derive(Clone)]
+#[non_exhaustive]
+pub enum OpaqueStateData {
+    Yuyuko(YuyukoState),
+    #[allow(dead_code)]
+    Broken,
+}
 
 #[enum_dispatch]
 pub enum OpaqueBulletIterator<'a> {

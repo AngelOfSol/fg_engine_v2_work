@@ -16,6 +16,7 @@ use crate::roster::generic_character::hit_info::{
     HitAction, HitEffect, HitEffectType, HitResult, HitSource,
 };
 use crate::roster::generic_character::GenericCharacterBehaviour;
+use crate::roster::generic_character::OpaqueStateData;
 use crate::roster::CharacterBehavior;
 use crate::roster::{Yuyuko, YuyukoPlayer};
 use crate::stage::Stage;
@@ -49,6 +50,7 @@ pub struct Match<Writer> {
     players: PlayerData<CharacterBehavior>,
     game_state: GameState,
 
+    #[allow(dead_code)]
     assets: Assets,
 
     background: Stage,
@@ -404,6 +406,17 @@ impl<Writer: Write> Match<Writer> {
             Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
         )?;
 
+        /*
+        let test =
+            ggez::graphics::Text::new(format!("current_frame: {}", self.game_state.current_frame));
+
+        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 100.0, 0.0)));
+        ggez::graphics::apply_transformations(ctx)?;
+
+        ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default());
+
+        */
+
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())
@@ -419,7 +432,7 @@ impl<Writer: Write> Match<Writer> {
 
 impl<Writer: Write> RollbackableGameState for Match<Writer> {
     type Input = InputState;
-    type SavedState = (PlayerData<Vec<u8>>, GameState);
+    type SavedState = (PlayerData<OpaqueStateData>, GameState);
 
     fn advance_frame(&mut self, input: InputSet<'_, Self::Input>) {
         self.update([input.inputs[0], input.inputs[1]].into())
@@ -433,8 +446,8 @@ impl<Writer: Write> RollbackableGameState for Match<Writer> {
     }
 
     fn load_state(&mut self, (players, game_state): Self::SavedState) {
-        for (player, new_state) in self.players.iter_mut().zip(players.iter().cloned()) {
-            let _ = player.load(&new_state);
+        for (player, new_state) in self.players.iter_mut().zip(players.into_iter().cloned()) {
+            player.load(new_state).unwrap();
             // TODO log load error
         }
         self.game_state = game_state;

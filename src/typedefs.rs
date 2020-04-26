@@ -37,11 +37,12 @@ pub mod collision {
 }
 
 pub mod player {
+    use serde::{Deserialize, Serialize};
     use std::convert::From;
     use std::iter::FromIterator;
     use std::ops::{Deref, DerefMut};
 
-    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
     pub struct PlayerData<T>([T; 2]);
 
     impl<T> Deref for PlayerData<T> {
