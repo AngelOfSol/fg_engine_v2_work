@@ -12,7 +12,7 @@ impl AttackInfoV1 {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AttackInfoV1 {
     pub melee: bool,
     pub magic: bool,
@@ -28,7 +28,6 @@ pub struct AttackInfoV1 {
     pub on_block: BlockInfo,
     pub on_wrongblock: WrongBlockInfo,
 }
-
 
 impl Default for AttackInfoV1 {
     fn default() -> Self {
@@ -56,6 +55,18 @@ pub struct GrazeInfo {
     pub spirit_cost: i32,
     pub spirit_delay: i32,
     pub reset_spirit_delay: bool,
+    #[serde(default = "default_graze_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_graze_defender_meter")]
+    pub defender_meter: i32,
+}
+
+fn default_graze_attacker_meter() -> i32 {
+    -1_00
+}
+
+fn default_graze_defender_meter() -> i32 {
+    1_00
 }
 
 impl Default for GrazeInfo {
@@ -66,6 +77,8 @@ impl Default for GrazeInfo {
             spirit_cost: 0,
             spirit_delay: 0,
             reset_spirit_delay: false,
+            attacker_meter: default_graze_attacker_meter(),
+            defender_meter: default_graze_defender_meter(),
         }
     }
 }
@@ -88,6 +101,18 @@ pub struct HitInfo {
     pub starter_limit: i32,
     pub limit_cost: i32,
     pub proration: i32,
+    #[serde(default = "default_hit_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_hit_defender_meter")]
+    pub defender_meter: i32,
+}
+
+fn default_hit_attacker_meter() -> i32 {
+    3_00
+}
+
+fn default_hit_defender_meter() -> i32 {
+    1_00
 }
 
 impl Default for HitInfo {
@@ -109,6 +134,8 @@ impl Default for HitInfo {
             starter_limit: 50,
             limit_cost: 10,
             proration: 80,
+            attacker_meter: default_hit_attacker_meter(),
+            defender_meter: default_hit_defender_meter(),
         }
     }
 }
@@ -130,7 +157,19 @@ pub struct CounterHitInfo {
     pub ground_action: GroundAction,
     pub starter_limit: i32,
     pub proration: i32,
+    #[serde(default = "default_counter_hit_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_counter_hit_defender_meter")]
+    pub defender_meter: i32,
 }
+fn default_counter_hit_attacker_meter() -> i32 {
+    5_00
+}
+
+fn default_counter_hit_defender_meter() -> i32 {
+    0_00
+}
+
 impl Default for CounterHitInfo {
     fn default() -> Self {
         Self {
@@ -149,6 +188,8 @@ impl Default for CounterHitInfo {
             ground_action: GroundAction::Knockdown,
             starter_limit: 70,
             proration: 95,
+            attacker_meter: default_counter_hit_attacker_meter(),
+            defender_meter: default_counter_hit_defender_meter(),
         }
     }
 }
@@ -167,7 +208,20 @@ pub struct GuardCrushInfo {
     pub ground_action: GroundAction,
     pub starter_limit: i32,
     pub proration: i32,
+
+    #[serde(default = "default_guard_crush_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_guard_crush_defender_meter")]
+    pub defender_meter: i32,
 }
+fn default_guard_crush_attacker_meter() -> i32 {
+    8_00
+}
+
+fn default_guard_crush_defender_meter() -> i32 {
+    0_00
+}
+
 impl Default for GuardCrushInfo {
     fn default() -> Self {
         Self {
@@ -183,6 +237,8 @@ impl Default for GuardCrushInfo {
             ground_action: GroundAction::Knockdown,
             starter_limit: 70,
             proration: 80,
+            attacker_meter: default_guard_crush_attacker_meter(),
+            defender_meter: default_guard_crush_defender_meter(),
         }
     }
 }
@@ -199,7 +255,20 @@ pub struct BlockInfo {
     pub reset_spirit_delay: bool,
     pub air_force: Vec2,
     pub ground_pushback: Int,
+
+    #[serde(default = "default_block_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_block_defender_meter")]
+    pub defender_meter: i32,
 }
+fn default_block_attacker_meter() -> i32 {
+    0_00
+}
+
+fn default_block_defender_meter() -> i32 {
+    3_00
+}
+
 impl Default for BlockInfo {
     fn default() -> Self {
         Self {
@@ -213,6 +282,8 @@ impl Default for BlockInfo {
             reset_spirit_delay: false,
             air_force: default_air_force(),
             ground_pushback: default_ground_pushback(),
+            attacker_meter: default_block_attacker_meter(),
+            defender_meter: default_block_defender_meter(),
         }
     }
 }
@@ -227,6 +298,18 @@ pub struct WrongBlockInfo {
     pub spirit_delay: i32,
     pub reset_spirit_delay: bool,
     pub ground_pushback: Int,
+
+    #[serde(default = "default_wrong_block_attacker_meter")]
+    pub attacker_meter: i32,
+    #[serde(default = "default_wrong_block_defender_meter")]
+    pub defender_meter: i32,
+}
+fn default_wrong_block_attacker_meter() -> i32 {
+    5_00
+}
+
+fn default_wrong_block_defender_meter() -> i32 {
+    -3_00
 }
 
 impl Default for WrongBlockInfo {
@@ -240,6 +323,8 @@ impl Default for WrongBlockInfo {
             spirit_delay: 60,
             reset_spirit_delay: true,
             ground_pushback: default_ground_pushback(),
+            attacker_meter: default_wrong_block_attacker_meter(),
+            defender_meter: default_wrong_block_defender_meter(),
         }
     }
 }

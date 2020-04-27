@@ -65,9 +65,17 @@ impl StateUi {
             &state_list,
             &|item| im_str!("{}", item).into(),
         );
+
+        ui.separator();
+        ui.text(im_str!("Cancel Requirements"));
         ui.input_whole(
             im_str!("Minmum Spirit Requried"),
             &mut data.minimum_spirit_required,
+        )
+        .unwrap();
+        ui.input_whole(
+            im_str!("Minmum Meter Requried"),
+            &mut data.minimum_meter_required,
         )
         .unwrap();
     }

@@ -59,10 +59,6 @@ impl AttackLegacy {
                 stun: self.level.hitstun(),
                 air_stun: self.level.hitstun(),
                 damage: self.hit_damage,
-                lethal: true,
-                spirit_cost: 0,
-                spirit_delay: 0,
-                reset_spirit_delay: false,
                 air_force: self.on_hit.air_force,
                 ground_pushback: self.on_hit.ground_pushback,
                 launcher: self.launcher,
@@ -70,6 +66,7 @@ impl AttackLegacy {
                 starter_limit: self.starter_limit,
                 limit_cost: self.limit_cost,
                 proration: self.proration,
+                ..Default::default()
             },
             on_counter_hit: CounterHitInfo {
                 attacker_stop: self.on_hit.attacker_stop,
@@ -77,16 +74,13 @@ impl AttackLegacy {
                 stun: self.level.counter_hitstun(),
                 air_stun: self.level.counter_hitstun(),
                 damage: self.hit_damage,
-                lethal: true,
-                spirit_cost: 0,
-                spirit_delay: 0,
-                reset_spirit_delay: false,
                 air_force: self.on_hit.air_force,
                 ground_pushback: self.on_hit.ground_pushback,
                 launcher: self.launcher,
                 ground_action: self.ground_action,
                 starter_limit: self.counter_hit_limit,
                 proration: self.proration,
+                ..Default::default()
             },
             on_guard_crush: GuardCrushInfo {
                 attacker_stop: self.on_hit.attacker_stop,
@@ -94,13 +88,13 @@ impl AttackLegacy {
                 stun: self.level.crush_stun(),
                 air_stun: self.level.crush_stun(),
                 damage: self.hit_damage,
-                lethal: true,
                 air_force: self.on_hit.air_force,
                 ground_pushback: self.on_hit.ground_pushback,
                 launcher: self.launcher,
                 ground_action: self.ground_action,
                 starter_limit: self.starter_limit,
                 proration: self.proration,
+                ..Default::default()
             },
             on_block: BlockInfo {
                 attacker_stop: self.on_block.attacker_stop,
@@ -113,6 +107,7 @@ impl AttackLegacy {
                 reset_spirit_delay: self.reset_spirit_delay,
                 air_force: self.on_block.air_force,
                 ground_pushback: self.on_block.ground_pushback,
+                ..Default::default()
             },
             on_wrongblock: WrongBlockInfo {
                 attacker_stop: self.on_block.attacker_stop,
@@ -121,8 +116,8 @@ impl AttackLegacy {
                 damage: self.chip_damage,
                 spirit_cost: self.level.wrongblock_cost(),
                 spirit_delay: self.level.wrongblock_delay(),
-                reset_spirit_delay: true,
                 ground_pushback: self.on_block.ground_pushback,
+                ..Default::default()
             },
         }
         .to_modern()

@@ -17,8 +17,8 @@ impl<Id> From<GlobalParticle> for ParticlePath<Id> {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Hash)]
 #[serde(untagged)]
 pub enum ParticlePath<Id> {
-    Local(Id),
     Global(GlobalParticle),
+    Local(Id),
 }
 
 impl<Id: std::hash::Hash + Eq> ParticlePath<Id> {

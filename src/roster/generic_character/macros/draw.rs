@@ -42,6 +42,51 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
+            // draw meter
+
+            ggez::graphics::set_transform(
+                ctx,
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -100.0, 0.0))
+                    * bottom_line,
+            );
+            ggez::graphics::apply_transformations(ctx)?;
+
+            let meter_current = ggez::graphics::Rect::new(
+                0.0,
+                0.0,
+                100.0 * self.state.meter as f32 / 200_00.0,
+                20.0,
+            );
+            let meter_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
+            let meter_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
+
+            let rect = ggez::graphics::Mesh::new_rectangle(
+                ctx,
+                ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+                meter_max,
+                ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
+            )?;
+
+            ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+            let rect = ggez::graphics::Mesh::new_rectangle(
+                ctx,
+                ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+                meter_backdrop,
+                ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
+            )?;
+
+            ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+            let rect = ggez::graphics::Mesh::new_rectangle(
+                ctx,
+                ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+                meter_current,
+                ggez::graphics::Color::new(1.0, 0.0, 0.0, 1.0),
+            )?;
+
+            ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
             // draw HP bar
 
             ggez::graphics::set_transform(

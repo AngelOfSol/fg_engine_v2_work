@@ -39,9 +39,11 @@ pub struct EffectData {
     pub take_spirit_gauge: i32,
     pub add_spirit_delay: i32,
     pub reset_spirit_delay: bool,
+    pub modify_meter: i32,
     pub set_stop: i32,
     pub set_stun: i32,
     pub set_force: Force,
+    pub is_lethal: bool,
     pub set_combo: Option<ComboState>,
 }
 
@@ -57,6 +59,8 @@ impl EffectData {
             set_stun: 0,
             set_force: (),
             set_combo: None,
+            modify_meter: 0,
+            is_lethal: false,
         }
     }
     pub fn into_builder(self) -> EffectDataBuilder<Force> {
@@ -70,7 +74,25 @@ impl EffectData {
             set_stun: self.set_stun,
             set_force: self.set_force,
             set_combo: self.set_combo,
+            modify_meter: self.modify_meter,
+            is_lethal: self.is_lethal,
         }
+    }
+    pub fn graze(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
+        let graze_info = &info.attack_info.on_graze;
+
+        EffectData::new()
+            .set_force(if airborne {
+                Force::Airborne(Vec2::zeros())
+            } else {
+                Force::Grounded(Vec2::zeros())
+            })
+            .reset_spirit_delay(graze_info.reset_spirit_delay)
+            .add_spirit_delay(graze_info.spirit_delay)
+            .take_spirit_gauge(graze_info.spirit_cost)
+            .set_stop(graze_info.defender_stop)
+            .take_damage(graze_info.damage)
+            .modify_meter(graze_info.defender_meter)
     }
     pub fn guard_crush(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
         let current_combo = ComboState::update(None, &info.attack_info, HitModifier::GuardCrush);
@@ -98,6 +120,8 @@ impl EffectData {
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)
+            .modify_meter(guard_crush_info.defender_meter)
+            .is_lethal(guard_crush_info.lethal)
     }
     pub fn block(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
         let block_info = &info.attack_info.on_block;
@@ -122,6 +146,7 @@ impl EffectData {
             .take_spirit_gauge(block_info.spirit_cost)
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(block_info.damage)
+            .modify_meter(block_info.defender_meter)
     }
     pub fn wrong_block(info: &HitAction) -> EffectDataBuilder<Force> {
         let wrongblock_info = &info.attack_info.on_wrongblock;
@@ -137,6 +162,7 @@ impl EffectData {
             .take_spirit_gauge(wrongblock_info.spirit_cost)
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(wrongblock_info.damage)
+            .modify_meter(wrongblock_info.defender_meter)
     }
 
     pub fn hit(
@@ -166,6 +192,8 @@ impl EffectData {
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)
+            .modify_meter(hit_info.defender_meter)
+            .is_lethal(hit_info.lethal)
     }
     pub fn counter_hit(
         info: &HitAction,
@@ -197,6 +225,8 @@ impl EffectData {
             .set_should_pushback(info.source == HitSource::Character)
             .take_damage(current_combo.last_hit_damage)
             .set_combo(current_combo)
+            .modify_meter(counter_hit_info.defender_meter)
+            .is_lethal(counter_hit_info.lethal)
     }
 }
 pub struct EffectDataBuilder<T> {
@@ -205,13 +235,30 @@ pub struct EffectDataBuilder<T> {
     take_spirit_gauge: i32,
     add_spirit_delay: i32,
     reset_spirit_delay: bool,
+    modify_meter: i32,
     set_stop: i32,
     set_stun: i32,
     set_force: T,
     set_combo: Option<ComboState>,
+    is_lethal: bool,
 }
 
 impl<T> EffectDataBuilder<T> {
+    pub fn set_force(self, value: Force) -> EffectDataBuilder<Force> {
+        EffectDataBuilder {
+            take_damage: self.take_damage,
+            set_should_pushback: self.set_should_pushback,
+            take_spirit_gauge: self.take_spirit_gauge,
+            add_spirit_delay: self.add_spirit_delay,
+            reset_spirit_delay: self.reset_spirit_delay,
+            set_stop: self.set_stop,
+            set_stun: self.set_stun,
+            set_force: value,
+            set_combo: self.set_combo,
+            modify_meter: self.modify_meter,
+            is_lethal: self.is_lethal,
+        }
+    }
     pub fn take_damage(mut self, value: i32) -> Self {
         self.take_damage += value;
         self
@@ -228,6 +275,12 @@ impl<T> EffectDataBuilder<T> {
         self.reset_spirit_delay = value;
         self
     }
+
+    pub fn modify_meter(mut self, value: i32) -> Self {
+        self.modify_meter += value;
+        self
+    }
+
     pub fn set_stop(mut self, value: i32) -> Self {
         self.set_stop = value;
         self
@@ -244,12 +297,31 @@ impl<T> EffectDataBuilder<T> {
         self.set_combo = Some(value);
         self
     }
+    pub fn is_lethal(mut self, value: bool) -> Self {
+        self.is_lethal = self.is_lethal || value;
+        self
+    }
+
+    pub fn inherit_spirit_delay(self, old_effect: &EffectData) -> Self {
+        self.reset_spirit_delay(old_effect.reset_spirit_delay)
+            .add_spirit_delay(old_effect.add_spirit_delay)
+    }
 
     pub fn inherit_non_hit_data(self, old_effect: &EffectData) -> Self {
         self.take_spirit_gauge(old_effect.take_spirit_gauge)
             .take_damage(old_effect.take_damage)
-            .reset_spirit_delay(old_effect.reset_spirit_delay)
-            .add_spirit_delay(old_effect.add_spirit_delay)
+            .modify_meter(old_effect.modify_meter)
+            .is_lethal(old_effect.is_lethal)
+    }
+
+    pub fn apply_hit(self, info: &HitAction) -> Self {
+        let current_combo =
+            ComboState::update(self.set_combo, &info.attack_info, HitModifier::None);
+        self.take_damage(current_combo.last_hit_damage)
+            .take_spirit_gauge(info.attack_info.on_hit.spirit_cost)
+            .modify_meter(info.attack_info.on_hit.defender_meter)
+            .is_lethal(info.attack_info.on_hit.lethal)
+            .set_combo(current_combo)
     }
 }
 impl EffectDataBuilder<Force> {
@@ -264,6 +336,8 @@ impl EffectDataBuilder<Force> {
             set_stun: self.set_stun,
             set_force: self.set_force,
             set_combo: self.set_combo,
+            modify_meter: self.modify_meter,
+            is_lethal: self.is_lethal,
         }
     }
 }
@@ -271,28 +345,6 @@ impl EffectDataBuilder<Force> {
 use crate::roster::generic_character::combo_state::HitModifier;
 use crate::typedefs::collision;
 
-impl<F> EffectDataBuilder<F> {
-    pub fn set_force(self, value: Force) -> EffectDataBuilder<Force> {
-        EffectDataBuilder {
-            take_damage: self.take_damage,
-            set_should_pushback: self.set_should_pushback,
-            take_spirit_gauge: self.take_spirit_gauge,
-            add_spirit_delay: self.add_spirit_delay,
-            reset_spirit_delay: self.reset_spirit_delay,
-            set_stop: self.set_stop,
-            set_stun: self.set_stun,
-            set_force: value,
-            set_combo: self.set_combo,
-        }
-    }
-
-    pub fn apply_hit(self, info: &HitAction) -> Self {
-        let current_combo =
-            ComboState::update(self.set_combo, &info.attack_info, HitModifier::None);
-        self.take_damage(current_combo.last_hit_damage)
-            .set_combo(current_combo)
-    }
-}
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum HitEffectType {
     Graze,
@@ -310,7 +362,7 @@ pub struct HitEffect {
     pub effect: EffectData,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct HitAction {
     pub source: HitSource,
     pub hash: u64,
@@ -318,7 +370,7 @@ pub struct HitAction {
     pub facing: Facing,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct HitResult {
     pub action: HitAction,
     pub hit_type: HitEffectType,
