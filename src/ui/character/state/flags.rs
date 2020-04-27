@@ -47,6 +47,11 @@ impl FlagsUi {
         ui.checkbox(im_str!("Reset Spirit Delay"), &mut data.reset_spirit_delay);
 
         ui.separator();
+
+        ui.input_whole(im_str!("Meter Cost"), &mut data.meter_cost)
+            .unwrap();
+
+        ui.separator();
         {
             ui.text(im_str!("Melee"));
             let id = ui.push_id("Melee");

@@ -137,9 +137,10 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] add desync checking via hashing gamestate
         [x] FIX DESYNCS by fixing saving loading data
     [] add meter
-        [] add meter that slowly generates to 100 out of 200
-        [] render it
-        [] rework AttackInfo
+        [x] remove orb crushing
+        [x] add meter that slowly generates to 100 out of 200
+        [x] render it
+        [x] rework AttackInfo
             [x] remove attack level
             [x] edit every property for every hit type manually
             [x] on hit
@@ -151,16 +152,23 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] on air block
             [x] on air guardcrush
             [x] all of the above have different values for all relevant data
+            [] have this data have meter data
+                [] attacker change
+                [] defender change
         [] have dealing wrongblocks increase the meter
-        [] have it slowly decrease after its above 100
+        [x] have it slowly decrease after its above 100
+        [x] have BE cost meter
+        [] have melee restitution cost meter
         [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
         [] add vorpal state
         [x] add chain_shift
+        
         [] add veil off
         [] add defensive lock debuff
             [] add mechanic
             [] add ui
     [] add self chaining for 2a/5a
+    [] ground bounce loses energy
     [] rework chaining description
         [] hit
             [] allow based on move type
@@ -172,15 +180,16 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] decide on structure and how to process
             [] decide on how to determine state transitions
         [] migrate all bullets into objects
+        [] 
     [] update attack AttackInfo
         [] add head/foot/body
-        [] remove attack levels, change to manual hitstun/blockstun selection
-            [] hit
-            [] airhit
-            [] counterhit
-            [] block
-            [] wrongblock
-            [] airblock
+        [x] remove attack levels, change to manual hitstun/blockstun selection
+            [x] hit
+            [x] airhit
+            [x] counterhit
+            [x] block
+            [x] wrongblock
+            [x] airblock
     [] implement SMP
         [] more like same move limit
     [] add hardlimits on velocity due to gravity
@@ -196,6 +205,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] handle standing reset limit
         [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
     [] treat triggers as buttons for the purpose of this game
+        [] treating left stick as a dpad for the purpose of the game
     [] have replays handle multiple rounds
     [x] 4ab to 6ab 
     [] add better knockdowns
@@ -208,6 +218,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] remove depedency "keyframe" and use own impl
     [] use left stick/right stick for directional input too
     [] make goldensun style particle effects
+    [] add rounds
     [] move editor to a special version of training mode
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this

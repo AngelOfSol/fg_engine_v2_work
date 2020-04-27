@@ -26,21 +26,6 @@ macro_rules! impl_update_spirit {
                 }
             }
 
-            if self.state.crushed_orbs > 0 {
-                self.state.uncrush_timer -= 1;
-                if self.state.uncrush_timer <= 0 {
-                    self.state.crushed_orbs -= 1;
-                    self.state.uncrush_timer = match self.state.crushed_orbs {
-                        0 => 0,
-                        1 => 13,
-                        2 => 8,
-                        3 => 5,
-                        4 => 3,
-                        _ => unreachable!(),
-                    } * 60;
-                }
-            }
-
             self.clamp_spirit();
         }
     };
@@ -52,7 +37,7 @@ macro_rules! impl_clamp_spirit {
             self.state.spirit_gauge = std::cmp::max(
                 std::cmp::min(
                     self.state.spirit_gauge,
-                    self.data.properties.max_spirit_gauge - self.state.crushed_orbs * 100,
+                    self.data.properties.max_spirit_gauge,
                 ),
                 0,
             );

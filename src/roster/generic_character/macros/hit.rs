@@ -4,13 +4,13 @@ macro_rules! impl_would_be_hit {
             &self,
             input: &[InputState],
             info: HitAction,
-            effect: Option<HitEffect>,
+            old_effect: Option<HitEffect>,
         ) -> (Option<HitEffect>, Option<HitResult>) {
             let attack_info = &info.attack_info;
             let flags = self.current_flags();
             let state_type = self.data.states[&self.state.current_state.1].state_type;
             let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
-            let hit_type = effect
+            let new_hit_type = old_effect
                 .as_ref()
                 .and_then(|item| match item.hit_type {
                     HitEffectType::Hit
@@ -69,336 +69,150 @@ macro_rules! impl_would_be_hit {
                     )
                 })
                 .flatten();
-            match hit_type {
-                None => (effect, None),
-                Some(HitEffectType::Graze) => match effect {
-                    effect @ None
-                    | effect
-                    @
-                    Some(HitEffect {
-                        hit_type: HitEffectType::Graze,
-                        ..
-                    }) => (
-                        effect,
-                        Some(HitResult {
-                            hit_type: HitEffectType::Graze,
-                            action: info,
-                        }),
-                    ),
-                    _ => unreachable!(),
-                },
-                Some(HitEffectType::CounterHit) => match effect {
-                    None => {
-                        let effect =
-                            EffectData::counter_hit(&info, self.state.current_combo, flags.airborne)
-                                .build();
-                        (
-                            Some(HitEffect {
-                                hit_type: HitEffectType::CounterHit,
-                                effect,
-                            }),
-                            Some(HitResult {
-                                hit_type: HitEffectType::CounterHit,
-                                action: info,
-                            }),
-                        )
-                    }
-                    Some(
-                        effect
-                        @
-                        HitEffect {
-                            hit_type: HitEffectType::Graze,
-                            ..
-                        },
-                    ) => {
-                        let effect =
-                            EffectData::counter_hit(&info, self.state.current_combo, flags.airborne)
-                                .take_spirit_gauge(effect.effect.take_spirit_gauge)
-                                .take_damage(effect.effect.take_damage)
-                                .build();
-                        (
-                            Some(HitEffect {
-                                hit_type: HitEffectType::CounterHit,
-                                effect,
-                            }),
-                            Some(HitResult {
-                                hit_type: HitEffectType::CounterHit,
-                                action: info,
-                            }),
-                        )
-                    }
-                    _ => unreachable!(),
-                },
-                Some(HitEffectType::Block) => match effect {
-                    None => {
-                        let block_info = attack_info.on_block;
-                        if self.state.spirit_gauge - block_info.spirit_cost <= 0 {
-                            let effect = EffectData::guard_crush(&info, flags.airborne).build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    action: info,
-                                }),
-                            )
-                        } else {
-                            let effect = EffectData::block(&info, flags.airborne).build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::Block,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::Block,
-                                    action: info,
-                                }),
-                            )
-                        }
-                    }
-                    Some(
-                        old_effect
-                        @
-                        HitEffect {
-                            hit_type:
-                                HitEffectType::Block | HitEffectType::WrongBlock | HitEffectType::Graze,
-                            ..
-                        },
-                    ) => {
-                        let block_info = info.attack_info.on_block;
-                        let effect = old_effect
-                            .effect
-                            .into_builder()
-                            .take_spirit_gauge(block_info.spirit_cost)
-                            .take_damage(block_info.damage)
-                            .build();
 
-                        if self.state.spirit_gauge - effect.take_spirit_gauge <= 0 {
-                            let effect = EffectData::guard_crush(&info, flags.airborne)
-                                .take_damage(old_effect.effect.take_damage)
-                                .build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    action: info,
-                                }),
-                            )
-                        } else {
-                            let hit_type = old_effect.hit_type;
-                            (
-                                Some(HitEffect { hit_type, effect }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::Block,
-                                    action: info,
-                                }),
-                            )
-                        }
-                    }
-                    Some(HitEffect {
-                        hit_type:
-                            HitEffectType::Hit
-                            | HitEffectType::CounterHit
-                            | HitEffectType::GuardCrush
-                            | HitEffectType::GrazeCrush,
-                        ..
-                    }) => unreachable!(),
-                },
-                Some(HitEffectType::WrongBlock) => match effect {
-                    None => {
-                        let wrongblock_info = &info.attack_info.on_wrongblock;
-                        // TODO write getters for attaack_info for block_cost and wrongblock_cost
-                        if self.state.spirit_gauge - wrongblock_info.spirit_cost <= 0 {
-                            let effect = EffectData::guard_crush(&info, flags.airborne).build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    action: info,
-                                }),
-                            )
-                        } else {
-                            let effect = EffectData::wrong_block(&info).build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    action: info,
-                                }),
-                            )
-                        }
-                    }
-                    Some(
-                        old_effect
-                        @
-                        HitEffect {
-                            hit_type: HitEffectType::Block | HitEffectType::Graze,
-                            ..
-                        },
-                    ) => {
-                        let effect = EffectData::wrong_block(&info)
-                            .take_spirit_gauge(old_effect.effect.take_spirit_gauge)
-                            .take_damage(old_effect.effect.take_damage)
-                            .build();
-
-                        if self.state.spirit_gauge - effect.take_spirit_gauge <= 0 {
-                            let effect = EffectData::guard_crush(&info, flags.airborne)
-                                .take_damage(old_effect.effect.take_damage)
-                                .build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    action: info,
-                                }),
-                            )
-                        } else {
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    action: info,
-                                }),
-                            )
-                        }
-                    }
-                    Some(
-                        old_effect
-                        @
-                        HitEffect {
-                            hit_type: HitEffectType::WrongBlock,
-                            ..
-                        },
-                    ) => {
-                        let wrongblock_info = &info.attack_info.on_wrongblock;
-                        let effect = old_effect
-                            .effect
-                            .into_builder()
-                            .take_spirit_gauge(wrongblock_info.spirit_cost)
-                            .take_damage(wrongblock_info.damage)
-                            .build();
-
-                        if self.state.spirit_gauge - effect.take_spirit_gauge <= 0 {
-                            let effect = EffectData::guard_crush(&info, flags.airborne)
-                                .take_damage(old_effect.effect.take_damage)
-                                .build();
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::GuardCrush,
-                                    action: info,
-                                }),
-                            )
-                        } else {
-                            (
-                                Some(HitEffect {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    effect,
-                                }),
-                                Some(HitResult {
-                                    hit_type: HitEffectType::WrongBlock,
-                                    action: info,
-                                }),
-                            )
-                        }
-                    }
-                    Some(HitEffect {
-                        hit_type:
-                            HitEffectType::Hit
-                            | HitEffectType::CounterHit
-                            | HitEffectType::GuardCrush
-                            | HitEffectType::GrazeCrush,
-                        ..
-                    }) => unreachable!(),
-                },
-                Some(HitEffectType::Hit) => match effect {
-                    None => {
-                        let effect =
-                            EffectData::hit(&info, self.state.current_combo, flags.airborne).build();
-                        (
-                            Some(HitEffect {
-                                hit_type: HitEffectType::Hit,
-                                effect,
-                            }),
-                            Some(HitResult {
-                                hit_type: HitEffectType::Hit,
-                                action: info,
-                            }),
-                        )
-                    }
-                    Some(
-                        effect
-                        @
-                        HitEffect {
-                            hit_type:
-                                HitEffectType::GrazeCrush
-                                | HitEffectType::GuardCrush
-                                | HitEffectType::CounterHit
-                                | HitEffectType::Hit,
-                            ..
-                        },
-                    ) => {
-                        assert!(effect.effect.set_combo.unwrap().available_limit > 0);
-                        let hit_type = effect.hit_type;
-                        let effect = effect.effect.into_builder().apply_hit(&info).build();
-                        (
-                            Some(HitEffect { hit_type, effect }),
-                            Some(HitResult {
-                                hit_type: HitEffectType::Hit,
-                                action: info,
-                            }),
-                        )
-                    }
-                    Some(
-                        effect
-                        @
-                        HitEffect {
-                            hit_type:
-                                HitEffectType::Block | HitEffectType::WrongBlock | HitEffectType::Graze,
-                            ..
-                        },
-                    ) => {
-                        let effect = EffectData::hit(&info, None, flags.airborne)
-                            .inherit_non_hit_data(&effect.effect)
-                            .build();
-
-                        (
-                            Some(HitEffect {
-                                hit_type: HitEffectType::Hit,
-                                effect,
-                            }),
-                            Some(HitResult {
-                                hit_type: HitEffectType::Hit,
-                                action: info,
-                            }),
-                        )
-                    }
-                },
-                Some(HitEffectType::GuardCrush) => unreachable!(),
-                Some(HitEffectType::GrazeCrush) => unreachable!(),
+            if new_hit_type.is_none() {
+                return (old_effect, None);
             }
-        }
 
+            let new_hit_type = new_hit_type.unwrap();
+            let new_effect = match new_hit_type {
+                HitEffectType::Graze => EffectData::graze(&info, flags.airborne).build(),
+                HitEffectType::CounterHit => {
+                    EffectData::counter_hit(&info, self.state.current_combo, flags.airborne).build()
+                }
+                HitEffectType::Block => EffectData::block(&info, flags.airborne).build(),
+                HitEffectType::WrongBlock => EffectData::wrong_block(&info).build(),
+                HitEffectType::Hit => {
+                    EffectData::hit(&info, self.state.current_combo, flags.airborne).build()
+                }
+                HitEffectType::GuardCrush => unreachable!(),
+                HitEffectType::GrazeCrush => unreachable!(),
+            };
+
+            let (new_effect, new_hit_type) = match old_effect {
+                None => (new_effect, new_hit_type),
+                Some(old_effect) => {
+                    let old_hit_type = old_effect.hit_type;
+                    let old_effect = old_effect.effect;
+                    match old_hit_type {
+                        HitEffectType::Graze => match new_hit_type {
+                            HitEffectType::Graze => (
+                                old_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&new_effect)
+                                    .set_stop(new_effect.set_stop.max(old_effect.set_stop))
+                                    .build(),
+                                old_hit_type,
+                            ),
+                            HitEffectType::CounterHit | HitEffectType::Hit => (
+                                new_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&old_effect)
+                                    .inherit_spirit_delay(&old_effect)
+                                    .build(),
+                                new_hit_type,
+                            ),
+                            HitEffectType::Block | HitEffectType::WrongBlock => (
+                                new_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&old_effect)
+                                    .build(),
+                                new_hit_type,
+                            ),
+                            HitEffectType::GuardCrush | HitEffectType::GrazeCrush => unreachable!(),
+                        },
+
+                        HitEffectType::Hit
+                        | HitEffectType::CounterHit
+                        | HitEffectType::GuardCrush
+                        | HitEffectType::GrazeCrush => match new_hit_type {
+                            HitEffectType::Hit => {
+                                assert!(old_effect.set_combo.unwrap().available_limit > 0);
+                                (
+                                    old_effect.into_builder().apply_hit(&info).build(),
+                                    old_hit_type,
+                                )
+                            }
+                            HitEffectType::GuardCrush
+                            | HitEffectType::GrazeCrush
+                            | HitEffectType::Block
+                            | HitEffectType::WrongBlock
+                            | HitEffectType::Graze
+                            | HitEffectType::CounterHit => unreachable!(),
+                        },
+                        HitEffectType::Block => match new_hit_type {
+                            HitEffectType::Hit => (
+                                new_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&old_effect)
+                                    .inherit_spirit_delay(&old_effect)
+                                    .build(),
+                                new_hit_type,
+                            ),
+                            HitEffectType::Block => (
+                                old_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&new_effect)
+                                    .build(),
+                                old_hit_type,
+                            ),
+                            HitEffectType::WrongBlock => (
+                                new_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&old_effect)
+                                    .build(),
+                                new_hit_type,
+                            ),
+                            HitEffectType::GuardCrush
+                            | HitEffectType::GrazeCrush
+                            | HitEffectType::Graze
+                            | HitEffectType::CounterHit => unreachable!(),
+                        },
+                        HitEffectType::WrongBlock => match new_hit_type {
+                            HitEffectType::Hit => (
+                                new_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&old_effect)
+                                    .inherit_spirit_delay(&old_effect)
+                                    .build(),
+                                new_hit_type,
+                            ),
+                            HitEffectType::Block | HitEffectType::WrongBlock => (
+                                old_effect
+                                    .into_builder()
+                                    .inherit_non_hit_data(&new_effect)
+                                    .build(),
+                                old_hit_type,
+                            ),
+                            HitEffectType::GuardCrush
+                            | HitEffectType::GrazeCrush
+                            | HitEffectType::Graze
+                            | HitEffectType::CounterHit => unreachable!(),
+                        },
+                    }
+                }
+            };
+
+            let (effect, hit_type) = match new_hit_type {
+                HitEffectType::Block | HitEffectType::WrongBlock
+                    if self.state.spirit_gauge - new_effect.take_spirit_gauge <= 0 =>
+                {
+                    (
+                        EffectData::guard_crush(&info, flags.airborne).build(),
+                        HitEffectType::GuardCrush,
+                    )
+                }
+                _ => (new_effect, new_hit_type),
+            };
+
+            (
+                Some(HitEffect { hit_type, effect }),
+                Some(HitResult {
+                    hit_type,
+                    action: info,
+                }),
+            )
+        }
     };
 }
 
@@ -420,6 +234,8 @@ macro_rules! impl_take_hit {
             self.state.health -= effect.take_damage;
             self.state.should_pushback = effect.set_should_pushback;
             self.state.spirit_gauge -= effect.take_spirit_gauge;
+            self.state.meter += effect.modify_meter;
+
             self.state.spirit_delay = if effect.reset_spirit_delay {
                 0
             } else {
@@ -482,7 +298,7 @@ macro_rules! impl_take_hit {
 
             match hit_type {
                 HitEffectType::GuardCrush => {
-                    self.crush_orb();
+                    self.state.spirit_gauge = self.data.properties.max_spirit_gauge
                 }
                 _ => (),
             }
@@ -520,6 +336,29 @@ macro_rules! impl_deal_hit {
                         .play_sound(ChannelName::Hit, GlobalSound::WrongBlock.into());
                 }
                 _ => (),
+            }
+            match info.hit_type {
+                HitEffectType::Hit => {
+                    self.state.meter += info.action.attack_info.on_hit.attacker_meter
+                }
+                HitEffectType::CounterHit => {
+                    self.state.meter += info.action.attack_info.on_counter_hit.attacker_meter
+                }
+                HitEffectType::GuardCrush => {
+                    self.state.meter += info.action.attack_info.on_guard_crush.attacker_meter
+                }
+                HitEffectType::Graze => {
+                    self.state.meter += info.action.attack_info.on_graze.attacker_meter
+                }
+                HitEffectType::Block => {
+                    self.state.meter += info.action.attack_info.on_block.attacker_meter
+                }
+                HitEffectType::WrongBlock => {
+                    self.state.meter += info.action.attack_info.on_wrongblock.attacker_meter
+                }
+                HitEffectType::GrazeCrush => {
+                    //self.state.meter += info.action.attack_info.on_graze.attacker_meter
+                }
             }
 
             match info.hit_type {

@@ -56,6 +56,8 @@ pub struct State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
     pub on_expire_state: Id,
     #[serde(default)]
     pub minimum_spirit_required: i32,
+    #[serde(default)]
+    pub minimum_meter_required: i32,
 }
 
 impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> PartialEq
@@ -225,6 +227,7 @@ impl EditorCharacterState {
             state_type: default_move_type(),
             on_expire_state: "".to_owned(),
             minimum_spirit_required: 0,
+            minimum_meter_required: 0,
             particles: Vec::new(),
             bullets: Vec::new(),
             sounds: Vec::new(),

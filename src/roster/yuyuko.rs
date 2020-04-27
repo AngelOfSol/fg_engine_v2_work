@@ -214,9 +214,8 @@ pub struct YuyukoState {
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<MoveId>,
     pub should_pushback: bool,
-    pub crushed_orbs: i32,
-    pub uncrush_timer: i32,
     pub sound_state: PlayerSoundState<YuyukoSound>,
+    pub meter: i32,
 }
 
 impl YuyukoState {
@@ -239,9 +238,8 @@ impl YuyukoState {
             allowed_cancels: AllowedCancel::Always,
             rebeat_chain: HashSet::new(),
             should_pushback: true,
-            crushed_orbs: 0,
-            uncrush_timer: 0,
             sound_state: PlayerSoundState::new(),
+            meter: 0,
         }
     }
 }
@@ -271,7 +269,6 @@ impl YuyukoPlayer {
     );
     impl_in_corner!();
     impl_current_flags!();
-    impl_crush_orb!();
     impl_handle_combo_state!();
     impl_handle_rebeat_data!();
     impl_handle_expire!();
@@ -301,6 +298,25 @@ impl YuyukoPlayer {
     impl_validate_position!();
 
     impl_update_sound!();
+
+    fn update_meter(&mut self) {
+        let flags = self.current_flags();
+        self.state.meter -= flags.meter_cost;
+
+        if self.state.meter < 50_00 {
+            self.state.meter += 5;
+        } else if self.state.meter < 100_00 {
+            self.state.meter += 2;
+        } else if self.state.meter > 150_00 {
+            self.state.meter -= 5;
+        } else if self.state.meter > 100_00 {
+            self.state.meter -= 2;
+            // clamp to 100 to make sure we don't wobble around 100
+            self.state.meter = self.state.meter.max(100_00);
+        }
+
+        self.state.meter = 0.max(200_00.min(self.state.meter))
+    }
 }
 
 impl GenericCharacterBehaviour for YuyukoPlayer {

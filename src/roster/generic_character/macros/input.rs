@@ -50,19 +50,25 @@ macro_rules! impl_handle_input {
                             let has_required_spirit = self.state.spirit_gauge
                                 >= self.data.states[&new_move_id].minimum_spirit_required;
 
+                            let has_required_meter = self.state.meter
+                                >= self.data.states[&new_move_id].minimum_meter_required;
+
                             let in_blockstun = state_type == MoveType::Blockstun;
 
                             let grounded = !flags.airborne;
 
                             match *new_move_id {
-                                $border_escape => in_blockstun && grounded,
-                                $melee_restitution => in_blockstun && grounded,
+                                $border_escape => in_blockstun && grounded && has_required_meter,
+                                $melee_restitution => {
+                                    in_blockstun && grounded && has_required_meter
+                                }
                                 $fly_start => is_not_self && is_allowed_cancel && has_air_actions,
                                 _ => {
                                     is_not_self
                                         && is_allowed_cancel
                                         && can_rebeat
                                         && has_required_spirit
+                                        && has_required_meter
                                 }
                             }
                         })
@@ -93,10 +99,10 @@ macro_rules! impl_on_enter_move {
                         input.last().unwrap().axis,
                         self.state.facing,
                     ));
-                    self.crush_orb();
+                    // TODO make this cost meter
                 }
                 $melee_restitution => {
-                    self.crush_orb();
+                    // TODO make this cost meter
                 }
                 $jump | $super_jump => {
                     self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(

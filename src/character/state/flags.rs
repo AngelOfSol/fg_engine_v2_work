@@ -39,6 +39,9 @@ pub struct Flags {
     pub reset_spirit_delay: bool,
 
     #[serde(default)]
+    pub meter_cost: i32,
+
+    #[serde(default)]
     pub jump_start: bool,
     #[serde(default)]
     pub allow_reface: bool,
@@ -77,6 +80,7 @@ impl Flags {
             melee: Hittable::Hit,
             bullet: Hittable::Hit,
             spirit_cost: 0,
+            meter_cost: 0,
             spirit_delay: 0,
             reset_spirit_delay: false,
             can_block: false,

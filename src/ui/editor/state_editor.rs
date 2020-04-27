@@ -379,6 +379,7 @@ impl AppState for StateEditor {
                         0.0,
                     ));
                 if let ParticlePath::Local(particle) = &particle_spawn.particle_id {
+                    dbg!(particle);
                     self.character_data.borrow().particles.particles[particle].draw_at_time(
                         ctx,
                         assets,
