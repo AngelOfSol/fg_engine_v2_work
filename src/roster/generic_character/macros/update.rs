@@ -3,6 +3,7 @@ macro_rules! impl_update_frame_mut {
         fn update_frame_mut(
             &mut self,
             input: &[InputState],
+            opponent_position: collision::Vec2,
             play_area: &PlayArea,
             global_particles: &HashMap<GlobalParticle, Particle>,
         ) {
@@ -19,7 +20,7 @@ macro_rules! impl_update_frame_mut {
             }
             self.handle_combo_state();
             self.update_spirit();
-            self.update_meter();
+            self.update_meter(opponent_position);
             self.update_particles(global_particles);
             self.update_bullets(play_area);
             self.state.sound_state.update();

@@ -59,12 +59,18 @@ pub trait GenericCharacterBehaviour {
     fn update_frame_mut(
         &mut self,
         input: &[InputState],
+        opponent_position: collision::Vec2,
         play_area: &PlayArea,
         global_particles: &HashMap<GlobalParticle, Particle>,
     );
     fn update_cutscene(&mut self, play_area: &PlayArea);
 
-    fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()>;
+    fn draw_ui(
+        &self,
+        ctx: &mut Context,
+        bottom_line: graphics::Matrix4,
+        flipped: bool,
+    ) -> GameResult<()>;
 
     fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
     fn draw_particles(

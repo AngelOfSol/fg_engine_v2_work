@@ -137,8 +137,19 @@ impl<Writer: Write> Match<Writer> {
     }
 
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
-        for (player, input) in self.players.iter_mut().zip(input.iter()) {
-            player.update_frame_mut(input, &self.play_area, &self.particles);
+        let positions: Vec<_> = self
+            .players
+            .iter()
+            .rev()
+            .map(GenericCharacterBehaviour::position)
+            .collect();
+        for ((player, input), position) in self
+            .players
+            .iter_mut()
+            .zip(input.iter())
+            .zip(positions.into_iter())
+        {
+            player.update_frame_mut(input, position, &self.play_area, &self.particles);
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
@@ -398,12 +409,15 @@ impl<Writer: Write> Match<Writer> {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        self.players
-            .p1_mut()
-            .draw_ui(ctx, Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)))?;
+        self.players.p1_mut().draw_ui(
+            ctx,
+            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
+            false,
+        )?;
         self.players.p2_mut().draw_ui(
             ctx,
             Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
+            true,
         )?;
 
         /*

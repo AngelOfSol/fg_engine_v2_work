@@ -28,9 +28,8 @@ pub enum MoveType {
     Hitstun,
     Blockstun,
     WrongBlockstun,
-    ChainShift,
 }
-const ALL_MOVE_TYPES: [MoveType; 23] = [
+const ALL_MOVE_TYPES: [MoveType; 22] = [
     MoveType::Idle,
     MoveType::Walk,
     MoveType::Jump,
@@ -53,17 +52,14 @@ const ALL_MOVE_TYPES: [MoveType; 23] = [
     MoveType::Hitstun,
     MoveType::Blockstun,
     MoveType::WrongBlockstun,
-    MoveType::ChainShift,
 ];
 impl MoveType {
-    pub fn all() -> &'static [MoveType; 23] {
+    pub fn all() -> &'static [MoveType; 22] {
         &ALL_MOVE_TYPES
     }
 
     pub fn buffer_window(self) -> usize {
-        if self == MoveType::ChainShift {
-            24
-        } else if self.is_attack() {
+        if self.is_attack() {
             16
         } else {
             8
@@ -93,8 +89,33 @@ impl MoveType {
             | MoveType::HiJump
             | MoveType::Dash
             | MoveType::Fly
-            | MoveType::AirDash
-            | MoveType::ChainShift => false,
+            | MoveType::AirDash => false,
+        }
+    }
+    pub fn is_movement(self) -> bool {
+        match self {
+            MoveType::Walk
+            | MoveType::Jump
+            | MoveType::HiJump
+            | MoveType::Dash
+            | MoveType::Fly
+            | MoveType::AirDash => true,
+            MoveType::Hitstun
+            | MoveType::Melee
+            | MoveType::Magic
+            | MoveType::MeleeSpecial
+            | MoveType::MagicSpecial
+            | MoveType::Super
+            | MoveType::Followup
+            | MoveType::AirMelee
+            | MoveType::AirMagic
+            | MoveType::AirMeleeSpecial
+            | MoveType::AirMagicSpecial
+            | MoveType::AirSuper
+            | MoveType::AirFollowup
+            | MoveType::Blockstun
+            | MoveType::WrongBlockstun
+            | MoveType::Idle => false,
         }
     }
     pub fn is_stun(self) -> bool {
@@ -138,7 +159,6 @@ impl Display for MoveType {
                 MoveType::Hitstun => "Hitstun",
                 MoveType::Blockstun => "Blockstun",
                 MoveType::WrongBlockstun => "Wrong Blockstun",
-                MoveType::ChainShift => "Chain Shift",
             }
         )
     }
