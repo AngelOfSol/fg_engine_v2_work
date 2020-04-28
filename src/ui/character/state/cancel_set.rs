@@ -37,6 +37,9 @@ impl CancelSetUi {
         }
         ui.separator();
 
+        ui.checkbox(im_str!("Self Gatling"), &mut data.self_gatling);
+        ui.separator();
+
         ui.text(im_str!("Disallowed"));
         let mut to_delete = None;
         for item in data.disallow.iter() {
