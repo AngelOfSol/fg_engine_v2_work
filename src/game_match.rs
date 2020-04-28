@@ -25,6 +25,7 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use flash::FlashOverlay;
 use gfx::{self, *};
+use ggez::graphics::Image;
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
@@ -46,6 +47,16 @@ pub struct GameState {
     flash: Option<FlashOverlay>,
 }
 
+pub struct Shield {
+    pub active: Image,
+    pub disabled: Image,
+    pub passive: Image,
+}
+
+pub struct UiElements {
+    pub shield: Shield,
+}
+
 pub struct Match<Writer> {
     players: PlayerData<CharacterBehavior>,
     game_state: GameState,
@@ -53,6 +64,7 @@ pub struct Match<Writer> {
     #[allow(dead_code)]
     assets: Assets,
 
+    ui: UiElements,
     background: Stage,
     shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
@@ -129,6 +141,14 @@ impl<Writer: Write> Match<Writer> {
             sounds,
             particles,
             assets,
+
+            ui: UiElements {
+                shield: Shield {
+                    active: Image::new(ctx, "\\global\\ui\\active_shield.png")?,
+                    disabled: Image::new(ctx, "\\global\\ui\\disabled_shield.png")?,
+                    passive: Image::new(ctx, "\\global\\ui\\passive_shield.png")?,
+                },
+            },
         })
     }
 
@@ -296,6 +316,16 @@ impl<Writer: Write> Match<Writer> {
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.play_area);
         }
+
+        let lockouts: Vec<_> = self
+            .players
+            .iter()
+            .map(|item| item.get_lockout())
+            .rev()
+            .collect();
+        for (player, (timer, reset)) in self.players.iter_mut().zip(lockouts) {
+            player.modify_lockout(timer, reset);
+        }
     }
 
     pub fn update(&mut self, input: PlayerData<&[InputState]>) {
@@ -411,12 +441,15 @@ impl<Writer: Write> Match<Writer> {
 
         self.players.p1_mut().draw_ui(
             ctx,
-            Matrix4::new_translation(&Vec3::new(30.0, 600.0, 0.0)),
+            &self.ui,
+            Matrix4::new_translation(&Vec3::new(30.0, 720.0, 0.0)),
             false,
         )?;
         self.players.p2_mut().draw_ui(
             ctx,
-            Matrix4::new_translation(&Vec3::new(1130.0, 600.0, 0.0)) * Matrix4::new_scaling(-1.0),
+            &self.ui,
+            Matrix4::new_translation(&Vec3::new(1250.0, 720.0, 0.0))
+                * Matrix4::new_nonuniform_scaling(&Vec3::new(-1.0, 1.0, 1.0)),
             true,
         )?;
 

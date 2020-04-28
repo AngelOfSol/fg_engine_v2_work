@@ -48,6 +48,15 @@ impl FlagsUi {
 
         ui.separator();
 
+        ui.input_whole(im_str!("Lockout Timer"), &mut data.lockout_timer)
+            .unwrap();
+        ui.checkbox(
+            im_str!("Reset Lockout Timer"),
+            &mut data.reset_lockout_timer,
+        );
+
+        ui.separator();
+
         ui.input_whole(im_str!("Meter Cost"), &mut data.meter_cost)
             .unwrap();
 

@@ -11,7 +11,7 @@ use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, PlayerSoundRenderer, SoundList};
-use crate::game_match::{FlashType, PlayArea};
+use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::particle::Particle;
 use crate::graphics::Animation;
 use crate::hitbox::Hitbox;
@@ -216,6 +216,7 @@ pub struct YuyukoState {
     pub should_pushback: bool,
     pub sound_state: PlayerSoundState<YuyukoSound>,
     pub meter: i32,
+    pub lockout: i32,
 }
 
 impl YuyukoState {
@@ -240,6 +241,7 @@ impl YuyukoState {
             should_pushback: true,
             sound_state: PlayerSoundState::new(),
             meter: 0,
+            lockout: 0,
         }
     }
 }
@@ -335,6 +337,11 @@ impl YuyukoPlayer {
 
         self.state.meter = 0.max(200_00.min(self.state.meter))
     }
+
+    fn update_lockout(&mut self) {
+        self.state.lockout -= 1;
+        self.state.lockout = 0.max(self.state.lockout);
+    }
 }
 
 impl GenericCharacterBehaviour for YuyukoPlayer {
@@ -409,6 +416,19 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn get_flash(&self) -> Option<FlashType> {
         self.current_flags().flash
+    }
+
+    fn get_lockout(&self) -> (i32, bool) {
+        let flags = self.current_flags();
+        (flags.lockout_timer, flags.reset_lockout_timer)
+    }
+
+    fn modify_lockout(&mut self, timer: i32, reset: bool) {
+        self.state.lockout = timer + if reset { 0 } else { self.state.lockout };
+    }
+
+    fn is_locked_out(&self) -> bool {
+        self.state.lockout > 0
     }
 }
 

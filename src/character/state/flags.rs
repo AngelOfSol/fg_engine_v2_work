@@ -52,6 +52,11 @@ pub struct Flags {
     pub cutscene: bool,
     #[serde(default)]
     pub flash: Option<FlashType>,
+
+    #[serde(default)]
+    pub lockout_timer: i32,
+    #[serde(default)]
+    pub reset_lockout_timer: bool,
 }
 
 fn default_friction() -> Int {
@@ -95,6 +100,8 @@ impl Flags {
             friction: default_friction(),
             cutscene: false,
             flash: None,
+            lockout_timer: 0,
+            reset_lockout_timer: false,
         }
     }
 
