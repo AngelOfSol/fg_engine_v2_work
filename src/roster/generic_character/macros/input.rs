@@ -55,12 +55,16 @@ macro_rules! impl_handle_input {
 
                             let in_blockstun = state_type == MoveType::Blockstun;
 
+                            let locked_out = self.state.lockout > 0;
+
                             let grounded = !flags.airborne;
 
                             match *new_move_id {
-                                $border_escape => in_blockstun && grounded && has_required_meter,
+                                $border_escape => {
+                                    in_blockstun && grounded && has_required_meter && !locked_out
+                                }
                                 $melee_restitution => {
-                                    in_blockstun && grounded && has_required_meter
+                                    in_blockstun && grounded && has_required_meter && !locked_out
                                 }
                                 $fly_start => is_not_self && is_allowed_cancel && has_air_actions,
                                 _ => {
@@ -99,10 +103,6 @@ macro_rules! impl_on_enter_move {
                         input.last().unwrap().axis,
                         self.state.facing,
                     ));
-                    // TODO make this cost meter
-                }
-                $melee_restitution => {
-                    // TODO make this cost meter
                 }
                 $jump | $super_jump => {
                     self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(

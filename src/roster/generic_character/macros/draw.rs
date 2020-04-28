@@ -3,10 +3,15 @@ macro_rules! impl_draw_ui {
         fn draw_ui(
             &self,
             ctx: &mut Context,
+            ui: &UiElements,
             bottom_line: graphics::Matrix4,
             flipped: bool,
         ) -> GameResult<()> {
-            ggez::graphics::set_transform(ctx, bottom_line);
+            ggez::graphics::set_transform(
+                ctx,
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -50.0, 0.0))
+                    * bottom_line,
+            );
             ggez::graphics::apply_transformations(ctx)?;
             ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
 
@@ -47,19 +52,23 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
-            // draw meter text
-
-            let test = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
+            // draw shield graphics
 
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -200.0, 0.0))
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -95.0, 0.0))
                     * bottom_line
-                    * graphics::Matrix4::new_scaling(if flipped { -1.0 } else { 1.0 }),
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(110.0, 0.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
-
-            ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default())?;
+            let shield = if self.state.lockout > 0 {
+                &ui.shield.disabled
+            } else if self.state.meter >= 50_00 {
+                &ui.shield.active
+            } else {
+                &ui.shield.passive
+            };
+            ggez::graphics::draw(ctx, shield, ggez::graphics::DrawParam::default())?;
 
             // draw meter
 
@@ -110,7 +119,7 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -400.0, 0.0))
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -700.0, 0.0))
                     * bottom_line,
             );
             ggez::graphics::apply_transformations(ctx)?;
@@ -151,6 +160,33 @@ macro_rules! impl_draw_ui {
             )?;
 
             ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+            // draw meter text
+
+            let test = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
+            let width = test.width(ctx) as f32;
+
+            ggez::graphics::set_transform(
+                ctx,
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                    if flipped { -width - 40.0 } else { 40.0 },
+                    -97.5,
+                    0.0,
+                )) * bottom_line
+                    * graphics::Matrix4::new_nonuniform_scaling(&graphics::Vec3::new(
+                        if flipped { -1.0 } else { 1.0 },
+                        1.0,
+                        1.0,
+                    )),
+            );
+            ggez::graphics::apply_transformations(ctx)?;
+
+            ggez::graphics::draw(
+                ctx,
+                &test,
+                ggez::graphics::DrawParam::default()
+                    .color(ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0)),
+            )?;
 
             Ok(())
         }

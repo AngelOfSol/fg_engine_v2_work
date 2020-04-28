@@ -10,6 +10,7 @@ pub mod macros;
 
 use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
+use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
 use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
@@ -68,6 +69,7 @@ pub trait GenericCharacterBehaviour {
     fn draw_ui(
         &self,
         ctx: &mut Context,
+        ui: &UiElements,
         bottom_line: graphics::Matrix4,
         flipped: bool,
     ) -> GameResult<()>;
@@ -102,6 +104,9 @@ pub trait GenericCharacterBehaviour {
     fn load(&mut self, value: OpaqueStateData) -> GameResult<()>;
 
     fn get_flash(&self) -> Option<FlashType>;
+    fn get_lockout(&self) -> (i32, bool);
+    fn modify_lockout(&mut self, timer: i32, reset: bool);
+    fn is_locked_out(&self) -> bool;
 }
 
 use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};

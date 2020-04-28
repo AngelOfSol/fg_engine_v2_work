@@ -160,20 +160,21 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] have BE cost meter
         [x] have melee restitution cost meter
         [x] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
-        [] add vorpal state
         [x] add chain_shift
-            [] remove chain_shift
+            [x] remove chain_shift
         [x] have moving forward give meter
         [x] have backdashing and moving backward lose meter
         [x] add meter to editor 
         
-        [] add defensive lock debuff
-            [] flag
-                [] Modifier
-                [] reset flag
-            [] add mechanic
-            [] add ui
-            [] shield icon that is X'd when the debuff is on
+        [x] add defensive lock debuff
+            [x] flag
+                [x] Modifier
+                [x] reset flag
+            [x] add mechanic
+            [x] add ui
+            [x] shield icon that is X'd when the debuff is on
+    [] improve UI
+        [] add tick marks
     [] add self chaining for 2a/5a
     [] ground bounce loses energy
     [] add palletes
