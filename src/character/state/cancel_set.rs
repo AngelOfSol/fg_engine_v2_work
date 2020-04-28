@@ -173,6 +173,8 @@ pub struct CancelSet<Id> {
         serialize = "HashSet<Id>: Serialize",
         deserialize = "HashSet<Id>: Deserialize<'de>"
     ))]
+    #[serde(default)]
+    pub self_gatling: bool,
     pub disallow: HashSet<Id>,
 }
 
@@ -185,6 +187,7 @@ where
             && self.hit.eq(&rhs.hit)
             && self.block.eq(&rhs.block)
             && self.disallow.eq(&rhs.disallow)
+            && self.self_gatling == rhs.self_gatling
     }
 }
 impl<Id> Eq for CancelSet<Id> where HashSet<Id>: PartialEq {}
@@ -210,6 +213,7 @@ impl<Id: Eq + Hash> CancelSet<Id> {
             hit: HashSet::new(),
             block: HashSet::new(),
             disallow: HashSet::new(),
+            self_gatling: false,
         }
     }
 }

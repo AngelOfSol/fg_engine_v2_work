@@ -28,19 +28,15 @@ macro_rules! impl_handle_input {
                         .into_iter()
                         .copied()
                         .filter(|new_move_id| {
-                            let is_not_self = *new_move_id != move_id;
+                            let state_type = &self.data.states[&new_move_id].state_type;
+
+                            let is_self = *new_move_id == move_id;
 
                             let is_allowed_cancel = match self.state.allowed_cancels {
-                                AllowedCancel::Hit => cancels
-                                    .hit
-                                    .contains(&self.data.states[&new_move_id].state_type),
-                                AllowedCancel::Block => cancels
-                                    .block
-                                    .contains(&self.data.states[&new_move_id].state_type),
+                                AllowedCancel::Hit => cancels.hit.contains(state_type),
+                                AllowedCancel::Block => cancels.block.contains(state_type),
                                 AllowedCancel::Always => false,
-                            } || cancels
-                                .always
-                                .contains(&self.data.states[&new_move_id].state_type)
+                            } || cancels.always.contains(state_type)
                                 && !cancels.disallow.contains(&new_move_id);
 
                             let can_rebeat = !self.state.rebeat_chain.contains(&new_move_id);
@@ -53,7 +49,7 @@ macro_rules! impl_handle_input {
                             let has_required_meter = self.state.meter
                                 >= self.data.states[&new_move_id].minimum_meter_required;
 
-                            let in_blockstun = state_type == MoveType::Blockstun;
+                            let in_blockstun = *state_type == MoveType::Blockstun;
 
                             let locked_out = self.state.lockout > 0;
 
@@ -66,11 +62,10 @@ macro_rules! impl_handle_input {
                                 $melee_restitution => {
                                     in_blockstun && grounded && has_required_meter && !locked_out
                                 }
-                                $fly_start => is_not_self && is_allowed_cancel && has_air_actions,
+                                $fly_start => !is_self && is_allowed_cancel && has_air_actions,
                                 _ => {
-                                    is_not_self
+                                    ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
                                         && is_allowed_cancel
-                                        && can_rebeat
                                         && has_required_spirit
                                         && has_required_meter
                                 }
