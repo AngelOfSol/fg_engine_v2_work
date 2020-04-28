@@ -68,7 +68,6 @@ pub enum MoveId {
     GetUp,
     BorderEscapeJump,
     MeleeRestitution,
-    ChainShift,
     GuardCrush,
 }
 

@@ -10,7 +10,7 @@ impl AttackInfoUi {
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut AttackInfo) {
         ui.checkbox(im_str!("Melee"), &mut data.melee);
-        ui.checkbox(im_str!("Air Magic"), &mut data.magic);
+        ui.checkbox(im_str!("Magic"), &mut data.magic);
         ui.checkbox(im_str!("Grazeable"), &mut data.grazeable);
         ui.checkbox(im_str!("Air Unblockable"), &mut data.air_unblockable);
         ui.checkbox(im_str!("Can CH"), &mut data.can_counter_hit);
@@ -36,12 +36,21 @@ impl AttackInfoUi {
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut info.defender_stop)
                 .unwrap();
+
+            ui.separator();
             ui.text(im_str!("Forces"));
             ui.input_vec2_whole(im_str!("Air"), &mut info.air_force);
             if !info.launcher {
                 ui.input_whole(im_str!("Ground"), &mut info.ground_pushback)
                     .unwrap();
             }
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
+                .unwrap();
 
             ui.separator();
             ui.input_whole(im_str!("Starter Limit"), &mut info.starter_limit)
@@ -95,12 +104,21 @@ impl AttackInfoUi {
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut info.defender_stop)
                 .unwrap();
+
+            ui.separator();
             ui.text(im_str!("Forces"));
             ui.input_vec2_whole(im_str!("Air"), &mut info.air_force);
             if !info.launcher {
                 ui.input_whole(im_str!("Ground"), &mut info.ground_pushback)
                     .unwrap();
             }
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
+                .unwrap();
 
             ui.separator();
             ui.input_whole(im_str!("Starter Limit"), &mut info.starter_limit)
@@ -155,12 +173,21 @@ impl AttackInfoUi {
                 .unwrap();
             ui.input_whole(im_str!("Defender Stop"), &mut info.defender_stop)
                 .unwrap();
+
+            ui.separator();
             ui.text(im_str!("Forces"));
             ui.input_vec2_whole(im_str!("Air"), &mut info.air_force);
             if !info.launcher {
                 ui.input_whole(im_str!("Ground"), &mut info.ground_pushback)
                     .unwrap();
             }
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
+                .unwrap();
 
             ui.separator();
             ui.input_whole(im_str!("Starter Limit"), &mut info.starter_limit)
@@ -207,11 +234,20 @@ impl AttackInfoUi {
                 ui.input_whole(im_str!("Air Hitstun"), &mut info.air_stun)
                     .unwrap();
             }
+
+            ui.separator();
             ui.text(im_str!("Forces"));
             if !data.air_unblockable {
                 ui.input_vec2_whole(im_str!("Air"), &mut info.air_force);
             }
             ui.input_whole(im_str!("Ground"), &mut info.ground_pushback)
+                .unwrap();
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
                 .unwrap();
 
             ui.separator();
@@ -238,8 +274,16 @@ impl AttackInfoUi {
             ui.input_whole(im_str!("Blockstun"), &mut info.stun)
                 .unwrap();
 
+            ui.separator();
             ui.text(im_str!("Forces"));
             ui.input_whole(im_str!("Ground"), &mut info.ground_pushback)
+                .unwrap();
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
                 .unwrap();
 
             ui.separator();
@@ -261,6 +305,13 @@ impl AttackInfoUi {
             let info = &mut data.on_graze;
 
             ui.input_whole(im_str!("Defender Stop"), &mut info.defender_stop)
+                .unwrap();
+
+            ui.separator();
+            ui.text(im_str!("Meter"));
+            ui.input_whole(im_str!("Attacker Gain"), &mut info.attacker_meter)
+                .unwrap();
+            ui.input_whole(im_str!("Defender Gain"), &mut info.defender_meter)
                 .unwrap();
 
             ui.separator();

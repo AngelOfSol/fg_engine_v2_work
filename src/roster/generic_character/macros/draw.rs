@@ -1,6 +1,11 @@
 macro_rules! impl_draw_ui {
     () => {
-        fn draw_ui(&self, ctx: &mut Context, bottom_line: graphics::Matrix4) -> GameResult<()> {
+        fn draw_ui(
+            &self,
+            ctx: &mut Context,
+            bottom_line: graphics::Matrix4,
+            flipped: bool,
+        ) -> GameResult<()> {
             ggez::graphics::set_transform(ctx, bottom_line);
             ggez::graphics::apply_transformations(ctx)?;
             ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
@@ -41,6 +46,20 @@ macro_rules! impl_draw_ui {
             )?;
 
             ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+
+            // draw meter text
+
+            let test = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
+
+            ggez::graphics::set_transform(
+                ctx,
+                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -200.0, 0.0))
+                    * bottom_line
+                    * graphics::Matrix4::new_scaling(if flipped { -1.0 } else { 1.0 }),
+            );
+            ggez::graphics::apply_transformations(ctx)?;
+
+            ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default())?;
 
             // draw meter
 

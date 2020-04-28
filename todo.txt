@@ -152,35 +152,47 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] on air block
             [x] on air guardcrush
             [x] all of the above have different values for all relevant data
-            [] have this data have meter data
-                [] attacker change
-                [] defender change
-        [] have dealing wrongblocks increase the meter
+            [x] have this data have meter data
+                [x] attacker change
+                [x] defender change
+        [x] have dealing wrongblocks increase the meter
         [x] have it slowly decrease after its above 100
         [x] have BE cost meter
-        [] have melee restitution cost meter
-        [] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
+        [x] have melee restitution cost meter
+        [x] add + meter on AttackInfo so attacks can generate the meter on hit/block/wrongblock
         [] add vorpal state
         [x] add chain_shift
+            [] remove chain_shift
+        [x] have moving forward give meter
+        [x] have backdashing and moving backward lose meter
+        [x] add meter to editor 
         
-        [] add veil off
         [] add defensive lock debuff
+            [] flag
+                [] Modifier
+                [] reset flag
             [] add mechanic
             [] add ui
+            [] shield icon that is X'd when the debuff is on
     [] add self chaining for 2a/5a
     [] ground bounce loses energy
+    [] add palletes
     [] rework chaining description
         [] hit
             [] allow based on move type
             [] allow based on specific state
             [] disallow based on specific state overrides allow based on move type
-    [] your bullets go away on getting hit
-        [] maybe attacker gets extra meter for destroying bullets this way
+    [] add rounds
     [] create object system
         [] decide on structure and how to process
             [] decide on how to determine state transitions
         [] migrate all bullets into objects
-        [] 
+        [] standardize functionality that bullets need/input parameters
+            [] position
+
+            [] color?? (just make different bulelts for idfferent colors)
+    [] your bullets go away on getting hit
+        [] maybe attacker gets extra meter for destroying bullets this way
     [] update attack AttackInfo
         [] add head/foot/body
         [x] remove attack levels, change to manual hitstun/blockstun selection
@@ -218,8 +230,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] remove depedency "keyframe" and use own impl
     [] use left stick/right stick for directional input too
     [] make goldensun style particle effects
-    [] add rounds
     [] move editor to a special version of training mode
+    [] move all weird constants into either Rust constants or loaded from a file
     [x] superjump macro is 1/2/3AB in neutral
         [] remove this
     [x] rollback netcode

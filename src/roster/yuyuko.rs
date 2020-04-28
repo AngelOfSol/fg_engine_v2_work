@@ -299,8 +299,9 @@ impl YuyukoPlayer {
 
     impl_update_sound!();
 
-    fn update_meter(&mut self) {
+    fn update_meter(&mut self, opponent_position: collision::Vec2) {
         let flags = self.current_flags();
+        let move_type = self.data.states[&self.state.current_state.1].state_type;
         self.state.meter -= flags.meter_cost;
 
         if self.state.meter < 50_00 {
@@ -313,6 +314,23 @@ impl YuyukoPlayer {
             self.state.meter -= 2;
             // clamp to 100 to make sure we don't wobble around 100
             self.state.meter = self.state.meter.max(100_00);
+        }
+
+        let dir = (opponent_position - self.state.position).x.signum();
+        let facing_opponent = dir == self.state.facing.collision_multiplier().x;
+        if (move_type.is_movement() && facing_opponent) || move_type == MoveType::Fly {
+            // only apply bonus/penalty if we're facing the opponent
+            // fly is the exception to this because it reorients our facing direction
+            // TODO stop having fly reorient facing direction
+
+            let speed = self.state.velocity.x.abs();
+            let bonus_meter = 50;
+            // apply bonus/penalty based on speed
+            if dir == self.state.velocity.x.signum() {
+                self.state.meter += bonus_meter.min(bonus_meter * speed / 10_00);
+            } else if -dir == self.state.velocity.x.signum() {
+                self.state.meter -= bonus_meter.min(bonus_meter * speed / 10_00);
+            }
         }
 
         self.state.meter = 0.max(200_00.min(self.state.meter))

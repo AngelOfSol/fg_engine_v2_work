@@ -36,7 +36,7 @@ macro_rules! impl_would_be_hit {
                 })
                 .or_else(|| {
                     Some(
-                        if !attack_info.melee && flags.bullet.is_invuln()
+                        if attack_info.magic && flags.bullet.is_invuln()
                             || attack_info.melee && flags.melee.is_invuln()
                             || self
                                 .state
@@ -241,23 +241,19 @@ macro_rules! impl_take_hit {
             } else {
                 self.state.spirit_delay
             } + effect.add_spirit_delay;
+
+            self.state.hitstop = effect.set_stop;
+
             match hit_type {
                 HitEffectType::Graze => {}
                 _ => {
-                    self.state.hitstop = effect.set_stop;
                     self.state.extra_data = ExtraData::Stun(effect.set_stun);
                     self.state.velocity = match effect.set_force {
                         Force::Airborne(value) | Force::Grounded(value) => value,
                     };
                 }
             }
-            match hit_type {
-                HitEffectType::Graze => {}
-                _ => {
-                    self.state.hitstop = effect.set_stop;
-                    self.state.extra_data = ExtraData::Stun(effect.set_stun);
-                }
-            }
+
             self.state.current_combo = effect.set_combo;
 
             match hit_type {
@@ -357,7 +353,7 @@ macro_rules! impl_deal_hit {
                     self.state.meter += info.action.attack_info.on_wrongblock.attacker_meter
                 }
                 HitEffectType::GrazeCrush => {
-                    //self.state.meter += info.action.attack_info.on_graze.attacker_meter
+                    //self.state.meter += info.action.attack_info.on_graze_crush.attacker_meter
                 }
             }
 
