@@ -6,15 +6,20 @@ use std::ops::{Index, IndexMut};
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct InputState {
     pub axis: Axis,
-    pub buttons: [ButtonState; 4],
+    pub buttons: [ButtonState; 5],
 }
 
 impl std::fmt::Display for InputState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Axis: {}, A: {}, B: {}, C: {}, D: {})",
-            self.axis, self.buttons[0], self.buttons[1], self.buttons[2], self.buttons[3],
+            "Axis: {}, A: {}, B: {}, C: {}, D: {}, E: {})",
+            self.axis,
+            self.buttons[0],
+            self.buttons[1],
+            self.buttons[2],
+            self.buttons[3],
+            self.buttons[4]
         )
     }
 }
@@ -28,7 +33,8 @@ impl Serialize for InputState {
             (self.buttons[0].into_bits()
                 + (self.buttons[1].into_bits() << 2)
                 + (self.buttons[2].into_bits() << 4)
-                + (self.buttons[3].into_bits() << 6)),
+                + (self.buttons[3].into_bits() << 6)
+                + (self.buttons[3].into_bits() << 8)),
             self.axis.into_bits(),
         )
             .serialize(serializer)
@@ -40,14 +46,15 @@ impl<'de> Deserialize<'de> for InputState {
     where
         D: Deserializer<'de>,
     {
-        let (abcd, axis) = <(u8, u8)>::deserialize(deserializer)?;
+        let (abcde, axis) = <(u16, u8)>::deserialize(deserializer)?;
 
         Ok(InputState {
             buttons: [
-                ButtonState::from_bits(abcd & 0b00000011).unwrap(),
-                ButtonState::from_bits((abcd >> 2) & 0b00000011).unwrap(),
-                ButtonState::from_bits((abcd >> 4) & 0b00000011).unwrap(),
-                ButtonState::from_bits((abcd >> 6) & 0b00000011).unwrap(),
+                ButtonState::from_bits(abcde & 0b00000011).unwrap(),
+                ButtonState::from_bits((abcde >> 2) & 0b00000011).unwrap(),
+                ButtonState::from_bits((abcde >> 4) & 0b00000011).unwrap(),
+                ButtonState::from_bits((abcde >> 6) & 0b00000011).unwrap(),
+                ButtonState::from_bits((abcde >> 8) & 0b00000011).unwrap(),
             ],
             axis: Axis::from_bits(axis).ok_or(serde::de::Error::invalid_value(
                 serde::de::Unexpected::Other("u8"),
@@ -74,6 +81,7 @@ impl Default for InputState {
         Self {
             axis: Axis::Neutral,
             buttons: [
+                ButtonState::Released,
                 ButtonState::Released,
                 ButtonState::Released,
                 ButtonState::Released,

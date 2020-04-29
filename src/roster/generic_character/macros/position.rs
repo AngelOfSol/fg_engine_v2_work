@@ -64,7 +64,8 @@ macro_rules! impl_update_position {
                     match self.state.current_combo.as_ref().unwrap().ground_action {
                         GroundAction::Knockdown => (0, $knockdown_start),
                         GroundAction::GroundSlam => {
-                            self.state.velocity.y *= -1;
+                            self.state.velocity.y *= -90;
+                            self.state.velocity.y /= 100;
                             self.state.current_combo.as_mut().unwrap().ground_action =
                                 GroundAction::Knockdown;
                             reset_hitstun = false;

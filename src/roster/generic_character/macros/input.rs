@@ -13,9 +13,7 @@ macro_rules! impl_handle_input {
                     state_type.buffer_window(),
                 );
                 if move_id == $fly_state {
-                    if input.last().unwrap()[Button::A].is_pressed()
-                        && input.last().unwrap()[Button::B].is_pressed()
-                    {
+                    if input.last().unwrap()[Button::E].is_pressed() {
                         (frame, move_id)
                     } else {
                         (0, $fly_end)
