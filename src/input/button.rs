@@ -10,10 +10,11 @@ use std::ops::BitOr;
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Button {
-    A = 0b0001,
-    B = 0b0010,
-    C = 0b0100,
-    D = 0b1000,
+    A = 0b00001,
+    B = 0b00010,
+    C = 0b00100,
+    D = 0b01000,
+    E = 0b10000,
 }
 
 impl Button {
@@ -23,6 +24,7 @@ impl Button {
             1 => Button::B,
             2 => Button::C,
             3 => Button::D,
+            4 => Button::E,
             _ => panic!("invalid button value"),
         }
     }
@@ -32,6 +34,7 @@ impl Button {
             Button::B => 1,
             Button::C => 2,
             Button::D => 3,
+            Button::E => 4,
         }
     }
 }

@@ -26,7 +26,7 @@ impl Input {
     }
 }
 
-fn read_button_set(button_list: [ButtonState; 4], check_state: ButtonState) -> Option<ButtonSet> {
+fn read_button_set(button_list: [ButtonState; 5], check_state: ButtonState) -> Option<ButtonSet> {
     let mut buttons = None;
     for (id, _) in button_list
         .iter()

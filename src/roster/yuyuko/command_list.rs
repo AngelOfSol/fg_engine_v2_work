@@ -9,13 +9,13 @@ pub fn generate_command_list() -> CommandList<MoveId> {
     make_command_list! {
 
 
-        numpad!(1 A B), numpad!(2 A B), numpad!(3 A B), numpad!(4 A B), numpad!(5 A B), numpad!(6 A B), numpad!(7 A B), numpad!(8 A B), numpad!(9 A B) => MoveId::FlyStart,
+        numpad!(1 E), numpad!(2 E), numpad!(3 E), numpad!(4 E), numpad!(5 E), numpad!(6 E), numpad!(7 E), numpad!(8 E), numpad!(9 E) => MoveId::FlyStart,
 
-        numpad!(6 A B), numpad!(66) => MoveId::ForwardDashStart,
-        numpad!(4 A B), numpad!(44) => MoveId::BackDash,
+        numpad!(6 E), numpad!(66) => MoveId::ForwardDashStart,
+        numpad!(4 E), numpad!(44) => MoveId::BackDash,
 
-        numpad!(1 A B), numpad!(2 A B) => MoveId::BorderEscapeJump,
-        numpad!(6 A B) => MoveId::MeleeRestitution,
+        numpad!(1 E), numpad!(2 E) => MoveId::BorderEscapeJump,
+        numpad!(6 E) => MoveId::MeleeRestitution,
 
         numpad!(5 A), numpad!(4 A), numpad!(6 A), numpad!(7 A), numpad!(8 A), numpad!(9 A) => MoveId::Attack5A,
         numpad!(1 A), numpad!(2 A), numpad!(3 A) => MoveId::Attack2A,
@@ -40,7 +40,7 @@ pub fn generate_command_list() -> CommandList<MoveId> {
         numpad!(5 C), numpad!(4 C), numpad!(6 C), numpad!(7 C), numpad!(8 C), numpad!(9 C) => MoveId::Air5C,
 
         numpad!(27), numpad!(28), numpad!(29) => MoveId::SuperJump,
-        numpad!(1 A B), numpad!(2 A B), numpad!(3 A B) => MoveId::SuperJump,
+        numpad!(7 E), numpad!(8 E), numpad!(9 E) => MoveId::SuperJump,
         numpad!(7), numpad!(8), numpad!(9) => MoveId::Jump,
         numpad!(7), numpad!(8), numpad!(9) => MoveId::SuperJump,
 

@@ -10,7 +10,7 @@ pub type PadControlScheme = ControlScheme<SdlButton>;
 #[derive(Clone, Debug)]
 pub struct ControlScheme<ButtonCode> {
     axis: HashMap<ButtonCode, Axis>,
-    pub buttons: [HashSet<ButtonCode>; 4],
+    pub buttons: [HashSet<ButtonCode>; 5],
     pub gamepad: GamepadId,
 }
 
@@ -58,18 +58,16 @@ impl ControlScheme<SdlButton> {
                 HashSet::new(),
                 HashSet::new(),
                 HashSet::new(),
+                HashSet::new(),
             ],
             gamepad: id,
         };
 
         ret.buttons[Button::A.as_id()].insert(SdlButton::X);
-        ret.buttons[Button::A.as_id()].insert(SdlButton::RightShoulder);
         ret.buttons[Button::B.as_id()].insert(SdlButton::Y);
-        ret.buttons[Button::B.as_id()].insert(SdlButton::RightShoulder);
         ret.buttons[Button::C.as_id()].insert(SdlButton::B);
-        ret.buttons[Button::C.as_id()].insert(SdlButton::LeftShoulder);
         ret.buttons[Button::D.as_id()].insert(SdlButton::A);
-        ret.buttons[Button::D.as_id()].insert(SdlButton::LeftShoulder);
+        ret.buttons[Button::E.as_id()].insert(SdlButton::RightShoulder);
 
         ret.axis.insert(SdlButton::DPadUp, Axis::Up);
         ret.axis.insert(SdlButton::DPadDown, Axis::Down);

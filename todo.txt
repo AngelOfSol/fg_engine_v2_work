@@ -174,9 +174,10 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] add ui
             [x] shield icon that is X'd when the debuff is on
     [] improve UI
-        [] add tick marks
-    [] add self chaining for 2a/5a
-    [] ground bounce loses energy
+        [] add tick marks 
+        [] add combo ui
+    [x] add self chaining for 2a/5a
+    [x] ground bounce loses energy
     [] add palletes
     [] rework chaining description
         [] hit
@@ -184,6 +185,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] allow based on specific state
             [] disallow based on specific state overrides allow based on move type
     [] add rounds
+
+    [x] move to E button
     [] create object system
         [] decide on structure and how to process
             [] decide on how to determine state transitions
@@ -205,6 +208,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] airblock
     [] implement SMP
         [] more like same move limit
+        [] the first move in a combo is NOT recorded
     [] add hardlimits on velocity due to gravity
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly

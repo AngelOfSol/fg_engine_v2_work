@@ -9,6 +9,7 @@ use sdl2::controller::Button;
 
 pub struct ButtonCheck {
     active_control_schemes: Vec<CreateScheme>,
+    delay: u32,
 }
 
 struct CreateScheme {
@@ -31,13 +32,13 @@ impl CreateScheme {
             return;
         }
         if is_valid_input_button(button) {
-            if self.selected_cell == 4 {
+            if self.selected_cell == 5 {
                 self.ready = !self.ready;
             } else {
                 let buttons = &mut self.scheme.buttons[self.selected_cell];
-                if buttons.contains(&button) {
-                    buttons.remove(&button);
-                } else {
+
+                if !buttons.contains(&button) {
+                    buttons.clear();
                     buttons.insert(button);
                 }
             }
@@ -47,11 +48,11 @@ impl CreateScheme {
                     if self.selected_cell > 0 {
                         self.selected_cell -= 1;
                     } else {
-                        self.selected_cell = 4;
+                        self.selected_cell = 5;
                     }
                 }
                 Button::DPadDown => {
-                    if self.selected_cell < 4 {
+                    if self.selected_cell < 5 {
                         self.selected_cell += 1
                     } else {
                         self.selected_cell = 0;
@@ -69,7 +70,7 @@ impl CreateScheme {
         ui.text(format!("Gamepad: {}", gamepad.name()));
 
         ui.columns(2, im_str!("Columns"), true);
-        for index in 0..4 {
+        for index in 0..5 {
             let token = if index == self.selected_cell {
                 Some(ui.push_style_color(StyleColor::Text, GREEN))
             } else {
@@ -81,6 +82,7 @@ impl CreateScheme {
                 1 => "B",
                 2 => "C",
                 3 => "D",
+                4 => "E",
                 _ => unreachable!(),
             });
             ui.next_column();
@@ -93,7 +95,7 @@ impl CreateScheme {
         }
         ui.columns(1, im_str!("Columns##End"), false);
 
-        let token = if 4 == self.selected_cell {
+        let token = if 5 == self.selected_cell {
             Some(ui.push_style_color(StyleColor::Text, GREEN))
         } else {
             None
@@ -110,6 +112,7 @@ impl ButtonCheck {
     pub fn new(_: &mut Context) -> GameResult<Self> {
         Ok(ButtonCheck {
             active_control_schemes: Vec::new(),
+            delay: 30,
         })
     }
 }
@@ -143,7 +146,12 @@ impl AppState for ButtonCheck {
         }: &mut AppContext,
     ) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
+            self.delay = self.delay.checked_sub(1).unwrap_or(0);
             while let Some(event) = pads.next_event() {
+                if self.delay > 0 {
+                    // delay so the button moving into controller select does not
+                    continue;
+                }
                 // let id = event.id;
                 let Event { id, event, .. } = event;
                 if let EventType::ButtonPressed(button) = event {
@@ -204,6 +212,7 @@ impl AppState for ButtonCheck {
                 let middle = graphics::drawable_size(ctx).0 / 2.0;
                 for (idx, scheme) in schemes.iter_mut().enumerate() {
                     imgui::Window::new(&im_str!("Gamepad {}", scheme.scheme.gamepad))
+                        .size([190.0, 210.0], Condition::Always)
                         .position(
                             [(idx as f32 - offset) * 200.0 + middle, 200.0],
                             Condition::Always,
