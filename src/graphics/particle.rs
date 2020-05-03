@@ -2,6 +2,7 @@ mod file;
 pub mod version;
 
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::graphics::animation::{self, Animation};
 use crate::graphics::keyframe::Modifiers;
 use crate::typedefs::graphics::Matrix4;
@@ -60,7 +61,16 @@ impl Particle {
         let transform = self.modifiers.matrix_at_time(time);
         let world = world * transform;
         for animation in self.animations.iter() {
-            animation.draw_at_time(ctx, assets, time, world)?
+            animation.draw_at_time(
+                ctx,
+                assets,
+                time,
+                world,
+                ValueAlpha {
+                    value: self.modifiers.value.at_time(time).unwrap_or(1.0),
+                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0),
+                },
+            )?
         }
 
         Ok(())
@@ -72,11 +82,21 @@ impl Particle {
         assets: &Assets,
         time: usize,
         world: Matrix4,
+        constants: ValueAlpha,
     ) -> GameResult<()> {
         let transform = self.modifiers.matrix_at_time(time);
         let world = world * transform;
         for animation in self.animations.iter() {
-            animation.draw_at_time_debug(ctx, assets, time, world)?
+            animation.draw_at_time_debug(
+                ctx,
+                assets,
+                time,
+                world,
+                ValueAlpha {
+                    value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
+                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+                },
+            )?
         }
 
         Ok(())

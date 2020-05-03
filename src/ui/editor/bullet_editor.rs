@@ -3,6 +3,7 @@ use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::components::BulletInfo;
 use crate::character::PlayerCharacter;
+use crate::game_match::ValueAlpha;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::components::BulletInfoUi;
@@ -170,12 +171,20 @@ impl AppState for BulletInfoEditor {
             .draw(ctx, offset, Color::new(1.0, 1.0, 1.0, 0.15))?;
         if resource.animation.frames.duration() > 0 {
             {
-                resource.animation.draw_at_time(
-                    ctx,
-                    &self.assets.borrow(),
-                    self.frame % resource.animation.frames.duration(),
-                    offset,
-                )?;
+                let _lock = graphics::set_shader(ctx, &self.assets.borrow().shader);
+
+                {
+                    resource.animation.draw_at_time(
+                        ctx,
+                        &self.assets.borrow(),
+                        self.frame % resource.animation.frames.duration(),
+                        offset,
+                        ValueAlpha {
+                            alpha: 1.0,
+                            value: 1.0,
+                        },
+                    )?;
+                }
             }
         }
         resource

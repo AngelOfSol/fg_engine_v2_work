@@ -8,6 +8,7 @@ pub mod particle_id;
 #[macro_use]
 pub mod macros;
 
+use crate::assets::Assets;
 use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
@@ -55,8 +56,8 @@ pub trait GenericCharacterBehaviour {
 
     fn take_hit(&mut self, info: HitEffect, play_area: &PlayArea);
     fn deal_hit(&mut self, info: &HitResult);
-
     fn handle_refacing(&mut self, other_player: collision::Int);
+
     fn update_frame_mut(
         &mut self,
         input: &[InputState],
@@ -65,6 +66,7 @@ pub trait GenericCharacterBehaviour {
         global_particles: &HashMap<GlobalParticle, Particle>,
     );
     fn update_cutscene(&mut self, play_area: &PlayArea);
+    fn update_roundstart(&mut self);
 
     fn draw_ui(
         &self,
@@ -74,16 +76,27 @@ pub trait GenericCharacterBehaviour {
         flipped: bool,
     ) -> GameResult<()>;
 
-    fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+    fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()>;
     fn draw_particles(
         &self,
         ctx: &mut Context,
+        assets: &Assets,
         world: graphics::Matrix4,
         global_particles: &HashMap<GlobalParticle, Particle>,
     ) -> GameResult<()>;
 
-    fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
-    fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()>;
+    fn draw_bullets(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+    ) -> GameResult<()>;
+    fn draw_shadow(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+    ) -> GameResult<()>;
 
     fn render_sound(
         &mut self,
@@ -107,6 +120,7 @@ pub trait GenericCharacterBehaviour {
     fn get_lockout(&self) -> (i32, bool);
     fn modify_lockout(&mut self, timer: i32, reset: bool);
     fn is_locked_out(&self) -> bool;
+    fn validate_position(&mut self, play_area: &PlayArea);
 }
 
 use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};

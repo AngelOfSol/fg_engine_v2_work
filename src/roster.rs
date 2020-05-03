@@ -7,6 +7,7 @@ use enum_dispatch::enum_dispatch;
 pub use generic_character::*;
 pub use yuyuko::*;
 
+use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
@@ -42,10 +43,7 @@ impl Default for Character {
 impl Character {
     pub fn sound_name_iterator(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => YuyukoSound::iter()
-                //.collect::<Vec<_>>()
-                //.into_iter()
-                .map(|item| item.to_string()),
+            Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
         }
     }
 }

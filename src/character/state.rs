@@ -17,6 +17,7 @@ pub mod components {
 }
 
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::graphics::{self, Animation};
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
@@ -178,7 +179,16 @@ impl<
     ) -> GameResult<()> {
         if time < self.duration() {
             for animation in self.animations.iter() {
-                animation.draw_at_time(ctx, assets, time, world)?
+                animation.draw_at_time(
+                    ctx,
+                    assets,
+                    time,
+                    world,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?
             }
         }
         Ok(())
@@ -196,7 +206,16 @@ impl<
                 .iter()
                 .filter(|item| item.blend_mode == crate::graphics::BlendMode::Alpha)
             {
-                animation.draw_at_time(ctx, assets, time, world)?
+                animation.draw_at_time(
+                    ctx,
+                    assets,
+                    time,
+                    world,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?
             }
         }
         Ok(())
@@ -210,7 +229,16 @@ impl<
     ) -> GameResult<()> {
         if time < self.duration() {
             for animation in self.animations.iter() {
-                animation.draw_at_time_debug(ctx, assets, time, world)?
+                animation.draw_at_time_debug(
+                    ctx,
+                    assets,
+                    time,
+                    world,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?
             }
         }
         Ok(())

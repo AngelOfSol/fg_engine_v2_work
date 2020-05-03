@@ -179,13 +179,17 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [x] add self chaining for 2a/5a
     [x] ground bounce loses energy
     [] add palletes
-    [] rework chaining description
-        [] hit
-            [] allow based on move type
-            [] allow based on specific state
-            [] disallow based on specific state overrides allow based on move type
     [] add rounds
-
+        [x] first 5 seconds have a countdown
+            [x] roudn start animation
+            [x] text/graphic showing count down
+        [] hitting 0 and being hit by a lethal attack ends the game
+            [] play a small animation at the end of the game for the winner
+        [] ending the game brings you to character select/retry/main menu
+            [] have a win quote
+        [] have multiple rounds 
+    [] button check at character select 
+        [] on press start
     [x] move to E button
     [] create object system
         [] decide on structure and how to process
@@ -195,8 +199,20 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] position
 
             [] color?? (just make different bulelts for idfferent colors)
+    [] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
+    [] rework chaining description
+        [] hit
+            [] allow based on move type
+            [] allow based on specific state
+            [] disallow based on specific state overrides allow based on move type
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
+    [] controller support update
+        [] add ltrigger/rtrigger
+        [] add left/right stick support
+        [] keyboard support
+    [] add untech
+        [] when you enter untech without limit bounce tech
     [] update attack AttackInfo
         [] add head/foot/body
         [x] remove attack levels, change to manual hitstun/blockstun selection
@@ -206,6 +222,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] block
             [x] wrongblock
             [x] airblock
+    [] move to u32 for current_frame
     [] implement SMP
         [] more like same move limit
         [] the first move in a combo is NOT recorded
@@ -236,9 +253,11 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] use left stick/right stick for directional input too
     [] make goldensun style particle effects
     [] move editor to a special version of training mode
+    [] consider adding ]E[ input to cancel to fly_end to remove fly special handling
     [] move all weird constants into either Rust constants or loaded from a file
+    [] add compression for sameinputs in replay to reduce replay file size
     [x] superjump macro is 1/2/3AB in neutral
-        [] remove this
+        [x] remove this
     [x] rollback netcode
     [x] fix copy paste 
 
