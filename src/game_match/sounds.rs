@@ -5,7 +5,7 @@ mod sound_state;
 
 pub use channel::ChannelName;
 pub use path::{GlobalSound, SoundPath};
-pub use renderer::PlayerSoundRenderer;
+pub use renderer::SoundRenderer;
 pub use sound_state::PlayerSoundState;
 
 use channel::Channel;

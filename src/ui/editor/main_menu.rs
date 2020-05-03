@@ -38,7 +38,7 @@ impl AppState for EditorMenu {
                 imgui::Window::new(im_str!("Editor Menu")).build(ui, || {
                     if ui.small_button(im_str!("New Character")) {
                         let character = Rc::new(RefCell::new(PlayerCharacter::new()));
-                        let assets = Rc::new(RefCell::new(Assets::new()));
+                        let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                         self.next =
                             Transition::Push(Box::new(CharacterEditor::new(character, assets)));
                     }
@@ -46,7 +46,7 @@ impl AppState for EditorMenu {
                         if let Ok(nfd::Response::Okay(path)) =
                             nfd::open_file_dialog(Some("json"), None)
                         {
-                            let assets = Rc::new(RefCell::new(Assets::new()));
+                            let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                             let character = PlayerCharacter::load_from_json(
                                 ctx,
                                 &mut assets.borrow_mut(),
@@ -62,7 +62,7 @@ impl AppState for EditorMenu {
                     }
                     if ui.small_button(im_str!("New Particle")) {
                         let particle = Particle::new();
-                        let assets = Rc::new(RefCell::new(Assets::new()));
+                        let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                         self.next = Transition::Push(Box::new(
                             ParticleEditor::new(
                                 assets,
@@ -75,7 +75,7 @@ impl AppState for EditorMenu {
                         if let Ok(nfd::Response::Okay(path)) =
                             nfd::open_file_dialog(Some("json"), None)
                         {
-                            let assets = Rc::new(RefCell::new(Assets::new()));
+                            let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                             let particle = Particle::load_from_json(
                                 ctx,
                                 &mut assets.borrow_mut(),

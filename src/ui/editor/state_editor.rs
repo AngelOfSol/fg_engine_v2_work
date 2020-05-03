@@ -363,29 +363,34 @@ impl AppState for StateEditor {
         let offset = animation_window_center * Matrix4::new_translation(&offset);
         let assets = &self.assets.borrow();
 
-        if self.draw_mode.debug_animation {
-            resource.draw_at_time_debug(ctx, assets, self.frame, offset)?;
-        } else {
-            resource.draw_at_time(ctx, assets, self.frame, offset)?;
-        }
+        {
+            let _lock = graphics::set_shader(ctx, &assets.shader);
 
-        for particle_spawn in resource.particles.iter() {
-            let current_frame = self.frame.checked_sub(particle_spawn.frame);
-            if let Some(current_frame) = current_frame {
-                let offset = offset
-                    * Matrix4::new_translation(&Vec3::new(
-                        particle_spawn.offset.into_graphical().x,
-                        particle_spawn.offset.into_graphical().y,
-                        0.0,
-                    ));
-                if let ParticlePath::Local(particle) = &particle_spawn.particle_id {
-                    dbg!(particle);
-                    self.character_data.borrow().particles.particles[particle].draw_at_time(
-                        ctx,
-                        assets,
-                        current_frame,
-                        offset,
-                    )?;
+            if self.draw_mode.debug_animation {
+                resource.draw_at_time_debug(ctx, assets, self.frame, offset)?;
+            } else {
+                resource.draw_at_time(ctx, assets, self.frame, offset)?;
+            }
+
+            for particle_spawn in resource.particles.iter() {
+                let current_frame = self.frame.checked_sub(particle_spawn.frame);
+                if let Some(current_frame) = current_frame {
+                    let offset = offset
+                        * Matrix4::new_translation(&Vec3::new(
+                            particle_spawn.offset.into_graphical().x,
+                            particle_spawn.offset.into_graphical().y,
+                            0.0,
+                        ));
+                    if let ParticlePath::Local(particle) = &particle_spawn.particle_id {
+                        dbg!(particle);
+
+                        self.character_data.borrow().particles.particles[particle].draw_at_time(
+                            ctx,
+                            assets,
+                            current_frame,
+                            offset,
+                        )?;
+                    }
                 }
             }
         }

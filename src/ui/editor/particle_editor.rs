@@ -1,6 +1,7 @@
 use super::character_editor::{ItemResource, ParticleAnimationResource};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::graphics::particle::Particle;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
@@ -186,11 +187,17 @@ impl AppState for ParticleEditor {
         let resource = self.resource.borrow();
 
         if resource.duration() > 0 {
+            let _lock = graphics::set_shader(ctx, &self.assets.borrow().shader);
+
             resource.draw_at_time_debug(
                 ctx,
                 &self.assets.borrow(),
                 self.frame % resource.duration(),
                 offset,
+                ValueAlpha {
+                    alpha: 1.0,
+                    value: 1.0,
+                },
             )?;
         }
 

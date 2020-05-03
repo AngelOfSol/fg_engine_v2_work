@@ -128,7 +128,8 @@ macro_rules! impl_draw_ui {
             let hp_current = ggez::graphics::Rect::new(
                 0.0,
                 0.0,
-                hp_length * self.state.health as f32 / self.data.properties.health as f32,
+                (hp_length * self.state.health as f32 / self.data.properties.health as f32)
+                    .max(0.0),
                 20.0,
             );
             let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, hp_length, 20.0);
@@ -195,7 +196,12 @@ macro_rules! impl_draw_ui {
 
 macro_rules! impl_draw {
     () => {
-        fn draw(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
+        fn draw(
+            &self,
+            ctx: &mut Context,
+            assets: &Assets,
+            world: graphics::Matrix4,
+        ) -> GameResult<()> {
             let (frame, move_id) = self.state.current_state;
 
             let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
@@ -206,7 +212,7 @@ macro_rules! impl_draw {
 
             self.data.states[&move_id].draw_at_time(
                 ctx,
-                &self.data.assets,
+                assets,
                 frame,
                 position
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
@@ -245,6 +251,7 @@ macro_rules! impl_draw_particles {
         fn draw_particles(
             &self,
             ctx: &mut Context,
+            assets: &Assets,
             world: graphics::Matrix4,
             global_particles: &HashMap<GlobalParticle, Particle>,
         ) -> GameResult<()> {
@@ -253,7 +260,7 @@ macro_rules! impl_draw_particles {
 
                 particle.draw_at_time(
                     ctx,
-                    &self.data.assets,
+                    assets,
                     *frame,
                     world
                         * graphics::Matrix4::new_translation(&graphics::up_dimension(
@@ -269,9 +276,14 @@ macro_rules! impl_draw_particles {
 
 macro_rules! impl_draw_bullets {
     () => {
-        fn draw_bullets(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
+        fn draw_bullets(
+            &self,
+            ctx: &mut Context,
+            assets: &Assets,
+            world: graphics::Matrix4,
+        ) -> GameResult<()> {
             for bullet in &self.state.bullets {
-                bullet.draw(ctx, &self.data, &self.data.assets, world)?;
+                bullet.draw(ctx, &self.data, assets, world)?;
             }
 
             Ok(())
@@ -281,7 +293,12 @@ macro_rules! impl_draw_bullets {
 
 macro_rules! impl_draw_shadow {
     () => {
-        fn draw_shadow(&self, ctx: &mut Context, world: graphics::Matrix4) -> GameResult<()> {
+        fn draw_shadow(
+            &self,
+            ctx: &mut Context,
+            assets: &Assets,
+            world: graphics::Matrix4,
+        ) -> GameResult<()> {
             let (frame, move_id) = self.state.current_state;
 
             let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
@@ -292,7 +309,7 @@ macro_rules! impl_draw_shadow {
 
             self.data.states[&move_id].draw_shadow_at_time(
                 ctx,
-                &self.data.assets,
+                assets,
                 frame,
                 position
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(

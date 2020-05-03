@@ -20,7 +20,7 @@ pub enum ChannelName {
 
 pub struct Channel<LocalPath> {
     sink: SpatialSink,
-    state: SoundState<SoundPath<LocalPath>>,
+    state: SoundState<LocalPath>,
 }
 
 impl<LocalPath: std::fmt::Debug> std::fmt::Debug for Channel<LocalPath> {
@@ -29,7 +29,7 @@ impl<LocalPath: std::fmt::Debug> std::fmt::Debug for Channel<LocalPath> {
     }
 }
 
-impl<LocalPath> Channel<LocalPath>
+impl<LocalPath> Channel<SoundPath<LocalPath>>
 where
     LocalPath: std::hash::Hash + std::cmp::Eq + std::fmt::Debug,
     SoundState<SoundPath<LocalPath>>: std::cmp::PartialEq + Clone,
@@ -65,6 +65,57 @@ where
 
             if let Some(new_hit) = next {
                 if let Some(source) = new_hit.path.get(local, global) {
+                    self.sink = SpatialSink::new(
+                        device,
+                        [0.0, 0.0, 0.0],
+                        [-1.0, 0.0, 0.0],
+                        [1.0, 0.0, 0.0],
+                    );
+                    let source = source.clone();
+                    let source = skip_samples(new_hit.current_frame, fps, source);
+
+                    self.sink.append(source);
+                }
+            }
+        } else {
+            self.sink.play();
+        }
+        if let Some(new_hit) = next {
+            self.state = new_hit.clone();
+        }
+    }
+}
+
+impl Channel<GlobalSound> {
+    pub fn new_global(
+        state: SoundState<GlobalSound>,
+        global: &HashMap<GlobalSound, AudioBuffer>,
+        device: &Device,
+        fps: u32,
+    ) -> Self {
+        let sink = SpatialSink::new(device, [0.0, 0.0, 0.0], [-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+        if let Some(buffer) = global.get(&state.path) {
+            sink.append(skip_samples(state.current_frame, fps, buffer.clone()));
+        }
+        Self { sink, state }
+    }
+    pub fn handle(
+        &mut self,
+        next: Option<&SoundState<GlobalSound>>,
+        global: &HashMap<GlobalSound, AudioBuffer>,
+        device: &Device,
+        fps: u32,
+    ) {
+        if next.map(|hit| hit == &self.state).unwrap_or(false) {
+            self.sink.pause();
+        } else if next
+            .map(|hit| !hit.is_continuance(&self.state))
+            .unwrap_or(true)
+        {
+            self.sink.stop();
+
+            if let Some(new_hit) = next {
+                if let Some(source) = global.get(&new_hit.path) {
                     self.sink = SpatialSink::new(
                         device,
                         [0.0, 0.0, 0.0],

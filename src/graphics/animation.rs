@@ -5,6 +5,7 @@ use super::keyframe::Modifiers;
 use super::sprite::{self, Sprite};
 use super::BlendMode;
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use ggez::graphics;
@@ -74,7 +75,16 @@ impl Animation {
         if let Some((ref sprite, _)) = data {
             graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 
-            sprite.draw(ctx, assets, world, 0)
+            sprite.draw(
+                ctx,
+                assets,
+                world,
+                0,
+                ValueAlpha {
+                    value: 1.0,
+                    alpha: 1.0,
+                },
+            )
         } else {
             Ok(())
         }
@@ -88,7 +98,16 @@ impl Animation {
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
         for sprite in self.frames.iter().map(|(ref sprite, _)| sprite) {
-            sprite.draw_debug(ctx, assets, world, 0)?
+            sprite.draw_debug(
+                ctx,
+                assets,
+                world,
+                0,
+                ValueAlpha {
+                    value: 1.0,
+                    alpha: 1.0,
+                },
+            )?
         }
 
         Ok(())
@@ -100,6 +119,7 @@ impl Animation {
         assets: &Assets,
         time: usize,
         world: Matrix4,
+        constants: ValueAlpha,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 
@@ -111,7 +131,16 @@ impl Animation {
 
         if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
             let transform = self.modifiers.matrix_at_time(time);
-            image.draw(ctx, assets, world * transform, remaining)
+            image.draw(
+                ctx,
+                assets,
+                world * transform,
+                remaining,
+                ValueAlpha {
+                    value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
+                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+                },
+            )
         } else {
             Ok(())
         }
@@ -122,6 +151,7 @@ impl Animation {
         assets: &Assets,
         time: usize,
         world: Matrix4,
+        constants: ValueAlpha,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 
@@ -133,7 +163,16 @@ impl Animation {
 
         if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
             let transform = self.modifiers.matrix_at_time(time);
-            image.draw_debug(ctx, assets, world * transform, remaining)
+            image.draw_debug(
+                ctx,
+                assets,
+                world * transform,
+                remaining,
+                ValueAlpha {
+                    value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
+                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+                },
+            )
         } else {
             Ok(())
         }

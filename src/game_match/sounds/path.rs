@@ -2,9 +2,11 @@ use super::AudioBuffer;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use strum_macros::{Display, EnumIter};
+use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Display, EnumIter, Debug, Serialize, Deserialize)]
+#[derive(
+    PartialEq, Eq, Copy, Clone, Hash, Display, EnumString, EnumIter, Debug, Serialize, Deserialize,
+)]
 pub enum GlobalSound {
     Block,
     WrongBlock,

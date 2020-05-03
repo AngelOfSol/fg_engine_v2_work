@@ -3,6 +3,7 @@ pub mod version;
 
 use super::keyframe::Modifiers;
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
@@ -48,9 +49,10 @@ impl Sprite {
     pub fn draw_ex(
         &self,
         ctx: &mut Context,
-        _assets: &Assets,
+        assets: &Assets,
         world: Matrix4,
         time: usize,
+        constants: ValueAlpha,
         debug: bool,
     ) -> GameResult<()> {
         let image = self.image.as_ref().unwrap();
@@ -64,6 +66,14 @@ impl Sprite {
         let sprite_transform = self.modifiers.matrix_at_time(time);
 
         let transform = world * sprite_transform * image_offset;
+
+        assets.shader.send(
+            ctx,
+            ValueAlpha {
+                value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
+                alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+            },
+        )?;
 
         graphics::set_transform(ctx, transform);
         graphics::apply_transformations(ctx)?;
@@ -95,8 +105,9 @@ impl Sprite {
         assets: &Assets,
         world: Matrix4,
         time: usize,
+        constants: ValueAlpha,
     ) -> GameResult<()> {
-        self.draw_ex(ctx, assets, world, time, true)
+        self.draw_ex(ctx, assets, world, time, constants, true)
     }
 
     pub fn draw(
@@ -105,8 +116,9 @@ impl Sprite {
         assets: &Assets,
         world: Matrix4,
         time: usize,
+        constants: ValueAlpha,
     ) -> GameResult<()> {
-        self.draw_ex(ctx, assets, world, time, false)
+        self.draw_ex(ctx, assets, world, time, constants, false)
     }
     pub fn new() -> Self {
         Self {

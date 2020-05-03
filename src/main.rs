@@ -50,13 +50,13 @@ fn main() {
             )
             .modules(conf::ModuleConf::default().gamepad(false));
         conf.window_setup = conf::WindowSetup::default()
-            .title("World Scar")
+            .title("World Scarred")
             .vsync(false);
         conf
     };
 
     // Make a Context and an EventLoop.
-    let (mut ctx, mut event_loop) = ContextBuilder::new("world_scar", "aos-studios")
+    let (mut ctx, mut event_loop) = ContextBuilder::new("world_scared", "aos-studios")
         .add_resource_path(resource_dir)
         .conf(default_conf)
         .with_conf_file(true)

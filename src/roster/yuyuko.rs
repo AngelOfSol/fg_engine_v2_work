@@ -10,7 +10,7 @@ use crate::character::state::components::{Flags, GlobalParticle, MoveType, Parti
 use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
-use crate::game_match::sounds::{ChannelName, GlobalSound, PlayerSoundRenderer, SoundList};
+use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::particle::Particle;
 use crate::graphics::Animation;
@@ -72,7 +72,6 @@ pub struct Properties {
 
 #[derive(Clone)]
 pub struct Yuyuko {
-    pub assets: Assets,
     pub states: StateList,
     pub particles: ParticleList,
     pub bullets: BulletList,
@@ -92,11 +91,13 @@ type ParticleList = HashMap<ParticleId, Particle>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
-    pub fn new_with_path(ctx: &mut Context, path: PathBuf) -> GameResult<Yuyuko> {
-        let mut assets = Assets::new();
-        let data = YuyukoData::load_from_json(ctx, &mut assets, path)?;
+    pub fn new_with_path(
+        ctx: &mut Context,
+        assets: &mut Assets,
+        path: PathBuf,
+    ) -> GameResult<Yuyuko> {
+        let data = YuyukoData::load_from_json(ctx, assets, path)?;
         Ok(Yuyuko {
-            assets,
             states: data.states,
             particles: data.particles,
             properties: data.properties,
@@ -192,7 +193,7 @@ impl Default for YuyukoSound {
 
 pub struct YuyukoPlayer {
     pub data: Yuyuko,
-    pub sound_renderer: PlayerSoundRenderer<YuyukoSound>,
+    pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
     pub state: YuyukoState,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,17 +215,17 @@ pub struct YuyukoState {
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<MoveId>,
     pub should_pushback: bool,
-    pub sound_state: PlayerSoundState<YuyukoSound>,
+    pub sound_state: PlayerSoundState<SoundPath<YuyukoSound>>,
     pub meter: i32,
     pub lockout: i32,
 }
 
 impl YuyukoState {
-    fn new(data: &Yuyuko) -> Self {
+    fn new(data: &Yuyuko, facing: Facing) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
-            current_state: (0, MoveId::Stand),
+            current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
             particles: Vec::new(),
             bullets: Vec::new(),
@@ -232,7 +233,7 @@ impl YuyukoState {
             spirit_gauge: data.properties.max_spirit_gauge,
             spirit_delay: 0,
             hitstop: 0,
-            facing: Facing::Right,
+            facing,
             last_hit_using: None,
             health: data.properties.health,
             current_combo: None,
@@ -249,11 +250,11 @@ impl YuyukoState {
 use crate::game_match::sounds::PlayerSoundState;
 
 impl YuyukoPlayer {
-    pub fn new(data: Yuyuko) -> Self {
+    pub fn new(data: Yuyuko, facing: Facing) -> Self {
         Self {
-            state: YuyukoState::new(&data),
+            state: YuyukoState::new(&data, facing),
             data,
-            sound_renderer: PlayerSoundRenderer::new(),
+            sound_renderer: SoundRenderer::new(),
         }
     }
     impl_handle_fly!(fly_start: MoveId::FlyStart);
@@ -297,7 +298,6 @@ impl YuyukoPlayer {
         hitstun_air: MoveId::HitstunAirStart,
         stand_idle: MoveId::Stand
     );
-    impl_validate_position!();
 
     impl_update_sound!();
 
@@ -346,6 +346,7 @@ impl YuyukoPlayer {
 
 impl GenericCharacterBehaviour for YuyukoPlayer {
     impl_apply_pushback!();
+    impl_validate_position!();
 
     impl_prune_bullets!();
     impl_would_be_hit!();
@@ -429,6 +430,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn is_locked_out(&self) -> bool {
         self.state.lockout > 0
+    }
+
+    fn update_roundstart(&mut self) {
+        self.handle_expire();
+        self.state.sound_state.update();
     }
 }
 

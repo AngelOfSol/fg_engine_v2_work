@@ -1,6 +1,7 @@
 use super::character_editor::ItemResource;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
+use crate::game_match::ValueAlpha;
 use crate::graphics::Animation;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
@@ -174,12 +175,20 @@ impl AppState for AnimationEditor {
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
 
-                self.resource.draw_at_time(
-                    ctx,
-                    assets,
-                    self.frame % self.resource.frames.duration(),
-                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
-                )?;
+                {
+                    let _lock = graphics::set_shader(ctx, &assets.shader);
+
+                    self.resource.draw_at_time(
+                        ctx,
+                        assets,
+                        self.frame % self.resource.frames.duration(),
+                        Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
+                        ValueAlpha {
+                            alpha: 1.0,
+                            value: 1.0,
+                        },
+                    )?;
+                }
                 draw_cross(ctx, origin)?;
             }
 
@@ -189,11 +198,15 @@ impl AppState for AnimationEditor {
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
 
-                self.resource.draw_every_frame(
-                    ctx,
-                    assets,
-                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
-                )?;
+                {
+                    let _lock = graphics::set_shader(ctx, &assets.shader);
+
+                    self.resource.draw_every_frame(
+                        ctx,
+                        assets,
+                        Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
+                    )?;
+                }
             }
 
             if let Some(frame) = self.ui_data.current_sprite {
@@ -201,12 +214,16 @@ impl AppState for AnimationEditor {
                 let pos = (300.0 + width, 20.0);
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
-                self.resource.draw_frame(
-                    ctx,
-                    assets,
-                    frame,
-                    Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
-                )?;
+                {
+                    let _lock = graphics::set_shader(ctx, &assets.shader);
+
+                    self.resource.draw_frame(
+                        ctx,
+                        assets,
+                        frame,
+                        Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
+                    )?;
+                }
                 draw_cross(ctx, origin)?;
             }
         }

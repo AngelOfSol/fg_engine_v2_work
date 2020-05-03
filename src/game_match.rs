@@ -10,6 +10,7 @@ use crate::assets::Assets;
 use crate::character::state::components::GlobalParticle;
 use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
+use crate::input::Facing;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::hit_info::{
@@ -33,6 +34,7 @@ use sounds::{GlobalSound, SoundList};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 use strum::IntoEnumIterator;
 
 #[derive(Clone)]
@@ -40,21 +42,35 @@ pub struct PlayArea {
     pub width: i32,
 }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
+gfx_defines! { constant ValueAlpha { value: f32 = "u_Value", alpha: f32 = "u_Alpha", } }
+
+pub type GameShader = graphics::Shader<ValueAlpha>;
+pub type ShadowShader = graphics::Shader<Shadow>;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
     current_frame: i16,
     flash: Option<FlashOverlay>,
+    mode: UpdateMode,
+
+    sound_state: sounds::PlayerSoundState<GlobalSound>,
 }
 
-pub struct Shield {
+pub struct ShieldUi {
     pub active: Image,
     pub disabled: Image,
     pub passive: Image,
 }
 
+pub struct RoundStartUi {
+    pub action: Image,
+    pub gamestart: Image,
+    pub round: [Image; 3],
+}
+
 pub struct UiElements {
-    pub shield: Shield,
+    pub shield: ShieldUi,
+    pub roundstart: RoundStartUi,
 }
 
 pub struct Match<Writer> {
@@ -66,42 +82,66 @@ pub struct Match<Writer> {
 
     ui: UiElements,
     background: Stage,
-    shader: graphics::Shader<Shadow>,
     play_area: PlayArea,
     writer: Writer,
     sounds: SoundList<sounds::GlobalSound>,
+    sound_renderer: sounds::SoundRenderer<sounds::GlobalSound>,
     particles: HashMap<GlobalParticle, Particle>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum UpdateMode {
+    Normal,
+    RoundStart { duration: i32 },
+    GameStart { duration: i32 },
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
 
 impl<Writer: Write> Match<Writer> {
     pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
-        let mut assets = Assets::new();
+        let mut assets = Assets::new(ctx)?;
         let background = Stage::new(ctx, "\\bg_14.png")?;
-        let resources = Yuyuko::new_with_path(ctx, PathBuf::from(".\\resources\\yuyuko.json"))?;
-        let mut p1: CharacterBehavior = YuyukoPlayer::new(resources.clone()).into();
-        let mut p2: CharacterBehavior = YuyukoPlayer::new(resources.clone()).into();
+        let play_area = PlayArea {
+            width: background.width() as i32 * 100,
+        };
+
+        let resources =
+            Yuyuko::new_with_path(ctx, &mut assets, PathBuf::from(".\\resources\\yuyuko.json"))?;
+        let mut p1: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Right).into();
+        let mut p2: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Left).into();
+
+        p1.validate_position(&play_area);
+        p2.validate_position(&play_area);
+
         p1.position_mut().x = -100_00;
         p2.position_mut().x = 100_00;
 
         let mut sounds = SoundList::new();
-        let mut path = PathBuf::from(".\\resources\\global\\sounds");
-        for sound in GlobalSound::iter() {
-            path.push(format!("{}.mp3", sound));
-            use rodio::source::Source;
-            let source =
-                rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(&path)?))
-                    .unwrap();
-            let source = rodio::buffer::SamplesBuffer::new(
-                source.channels(),
-                source.sample_rate(),
-                source.convert_samples().collect::<Vec<_>>(),
-            )
-            .buffered();
 
-            sounds.data.insert(sound, source);
-            path.pop();
+        for path in glob::glob(".\\resources\\global\\sounds\\**\\*.mp3")
+            .unwrap()
+            .filter_map(Result::ok)
+        {
+            let sound = path
+                .file_stem()
+                .and_then(|item| item.to_str())
+                .and_then(|item| GlobalSound::from_str(item).ok());
+            if let Some(sound) = sound {
+                use rodio::source::Source;
+                let source = rodio::decoder::Decoder::new(std::io::BufReader::new(
+                    std::fs::File::open(&path)?,
+                ))
+                .unwrap();
+                let source = rodio::buffer::SamplesBuffer::new(
+                    source.channels(),
+                    source.sample_rate(),
+                    source.convert_samples().collect::<Vec<_>>(),
+                )
+                .buffered();
+
+                sounds.data.insert(sound, source);
+            }
         }
 
         let mut particles = HashMap::new();
@@ -124,29 +164,34 @@ impl<Writer: Write> Match<Writer> {
             game_state: GameState {
                 current_frame: 0,
                 flash: None,
+                mode: UpdateMode::GameStart { duration: 210 },
+                sound_state: sounds::PlayerSoundState::new(),
             },
-            play_area: PlayArea {
-                width: background.width() as i32 * 100, //- 50_00,
-            },
+
+            sound_renderer: sounds::SoundRenderer::new(),
+
+            play_area,
             background,
-            shader: graphics::Shader::new(
-                ctx,
-                "/shaders/vertex.glslv",
-                "/shaders/fragment.glslf",
-                Shadow { rate: 0.7 },
-                "Shadow",
-                Some(&[graphics::BlendMode::Alpha]),
-            )?,
+
             writer,
             sounds,
             particles,
             assets,
 
             ui: UiElements {
-                shield: Shield {
-                    active: Image::new(ctx, "\\global\\ui\\active_shield.png")?,
-                    disabled: Image::new(ctx, "\\global\\ui\\disabled_shield.png")?,
-                    passive: Image::new(ctx, "\\global\\ui\\passive_shield.png")?,
+                shield: ShieldUi {
+                    active: Image::new(ctx, "\\global\\ui\\lockout\\active_shield.png")?,
+                    disabled: Image::new(ctx, "\\global\\ui\\lockout\\disabled_shield.png")?,
+                    passive: Image::new(ctx, "\\global\\ui\\lockout\\passive_shield.png")?,
+                },
+                roundstart: RoundStartUi {
+                    action: Image::new(ctx, "\\global\\ui\\roundstart\\riot.png")?,
+                    gamestart: Image::new(ctx, "\\global\\ui\\roundstart\\rrr.png")?,
+                    round: [
+                        Image::new(ctx, "\\global\\ui\\roundstart\\rift1.png")?,
+                        Image::new(ctx, "\\global\\ui\\roundstart\\rift2.png")?,
+                        Image::new(ctx, "\\global\\ui\\roundstart\\rift3.png")?,
+                    ],
                 },
             },
         })
@@ -328,16 +373,7 @@ impl<Writer: Write> Match<Writer> {
         }
     }
 
-    pub fn update(&mut self, input: PlayerData<&[InputState]>) {
-        if input.iter().any(|input| input.is_empty()) {
-            return;
-        }
-
-        let _ = bincode::serialize_into(&mut self.writer, &self.game_state.current_frame);
-        for input in input.iter() {
-            let _ = bincode::serialize_into(&mut self.writer, &input.last().unwrap());
-        }
-        // if !self.players.iter().any(|player| player.in_cutscene())
+    fn update_midgame(&mut self, input: PlayerData<&[InputState]>) {
         if self.players.iter().any(|player| player.in_cutscene()) {
             for player in self.players.iter_mut() {
                 player.update_cutscene(&self.play_area);
@@ -349,8 +385,71 @@ impl<Writer: Write> Match<Writer> {
         } else {
             self.update_normal(input);
         }
+    }
+
+    fn update_pregame(&mut self) {
+        let (p1, p2) = self.players.both_mut();
+
+        p1.handle_refacing(p2.position().x);
+        p2.handle_refacing(p1.position().x);
+
+        for player in self.players.iter_mut() {
+            player.update_roundstart();
+        }
+    }
+
+    pub fn update(&mut self, input: PlayerData<&[InputState]>) {
+        if input.iter().any(|input| input.is_empty()) {
+            return;
+        }
+
+        let _ = bincode::serialize_into(&mut self.writer, &self.game_state.current_frame);
+        for input in input.iter() {
+            let _ = bincode::serialize_into(&mut self.writer, &input.last().unwrap());
+        }
+
+        self.game_state.mode = match self.game_state.mode {
+            UpdateMode::Normal => {
+                self.update_midgame(input);
+
+                UpdateMode::Normal
+            }
+            UpdateMode::GameStart { duration } => {
+                self.update_pregame();
+                if duration == 0 {
+                    UpdateMode::RoundStart { duration: 120 }
+                } else {
+                    UpdateMode::GameStart {
+                        duration: duration - 1,
+                    }
+                }
+            }
+            UpdateMode::RoundStart { duration } => {
+                if duration <= 15 {
+                    self.update_midgame(input);
+                } else {
+                    self.update_pregame();
+                }
+
+                if duration % 10 == 0 {
+                    self.game_state.sound_state.play_sound(
+                        sounds::ChannelName::Announcer,
+                        sounds::GlobalSound::CounterHit,
+                    );
+                }
+
+                if duration == 0 {
+                    UpdateMode::Normal
+                } else {
+                    UpdateMode::RoundStart {
+                        duration: duration - 1,
+                    }
+                }
+            }
+        };
 
         self.game_state.flash = self.game_state.flash.take().and_then(|item| item.update());
+        self.game_state.sound_state.update();
 
         self.game_state.current_frame += 1;
     }
@@ -396,6 +495,9 @@ impl<Writer: Write> Match<Writer> {
             * Matrix4::new_scaling(scaling)
             * Matrix4::new_translation(&Vec3::new(-translate, 0.0, 0.0));
 
+        let lock = graphics::use_shader(ctx, &self.assets.shader);
+
+        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
         self.background.draw(ctx, world)?;
 
         if let Some(flash) = &self.game_state.flash {
@@ -408,17 +510,17 @@ impl<Writer: Write> Match<Writer> {
 
         for player in self.players.iter() {
             {
-                let _lock = graphics::use_shader(ctx, &self.shader);
+                let _lock = graphics::use_shader(ctx, &self.assets.shadow_shader);
                 let skew = Matrix4::new(
                     1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
                 );
                 let world =
                     world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-                player.draw_shadow(ctx, world)?;
+                player.draw_shadow(ctx, &self.assets, world)?;
             }
 
-            player.draw(ctx, world)?;
+            player.draw(ctx, &self.assets, world)?;
 
             graphics::set_transform(ctx, Matrix4::identity());
             graphics::apply_transformations(ctx)?;
@@ -427,15 +529,17 @@ impl<Writer: Write> Match<Writer> {
         }
 
         for player in self.players.iter() {
-            player.draw_particles(ctx, world, &self.particles)?;
+            player.draw_particles(ctx, &self.assets, world, &self.particles)?;
         }
 
         for player in self.players.iter() {
-            player.draw_bullets(ctx, world)?;
+            player.draw_bullets(ctx, &self.assets, world)?;
         }
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
+
+        drop(lock);
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
@@ -452,6 +556,148 @@ impl<Writer: Write> Match<Writer> {
                 * Matrix4::new_nonuniform_scaling(&Vec3::new(-1.0, 1.0, 1.0)),
             true,
         )?;
+
+        let _lock = graphics::use_shader(ctx, &self.assets.shader);
+
+        match &self.game_state.mode {
+            UpdateMode::Normal => {}
+            UpdateMode::GameStart { duration } => {
+                use crate::graphics::keyframe::*;
+
+                let animation_duration = 90;
+
+                let alpha_keyframes = Keyframes {
+                    frames: vec![
+                        Keyframe {
+                            frame: 0,
+                            value: 0.0,
+                            function: EaseType::EaseIn,
+                        },
+                        Keyframe {
+                            frame: 10,
+                            value: 1.0,
+                            function: EaseType::Constant,
+                        },
+                        Keyframe {
+                            frame: animation_duration - 10,
+                            value: 1.0,
+                            function: EaseType::EaseOut,
+                        },
+                        Keyframe {
+                            frame: animation_duration,
+                            value: 0.0,
+                            function: EaseType::EaseOut,
+                        },
+                    ],
+                };
+
+                let image = if *duration < animation_duration as i32 {
+                    Some((
+                        &self.ui.roundstart.gamestart,
+                        animation_duration - *duration as usize,
+                    ))
+                } else {
+                    None
+                };
+                if let Some((image, duration)) = image {
+                    self.assets.shader.send(
+                        ctx,
+                        ValueAlpha {
+                            value: 1.0,
+                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
+                        },
+                    )?;
+                    ggez::graphics::set_transform(
+                        ctx,
+                        Matrix4::new_translation(&Vec3::new(
+                            640.0 - image.width() as f32 / 2.0,
+                            360.0 - image.height() as f32 / 2.0,
+                            0.0,
+                        )),
+                    );
+                    ggez::graphics::apply_transformations(ctx)?;
+                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
+                }
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+            }
+
+            UpdateMode::RoundStart { duration } => {
+                use crate::graphics::keyframe::*;
+
+                let animation_duration = 60;
+
+                let alpha_keyframes = Keyframes {
+                    frames: vec![
+                        Keyframe {
+                            frame: 0,
+                            value: 0.0,
+                            function: EaseType::EaseIn,
+                        },
+                        Keyframe {
+                            frame: 10,
+                            value: 1.0,
+                            function: EaseType::Constant,
+                        },
+                        Keyframe {
+                            frame: animation_duration - 10,
+                            value: 1.0,
+                            function: EaseType::EaseOut,
+                        },
+                        Keyframe {
+                            frame: animation_duration,
+                            value: 0.0,
+                            function: EaseType::EaseOut,
+                        },
+                    ],
+                };
+
+                let image = if *duration < animation_duration as i32 {
+                    Some((
+                        &self.ui.roundstart.action,
+                        animation_duration - *duration as usize,
+                    ))
+                } else if *duration < animation_duration as i32 * 2 {
+                    Some((
+                        &self.ui.roundstart.round[0],
+                        animation_duration * 2 - *duration as usize,
+                    ))
+                } else {
+                    None
+                };
+                if let Some((image, duration)) = image {
+                    self.assets.shader.send(
+                        ctx,
+                        ValueAlpha {
+                            value: 1.0,
+                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
+                        },
+                    )?;
+                    ggez::graphics::set_transform(
+                        ctx,
+                        Matrix4::new_translation(&Vec3::new(
+                            640.0 - image.width() as f32 / 2.0,
+                            360.0 - image.height() as f32 / 2.0,
+                            0.0,
+                        )),
+                    );
+                    ggez::graphics::apply_transformations(ctx)?;
+                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
+                }
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+            }
+        }
 
         /*
         let test =
@@ -473,6 +719,12 @@ impl<Writer: Write> Match<Writer> {
         for player in self.players.iter_mut() {
             player.render_sound(&audio_device, &self.sounds, fps);
         }
+        self.sound_renderer.render_frame(
+            &audio_device,
+            &self.sounds.data,
+            &self.game_state.sound_state,
+            fps,
+        );
         Ok(())
     }
 }

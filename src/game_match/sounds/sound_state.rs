@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlayerSoundState<LocalPath> {
-    pub channels: HashMap<ChannelName, SoundState<SoundPath<LocalPath>>>,
+    pub channels: HashMap<ChannelName, SoundState<LocalPath>>,
 }
 
 impl<LocalPath> PlayerSoundState<LocalPath> {
@@ -18,7 +18,7 @@ impl<LocalPath> PlayerSoundState<LocalPath> {
             value.current_frame += 1;
         }
     }
-    pub fn play_sound(&mut self, slot: ChannelName, path: SoundPath<LocalPath>) {
+    pub fn play_sound(&mut self, slot: ChannelName, path: LocalPath) {
         self.channels.insert(
             slot,
             SoundState {
