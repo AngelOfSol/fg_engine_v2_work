@@ -25,7 +25,6 @@ pub enum FlashType {
     Super,
     GuardCrush,
     PartialSuper,
-    ChainShift,
 }
 
 impl FlashOverlay {
@@ -39,9 +38,7 @@ impl FlashOverlay {
 
         match self.flash_type {
             FlashType::GuardCrush => Color::new(0.7, 0.0, 0.1, 0.7 * alpha.now()),
-            FlashType::Super | FlashType::ChainShift => {
-                Color::new(0.0, 0.0, 0.0, 0.85 * alpha.now())
-            }
+            FlashType::Super => Color::new(0.0, 0.0, 0.0, 0.85 * alpha.now()),
             FlashType::PartialSuper => Color::new(0.00, 0.0, 0.0, 0.4 * alpha.now()),
         }
     }
@@ -51,7 +48,6 @@ impl FlashOverlay {
             FlashType::GuardCrush => 40,
             FlashType::Super => 20,
             FlashType::PartialSuper => 10,
-            FlashType::ChainShift => 40,
         }
     }
     pub fn update(mut self) -> Option<Self> {

@@ -61,13 +61,13 @@ macro_rules! impl_update_position {
                 let mut reset_hitstun = true;
                 let mut reset_velocity = true;
                 self.state.current_state = if state.state_type == MoveType::Hitstun {
-                    match self.state.current_combo.as_ref().unwrap().ground_action {
+                    let combo = self.state.current_combo.as_mut().unwrap();
+                    match combo.ground_action {
                         GroundAction::Knockdown => (0, $knockdown_start),
                         GroundAction::GroundSlam => {
                             self.state.velocity.y *= -90;
                             self.state.velocity.y /= 100;
-                            self.state.current_combo.as_mut().unwrap().ground_action =
-                                GroundAction::Knockdown;
+                            combo.ground_action = GroundAction::Knockdown;
                             reset_hitstun = false;
                             reset_velocity = false;
                             (0, $hitstun_air)

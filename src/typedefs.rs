@@ -1,4 +1,4 @@
-pub const REPLAY_VERSION: usize = 2;
+pub const REPLAY_VERSION: usize = 3;
 
 pub mod graphics {
     pub type Float = f32;

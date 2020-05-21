@@ -1,4 +1,4 @@
-use super::{ChannelName, SoundPath};
+use super::ChannelName;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

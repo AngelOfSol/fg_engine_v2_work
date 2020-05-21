@@ -116,7 +116,7 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
     pub fn get_inputs(&self, frame: usize, amt: usize) -> (InputRange, &[T]) {
         let frame = self.adjust_frame(frame).unwrap();
         let end_idx = self.data.len().min(frame + 1);
-        let start_idx = end_idx.checked_sub(amt).unwrap_or(0);
+        let start_idx = end_idx.saturating_sub(amt);
 
         (
             InputRange {

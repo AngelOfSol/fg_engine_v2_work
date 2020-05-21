@@ -3,7 +3,7 @@ use super::Axis;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::ops::{Index, IndexMut};
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InputState {
     pub axis: Axis,
     pub buttons: [ButtonState; 5],
@@ -23,7 +23,7 @@ impl std::fmt::Display for InputState {
         )
     }
 }
-
+/*
 impl Serialize for InputState {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -34,7 +34,7 @@ impl Serialize for InputState {
                 + (self.buttons[1].into_bits() << 2)
                 + (self.buttons[2].into_bits() << 4)
                 + (self.buttons[3].into_bits() << 6)
-                + (self.buttons[3].into_bits() << 8)),
+                + (self.buttons[4].into_bits() << 8)),
             self.axis.into_bits(),
         )
             .serialize(serializer)
@@ -62,7 +62,7 @@ impl<'de> Deserialize<'de> for InputState {
             ))?,
         })
     }
-}
+}*/
 
 impl Index<Button> for InputState {
     type Output = ButtonState;

@@ -31,7 +31,7 @@ macro_rules! impl_update_frame_mut {
 }
 
 macro_rules! impl_handle_expire {
-    () => {
+    (dead: $dead:expr, hit_ground: $hit_ground:expr) => {
         fn handle_expire(&mut self) {
             let (frame, move_id) = self.state.current_state;
 
@@ -40,7 +40,12 @@ macro_rules! impl_handle_expire {
                 self.state.allowed_cancels = AllowedCancel::Always;
                 self.state.last_hit_using = None;
                 self.state.rebeat_chain.clear();
-                (0, self.data.states[&move_id].on_expire_state)
+
+                if move_id == $hit_ground && self.state.dead {
+                    (0, $dead)
+                } else {
+                    (0, self.data.states[&move_id].on_expire_state)
+                }
             } else {
                 (frame + 1, move_id)
             };

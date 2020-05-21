@@ -364,7 +364,7 @@ impl AppState for StateEditor {
         let assets = &self.assets.borrow();
 
         {
-            let _lock = graphics::set_shader(ctx, &assets.shader);
+            let _lock = graphics::use_shader(ctx, &assets.shader);
 
             if self.draw_mode.debug_animation {
                 resource.draw_at_time_debug(ctx, assets, self.frame, offset)?;

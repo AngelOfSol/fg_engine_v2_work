@@ -194,6 +194,7 @@ impl Default for YuyukoSound {
 pub struct YuyukoPlayer {
     pub data: Yuyuko,
     pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
+    pub last_combo_state: Option<(ComboState, usize)>,
     pub state: YuyukoState,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -218,6 +219,7 @@ pub struct YuyukoState {
     pub sound_state: PlayerSoundState<SoundPath<YuyukoSound>>,
     pub meter: i32,
     pub lockout: i32,
+    pub dead: bool,
 }
 
 impl YuyukoState {
@@ -230,7 +232,7 @@ impl YuyukoState {
             particles: Vec::new(),
             bullets: Vec::new(),
             air_actions: data.properties.max_air_actions,
-            spirit_gauge: data.properties.max_spirit_gauge,
+            spirit_gauge: 0,
             spirit_delay: 0,
             hitstop: 0,
             facing,
@@ -243,6 +245,7 @@ impl YuyukoState {
             sound_state: PlayerSoundState::new(),
             meter: 0,
             lockout: 0,
+            dead: false,
         }
     }
 }
@@ -254,6 +257,7 @@ impl YuyukoPlayer {
         Self {
             state: YuyukoState::new(&data, facing),
             data,
+            last_combo_state: None,
             sound_renderer: SoundRenderer::new(),
         }
     }
@@ -274,7 +278,7 @@ impl YuyukoPlayer {
     impl_current_flags!();
     impl_handle_combo_state!();
     impl_handle_rebeat_data!();
-    impl_handle_expire!();
+    impl_handle_expire!(dead: MoveId::Dead, hit_ground: MoveId::HitGround);
     impl_handle_hitstun!(
         air_idle: MoveId::AirIdle,
         stand_idle: MoveId::Stand,
@@ -432,9 +436,68 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.state.lockout > 0
     }
 
-    fn update_roundstart(&mut self) {
-        self.handle_expire();
+    fn update_no_input(
+        &mut self,
+        play_area: &PlayArea,
+        global_particles: &HashMap<GlobalParticle, Particle>,
+    ) {
+        if self.state.hitstop > 0 {
+            self.state.hitstop -= 1;
+        } else {
+            self.handle_expire();
+            self.handle_hitstun();
+            self.update_velocity(play_area);
+            self.update_position(play_area);
+            self.update_sound();
+        }
+        self.handle_combo_state();
+        self.update_spirit();
+        self.update_lockout();
+        self.update_particles(global_particles);
+        self.update_bullets(play_area);
         self.state.sound_state.update();
+        self.state.hitstop = i32::max(0, self.state.hitstop);
+    }
+
+    fn is_dead(&self) -> bool {
+        self.state.dead
+    }
+
+    fn reset_to_position(
+        &mut self,
+        play_area: &PlayArea,
+        position: collision::Int,
+        facing: Facing,
+    ) {
+        self.state = YuyukoState {
+            position: collision::Vec2::new(position, 0),
+            velocity: collision::Vec2::zeros(),
+            current_state: (0, MoveId::Stand),
+            extra_data: ExtraData::None,
+            particles: Vec::new(),
+            bullets: Vec::new(),
+            air_actions: self.data.properties.max_air_actions,
+            spirit_gauge: 0,
+            spirit_delay: 0,
+            hitstop: 0,
+            facing,
+            last_hit_using: None,
+            health: self.data.properties.health,
+            current_combo: None,
+            allowed_cancels: AllowedCancel::Always,
+            rebeat_chain: HashSet::new(),
+            should_pushback: true,
+            sound_state: PlayerSoundState::new(),
+            meter: 0,
+            lockout: 0,
+            dead: false,
+        };
+
+        self.validate_position(play_area);
+    }
+
+    fn health(&self) -> i32 {
+        self.state.health
     }
 }
 

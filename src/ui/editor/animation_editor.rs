@@ -176,7 +176,7 @@ impl AppState for AnimationEditor {
                 let origin = (x + width / 2.0, y + height / 2.0);
 
                 {
-                    let _lock = graphics::set_shader(ctx, &assets.shader);
+                    let _lock = graphics::use_shader(ctx, &assets.shader);
 
                     self.resource.draw_at_time(
                         ctx,
@@ -199,7 +199,7 @@ impl AppState for AnimationEditor {
                 let origin = (x + width / 2.0, y + height / 2.0);
 
                 {
-                    let _lock = graphics::set_shader(ctx, &assets.shader);
+                    let _lock = graphics::use_shader(ctx, &assets.shader);
 
                     self.resource.draw_every_frame(
                         ctx,
@@ -215,7 +215,7 @@ impl AppState for AnimationEditor {
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
                 {
-                    let _lock = graphics::set_shader(ctx, &assets.shader);
+                    let _lock = graphics::use_shader(ctx, &assets.shader);
 
                     self.resource.draw_frame(
                         ctx,

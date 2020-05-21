@@ -35,12 +35,12 @@ impl<T: Default + Clone> LocalHistory<T> {
     pub fn get_inputs(&self, frame: usize, amt: usize) -> (InputRange, &[T]) {
         let frame = self.adjust_frame(frame).unwrap();
         let end_idx = self.data.len().min(frame + 1);
-        let start_idx = end_idx.checked_sub(amt).unwrap_or(0);
+        let start_idx = end_idx.saturating_sub(amt);
 
         (
             InputRange {
                 first: self.adjust_idx(start_idx),
-                last: self.adjust_idx(end_idx).checked_sub(1).unwrap_or(0),
+                last: self.adjust_idx(end_idx).saturating_sub(1),
             },
             &self.data[start_idx..end_idx],
         )

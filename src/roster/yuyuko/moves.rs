@@ -70,6 +70,7 @@ pub enum MoveId {
     MeleeRestitution,
     GuardCrush,
     RoundStart,
+    Dead,
 }
 
 impl Default for MoveId {

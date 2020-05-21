@@ -26,7 +26,6 @@ impl FlagsUi {
                 Some(FlashType::GuardCrush),
                 Some(FlashType::Super),
                 Some(FlashType::PartialSuper),
-                Some(FlashType::ChainShift),
             ],
             &|item| {
                 im_str!(

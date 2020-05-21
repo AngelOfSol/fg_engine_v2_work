@@ -143,7 +143,7 @@ impl NetplayVersus {
             network_players,
             game_state: NetplayMatch::new(
                 ctx,
-                MatchSettings::new().build(),
+                MatchSettings::new().first_to(2).build(),
                 crate::replay::create_new_replay_file("netplay")?,
             )?,
             client,
@@ -265,6 +265,9 @@ impl AppState for NetplayVersus {
             }
 
             self.client.update(&mut self.game_state);
+            if self.game_state.game_over().is_some() {
+                self.next = Some(NextState::Back);
+            }
             self.game_state.render_sounds(60, audio)?;
         }
 

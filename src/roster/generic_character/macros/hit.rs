@@ -225,13 +225,20 @@ macro_rules! impl_take_hit {
 
             let hit_type = info.hit_type;
             let effect = info.effect;
-            let airborne = match effect.set_force {
-                Force::Airborne(_) => true,
-                Force::Grounded(_) => false,
-            };
+
             let crouching = flags.crouching;
 
             self.state.health -= effect.take_damage;
+
+            if self.state.health <= 0 && effect.is_lethal {
+                self.state.dead = true;
+            }
+
+            let airborne = match effect.set_force {
+                Force::Airborne(_) => true,
+                Force::Grounded(_) => false,
+            } || self.state.dead;
+
             self.state.should_pushback = effect.set_should_pushback;
             self.state.spirit_gauge -= effect.take_spirit_gauge;
             self.state.meter += effect.modify_meter;
@@ -357,29 +364,27 @@ macro_rules! impl_deal_hit {
                 }
             }
 
+            if info.action.source == HitSource::Character {
+                self.state.last_hit_using = Some(info.action.hash);
+            }
+
             match info.hit_type {
                 HitEffectType::Hit
                 | HitEffectType::CounterHit
                 | HitEffectType::GuardCrush
                 | HitEffectType::GrazeCrush => {
                     if info.action.source == HitSource::Character {
-                        self.state.last_hit_using = Some(info.action.hash);
                         self.state.allowed_cancels = AllowedCancel::Hit;
                         self.state.hitstop = info.action.attack_info.on_hit.attacker_stop;
                     }
                 }
                 HitEffectType::Block | HitEffectType::WrongBlock => {
                     if info.action.source == HitSource::Character {
-                        self.state.last_hit_using = Some(info.action.hash);
                         self.state.allowed_cancels = AllowedCancel::Block;
                         self.state.hitstop = info.action.attack_info.on_block.attacker_stop;
                     }
                 }
-                HitEffectType::Graze => {
-                    if info.action.source == HitSource::Character {
-                        self.state.last_hit_using = Some(info.action.hash);
-                    }
-                }
+                HitEffectType::Graze => {}
             }
         }
     };

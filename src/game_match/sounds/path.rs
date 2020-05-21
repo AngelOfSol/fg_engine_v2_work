@@ -13,6 +13,14 @@ pub enum GlobalSound {
     Hit,
     GuardCrush,
     CounterHit,
+
+    GameStart,
+    Round1,
+    Round2,
+    Round3,
+    Round4,
+    RoundLast,
+    RoundStart,
 }
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
