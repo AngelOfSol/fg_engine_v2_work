@@ -6,11 +6,13 @@ macro_rules! impl_draw_ui {
             ui: &UiElements,
             bottom_line: graphics::Matrix4,
             flipped: bool,
+            wins: usize,
+            first_to: usize,
         ) -> GameResult<()> {
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -50.0, 0.0))
-                    * bottom_line,
+                bottom_line
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -50.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
             ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
@@ -56,8 +58,8 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -95.0, 0.0))
-                    * bottom_line
+                bottom_line
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -95.0, 0.0))
                     * graphics::Matrix4::new_translation(&graphics::Vec3::new(110.0, 0.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
@@ -74,8 +76,8 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -100.0, 0.0))
-                    * bottom_line,
+                bottom_line
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -100.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
 
@@ -115,12 +117,45 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
 
+            // draw round win markers
+
+            let win_box = ggez::graphics::Image::solid(ctx, 20, ggez::graphics::BLACK)?;
+            let tick_win_box = ggez::graphics::Image::solid(ctx, 15, ggez::graphics::WHITE)?;
+
+            for idx in 0..first_to {
+                ggez::graphics::set_transform(
+                    ctx,
+                    bottom_line
+                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                            320.0 + idx as f32 * 25.0,
+                            -700.0,
+                            0.0,
+                        )),
+                );
+                ggez::graphics::apply_transformations(ctx)?;
+                ggez::graphics::draw(ctx, &win_box, ggez::graphics::DrawParam::default())?;
+                if idx < wins {
+                    ggez::graphics::set_transform(
+                        ctx,
+                        bottom_line
+                            * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                                322.5 + idx as f32 * 20.0,
+                                -697.5,
+                                0.0,
+                            )),
+                    );
+                    ggez::graphics::apply_transformations(ctx)?;
+                    ggez::graphics::draw(ctx, &tick_win_box, ggez::graphics::DrawParam::default())?;
+                }
+                //
+            }
+
             // draw HP bar
 
             ggez::graphics::set_transform(
                 ctx,
-                graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -700.0, 0.0))
-                    * bottom_line,
+                bottom_line
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -700.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
 
@@ -164,8 +199,8 @@ macro_rules! impl_draw_ui {
 
             // draw meter text
 
-            let test = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
-            let width = test.width(ctx) as f32;
+            let meter_text = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
+            let width = meter_text.width(ctx) as f32;
 
             ggez::graphics::set_transform(
                 ctx,
@@ -184,10 +219,78 @@ macro_rules! impl_draw_ui {
 
             ggez::graphics::draw(
                 ctx,
-                &test,
+                &meter_text,
                 ggez::graphics::DrawParam::default()
                     .color(ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0)),
             )?;
+
+            if let Some((combo, timer)) = self.last_combo_state {
+                let mut hits_text = ggez::graphics::Text::new(format!(
+                    "{} hits\n{} damage\n{} limit",
+                    combo.hits,
+                    combo.total_damage,
+                    combo.available_limit.max(0)
+                ));
+                hits_text.set_font(ui.font, ggez::graphics::Scale::uniform(30.0));
+                hits_text.set_bounds(
+                    [hits_text.width(ctx) as f32, 400.0],
+                    if flipped {
+                        ggez::graphics::Align::Right
+                    } else {
+                        ggez::graphics::Align::Left
+                    },
+                );
+                let width = hits_text.width(ctx) as f32;
+
+                ggez::graphics::set_transform(
+                    ctx,
+                    graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                        if flipped { -width - 10.0 } else { 10.0 },
+                        -500.0,
+                        0.0,
+                    )) * bottom_line
+                        * graphics::Matrix4::new_nonuniform_scaling(&graphics::Vec3::new(
+                            if flipped { -1.0 } else { 1.0 },
+                            1.0,
+                            1.0,
+                        )),
+                );
+                ggez::graphics::apply_transformations(ctx)?;
+
+                ggez::graphics::draw(
+                    ctx,
+                    &hits_text,
+                    ggez::graphics::DrawParam::default().color(ggez::graphics::Color::new(
+                        1.0,
+                        1.0,
+                        1.0,
+                        (timer as f32 / 30.0),
+                    )),
+                )?;
+
+                ggez::graphics::set_transform(
+                    ctx,
+                    bottom_line
+                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                            if flipped { -10.0 } else { 10.0 },
+                            -370.0,
+                            0.0,
+                        )),
+                );
+                ggez::graphics::apply_transformations(ctx)?;
+
+                let limit_current =
+                    ggez::graphics::Rect::new(0.0, 0.0, combo.available_limit.max(0) as f32, 4.0);
+
+                let rect = ggez::graphics::Mesh::new_rectangle(
+                    ctx,
+                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
+                    limit_current,
+                    ggez::graphics::Color::new(1.0, 1.0, 1.0, (timer as f32 / 30.0)),
+                )?;
+
+                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
+            }
 
             Ok(())
         }

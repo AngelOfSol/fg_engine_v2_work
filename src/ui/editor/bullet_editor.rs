@@ -171,7 +171,7 @@ impl AppState for BulletInfoEditor {
             .draw(ctx, offset, Color::new(1.0, 1.0, 1.0, 0.15))?;
         if resource.animation.frames.duration() > 0 {
             {
-                let _lock = graphics::set_shader(ctx, &self.assets.borrow().shader);
+                let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
                 {
                     resource.animation.draw_at_time(

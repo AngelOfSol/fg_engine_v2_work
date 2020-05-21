@@ -40,7 +40,7 @@ impl LocalVersus {
             players,
             game_state: NetplayMatch::new(
                 ctx,
-                MatchSettings::new().build(),
+                MatchSettings::new().first_to(2).build(),
                 crate::replay::create_new_replay_file("local")?,
             )?,
         })
@@ -86,6 +86,9 @@ impl AppState for LocalVersus {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
             self.game_state.render_sounds(60, audio)?;
+            if self.game_state.game_over().is_some() {
+                self.next = Some(NextState::Back);
+            }
 
             for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
                 let control_scheme = &control_schemes[player];

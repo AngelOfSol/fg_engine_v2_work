@@ -255,8 +255,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
                 if sent_on_frame > self.skip_frames.from_frame {
                     let adjust_frames = self
                         .current_frame
-                        .checked_sub(sent_on_frame + self.get_network_delay(player_handle))
-                        .unwrap_or(0);
+                        .saturating_sub(sent_on_frame + self.get_network_delay(player_handle));
                     self.skip_frames = SkipFrames {
                         from_frame: sent_on_frame,
                         // doesn't currently handle multiple players properly
@@ -353,8 +352,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
         if self.current_frame % self.held_input_count == 0 {
             let clear_target = self
                 .current_frame
-                .checked_sub(self.held_input_count + self.allowed_rollback)
-                .unwrap_or(0);
+                .saturating_sub(self.held_input_count + self.allowed_rollback);
             for (_, local_player) in self.local_players.iter_mut() {
                 local_player.clean(clear_target);
             }

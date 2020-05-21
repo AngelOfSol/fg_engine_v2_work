@@ -7,20 +7,7 @@ pub enum HitSource {
     Character,
     Object,
 }
-/*
-    let hit_direction = info.get_facing();
-    let attack_data = info.get_attack_data();
 
-
-
-    self.update_combo_state(&attack_data, false, false);
-    let current_combo = self.state.current_combo.as_ref().unwrap();
-
-    self.state.health -= current_combo.last_hit_damage;
-    self.state
-        .sound_state
-        .play_sound(ChannelName::Hit, GlobalSound::Hit.into());
-*/
 // action -> would_hit
 // effect -> deal_hit/take_hit
 // result -> repond_hit

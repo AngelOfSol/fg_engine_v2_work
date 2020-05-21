@@ -3,9 +3,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MatchSettings {
     replay_version: usize,
+    pub first_to: usize,
 }
 
-pub struct MatchSettingsBuilder {}
+pub struct MatchSettingsBuilder {
+    first_to: usize,
+}
 
 pub enum MatchSettingsError {
     ReplayVersionMismatch,
@@ -20,7 +23,7 @@ impl From<bincode::Error> for MatchSettingsError {
 
 impl MatchSettings {
     pub fn new() -> MatchSettingsBuilder {
-        MatchSettingsBuilder {}
+        MatchSettingsBuilder { first_to: 2 }
     }
 
     pub fn validate(&self) -> Result<(), MatchSettingsError> {
@@ -33,9 +36,14 @@ impl MatchSettings {
 }
 
 impl MatchSettingsBuilder {
+    pub fn first_to(mut self, wins: usize) -> Self {
+        self.first_to = wins;
+        self
+    }
     pub fn build(self) -> MatchSettings {
         MatchSettings {
             replay_version: crate::typedefs::REPLAY_VERSION,
+            first_to: self.first_to,
         }
     }
 }

@@ -1,5 +1,6 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{MatchSettings, MatchSettingsError, NoLogMatch};
+use crate::input::pads_context::{Button, Event, EventType};
 use crate::input::InputState;
 use crate::netcode::RollbackableGameState;
 use crate::typedefs::player::PlayerData;
@@ -9,6 +10,7 @@ use std::io::Read;
 
 type ReplayMatch = NoLogMatch;
 
+#[derive(Debug, Copy, Clone)]
 enum NextState {
     Error,
     Back,
@@ -45,7 +47,11 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
     fn update(
         &mut self,
         ctx: &mut Context,
-        &mut AppContext { ref audio, .. }: &mut AppContext,
+        &mut AppContext {
+            ref audio,
+            ref mut pads,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         let start = chrono::Utc::now();
         let mut frames_ran = 0;
@@ -53,14 +59,14 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
             let speed = 1; // this can be changed to do a performance test
             for _ in 0..speed {
                 'stream_inputs: loop {
-                    let next_frame: i16 = match bincode::deserialize_from(&mut self.reader) {
+                    let next_frame: u32 = match bincode::deserialize_from(&mut self.reader) {
                         Ok(value) => value,
                         Err(kind) => {
                             match kind.as_ref() {
                                 bincode::ErrorKind::Io(err) => match err.kind() {
                                     std::io::ErrorKind::UnexpectedEof => {
                                         self.next = Some(NextState::Back);
-                                        break 'stream_inputs;
+                                        break 'game_play;
                                     }
                                     _ => (),
                                 },
@@ -106,6 +112,10 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                         .as_ref()
                         .map(|item| &item[..=self.game_state.current_frame() as usize]),
                 );
+                if self.game_state.game_over().is_some() {
+                    self.next = Some(NextState::Back);
+                }
+
                 frames_ran += 1;
 
                 self.game_state.render_sounds(60 * speed, audio)?;
@@ -119,6 +129,24 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                 end.num_milliseconds()
             );
         }
+
+        while let Some(event) = pads.next_event() {
+            let Event { event, .. } = event;
+            match event {
+                EventType::ButtonPressed(button) => {
+                    //
+                    match button {
+                        Button::B | Button::Start => {
+                            self.next = Some(NextState::Back);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        //
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => {

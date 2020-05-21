@@ -187,7 +187,7 @@ impl AppState for ParticleEditor {
         let resource = self.resource.borrow();
 
         if resource.duration() > 0 {
-            let _lock = graphics::set_shader(ctx, &self.assets.borrow().shader);
+            let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
             resource.draw_at_time_debug(
                 ctx,

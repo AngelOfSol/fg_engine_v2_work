@@ -37,6 +37,10 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
 
+const FRAMES_PER_WS_SECOND: usize = 60;
+const WS_SECONDS_PER_ROUND: usize = 99;
+const FRAMES_PER_ROUND: usize = WS_SECONDS_PER_ROUND * FRAMES_PER_WS_SECOND;
+
 #[derive(Clone)]
 pub struct PlayArea {
     pub width: i32,
@@ -49,9 +53,13 @@ pub type ShadowShader = graphics::Shader<Shadow>;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
-    current_frame: i16,
+    current_frame: u32,
     flash: Option<FlashOverlay>,
     mode: UpdateMode,
+
+    wins: PlayerData<usize>,
+    round: usize,
+    timer: usize,
 
     sound_state: sounds::PlayerSoundState<GlobalSound>,
 }
@@ -65,10 +73,12 @@ pub struct ShieldUi {
 pub struct RoundStartUi {
     pub action: Image,
     pub gamestart: Image,
-    pub round: [Image; 3],
+    pub roundend: Image,
+    pub round: [Image; 5],
 }
 
 pub struct UiElements {
+    pub font: graphics::Font,
     pub shield: ShieldUi,
     pub roundstart: RoundStartUi,
 }
@@ -77,8 +87,11 @@ pub struct Match<Writer> {
     players: PlayerData<CharacterBehavior>,
     game_state: GameState,
 
-    #[allow(dead_code)]
+    game_over: Option<PlayerData<bool>>,
+
     assets: Assets,
+
+    settings: MatchSettings,
 
     ui: UiElements,
     background: Stage,
@@ -89,11 +102,16 @@ pub struct Match<Writer> {
     particles: HashMap<GlobalParticle, Particle>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum UpdateMode {
     Normal,
     RoundStart { duration: i32 },
     GameStart { duration: i32 },
+    GameEnd,
+
+    RoundEnd { duration: i32 },
+    FadeOut { duration: i32 },
+    FadeIn { duration: i32 },
 }
 
 pub type NoLogMatch = Match<NoopWriter>;
@@ -101,13 +119,13 @@ pub type NoLogMatch = Match<NoopWriter>;
 impl<Writer: Write> Match<Writer> {
     pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
         let mut assets = Assets::new(ctx)?;
-        let background = Stage::new(ctx, "\\bg_14.png")?;
+        let background = Stage::new(ctx, "/bg_14.png")?;
         let play_area = PlayArea {
             width: background.width() as i32 * 100,
         };
 
         let resources =
-            Yuyuko::new_with_path(ctx, &mut assets, PathBuf::from(".\\resources\\yuyuko.json"))?;
+            Yuyuko::new_with_path(ctx, &mut assets, PathBuf::from("./resources/yuyuko.json"))?;
         let mut p1: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Right).into();
         let mut p2: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Left).into();
 
@@ -119,7 +137,7 @@ impl<Writer: Write> Match<Writer> {
 
         let mut sounds = SoundList::new();
 
-        for path in glob::glob(".\\resources\\global\\sounds\\**\\*.mp3")
+        for path in glob::glob("./resources/global/sounds/**/*.mp3")
             .unwrap()
             .filter_map(Result::ok)
         {
@@ -145,7 +163,7 @@ impl<Writer: Write> Match<Writer> {
         }
 
         let mut particles = HashMap::new();
-        let mut path = PathBuf::from(".\\resources\\global\\particles");
+        let mut path = PathBuf::from("./resources/global/particles");
         for particle in GlobalParticle::iter() {
             path.push(format!("{}.json", particle));
 
@@ -166,42 +184,66 @@ impl<Writer: Write> Match<Writer> {
                 flash: None,
                 mode: UpdateMode::GameStart { duration: 210 },
                 sound_state: sounds::PlayerSoundState::new(),
+                wins: [0; 2].into(),
+                timer: FRAMES_PER_ROUND,
+                round: 1,
             },
+
+            settings,
 
             sound_renderer: sounds::SoundRenderer::new(),
 
             play_area,
             background,
 
+            game_over: None,
             writer,
             sounds,
             particles,
             assets,
 
             ui: UiElements {
+                font: graphics::Font::new(ctx, "/font.ttf")?,
                 shield: ShieldUi {
-                    active: Image::new(ctx, "\\global\\ui\\lockout\\active_shield.png")?,
-                    disabled: Image::new(ctx, "\\global\\ui\\lockout\\disabled_shield.png")?,
-                    passive: Image::new(ctx, "\\global\\ui\\lockout\\passive_shield.png")?,
+                    active: Image::new(ctx, "/global/ui/lockout/active_shield.png")?,
+                    disabled: Image::new(ctx, "/global/ui/lockout/disabled_shield.png")?,
+                    passive: Image::new(ctx, "/global/ui/lockout/passive_shield.png")?,
                 },
                 roundstart: RoundStartUi {
-                    action: Image::new(ctx, "\\global\\ui\\roundstart\\riot.png")?,
-                    gamestart: Image::new(ctx, "\\global\\ui\\roundstart\\rrr.png")?,
+                    action: Image::new(ctx, "/global/ui/roundstart/riot.png")?,
+                    gamestart: Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
+                    roundend: Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
                     round: [
-                        Image::new(ctx, "\\global\\ui\\roundstart\\rift1.png")?,
-                        Image::new(ctx, "\\global\\ui\\roundstart\\rift2.png")?,
-                        Image::new(ctx, "\\global\\ui\\roundstart\\rift3.png")?,
+                        Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
+                        Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
+                        Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
+                        Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                        Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
                     ],
                 },
             },
         })
     }
 
-    pub fn current_frame(&self) -> i16 {
+    pub fn game_over(&self) -> Option<PlayerData<bool>> {
+        if self.game_state.mode == UpdateMode::GameEnd {
+            Some(
+                self.game_state
+                    .wins
+                    .map(|wins| wins == self.settings.first_to),
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn current_frame(&self) -> u32 {
         self.game_state.current_frame
     }
 
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
+        self.game_state.timer = self.game_state.timer.saturating_sub(1);
+
         let positions: Vec<_> = self
             .players
             .iter()
@@ -358,6 +400,15 @@ impl<Writer: Write> Match<Writer> {
             player.take_hit(effect, &self.play_area);
         }
 
+        if self.players.iter().any(|player| player.is_dead()) {
+            self.game_over = Some(
+                self.players
+                    .iter()
+                    .map(GenericCharacterBehaviour::is_dead)
+                    .collect(),
+            );
+        }
+
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.play_area);
         }
@@ -388,14 +439,17 @@ impl<Writer: Write> Match<Writer> {
     }
 
     fn update_pregame(&mut self) {
-        let (p1, p2) = self.players.both_mut();
+        for player in self.players.iter_mut() {
+            player.update_no_input(&self.play_area, &self.particles);
+            self.game_state.flash = player
+                .get_flash()
+                .map(|item| item.into())
+                .or(self.game_state.flash.take());
+        }
 
+        let (p1, p2) = self.players.both_mut();
         p1.handle_refacing(p2.position().x);
         p2.handle_refacing(p1.position().x);
-
-        for player in self.players.iter_mut() {
-            player.update_roundstart();
-        }
     }
 
     pub fn update(&mut self, input: PlayerData<&[InputState]>) {
@@ -409,13 +463,100 @@ impl<Writer: Write> Match<Writer> {
         }
 
         self.game_state.mode = match self.game_state.mode {
+            UpdateMode::GameEnd => UpdateMode::GameEnd,
             UpdateMode::Normal => {
                 self.update_midgame(input);
 
-                UpdateMode::Normal
+                if self.players.iter().any(|player| player.is_dead()) {
+                    for (player, wins) in self
+                        .players
+                        .iter()
+                        .zip(self.game_state.wins.iter_mut().rev())
+                    {
+                        if player.is_dead() {
+                            *wins += 1;
+                        }
+                    }
+                    self.game_state.round += 1;
+                    UpdateMode::RoundEnd { duration: 120 }
+                } else if self.game_state.timer == 0 {
+                    if self.players.p1().health() > self.players.p2().health() {
+                        *self.game_state.wins.p1_mut() += 1;
+                    } else if self.players.p1().health() < self.players.p2().health() {
+                        *self.game_state.wins.p2_mut() += 1;
+                    }
+                    self.game_state.round += 1;
+                    UpdateMode::RoundEnd { duration: 120 }
+                } else {
+                    UpdateMode::Normal
+                }
             }
+
+            UpdateMode::RoundEnd { duration } => {
+                self.update_pregame();
+
+                if duration == 0 {
+                    UpdateMode::FadeOut { duration: 30 }
+                } else {
+                    UpdateMode::RoundEnd {
+                        duration: duration - 1,
+                    }
+                }
+            }
+
+            UpdateMode::FadeOut { duration } => {
+                self.update_pregame();
+
+                if duration == 0 {
+                    if self
+                        .game_state
+                        .wins
+                        .iter()
+                        .any(|wins| *wins == self.settings.first_to)
+                    {
+                        UpdateMode::GameEnd
+                    } else {
+                        self.game_state.timer = FRAMES_PER_ROUND;
+                        self.players.p1_mut().reset_to_position(
+                            &self.play_area,
+                            -100_00,
+                            Facing::Right,
+                        );
+                        self.players.p2_mut().reset_to_position(
+                            &self.play_area,
+                            100_00,
+                            Facing::Left,
+                        );
+                        UpdateMode::FadeIn { duration: 30 }
+                    }
+                } else {
+                    UpdateMode::FadeOut {
+                        duration: duration - 1,
+                    }
+                }
+            }
+
+            UpdateMode::FadeIn { duration } => {
+                self.update_pregame();
+
+                if duration == 0 {
+                    UpdateMode::RoundStart { duration: 120 }
+                } else {
+                    UpdateMode::FadeIn {
+                        duration: duration - 1,
+                    }
+                }
+            }
+
             UpdateMode::GameStart { duration } => {
                 self.update_pregame();
+                if duration == 110 {
+                    self.game_state.sound_state.play_sound(
+                        sounds::ChannelName::Announcer,
+                        sounds::GlobalSound::GameStart,
+                    );
+                }
+
                 if duration == 0 {
                     UpdateMode::RoundStart { duration: 120 }
                 } else {
@@ -431,10 +572,25 @@ impl<Writer: Write> Match<Writer> {
                     self.update_pregame();
                 }
 
-                if duration % 10 == 0 {
+                if duration == 120 {
+                    let sound = match self.game_state.round {
+                        x if x as usize == self.settings.first_to * 2 - 1 => {
+                            sounds::GlobalSound::RoundLast
+                        }
+                        1 => sounds::GlobalSound::Round1,
+                        2 => sounds::GlobalSound::Round2,
+                        3 => sounds::GlobalSound::Round3,
+                        4 => sounds::GlobalSound::Round4,
+                        _ => sounds::GlobalSound::RoundLast,
+                    };
+
+                    self.game_state
+                        .sound_state
+                        .play_sound(sounds::ChannelName::Announcer, sound);
+                } else if duration == 50 {
                     self.game_state.sound_state.play_sound(
                         sounds::ChannelName::Announcer,
-                        sounds::GlobalSound::CounterHit,
+                        sounds::GlobalSound::RoundStart,
                     );
                 }
 
@@ -495,51 +651,51 @@ impl<Writer: Write> Match<Writer> {
             * Matrix4::new_scaling(scaling)
             * Matrix4::new_translation(&Vec3::new(-translate, 0.0, 0.0));
 
-        let lock = graphics::use_shader(ctx, &self.assets.shader);
+        {
+            let _lock = graphics::use_shader(ctx, &self.assets.shader);
+            graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+            self.background.draw(ctx, world)?;
 
-        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        self.background.draw(ctx, world)?;
+            if let Some(flash) = &self.game_state.flash {
+                let overlay = graphics::Image::solid(ctx, 1280, flash.color())?;
 
-        if let Some(flash) = &self.game_state.flash {
-            let overlay = graphics::Image::solid(ctx, 1280, flash.color())?;
-
-            graphics::set_transform(ctx, Matrix4::identity());
-            graphics::apply_transformations(ctx)?;
-            graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
-        }
-
-        for player in self.players.iter() {
-            {
-                let _lock = graphics::use_shader(ctx, &self.assets.shadow_shader);
-                let skew = Matrix4::new(
-                    1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                );
-                let world =
-                    world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
-
-                player.draw_shadow(ctx, &self.assets, world)?;
+                graphics::set_transform(ctx, Matrix4::identity());
+                graphics::apply_transformations(ctx)?;
+                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
             }
 
-            player.draw(ctx, &self.assets, world)?;
+            for player in self.players.iter() {
+                {
+                    let _lock = graphics::use_shader(ctx, &self.assets.shadow_shader);
+                    let skew = Matrix4::new(
+                        1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                        1.0,
+                    );
+                    let world =
+                        world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-            graphics::set_transform(ctx, Matrix4::identity());
-            graphics::apply_transformations(ctx)?;
+                    player.draw_shadow(ctx, &self.assets, world)?;
+                }
 
-            graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-        }
+                player.draw(ctx, &self.assets, world)?;
 
-        for player in self.players.iter() {
-            player.draw_particles(ctx, &self.assets, world, &self.particles)?;
-        }
+                graphics::set_transform(ctx, Matrix4::identity());
+                graphics::apply_transformations(ctx)?;
 
-        for player in self.players.iter() {
-            player.draw_bullets(ctx, &self.assets, world)?;
+                graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+            }
+
+            for player in self.players.iter() {
+                player.draw_particles(ctx, &self.assets, world, &self.particles)?;
+            }
+
+            for player in self.players.iter() {
+                player.draw_bullets(ctx, &self.assets, world)?;
+            }
         }
 
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
-
-        drop(lock);
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
@@ -548,6 +704,8 @@ impl<Writer: Write> Match<Writer> {
             &self.ui,
             Matrix4::new_translation(&Vec3::new(30.0, 720.0, 0.0)),
             false,
+            *self.game_state.wins.p1(),
+            self.settings.first_to,
         )?;
         self.players.p2_mut().draw_ui(
             ctx,
@@ -555,16 +713,189 @@ impl<Writer: Write> Match<Writer> {
             Matrix4::new_translation(&Vec3::new(1250.0, 720.0, 0.0))
                 * Matrix4::new_nonuniform_scaling(&Vec3::new(-1.0, 1.0, 1.0)),
             true,
+            *self.game_state.wins.p2(),
+            self.settings.first_to,
         )?;
+
+        graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+
+        let backdrop = graphics::Image::solid(ctx, 80, graphics::BLACK)?;
+
+        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 30.0, 0.0)));
+        ggez::graphics::apply_transformations(ctx)?;
+
+        ggez::graphics::draw(ctx, &backdrop, ggez::graphics::DrawParam::default())?;
+
+        let mut game_timer =
+            ggez::graphics::Text::new(format!(" {}", self.game_state.timer / FRAMES_PER_WS_SECOND));
+        game_timer
+            .set_bounds([1275.0, 80.0], graphics::Align::Center)
+            .set_font(self.ui.font, graphics::Scale::uniform(38.0));
+
+        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(0.0, 50.0, 0.0)));
+        ggez::graphics::apply_transformations(ctx)?;
+
+        ggez::graphics::draw(ctx, &game_timer, ggez::graphics::DrawParam::default())?;
 
         let _lock = graphics::use_shader(ctx, &self.assets.shader);
 
         match &self.game_state.mode {
+            UpdateMode::GameEnd => {
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+
+                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
+
+                graphics::set_transform(ctx, Matrix4::identity());
+                graphics::apply_transformations(ctx)?;
+                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+            }
+
             UpdateMode::Normal => {}
+            UpdateMode::RoundEnd { duration } => {
+                use crate::graphics::keyframe::*;
+
+                let alpha_keyframes = Keyframes {
+                    frames: vec![
+                        Keyframe {
+                            frame: 0,
+                            value: 0.0,
+                            function: EaseType::EaseIn,
+                        },
+                        Keyframe {
+                            frame: 10,
+                            value: 1.0,
+                            function: EaseType::Constant,
+                        },
+                        Keyframe {
+                            frame: 50,
+                            value: 1.0,
+                            function: EaseType::EaseOut,
+                        },
+                        Keyframe {
+                            frame: 60,
+                            value: 0.0,
+                            function: EaseType::EaseOut,
+                        },
+                    ],
+                };
+
+                let image = if *duration < 120 as i32 {
+                    Some((&self.ui.roundstart.roundend, 120 - *duration as usize))
+                } else {
+                    None
+                };
+                if let Some((image, duration)) = image {
+                    graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+                    self.assets.shader.send(
+                        ctx,
+                        ValueAlpha {
+                            value: 1.0,
+                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
+                        },
+                    )?;
+                    ggez::graphics::set_transform(
+                        ctx,
+                        Matrix4::new_translation(&Vec3::new(
+                            640.0 - image.width() as f32 / 2.0,
+                            360.0 - image.height() as f32 / 2.0,
+                            0.0,
+                        )),
+                    );
+                    ggez::graphics::apply_transformations(ctx)?;
+                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
+                }
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+            }
+            UpdateMode::FadeOut { duration } => {
+                use crate::graphics::keyframe::*;
+                let alpha_keyframes = Keyframes {
+                    frames: vec![
+                        Keyframe {
+                            frame: 0,
+                            value: 1.0,
+                            function: EaseType::EaseIn,
+                        },
+                        Keyframe {
+                            frame: 30,
+                            value: 0.0,
+                            function: EaseType::Constant,
+                        },
+                    ],
+                };
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: alpha_keyframes.at_time(*duration as usize).unwrap_or(1.0),
+                    },
+                )?;
+
+                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
+
+                graphics::set_transform(ctx, Matrix4::identity());
+                graphics::apply_transformations(ctx)?;
+                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+            }
+            UpdateMode::FadeIn { duration } => {
+                use crate::graphics::keyframe::*;
+                let alpha_keyframes = Keyframes {
+                    frames: vec![
+                        Keyframe {
+                            frame: 0,
+                            value: 0.0,
+                            function: EaseType::EaseOut,
+                        },
+                        Keyframe {
+                            frame: 30,
+                            value: 1.0,
+                            function: EaseType::Constant,
+                        },
+                    ],
+                };
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: alpha_keyframes.at_time(*duration as usize).unwrap_or(0.0),
+                    },
+                )?;
+
+                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
+
+                graphics::set_transform(ctx, Matrix4::identity());
+                graphics::apply_transformations(ctx)?;
+                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+                self.assets.shader.send(
+                    ctx,
+                    ValueAlpha {
+                        value: 1.0,
+                        alpha: 1.0,
+                    },
+                )?;
+            }
             UpdateMode::GameStart { duration } => {
                 use crate::graphics::keyframe::*;
 
-                let animation_duration = 90;
+                let animation_duration = 120;
 
                 let alpha_keyframes = Keyframes {
                     frames: vec![
@@ -626,7 +957,6 @@ impl<Writer: Write> Match<Writer> {
                     },
                 )?;
             }
-
             UpdateMode::RoundStart { duration } => {
                 use crate::graphics::keyframe::*;
 
@@ -663,8 +993,12 @@ impl<Writer: Write> Match<Writer> {
                         animation_duration - *duration as usize,
                     ))
                 } else if *duration < animation_duration as i32 * 2 {
+                    let idx = match self.game_state.round {
+                        x if x as usize >= self.settings.first_to * 2 - 1 => 0,
+                        x => x,
+                    };
                     Some((
-                        &self.ui.roundstart.round[0],
+                        &self.ui.roundstart.round[idx.min(self.ui.roundstart.round.len() - 1)],
                         animation_duration * 2 - *duration as usize,
                     ))
                 } else {
@@ -698,18 +1032,6 @@ impl<Writer: Write> Match<Writer> {
                 )?;
             }
         }
-
-        /*
-        let test =
-            ggez::graphics::Text::new(format!("current_frame: {}", self.game_state.current_frame));
-
-        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 100.0, 0.0)));
-        ggez::graphics::apply_transformations(ctx)?;
-
-        ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default());
-
-        */
-
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())

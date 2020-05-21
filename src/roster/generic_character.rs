@@ -66,7 +66,11 @@ pub trait GenericCharacterBehaviour {
         global_particles: &HashMap<GlobalParticle, Particle>,
     );
     fn update_cutscene(&mut self, play_area: &PlayArea);
-    fn update_roundstart(&mut self);
+    fn update_no_input(
+        &mut self,
+        play_area: &PlayArea,
+        global_particles: &HashMap<GlobalParticle, Particle>,
+    );
 
     fn draw_ui(
         &self,
@@ -74,6 +78,8 @@ pub trait GenericCharacterBehaviour {
         ui: &UiElements,
         bottom_line: graphics::Matrix4,
         flipped: bool,
+        wins: usize,
+        first_to: usize,
     ) -> GameResult<()>;
 
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()>;
@@ -121,6 +127,10 @@ pub trait GenericCharacterBehaviour {
     fn modify_lockout(&mut self, timer: i32, reset: bool);
     fn is_locked_out(&self) -> bool;
     fn validate_position(&mut self, play_area: &PlayArea);
+    fn is_dead(&self) -> bool;
+    fn health(&self) -> i32;
+
+    fn reset_to_position(&mut self, play_area: &PlayArea, position: collision::Int, facing: Facing);
 }
 
 use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};

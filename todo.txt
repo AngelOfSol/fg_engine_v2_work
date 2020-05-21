@@ -178,16 +178,31 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] add combo ui
     [x] add self chaining for 2a/5a
     [x] ground bounce loses energy
+    [] create settings object
+        [] holds all settings
+            [] window properties
+            [] controls
+            [] sound settings
     [] add palletes
+    [] add timeskipping functionality to watch replay
+        [] play/pause
+        [] rewind 5 seconds/fast forward 5seconds
+        [] play backwards
+        [] play forwards at 2x,4x,8x speed
     [] add rounds
         [x] first 5 seconds have a countdown
             [x] roudn start animation
             [x] text/graphic showing count down
-        [] hitting 0 and being hit by a lethal attack ends the game
-            [] play a small animation at the end of the game for the winner
+
+        [x] FIX WATCH REPLAYS BUGS
+        [x] hitting 0 and being hit by a lethal attack ends the game
+        [x] up to 3 rounds
         [] ending the game brings you to character select/retry/main menu
             [] have a win quote
-        [] have multiple rounds 
+        [] display rounds in the UI
+        [x] have multiple rounds
+        [x] combo ui
+        [] move round start graphics to particles as an easy way to render
     [] button check at character select 
         [] on press start
     [x] move to E button
@@ -225,7 +240,9 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] move to u32 for current_frame
     [] implement SMP
         [] more like same move limit
+        [] figure out how to deal with bullets
         [] the first move in a combo is NOT recorded
+        [] smp_list = Vec<(move_id, absolute_frame_move_started_on)>
     [] add hardlimits on velocity due to gravity
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
@@ -244,10 +261,10 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [x] 4ab to 6ab 
     [] add better knockdowns
     [] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
-        [] add two things to shader as a uniform (mimic u_Rate)
-            [] value
-            [] alpha
-        [] sprite gets the value of both fields to send to the shader 
+        [x] add two things to shader as a uniform (mimic u_Rate)
+            [x] value
+            [x] alpha
+        [x] sprite gets the value of both fields to send to the shader 
         [x] Modifiers struct has parameters for these fields which default to Constant(time=0.0, value=1.0)
     [] remove depedency "keyframe" and use own impl
     [] use left stick/right stick for directional input too
@@ -256,6 +273,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] consider adding ]E[ input to cancel to fly_end to remove fly special handling
     [] move all weird constants into either Rust constants or loaded from a file
     [] add compression for sameinputs in replay to reduce replay file size
+    [] upgrade rusttype for ggez?
+    [] play a small animation at the end of the game for the winner
     [x] superjump macro is 1/2/3AB in neutral
         [x] remove this
     [x] rollback netcode
