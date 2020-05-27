@@ -1,12 +1,15 @@
+use super::netplay_versus::NetplayVersus;
+use super::CharacterSelect;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
 use crate::input::pads_context::{Button, EventType, GamepadId};
+use crate::player_list::PlayerList;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
-use laminar::{Config, Packet, Socket, SocketEvent};
+use laminar::{Packet, SocketEvent};
 use std::fmt::Display;
-use std::net::{SocketAddr, ToSocketAddrs};
-use std::time::{Duration, Instant};
+use std::net::SocketAddr;
+use std::time::Instant;
 
 enum NextState {
     Next(GamepadId),
@@ -36,58 +39,18 @@ enum Mode {
 
 pub struct NetworkConnect {
     next: Option<NextState>,
-    socket: Socket,
     mode: Mode,
     target_addr: PotentialAddress,
     connected: bool,
-    next_state: Box<dyn FnOnce(bool, GamepadId, Socket, SocketAddr) -> Transition>,
 }
 
 impl NetworkConnect {
-    pub fn new(
-        next_state: Box<dyn FnOnce(bool, GamepadId, Socket, SocketAddr) -> Transition>,
-    ) -> GameResult<Self> {
-        let adapter = ipconfig::get_adapters()
-            .unwrap()
-            .into_iter()
-            .find(|x| x.friendly_name() == "Ethernet");
+    pub fn new() -> GameResult<Self> {
         Ok(Self {
-            // add connected field
-            // when connected is true wait for a gaempad to press start
-            // and move urself to character select with that pad as the local player
-            // and the networked player as the socket
             next: None,
-            socket: Socket::bind_with_config(
-                adapter
-                    .and_then(|adapter| {
-                        adapter
-                            .ip_addresses()
-                            .iter()
-                            .find(|item| item.is_ipv4())
-                            .cloned()
-                    })
-                    .map(|ip| vec![ip.to_string() + ":10800", ip.to_string() + ":10801"])
-                    .unwrap_or(vec!["127.0.0.1:10800".to_owned()])
-                    .into_iter()
-                    .flat_map(|item| item.to_socket_addrs().ok())
-                    .flatten()
-                    .collect::<Vec<SocketAddr>>()
-                    .as_slice(),
-                Config {
-                    blocking_mode: false,
-                    rtt_max_value: 2000,
-                    idle_connection_timeout: Duration::from_secs(5),
-                    heartbeat_interval: Some(Duration::from_secs(1)),
-                    ..Config::default()
-                },
-            )
-            .map_err(|_| {
-                ggez::GameError::EventLoopError("Could not connect to socket.".to_owned())
-            })?,
             connected: false,
             target_addr: PotentialAddress::Almost(String::with_capacity(30)),
             mode: Mode::Host,
-            next_state,
         })
     }
 }
@@ -96,11 +59,18 @@ impl AppState for NetworkConnect {
     fn update(
         &mut self,
         ctx: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
+        AppContext {
+            ref mut pads,
+            ref mut socket,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        self.socket.manual_poll(Instant::now());
+        let socket = socket
+            .as_mut()
+            .expect("expected to have a socket during netcode select");
+        socket.manual_poll(Instant::now());
 
-        while let Some(packet) = self.socket.recv() {
+        while let Some(packet) = socket.recv() {
             match packet {
                 SocketEvent::Packet(_) => self.connected = true,
                 SocketEvent::Connect(addr) => {
@@ -108,7 +78,7 @@ impl AppState for NetworkConnect {
                         self.target_addr = PotentialAddress::Address(addr);
                     }
                     self.connected = true;
-                    self.socket
+                    socket
                         .send(Packet::reliable_sequenced(addr, vec![], None))
                         .map_err(|_| {
                             ggez::GameError::EventLoopError("Could not send packet".to_owned())
@@ -133,22 +103,38 @@ impl AppState for NetworkConnect {
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
-                NextState::Next(id) => {
-                    let next_state = std::mem::replace(
-                        &mut self.next_state,
-                        Box::new(|_, _, _, _| Transition::Pop),
-                    );
-                    let socket = std::mem::replace(&mut self.socket, Socket::bind_any().unwrap());
-                    Ok(next_state(
-                        self.mode == Mode::Host,
-                        id,
-                        socket,
-                        match self.target_addr {
-                            PotentialAddress::Address(addr) => addr,
-                            _ => unreachable!(),
-                        },
-                    ))
-                }
+                NextState::Next(id) => match self.mode {
+                    Mode::Host => Ok(Transition::Replace(Box::new(CharacterSelect::<
+                        NetplayVersus,
+                    >::new(
+                        PlayerList::new(
+                            [
+                                id.into(),
+                                match self.target_addr {
+                                    PotentialAddress::Address(addr) => addr,
+                                    _ => unreachable!(),
+                                }
+                                .into(),
+                            ]
+                            .into(),
+                        ),
+                    )))),
+                    Mode::Client => Ok(Transition::Replace(Box::new(CharacterSelect::<
+                        NetplayVersus,
+                    >::new(
+                        PlayerList::new(
+                            [
+                                match self.target_addr {
+                                    PotentialAddress::Address(addr) => addr,
+                                    _ => unreachable!(),
+                                }
+                                .into(),
+                                id.into(),
+                            ]
+                            .into(),
+                        ),
+                    )))),
+                },
                 NextState::Back => Ok(Transition::Pop),
             },
             None => Ok(Transition::None),
@@ -160,8 +146,16 @@ impl AppState for NetworkConnect {
     fn draw(
         &mut self,
         ctx: &mut Context,
-        AppContext { ref mut imgui, .. }: &mut AppContext,
+        AppContext {
+            ref mut imgui,
+            ref mut socket,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<()> {
+        let socket = socket
+            .as_mut()
+            .expect("expected to have a socket during netcode select");
+
         graphics::clear(ctx, graphics::BLACK);
 
         let frame = imgui.frame();
@@ -184,7 +178,7 @@ impl AppState for NetworkConnect {
 
                     ui.text(im_str!(
                         "Current Address: {}",
-                        self.socket
+                        socket
                             .local_addr()
                             .map(|item| item.to_string())
                             .unwrap_or("Error".to_owned())
@@ -210,14 +204,13 @@ impl AppState for NetworkConnect {
                         ui.text("Press start on the controller you want to use to continue.");
                     } else if let PotentialAddress::Address(addr) = self.target_addr {
                         if ui.small_button(im_str!("Try to connect!")) {
-                            let _ = dbg!(self
-                                .socket
+                            let _ = socket
                                 .send(Packet::reliable_sequenced(addr, vec![], None))
                                 .map_err(|_| {
                                     ggez::GameError::EventLoopError(
                                         "Could not send packet".to_owned(),
                                     )
-                                }));
+                                });
                         }
                     }
                 });

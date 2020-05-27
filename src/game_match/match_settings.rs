@@ -1,13 +1,19 @@
+use crate::player_list::PlayerList;
+use crate::roster::Character;
+use crate::typedefs::player::PlayerData;
+use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MatchSettings {
     replay_version: usize,
     pub first_to: usize,
+    pub characters: PlayerData<Character>,
 }
 
 pub struct MatchSettingsBuilder {
     first_to: usize,
+    characters: PlayerData<Character>,
 }
 
 pub enum MatchSettingsError {
@@ -22,8 +28,11 @@ impl From<bincode::Error> for MatchSettingsError {
 }
 
 impl MatchSettings {
-    pub fn new() -> MatchSettingsBuilder {
-        MatchSettingsBuilder { first_to: 2 }
+    pub fn new(characters: PlayerData<Character>) -> MatchSettingsBuilder {
+        MatchSettingsBuilder {
+            first_to: 2,
+            characters,
+        }
     }
 
     pub fn validate(&self) -> Result<(), MatchSettingsError> {
@@ -43,7 +52,15 @@ impl MatchSettingsBuilder {
     pub fn build(self) -> MatchSettings {
         MatchSettings {
             replay_version: crate::typedefs::REPLAY_VERSION,
+            characters: self.characters,
             first_to: self.first_to,
         }
     }
+}
+pub trait FromMatchSettings {
+    fn from_settings(
+        ctx: &mut Context,
+        player_list: PlayerList,
+        settings: MatchSettings,
+    ) -> GameResult<Box<Self>>;
 }

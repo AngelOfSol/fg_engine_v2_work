@@ -2,7 +2,6 @@ mod input_history;
 use input_history::{LocalHistory, NetworkedHistory, PredictionResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::hash::Hash;
 
 // TODO, consider parameterizing the size of current_frame to not waste bytes on the fact that its
 // at least 4 bytes when 18 minutes of 60 FPS gameplay only needs a u16 (2 bytes)
@@ -17,14 +16,7 @@ enum PlayerType {
     Net,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct PlayerHandle(usize);
-
-impl PlayerHandle {
-    pub fn id(&self) -> usize {
-        self.0
-    }
-}
+pub type PlayerHandle = usize;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 struct PlayerInfo {
@@ -113,7 +105,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
 
     pub fn get_network_delay(&self, player: PlayerHandle) -> usize {
         assert!(
-            self.players[player.id()].player_type == PlayerType::Net,
+            self.players[player].player_type == PlayerType::Net,
             "Must handle networked input for a networked player."
         );
 
@@ -121,7 +113,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
     }
     pub fn set_network_delay(&mut self, value: usize, player: PlayerHandle) {
         assert!(
-            self.players[player.id()].player_type == PlayerType::Net,
+            self.players[player].player_type == PlayerType::Net,
             "Must handle networked input for a networked player."
         );
 
@@ -137,32 +129,24 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
         self.current_frame + self.input_delay
     }
 
-    pub fn add_local_player(&mut self, index: usize) -> PlayerHandle {
-        let handle = PlayerHandle(index);
+    pub fn add_local_player(&mut self, handle: PlayerHandle) {
         let info: PlayerInfo = PlayerInfo {
             id: handle,
             player_type: PlayerType::Local,
         };
         self.local_players.insert(handle, LocalHistory::new());
         self.players.push(info);
-        self.players
-            .sort_by(|lhs, rhs| lhs.id.id().cmp(&rhs.id.id()));
-
-        handle
+        self.players.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
     }
-    pub fn add_network_player(&mut self, index: usize) -> PlayerHandle {
-        let handle = PlayerHandle(index);
+    pub fn add_network_player(&mut self, handle: PlayerHandle) {
         let info: PlayerInfo = PlayerInfo {
             id: handle,
             player_type: PlayerType::Net,
         };
         self.net_players.insert(handle, NetworkedHistory::new());
         self.players.push(info);
-        self.players
-            .sort_by(|lhs, rhs| lhs.id.id().cmp(&rhs.id.id()));
+        self.players.sort_by(|lhs, rhs| lhs.id.cmp(&rhs.id));
         self.network_delay.insert(handle, 0);
-
-        handle
     }
 
     pub fn handle_local_input(
@@ -171,7 +155,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
         player: PlayerHandle,
     ) -> Option<Packet<Input>> {
         assert!(
-            self.players[player.id()].player_type == PlayerType::Local,
+            self.players[player].player_type == PlayerType::Local,
             "Must add local input to a local player."
         );
         let delayed_current_frame = self.delayed_current_frame();
@@ -195,7 +179,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
 
     pub fn handle_net_input(&mut self, frame: usize, input: Input, player: PlayerHandle) {
         assert!(
-            self.players[player.id()].player_type == PlayerType::Net,
+            self.players[player].player_type == PlayerType::Net,
             "Must handle networked input for a networked player."
         );
 
@@ -249,7 +233,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
         match packet {
             Packet::Inputs(player_handle, sent_on_frame, start_frame, inputs) => {
                 assert!(
-                    self.players[player_handle.0].player_type == PlayerType::Net,
+                    self.players[player_handle].player_type == PlayerType::Net,
                     "Must handle networked input for a networked player."
                 );
                 if sent_on_frame > self.skip_frames.from_frame {
@@ -421,7 +405,6 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
                 {
                     net_player.predict(self.current_frame);
                 }
-
                 game.advance_frame(InputSet {
                     inputs: self
                         .players
@@ -453,6 +436,8 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
 pub trait RollbackableGameState {
     type Input;
     type SavedState;
+
+    // TODO  make this take an iterator of inputs
     fn advance_frame(&mut self, input: InputSet<'_, Self::Input>);
     fn save_state(&self) -> Self::SavedState;
     fn load_state(&mut self, load: Self::SavedState);

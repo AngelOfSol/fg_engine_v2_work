@@ -1,15 +1,10 @@
 use super::gameplay::local_versus::LocalVersus;
-use super::gameplay::netplay_versus::NetplayVersus;
 use super::gameplay::training_mode::TrainingMode;
 use super::gameplay::watch_replay::WatchReplay;
-use super::gameplay::{
-    CharacterSelect, ControllerSelect, LocalSelect, NetworkConnect, NetworkSelect,
-};
+use super::gameplay::{CharacterSelect, ControllerSelect, NetworkConnect};
 use super::SettingsMenu;
 
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::input::pads_context::GamepadId;
-use crate::typedefs::player::PlayerData;
 use crate::ui::editor::EditorMenu;
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -49,57 +44,19 @@ impl AppState for MainMenu {
                 NextState::Quit => Ok(Transition::Pop),
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
-                NextState::NetworkSelect => {
-                    let to_character_select = Box::new(|p1, id, net, target| {
-                        if p1 {
-                            Transition::Replace(Box::new(
-                                CharacterSelect::<_, _, NetplayVersus>::new(
-                                    LocalSelect::new(id),
-                                    NetworkSelect::new(net, target),
-                                ),
-                            ))
-                        } else {
-                            Transition::Replace(Box::new(
-                                CharacterSelect::<_, _, NetplayVersus>::new(
-                                    NetworkSelect::new(net, target),
-                                    LocalSelect::new(id),
-                                ),
-                            ))
-                        }
-                    });
-                    //
-                    Ok(Transition::Push(Box::new(NetworkConnect::new(
-                        to_character_select,
-                    )?)))
-                }
+                NextState::NetworkSelect => Ok(Transition::Push(Box::new(NetworkConnect::new()?))),
                 NextState::TrainingModeControllerSelect => {
-                    let to_character_select =
-                        Box::new(move |player_data: PlayerData<Option<GamepadId>>| {
-                            Transition::Replace(Box::new(
-                                CharacterSelect::<_, _, TrainingMode>::new(
-                                    LocalSelect::new(player_data.p1().unwrap()),
-                                    LocalSelect::new(player_data.p1().unwrap()),
-                                ),
-                            ))
-                        });
-                    Ok(Transition::Push(Box::new(ControllerSelect::new(
-                        [true, false].into(),
-                        to_character_select,
+                    Ok(Transition::Push(Box::new(ControllerSelect::<
+                        CharacterSelect<TrainingMode>,
+                    >::new(
+                        [true, false].into()
                     ))))
                 }
                 NextState::VsModeControllerSelect => {
-                    let to_character_select =
-                        Box::new(|player_data: PlayerData<Option<GamepadId>>| {
-                            Transition::Replace(Box::new(
-                                CharacterSelect::<_, _, LocalVersus>::new(
-                                    LocalSelect::new(player_data.p1().unwrap()),
-                                    LocalSelect::new(player_data.p2().unwrap()),
-                                ),
-                            ))
-                        });
-                    Ok(Transition::Push(Box::new(ControllerSelect::new(
-                        [true, true].into(),
-                        to_character_select,
+                    Ok(Transition::Push(Box::new(ControllerSelect::<
+                        CharacterSelect<LocalVersus>,
+                    >::new(
+                        [true, true].into()
                     ))))
                 }
                 NextState::WatchReplay(settings, file) => {
