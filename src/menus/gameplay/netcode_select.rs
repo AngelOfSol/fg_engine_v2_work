@@ -1,15 +1,18 @@
+use super::controller_select::FromControllerList;
 use super::netplay_versus::NetplayVersus;
 use super::CharacterSelect;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
 use crate::input::pads_context::{Button, EventType, GamepadId};
-use crate::player_list::PlayerList;
+use crate::player_list::{PlayerList, PlayerType};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
 use laminar::{Packet, SocketEvent};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::net::SocketAddr;
 use std::time::Instant;
+use strum_macros::Display;
 
 enum NextState {
     Next(GamepadId),
@@ -31,10 +34,16 @@ impl Display for PotentialAddress {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
 enum Mode {
     Host,
     Client,
+}
+
+impl FromControllerList for NetworkConnect {
+    fn from_controllers(data: PlayerList) -> GameResult<Box<Self>> {
+        Ok(Box::new(Self::new(data)?))
+    }
 }
 
 pub struct NetworkConnect {
@@ -42,15 +51,26 @@ pub struct NetworkConnect {
     mode: Mode,
     target_addr: PotentialAddress,
     connected: bool,
+    player_list: PlayerList,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+enum NetPacket {
+    Close,
+    RequestJoin,
+    DenyJoin,
+    ConfirmJoin,
+    MoveToCharacterSelect,
 }
 
 impl NetworkConnect {
-    pub fn new() -> GameResult<Self> {
+    pub fn new(player_list: PlayerList) -> GameResult<Self> {
         Ok(Self {
             next: None,
             connected: false,
             target_addr: PotentialAddress::Almost(String::with_capacity(30)),
             mode: Mode::Host,
+            player_list,
         })
     }
 }
@@ -76,6 +96,7 @@ impl AppState for NetworkConnect {
                 SocketEvent::Connect(addr) => {
                     if self.mode == Mode::Host {
                         self.target_addr = PotentialAddress::Address(addr);
+                        *self.player_list.current_players.p2_mut() = PlayerType::Networked(addr);
                     }
                     self.connected = true;
                     socket
@@ -166,15 +187,22 @@ impl AppState for NetworkConnect {
                     if ui.small_button(im_str!("Back")) {
                         self.next = Some(NextState::Back);
                     }
-                    ui.combo_items(
-                        im_str!("Mode"),
-                        &mut self.mode,
-                        &[Mode::Host, Mode::Client],
-                        &|item| match item {
-                            Mode::Host => im_str!("Host").into(),
-                            Mode::Client => im_str!("Client").into(),
-                        },
-                    );
+
+                    if self.connected {
+                        ui.text(im_str!("Mode: {}", self.mode));
+                    } else {
+                        if ui.combo_items(
+                            im_str!("Mode"),
+                            &mut self.mode,
+                            &[Mode::Host, Mode::Client],
+                            &|item| match item {
+                                Mode::Host => im_str!("Host").into(),
+                                Mode::Client => im_str!("Client").into(),
+                            },
+                        ) {
+                            self.player_list.swap_players();
+                        }
+                    }
 
                     ui.text(im_str!(
                         "Current Address: {}",
@@ -184,33 +212,40 @@ impl AppState for NetworkConnect {
                             .unwrap_or("Error".to_owned())
                     ));
 
-                    match self.mode {
-                        Mode::Host => {
-                            ui.text(&im_str!("IP: {}", self.target_addr));
-                        }
-                        Mode::Client => {
-                            let mut buffer = self.target_addr.to_string();
+                    if self.mode == Mode::Host || self.connected {
+                        ui.text(&im_str!("IP: {}", self.target_addr));
 
-                            if ui.input_string(im_str!("IP"), &mut buffer) {
-                                self.target_addr = match buffer.parse() {
-                                    Ok(addr) => PotentialAddress::Address(addr),
-                                    Err(_) => PotentialAddress::Almost(buffer),
-                                };
+                        if let PotentialAddress::Address(addr) = self.target_addr {
+                            if ui.small_button(im_str!("Disconnect")) {
+                                self.connected = false;
+                                let _ = socket.send(Packet::reliable_sequenced(
+                                    addr,
+                                    bincode::serialize(&NetPacket::Close).unwrap(),
+                                    None,
+                                ));
                             }
                         }
-                    }
 
-                    if self.connected {
-                        ui.text("Press start on the controller you want to use to continue.");
-                    } else if let PotentialAddress::Address(addr) = self.target_addr {
-                        if ui.small_button(im_str!("Try to connect!")) {
-                            let _ = socket
-                                .send(Packet::reliable_sequenced(addr, vec![], None))
-                                .map_err(|_| {
-                                    ggez::GameError::EventLoopError(
-                                        "Could not send packet".to_owned(),
-                                    )
-                                });
+                        if self.mode == Mode::Host {
+                            ui.text("Press start to move to character select.");
+                        }
+                    } else {
+                        let mut buffer = self.target_addr.to_string();
+
+                        if ui.input_string(im_str!("IP"), &mut buffer) {
+                            self.target_addr = match buffer.parse() {
+                                Ok(addr) => PotentialAddress::Address(addr),
+                                Err(_) => PotentialAddress::Almost(buffer),
+                            };
+                        }
+                        if let PotentialAddress::Address(addr) = self.target_addr {
+                            if ui.small_button(im_str!("Connect")) {
+                                let _ = socket.send(Packet::reliable_sequenced(
+                                    addr,
+                                    bincode::serialize(&NetPacket::RequestJoin).unwrap(),
+                                    None,
+                                ));
+                            }
                         }
                     }
                 });

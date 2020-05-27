@@ -79,10 +79,20 @@ impl PlayerList {
         }
     }
 
+    pub fn gamepads<'a>(&'a self) -> impl Iterator<Item = GamepadId> + 'a {
+        self.current_players
+            .iter()
+            .filter_map(PlayerType::gamepad_id)
+    }
+
     pub fn network_addrs<'a>(&'a self) -> impl Iterator<Item = SocketAddr> + 'a {
         self.current_players
             .iter()
             .chain(self.spectators.iter())
             .filter_map(PlayerType::addr)
+    }
+
+    pub fn swap_players(&mut self) {
+        self.current_players.swap(0, 1);
     }
 }

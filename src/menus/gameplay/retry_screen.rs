@@ -3,7 +3,7 @@ use crate::enum_helpers::NextPrev;
 use crate::game_match::FromMatchSettings;
 use crate::game_match::MatchSettings;
 use crate::input::pads_context::{Button, EventType};
-use crate::player_list::{PlayerList, PlayerType};
+use crate::player_list::PlayerList;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
@@ -135,12 +135,7 @@ impl<Target: FromMatchSettings + AppState + 'static> AppState for RetryScreen<Ta
                 self.state[player].process_input(input);
 
                 if let Some(ref mut socket) = socket {
-                    for addr in self
-                        .player_list
-                        .current_players
-                        .iter()
-                        .filter_map(PlayerType::addr)
-                    {
+                    for addr in self.player_list.network_addrs() {
                         let _ = socket.send(Packet::reliable_ordered(
                             addr,
                             bincode::serialize(&input).unwrap(),

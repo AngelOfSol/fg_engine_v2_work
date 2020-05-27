@@ -3,7 +3,7 @@ use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
 use crate::input::pads_context::{Event, EventType};
 use crate::input::InputState;
-use crate::player_list::{PlayerList, PlayerType};
+use crate::player_list::PlayerList;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 
@@ -127,12 +127,7 @@ impl AppState for TrainingMode {
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
-        for player in self
-            .player_list
-            .current_players
-            .iter()
-            .filter_map(PlayerType::gamepad_id)
-        {
+        for player in self.player_list.gamepads() {
             control_schemes
                 .entry(player)
                 .or_insert(PadControlScheme::new(player));

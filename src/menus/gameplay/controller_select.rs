@@ -1,6 +1,6 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::input::pads_context::{Button, EventType};
-use crate::player_list::PlayerType;
+use crate::player_list::{PlayerList, PlayerType};
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
@@ -11,7 +11,7 @@ enum NextState {
 }
 
 pub trait FromControllerList {
-    fn from_controllers(data: PlayerData<PlayerType>) -> GameResult<Box<Self>>;
+    fn from_controllers(data: PlayerList) -> GameResult<Box<Self>>;
 }
 
 pub struct ControllerSelect<Target> {
@@ -86,11 +86,13 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Next => Ok(Transition::Replace(Target::from_controllers(
-                    self.selected_gamepad
-                        .iter()
-                        .cloned()
-                        .map(|item| item.unwrap_or(PlayerType::Dummy))
-                        .collect(),
+                    PlayerList::new(
+                        self.selected_gamepad
+                            .iter()
+                            .cloned()
+                            .map(|item| item.unwrap_or(PlayerType::Dummy))
+                            .collect(),
+                    ),
                 )?)),
                 NextState::Back => Ok(Transition::Pop),
             },

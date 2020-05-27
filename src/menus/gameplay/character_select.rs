@@ -17,12 +17,6 @@ enum NextState {
     Back,
 }
 
-#[derive(Serialize, Deserialize)]
-pub enum NetAction {
-    ChangeConfirmation(Status),
-    ChangeCharacter(Character),
-}
-
 #[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
 pub enum Status {
     Confirmed,
@@ -31,8 +25,8 @@ pub enum Status {
 }
 
 impl<Target> FromControllerList for CharacterSelect<Target> {
-    fn from_controllers(data: PlayerData<PlayerType>) -> GameResult<Box<Self>> {
-        Ok(Box::new(Self::new(PlayerList::new(data))))
+    fn from_controllers(data: PlayerList) -> GameResult<Box<Self>> {
+        Ok(Box::new(Self::new(data)))
     }
 }
 
