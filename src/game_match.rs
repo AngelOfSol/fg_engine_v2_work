@@ -4,7 +4,9 @@ mod noop_writer;
 pub mod sounds;
 
 pub use flash::FlashType;
-pub use match_settings::{MatchSettings, MatchSettingsBuilder, MatchSettingsError};
+pub use match_settings::{
+    FromMatchSettings, MatchSettings, MatchSettingsBuilder, MatchSettingsError,
+};
 
 use crate::assets::Assets;
 use crate::character::state::components::GlobalParticle;
@@ -91,7 +93,7 @@ pub struct Match<Writer> {
 
     assets: Assets,
 
-    settings: MatchSettings,
+    pub settings: MatchSettings,
 
     ui: UiElements,
     background: Stage,

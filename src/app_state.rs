@@ -4,7 +4,10 @@ use crate::input::pads_context::{GamepadId, PadsContext};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
+use laminar::{Config, Socket};
 use std::collections::HashMap;
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::time::Duration;
 
 pub enum Transition {
     Push(Box<dyn AppState>),
@@ -18,8 +21,9 @@ pub struct AppContext {
     pub imgui: ImGuiWrapper,
     pub control_schemes: HashMap<GamepadId, PadControlScheme>,
     pub audio: rodio::Device,
-    _sdl: sdl2::Sdl,
+    pub socket: Option<Socket>,
     pub sdl_events: sdl2::EventPump,
+    _sdl: sdl2::Sdl,
 }
 
 pub trait AppState {
@@ -41,12 +45,42 @@ impl AppStateRunner {
 
         let sdl_events = _sdl.event_pump().unwrap();
         let sdl_controller = _sdl.game_controller().unwrap();
+        let adapter = ipconfig::get_adapters().ok().and_then(|adapters| {
+            adapters
+                .into_iter()
+                .find(|x| x.friendly_name() == "Ethernet")
+        });
 
         let mut app_ctx = AppContext {
             pads: PadsContext::new(sdl_controller),
             imgui: ImGuiWrapper::new(ctx),
             control_schemes: HashMap::new(),
             audio,
+            socket: Socket::bind_with_config(
+                adapter
+                    .and_then(|adapter| {
+                        adapter
+                            .ip_addresses()
+                            .iter()
+                            .find(|item| item.is_ipv4())
+                            .cloned()
+                    })
+                    .map(|ip| vec![ip.to_string() + ":10800", ip.to_string() + ":10801"])
+                    .unwrap_or(vec!["127.0.0.1:10800".to_owned()])
+                    .into_iter()
+                    .filter_map(|item| item.to_socket_addrs().ok())
+                    .flatten()
+                    .collect::<Vec<SocketAddr>>()
+                    .as_slice(),
+                Config {
+                    blocking_mode: false,
+                    rtt_max_value: 2000,
+                    idle_connection_timeout: Duration::from_secs(5),
+                    heartbeat_interval: Some(Duration::from_secs(1)),
+                    ..Config::default()
+                },
+            )
+            .ok(),
             _sdl,
             sdl_events,
         };

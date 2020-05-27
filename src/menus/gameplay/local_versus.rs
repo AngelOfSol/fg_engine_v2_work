@@ -1,46 +1,54 @@
-use super::{FromCharacters, LocalSelect};
+use super::retry_screen::RetryScreen;
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::{Match, MatchSettings};
+use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
-use crate::input::pads_context::{Event, EventType, GamepadId};
+use crate::input::pads_context::{Event, EventType};
 use crate::input::InputState;
+use crate::player_list::{PlayerList, PlayerType};
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 
-type NetplayMatch = Match<crate::replay::ReplayWriterFile>;
+type LocalMatch = Match<crate::replay::ReplayWriterFile>;
 
 enum NextState {
-    Back,
+    Retry,
 }
 
 pub struct LocalVersus {
     next: Option<NextState>,
     inputs: PlayerData<Vec<InputState>>,
-    players: PlayerData<GamepadId>,
-    game_state: NetplayMatch,
+    player_list: PlayerList,
+    game_state: LocalMatch,
 }
-impl FromCharacters<LocalSelect, LocalSelect> for LocalVersus {
-    fn from_characters(
+impl FromMatchSettings for LocalVersus {
+    fn from_settings(
         ctx: &mut Context,
-        p1: LocalSelect,
-        p2: LocalSelect,
+        player_list: PlayerList,
+        settings: MatchSettings,
     ) -> GameResult<Box<Self>> {
-        Ok(Box::new(LocalVersus::new(
-            ctx,
-            [p1.gamepad, p2.gamepad].into(),
-        )?))
+        assert!(player_list
+            .current_players
+            .iter()
+            .all(|item| item.is_local()));
+        assert!(player_list.spectators.is_empty());
+
+        Ok(Box::new(LocalVersus::new(ctx, player_list, settings)?))
     }
 }
 
 impl LocalVersus {
-    pub fn new(ctx: &mut Context, players: PlayerData<GamepadId>) -> GameResult<Self> {
+    pub fn new(
+        ctx: &mut Context,
+        player_list: PlayerList,
+        settings: MatchSettings,
+    ) -> GameResult<Self> {
         Ok(Self {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
-            players,
-            game_state: NetplayMatch::new(
+            player_list,
+            game_state: LocalMatch::new(
                 ctx,
-                MatchSettings::new().first_to(2).build(),
+                settings,
                 crate::replay::create_new_replay_file("local")?,
             )?,
         })
@@ -64,9 +72,12 @@ impl AppState for LocalVersus {
         }
         let events = events;
 
-        // only iterates over the first player
-        for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
-            let control_scheme = &control_schemes[player];
+        for (input, player) in self
+            .inputs
+            .iter_mut()
+            .zip(self.player_list.current_players.iter())
+        {
+            let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
             let current_frame = input.last_mut().unwrap();
             for event in events.iter() {
                 let Event { id, event, .. } = event;
@@ -87,11 +98,15 @@ impl AppState for LocalVersus {
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
             self.game_state.render_sounds(60, audio)?;
             if self.game_state.game_over().is_some() {
-                self.next = Some(NextState::Back);
+                self.next = Some(NextState::Retry);
             }
 
-            for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
-                let control_scheme = &control_schemes[player];
+            for (input, player) in self
+                .inputs
+                .iter_mut()
+                .zip(self.player_list.current_players.iter())
+            {
+                let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
                 let mut last_frame = input.last().unwrap().clone();
                 control_scheme.update_frame(&mut last_frame);
                 input.push(last_frame);
@@ -100,7 +115,12 @@ impl AppState for LocalVersus {
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
-                NextState::Back => Ok(Transition::Pop),
+                NextState::Retry => Ok(Transition::Replace(Box::new(
+                    RetryScreen::<LocalVersus>::new(
+                        self.player_list.clone(),
+                        self.game_state.settings.clone(),
+                    ),
+                ))),
             },
             None => Ok(Transition::None),
         }
@@ -113,10 +133,15 @@ impl AppState for LocalVersus {
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
-        for player in self.players.iter() {
+        for player in self
+            .player_list
+            .current_players
+            .iter()
+            .filter_map(PlayerType::gamepad_id)
+        {
             control_schemes
-                .entry(*player)
-                .or_insert(PadControlScheme::new(*player));
+                .entry(player)
+                .or_insert(PadControlScheme::new(player));
         }
         Ok(())
     }

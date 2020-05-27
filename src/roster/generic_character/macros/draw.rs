@@ -139,7 +139,7 @@ macro_rules! impl_draw_ui {
                         ctx,
                         bottom_line
                             * graphics::Matrix4::new_translation(&graphics::Vec3::new(
-                                322.5 + idx as f32 * 20.0,
+                                322.5 + idx as f32 * 25.0,
                                 -697.5,
                                 0.0,
                             )),

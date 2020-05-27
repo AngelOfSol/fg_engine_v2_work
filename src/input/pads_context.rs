@@ -14,7 +14,15 @@ pub enum EventType {
     ButtonReleased(Button),
 }
 
-pub type GamepadId = u32;
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct GamepadId(i32);
+
+impl std::fmt::Display for GamepadId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub struct PadsContext {
     controllers: Vec<GameController>,
     events: Vec<Event>,
@@ -33,13 +41,13 @@ impl PadsContext {
     pub fn gamepads<'a>(&'a self) -> impl Iterator<Item = (GamepadId, &'a GameController)> {
         self.controllers
             .iter()
-            .map(|item| (item.instance_id() as u32, item))
+            .map(|item| (GamepadId(item.instance_id()), item))
     }
 
-    pub fn gamepad(&self, id: GamepadId) -> &GameController {
+    pub fn gamepad(&self, GamepadId(id): GamepadId) -> &GameController {
         self.controllers
             .iter()
-            .find(|item| item.instance_id() as u32 == id)
+            .find(|item| item.instance_id() == id)
             .unwrap()
     }
 
@@ -60,7 +68,7 @@ impl PadsContext {
                 self.events.insert(
                     0,
                     Event {
-                        id: which,
+                        id: GamepadId(which as i32),
                         event: EventType::ButtonPressed(button),
                     },
                 );
@@ -69,7 +77,7 @@ impl PadsContext {
                 self.events.insert(
                     0,
                     Event {
-                        id: which,
+                        id: GamepadId(which as i32),
                         event: EventType::ButtonReleased(button),
                     },
                 );

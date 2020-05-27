@@ -27,6 +27,7 @@ pub fn is_valid_input_button(button: SdlButton) -> bool {
 }
 
 pub fn render_button_list(list: &HashSet<SdlButton>) -> String {
+    // TODO use fold instead
     let mut ret = "".to_owned();
 
     for value in list.iter() {

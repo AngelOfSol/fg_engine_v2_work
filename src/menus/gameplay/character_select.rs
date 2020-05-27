@@ -1,12 +1,16 @@
+use super::controller_select::FromControllerList;
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::input::pads_context::{Button, Event, EventType, GamepadId};
+use crate::enum_helpers::NextPrev;
+use crate::game_match::{FromMatchSettings, MatchSettings};
+use crate::input::pads_context::{Button, EventType};
+use crate::player_list::{PlayerList, PlayerType};
 use crate::roster::Character;
+use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
-use laminar::{Packet, Socket, SocketEvent};
+use laminar::{Packet, SocketEvent};
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
-use strum::{EnumCount, IntoEnumIterator};
+use strum::IntoEnumIterator;
 
 enum NextState {
     Next,
@@ -26,232 +30,163 @@ pub enum Status {
     Quit,
 }
 
-pub struct NetworkSelect {
-    pub socket: Socket,
-    pub target: SocketAddr,
+impl<Target> FromControllerList for CharacterSelect<Target> {
+    fn from_controllers(data: PlayerData<PlayerType>) -> GameResult<Box<Self>> {
+        Ok(Box::new(Self::new(PlayerList::new(data))))
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+struct SelectState {
     selected: Character,
     confirmed: Status,
-}
-impl NetworkSelect {
-    pub fn new(socket: Socket, target: SocketAddr) -> Self {
-        Self {
-            socket,
-            target,
-            selected: Character::iter().next().unwrap(),
-            confirmed: Status::None,
-        }
-    }
-    #[allow(dead_code)]
-    pub fn selected(&self) -> Character {
-        self.selected
-    }
-}
-
-impl LocalSelect {
-    pub fn new(gamepad: GamepadId) -> Self {
-        Self {
-            gamepad,
-            selected: 0,
-            confirmed: Status::None,
-        }
-    }
-    #[allow(dead_code)]
-    pub fn selected(&self) -> Character {
-        Character::iter().nth(self.selected).unwrap()
-    }
-}
-
-pub struct LocalSelect {
-    pub gamepad: GamepadId,
-    selected: usize,
-    confirmed: Status,
-}
-
-impl PlayerType for LocalSelect {
-    fn handle_gamepad_input(&mut self, event: Event) -> Option<NetAction> {
-        if event.id != self.gamepad {
-            return None;
-        }
-
-        match event.event {
-            EventType::ButtonPressed(button) => match button {
-                Button::DPadUp => {
-                    if self.confirmed == Status::None {
-                        self.selected = self.selected.checked_sub(1).unwrap_or(0);
-                        return Some(NetAction::ChangeCharacter(self.selected_character()));
-                    }
-                }
-                Button::DPadDown => {
-                    if self.confirmed == Status::None {
-                        self.selected = (self.selected + 1).min(Character::count() - 1);
-                        return Some(NetAction::ChangeCharacter(self.selected_character()));
-                    }
-                }
-                Button::B => match self.confirmed {
-                    Status::None => {
-                        self.confirmed = Status::Quit;
-                        return Some(NetAction::ChangeConfirmation(self.confirmed));
-                    }
-                    Status::Confirmed => {
-                        self.confirmed = Status::None;
-                        return Some(NetAction::ChangeConfirmation(self.confirmed));
-                    }
-                    _ => (),
-                },
-                Button::Start | Button::A => {
-                    if self.confirmed == Status::None {
-                        self.confirmed = Status::Confirmed;
-                        return Some(NetAction::ChangeConfirmation(self.confirmed));
-                    }
-                }
-                _ => (),
-            },
-            _ => (),
-        }
-        None
-    }
-    fn send_net_action(&mut self, _: NetAction) {}
-    fn idle(&mut self) {}
-
-    fn confirmed(&self) -> Status {
-        self.confirmed
-    }
-    fn selected_character(&self) -> Character {
-        Character::iter().nth(self.selected).unwrap()
-    }
-}
-
-impl PlayerType for NetworkSelect {
-    fn handle_gamepad_input(&mut self, _: Event) -> Option<NetAction> {
-        None
-    }
-    fn send_net_action(&mut self, action: NetAction) {
-        let _ = self.socket.send(Packet::reliable_ordered(
-            self.target,
-            bincode::serialize(&action).unwrap(),
-            None,
-        ));
-    }
-    fn idle(&mut self) {
-        self.socket.manual_poll(std::time::Instant::now());
-        while let Some(packet) = self.socket.recv() {
-            match packet {
-                SocketEvent::Packet(packet) => {
-                    let payload: NetAction = match bincode::deserialize(packet.payload()) {
-                        Ok(payload) => payload,
-                        Err(_) => break,
-                    };
-                    match payload {
-                        NetAction::ChangeCharacter(character) => {
-                            self.selected = character;
-                        }
-                        NetAction::ChangeConfirmation(status) => {
-                            self.confirmed = status;
-                        }
-                    }
-                }
-                SocketEvent::Timeout(_) => {}
-                SocketEvent::Connect(_) => {}
-            }
-        }
-    }
-
-    fn confirmed(&self) -> Status {
-        self.confirmed
-    }
-    fn selected_character(&self) -> Character {
-        self.selected
-    }
-}
-
-pub trait PlayerType {
-    fn handle_gamepad_input(&mut self, event: Event) -> Option<NetAction>;
-    fn send_net_action(&mut self, action: NetAction);
-    fn idle(&mut self);
-    fn confirmed(&self) -> Status;
-    fn selected_character(&self) -> Character;
 }
 
 // TODO parameterize this on SelectBy/Local to allow things to be handled easier
 // use traits to
-pub struct CharacterSelect<P1, P2, Target> {
+pub struct CharacterSelect<Target> {
     next: Option<NextState>,
-    p1: Option<P1>,
-    p2: Option<P2>,
+    player_list: PlayerList,
+    chosen_characters: PlayerData<SelectState>,
     _secret: std::marker::PhantomData<Target>,
 }
 
-impl<P1, P2, Target> CharacterSelect<P1, P2, Target>
-where
-    P1: PlayerType,
-    P2: PlayerType,
-    Target: FromCharacters<P1, P2>,
-{
-    pub fn new(p1: P1, p2: P2) -> Self {
+impl<Target> CharacterSelect<Target> {
+    pub fn new(player_list: PlayerList) -> Self {
         Self {
+            player_list,
+            chosen_characters: [SelectState {
+                selected: Character::default(),
+                confirmed: Status::None,
+            }; 2]
+                .into(),
             next: None,
-            p1: Some(p1),
-            p2: Some(p2),
             _secret: std::marker::PhantomData,
         }
     }
 }
 
-pub trait FromCharacters<P1, P2> {
-    fn from_characters(ctx: &mut Context, p1: P1, p2: P2) -> GameResult<Box<Self>>;
-}
-
-impl<P1, P2, Target: 'static> AppState for CharacterSelect<P1, P2, Target>
+impl<Target> AppState for CharacterSelect<Target>
 where
-    P1: PlayerType,
-    P2: PlayerType,
-    Target: FromCharacters<P1, P2> + AppState + 'static,
+    Target: FromMatchSettings + AppState + 'static,
 {
     fn update(
         &mut self,
         ctx: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
+        AppContext {
+            ref mut pads,
+            ref mut socket,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         while let Some(event) = pads.next_event() {
-            if let Some(player) = &mut self.p1 {
-                let ret = player.handle_gamepad_input(event);
-                if ret.is_some() && self.p2.is_some() {
-                    self.p2.as_mut().unwrap().send_net_action(ret.unwrap());
-                    break;
-                }
+            let id = self
+                .player_list
+                .current_players
+                .iter()
+                .zip(self.chosen_characters.iter())
+                .position(|(input_method, state)| {
+                    input_method == &event.id.into() && state.confirmed != Status::Confirmed
+                })
+                .or_else(|| {
+                    self.player_list
+                        .current_players
+                        .iter()
+                        .position(PlayerType::is_dummy)
+                });
+
+            let (id, player) = if let Some(data) = id.and_then(|id| {
+                self.chosen_characters
+                    .get_mut(id)
+                    .map(|player| (id, player))
+            }) {
+                data
+            } else {
+                continue;
+            };
+
+            let mut dirty = false;
+
+            match event.event {
+                EventType::ButtonPressed(button) => match button {
+                    Button::DPadUp => {
+                        if player.confirmed == Status::None {
+                            player.selected = Character::prev(player.selected);
+                            dirty = true;
+                        }
+                    }
+                    Button::DPadDown => {
+                        if player.confirmed == Status::None {
+                            player.selected = Character::next(player.selected);
+                            dirty = true;
+                        }
+                    }
+                    Button::B => match player.confirmed {
+                        Status::None => {
+                            player.confirmed = Status::Quit;
+                            dirty = true;
+                        }
+                        Status::Confirmed => {
+                            player.confirmed = Status::None;
+                            dirty = true;
+                        }
+                        _ => (),
+                    },
+                    Button::Start | Button::A => {
+                        if player.confirmed == Status::None {
+                            player.confirmed = Status::Confirmed;
+                            dirty = true;
+                        }
+                    }
+                    _ => (),
+                },
+                _ => (),
             }
-            if let Some(player) = &mut self.p2 {
-                let ret = player.handle_gamepad_input(event);
-                if ret.is_some() && self.p1.is_some() {
-                    self.p1.as_mut().unwrap().send_net_action(ret.unwrap());
-                    break;
+
+            if let Some(ref mut socket) = socket {
+                if dirty {
+                    let data = player.clone();
+                    for addr in self.player_list.network_addrs() {
+                        let _ = socket.send(Packet::reliable_sequenced(
+                            addr,
+                            bincode::serialize(&(id, data.clone())).unwrap(),
+                            None,
+                        ));
+                    }
                 }
             }
         }
 
-        if let Some(player) = &mut self.p1 {
-            player.idle();
-            if player.confirmed() == Status::Quit {
-                self.next = Some(NextState::Back);
-            }
-        }
-        if let Some(player) = &mut self.p2 {
-            player.idle();
-            if player.confirmed() == Status::Quit {
-                self.next = Some(NextState::Back);
+        if let Some(ref mut socket) = socket {
+            socket.manual_poll(std::time::Instant::now());
+            while let Some(packet) = socket.recv() {
+                match packet {
+                    SocketEvent::Packet(packet) => {
+                        let (player, state): (usize, SelectState) =
+                            match bincode::deserialize(packet.payload()) {
+                                Ok(payload) => payload,
+                                Err(_) => break,
+                            };
+                        self.chosen_characters[player] = state;
+                    }
+                    SocketEvent::Timeout(_) => {}
+                    SocketEvent::Connect(_) => {}
+                }
             }
         }
 
         if self
-            .p1
-            .as_ref()
-            .map(|player| player.confirmed() == Status::Confirmed)
-            .unwrap_or(false)
-            && self
-                .p2
-                .as_ref()
-                .map(|player| player.confirmed() == Status::Confirmed)
-                .unwrap_or(false)
+            .chosen_characters
+            .iter()
+            .any(|state| state.confirmed == Status::Quit)
+        {
+            self.next = Some(NextState::Back);
+        }
+
+        if self
+            .chosen_characters
+            .iter()
+            .all(|state| state.confirmed == Status::Confirmed)
         {
             self.next = Some(NextState::Next);
         }
@@ -259,10 +194,12 @@ where
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Next => {
-                    let next = Target::from_characters(
+                    let next = Target::from_settings(
                         ctx,
-                        self.p1.take().unwrap(),
-                        self.p2.take().unwrap(),
+                        self.player_list.clone(),
+                        MatchSettings::new(self.chosen_characters.map(|item| item.selected))
+                            .first_to(2)
+                            .build(),
                     )?;
 
                     let next = crate::menus::loading_screen::LoadingScreen::new(
@@ -291,12 +228,13 @@ where
 
         frame
             .run(|ui| {
-                imgui::Window::new(im_str!("Controllers")).build(ui, || {
+                imgui::Window::new(im_str!("Characters")).build(ui, || {
                     ui.columns(2, im_str!("col"), true);
-                    if let Some(player) = &self.p1 {
+
+                    for player in self.chosen_characters.iter() {
                         for character in Character::iter() {
-                            let color = if character == player.selected_character() {
-                                if player.confirmed() == Status::Confirmed {
+                            let color = if character == player.selected {
+                                if player.confirmed == Status::Confirmed {
                                     [0.0, 1.0, 0.0, 1.0]
                                 } else {
                                     [1.0, 0.0, 0.0, 1.0]
@@ -306,21 +244,7 @@ where
                             };
                             ui.text_colored(color, &im_str!("{}", character));
                         }
-                    }
-                    ui.next_column();
-                    if let Some(player) = &self.p2 {
-                        for character in Character::iter() {
-                            let color = if character == player.selected_character() {
-                                if player.confirmed() == Status::Confirmed {
-                                    [0.0, 1.0, 0.0, 1.0]
-                                } else {
-                                    [1.0, 0.0, 0.0, 1.0]
-                                }
-                            } else {
-                                [1.0, 1.0, 1.0, 1.0]
-                            };
-                            ui.text_colored(color, &im_str!("{}", character));
-                        }
+                        ui.next_column();
                     }
                 });
             })

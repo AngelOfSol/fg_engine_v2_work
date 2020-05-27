@@ -29,7 +29,9 @@ mod command_list;
 #[macro_use]
 mod input_macros;
 mod app_state;
+mod enum_helpers;
 mod netcode;
+mod player_list;
 mod replay;
 
 fn main() {

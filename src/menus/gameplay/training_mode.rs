@@ -1,9 +1,9 @@
-use super::{FromCharacters, LocalSelect};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_match::{Match, MatchSettings};
+use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::input::control_scheme::PadControlScheme;
-use crate::input::pads_context::{Event, EventType, GamepadId};
+use crate::input::pads_context::{Event, EventType};
 use crate::input::InputState;
+use crate::player_list::{PlayerList, PlayerType};
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 
@@ -16,32 +16,33 @@ enum NextState {
 pub struct TrainingMode {
     next: Option<NextState>,
     inputs: PlayerData<Vec<InputState>>,
-    players: PlayerData<GamepadId>,
+    player_list: PlayerList,
     game_state: TrainingMatch,
 }
 
-impl FromCharacters<LocalSelect, LocalSelect> for TrainingMode {
-    fn from_characters(
+impl FromMatchSettings for TrainingMode {
+    fn from_settings(
         ctx: &mut Context,
-        p1: LocalSelect,
-        p2: LocalSelect,
+        player_list: PlayerList,
+        settings: MatchSettings,
     ) -> GameResult<Box<Self>> {
-        Ok(Box::new(TrainingMode::new(
-            ctx,
-            [p1.gamepad, p2.gamepad].into(),
-        )?))
+        Ok(Box::new(TrainingMode::new(ctx, player_list, settings)?))
     }
 }
 
 impl TrainingMode {
-    pub fn new(ctx: &mut Context, players: PlayerData<GamepadId>) -> GameResult<Self> {
+    pub fn new(
+        ctx: &mut Context,
+        player_list: PlayerList,
+        settings: MatchSettings,
+    ) -> GameResult<Self> {
         Ok(Self {
             next: None,
             inputs: [vec![InputState::default()], vec![InputState::default()]].into(),
-            players,
+            player_list,
             game_state: TrainingMatch::new(
                 ctx,
-                MatchSettings::new().first_to(2).build(),
+                settings,
                 crate::replay::create_new_replay_file("training")?,
             )?,
         })
@@ -66,9 +67,14 @@ impl AppState for TrainingMode {
         let events = events;
 
         // only iterates over the first player
-        for (input, player) in self.inputs.iter_mut().zip(self.players.iter()).take(1) {
+        for (input, player) in self
+            .inputs
+            .iter_mut()
+            .zip(self.player_list.current_players.iter())
+            .take(1)
+        {
+            let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
             let current_frame = input.last_mut().unwrap();
-            let control_scheme = &control_schemes[player];
             for event in events.iter() {
                 let Event { id, event, .. } = event;
                 if *id == control_scheme.gamepad {
@@ -83,6 +89,7 @@ impl AppState for TrainingMode {
                 }
             }
         }
+
         while ggez::timer::check_update_time(ctx, 60) {
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
@@ -92,8 +99,13 @@ impl AppState for TrainingMode {
                 self.next = Some(NextState::Back);
             }
 
-            for (input, player) in self.inputs.iter_mut().zip(self.players.iter()) {
-                let control_scheme = &control_schemes[player];
+            for (input, player) in self
+                .inputs
+                .iter_mut()
+                .zip(self.player_list.current_players.iter())
+                .take(1)
+            {
+                let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
                 let mut last_frame = input.last().unwrap().clone();
                 control_scheme.update_frame(&mut last_frame);
                 input.push(last_frame);
@@ -115,10 +127,15 @@ impl AppState for TrainingMode {
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
-        for player in self.players.iter() {
+        for player in self
+            .player_list
+            .current_players
+            .iter()
+            .filter_map(PlayerType::gamepad_id)
+        {
             control_schemes
-                .entry(*player)
-                .or_insert(PadControlScheme::new(*player));
+                .entry(player)
+                .or_insert(PadControlScheme::new(player));
         }
         Ok(())
     }

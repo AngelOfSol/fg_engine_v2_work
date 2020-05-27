@@ -199,14 +199,25 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] up to 3 rounds
         [] ending the game brings you to character select/retry/main menu
             [] have a win quote
-        [] display rounds in the UI
+            [] prevent reloading of assets
+            [] rework character select to use new methodology.
+            [] move socket into apps_context
+            [] create player_list struct containing players and match settings and specs
+            [] rework controller select to create a proper list of players
+            [] for trainign mode use the dummy PlayerType
+            
+        [x] display rounds in the UI
         [x] have multiple rounds
         [x] combo ui
         [] move round start graphics to particles as an easy way to render
+    [] implemnt pwnat
     [] button check at character select 
         [] on press start
     [x] move to E button
     [] create object system
+        [] bullet spawner type is sperate from bullet type
+            [] this allows characters to determine what bullet to spawn based on resources
+            [] ie: elemental spawner spawns fire/water/wind bullet based on current element
         [] decide on structure and how to process
             [] decide on how to determine state transitions
         [] migrate all bullets into objects
