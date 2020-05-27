@@ -279,12 +279,7 @@ impl AppState for NetplayVersus {
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
-        for player in self
-            .player_list
-            .current_players
-            .iter()
-            .filter_map(PlayerType::gamepad_id)
-        {
+        for player in self.player_list.gamepads() {
             control_schemes
                 .entry(player)
                 .or_insert(PadControlScheme::new(player));

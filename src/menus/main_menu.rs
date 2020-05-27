@@ -44,7 +44,11 @@ impl AppState for MainMenu {
                 NextState::Quit => Ok(Transition::Pop),
                 NextState::Editor => Ok(Transition::Push(Box::new(EditorMenu::new()))),
                 NextState::Settings => Ok(Transition::Push(Box::new(SettingsMenu::new()))),
-                NextState::NetworkSelect => Ok(Transition::Push(Box::new(NetworkConnect::new()?))),
+                NextState::NetworkSelect => {
+                    Ok(Transition::Push(Box::new(
+                        ControllerSelect::<NetworkConnect>::new([true, false].into()),
+                    )))
+                }
                 NextState::TrainingModeControllerSelect => {
                     Ok(Transition::Push(Box::new(ControllerSelect::<
                         CharacterSelect<TrainingMode>,
