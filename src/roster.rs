@@ -21,12 +21,19 @@ use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumCount, EnumIter};
 
 #[enum_dispatch]
 pub enum CharacterBehavior {
     YuyukoPlayer,
+}
+
+#[derive(Clone, Debug)]
+pub enum CharacterData {
+    Yuyuko(Rc<Yuyuko>),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
@@ -44,6 +51,30 @@ impl Character {
     pub fn sound_name_iterator(self) -> impl Iterator<Item = String> {
         match self {
             Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
+        }
+    }
+    pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
+        match self {
+            Character::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(Yuyuko::new_with_path(
+                ctx,
+                assets,
+                PathBuf::from("./resources/yuyuko.json"),
+            )?))),
+        }
+    }
+}
+
+impl CharacterData {
+    pub fn make_character(&self) -> CharacterBehavior {
+        match self {
+            CharacterData::Yuyuko(data) => YuyukoPlayer::new(data.clone()).into(),
+        }
+    }
+    pub fn is_for(&self, character: Character) -> bool {
+        match (self, character) {
+            (CharacterData::Yuyuko(_), Character::Yuyuko) => true,
+            #[allow(unreachable_patterns)]
+            _ => false,
         }
     }
 }

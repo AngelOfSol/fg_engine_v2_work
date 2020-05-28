@@ -160,7 +160,11 @@ impl AppState for NetplayVersus {
             while let Some(event) = socket.recv() {
                 match event {
                     SocketEvent::Packet(packet) => {
-                        match bincode::deserialize(packet.payload()).unwrap() {
+                        let data = match bincode::deserialize(packet.payload()) {
+                            Ok(data) => data,
+                            Err(_) => continue,
+                        };
+                        match data {
                             NetworkData::Client(client_packet) => {
                                 if let Some(response) = self.client.handle_packet(client_packet) {
                                     let _ = socket.send(SocketPacket::unreliable(

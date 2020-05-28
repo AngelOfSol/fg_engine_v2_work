@@ -4,11 +4,8 @@ mod noop_writer;
 pub mod sounds;
 
 pub use flash::FlashType;
-pub use match_settings::{
-    FromMatchSettings, MatchSettings, MatchSettingsBuilder, MatchSettingsError,
-};
+pub use match_settings::{FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData};
 
-use crate::assets::Assets;
 use crate::character::state::components::GlobalParticle;
 use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
@@ -21,7 +18,6 @@ use crate::roster::generic_character::hit_info::{
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::roster::CharacterBehavior;
-use crate::roster::{Yuyuko, YuyukoPlayer};
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
@@ -33,11 +29,8 @@ use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
 use noop_writer::NoopWriter;
 use sounds::{GlobalSound, SoundList};
-use std::collections::HashMap;
 use std::io::Write;
-use std::path::PathBuf;
-use std::str::FromStr;
-use strum::IntoEnumIterator;
+use std::rc::Rc;
 
 const FRAMES_PER_WS_SECOND: usize = 60;
 const WS_SECONDS_PER_ROUND: usize = 99;
@@ -66,12 +59,14 @@ pub struct GameState {
     sound_state: sounds::PlayerSoundState<GlobalSound>,
 }
 
+#[derive(Clone)]
 pub struct ShieldUi {
     pub active: Image,
     pub disabled: Image,
     pub passive: Image,
 }
 
+#[derive(Clone)]
 pub struct RoundStartUi {
     pub action: Image,
     pub gamestart: Image,
@@ -79,6 +74,7 @@ pub struct RoundStartUi {
     pub round: [Image; 5],
 }
 
+#[derive(Clone)]
 pub struct UiElements {
     pub font: graphics::Font,
     pub shield: ShieldUi,
@@ -91,17 +87,12 @@ pub struct Match<Writer> {
 
     game_over: Option<PlayerData<bool>>,
 
-    assets: Assets,
+    runtime_data: Rc<RuntimeData>,
 
     pub settings: MatchSettings,
 
-    ui: UiElements,
-    background: Stage,
-    play_area: PlayArea,
     writer: Writer,
-    sounds: SoundList<sounds::GlobalSound>,
     sound_renderer: sounds::SoundRenderer<sounds::GlobalSound>,
-    particles: HashMap<GlobalParticle, Particle>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,68 +110,34 @@ enum UpdateMode {
 pub type NoLogMatch = Match<NoopWriter>;
 
 impl<Writer: Write> Match<Writer> {
-    pub fn new(ctx: &mut Context, settings: MatchSettings, mut writer: Writer) -> GameResult<Self> {
-        let mut assets = Assets::new(ctx)?;
+    pub fn new(
+        ctx: &mut Context,
+        mut settings: MatchSettings,
+        mut writer: Writer,
+    ) -> GameResult<Self> {
         let background = Stage::new(ctx, "/bg_14.png")?;
         let play_area = PlayArea {
             width: background.width() as i32 * 100,
         };
 
-        let resources =
-            Yuyuko::new_with_path(ctx, &mut assets, PathBuf::from("./resources/yuyuko.json"))?;
-        let mut p1: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Right).into();
-        let mut p2: CharacterBehavior = YuyukoPlayer::new(resources.clone(), Facing::Left).into();
+        let runtime_data = settings.runtime_data.as_mut().unwrap();
 
-        p1.validate_position(&play_area);
-        p2.validate_position(&play_area);
+        let mut players = runtime_data
+            .character_data
+            .clone()
+            .map(|item| item.make_character());
 
-        p1.position_mut().x = -100_00;
-        p2.position_mut().x = 100_00;
-
-        let mut sounds = SoundList::new();
-
-        for path in glob::glob("./resources/global/sounds/**/*.mp3")
-            .unwrap()
-            .filter_map(Result::ok)
-        {
-            let sound = path
-                .file_stem()
-                .and_then(|item| item.to_str())
-                .and_then(|item| GlobalSound::from_str(item).ok());
-            if let Some(sound) = sound {
-                use rodio::source::Source;
-                let source = rodio::decoder::Decoder::new(std::io::BufReader::new(
-                    std::fs::File::open(&path)?,
-                ))
-                .unwrap();
-                let source = rodio::buffer::SamplesBuffer::new(
-                    source.channels(),
-                    source.sample_rate(),
-                    source.convert_samples().collect::<Vec<_>>(),
-                )
-                .buffered();
-
-                sounds.data.insert(sound, source);
-            }
-        }
-
-        let mut particles = HashMap::new();
-        let mut path = PathBuf::from("./resources/global/particles");
-        for particle in GlobalParticle::iter() {
-            path.push(format!("{}.json", particle));
-
-            particles.insert(
-                particle,
-                Particle::load_from_json(ctx, &mut assets, path.clone())?,
-            );
-
-            path.pop();
-        }
+        players
+            .p1_mut()
+            .reset_to_position_gamestart(&play_area, -100_00, Facing::Right);
+        players
+            .p2_mut()
+            .reset_to_position_gamestart(&play_area, 100_00, Facing::Left);
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 
         Ok(Self {
-            players: [p1, p2].into(),
+            players,
             game_state: GameState {
                 current_frame: 0,
                 flash: None,
@@ -191,39 +148,12 @@ impl<Writer: Write> Match<Writer> {
                 round: 1,
             },
 
+            runtime_data: settings.runtime_data.clone().unwrap(),
             settings,
-
             sound_renderer: sounds::SoundRenderer::new(),
-
-            play_area,
-            background,
 
             game_over: None,
             writer,
-            sounds,
-            particles,
-            assets,
-
-            ui: UiElements {
-                font: graphics::Font::new(ctx, "/font.ttf")?,
-                shield: ShieldUi {
-                    active: Image::new(ctx, "/global/ui/lockout/active_shield.png")?,
-                    disabled: Image::new(ctx, "/global/ui/lockout/disabled_shield.png")?,
-                    passive: Image::new(ctx, "/global/ui/lockout/passive_shield.png")?,
-                },
-                roundstart: RoundStartUi {
-                    action: Image::new(ctx, "/global/ui/roundstart/riot.png")?,
-                    gamestart: Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
-                    roundend: Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
-                    round: [
-                        Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
-                        Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
-                        Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
-                        Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
-                        Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
-                    ],
-                },
-            },
         })
     }
 
@@ -258,7 +188,12 @@ impl<Writer: Write> Match<Writer> {
             .zip(input.iter())
             .zip(positions.into_iter())
         {
-            player.update_frame_mut(input, position, &self.play_area, &self.particles);
+            player.update_frame_mut(
+                input,
+                position,
+                &self.runtime_data.play_area,
+                &self.runtime_data.particles,
+            );
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
@@ -270,8 +205,8 @@ impl<Writer: Write> Match<Writer> {
         p1.handle_refacing(p2.position().x);
         p2.handle_refacing(p1.position().x);
 
-        p1.apply_pushback(p2.get_pushback(&self.play_area));
-        p2.apply_pushback(p1.get_pushback(&self.play_area));
+        p1.apply_pushback(p2.get_pushback(&self.runtime_data.play_area));
+        p2.apply_pushback(p1.get_pushback(&self.runtime_data.play_area));
 
         if p1.collision().overlaps(p2.collision()) {
             let (p1, p2) = if p1.collision().center.y > p2.collision().center.y {
@@ -282,7 +217,7 @@ impl<Writer: Write> Match<Writer> {
 
             let (p1_mod, p2_mod) = p1.collision().fix_distances(
                 p2.collision(),
-                &self.play_area,
+                &self.runtime_data.play_area,
                 (p1.velocity().x, p2.velocity().x),
                 p1.facing(),
             );
@@ -341,7 +276,7 @@ impl<Writer: Write> Match<Writer> {
         }
 
         for player in self.players.iter_mut() {
-            player.prune_bullets(&self.play_area);
+            player.prune_bullets(&self.runtime_data.play_area);
         }
 
         fn handle_bullets(
@@ -399,7 +334,7 @@ impl<Writer: Write> Match<Writer> {
                 }
                 _ => (),
             }
-            player.take_hit(effect, &self.play_area);
+            player.take_hit(effect, &self.runtime_data.play_area);
         }
 
         if self.players.iter().any(|player| player.is_dead()) {
@@ -412,7 +347,7 @@ impl<Writer: Write> Match<Writer> {
         }
 
         for player in self.players.iter_mut() {
-            player.prune_bullets(&self.play_area);
+            player.prune_bullets(&self.runtime_data.play_area);
         }
 
         let lockouts: Vec<_> = self
@@ -429,7 +364,7 @@ impl<Writer: Write> Match<Writer> {
     fn update_midgame(&mut self, input: PlayerData<&[InputState]>) {
         if self.players.iter().any(|player| player.in_cutscene()) {
             for player in self.players.iter_mut() {
-                player.update_cutscene(&self.play_area);
+                player.update_cutscene(&self.runtime_data.play_area);
                 self.game_state.flash = player
                     .get_flash()
                     .map(|item| item.into())
@@ -442,7 +377,7 @@ impl<Writer: Write> Match<Writer> {
 
     fn update_pregame(&mut self) {
         for player in self.players.iter_mut() {
-            player.update_no_input(&self.play_area, &self.particles);
+            player.update_no_input(&self.runtime_data.play_area, &self.runtime_data.particles);
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
@@ -519,13 +454,13 @@ impl<Writer: Write> Match<Writer> {
                         UpdateMode::GameEnd
                     } else {
                         self.game_state.timer = FRAMES_PER_ROUND;
-                        self.players.p1_mut().reset_to_position(
-                            &self.play_area,
+                        self.players.p1_mut().reset_to_position_roundstart(
+                            &self.runtime_data.play_area,
                             -100_00,
                             Facing::Right,
                         );
-                        self.players.p2_mut().reset_to_position(
-                            &self.play_area,
+                        self.players.p2_mut().reset_to_position_roundstart(
+                            &self.runtime_data.play_area,
                             100_00,
                             Facing::Left,
                         );
@@ -614,6 +549,8 @@ impl<Writer: Write> Match<Writer> {
     pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)?;
 
+        let assets = &self.runtime_data.assets;
+
         let screen = Rect::new(0.0, 0.0, 1280.0, 720.0);
 
         let game_offset = Matrix4::new_translation(&Vec3::new(screen.w / 2.0, 660.0, 0.0));
@@ -628,7 +565,7 @@ impl<Writer: Write> Match<Writer> {
         // this is a number between 0 and 1 because the background will usually be greater
         // in width than the camera size, so to get it to render all in the camera (at min zoom out)
         // we need to make it smaller
-        let min_scale = screen.w / self.background.width();
+        let min_scale = screen.w / self.runtime_data.background.width();
         // max allowed zoom level
         let max_scale = 2.0;
 
@@ -644,7 +581,7 @@ impl<Writer: Write> Match<Writer> {
         // we have to componensate the give from the camera size via the scaling
         // ie this is how much area between the edge of the camera if it was centered
         // and the edge of the background
-        let give_factor = ((self.background.width() - screen.w / scaling) / 2.0).abs();
+        let give_factor = ((self.runtime_data.background.width() - screen.w / scaling) / 2.0).abs();
         // otherwise we just translate it by the center_point, so the player characters are centered
         let translate = f32::min(give_factor, f32::max(center_point, -give_factor));
 
@@ -654,9 +591,9 @@ impl<Writer: Write> Match<Writer> {
             * Matrix4::new_translation(&Vec3::new(-translate, 0.0, 0.0));
 
         {
-            let _lock = graphics::use_shader(ctx, &self.assets.shader);
+            let _lock = graphics::use_shader(ctx, &assets.shader);
             graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-            self.background.draw(ctx, world)?;
+            self.runtime_data.background.draw(ctx, world)?;
 
             if let Some(flash) = &self.game_state.flash {
                 let overlay = graphics::Image::solid(ctx, 1280, flash.color())?;
@@ -668,7 +605,7 @@ impl<Writer: Write> Match<Writer> {
 
             for player in self.players.iter() {
                 {
-                    let _lock = graphics::use_shader(ctx, &self.assets.shadow_shader);
+                    let _lock = graphics::use_shader(ctx, &assets.shadow_shader);
                     let skew = Matrix4::new(
                         1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
                         1.0,
@@ -676,10 +613,10 @@ impl<Writer: Write> Match<Writer> {
                     let world =
                         world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-                    player.draw_shadow(ctx, &self.assets, world)?;
+                    player.draw_shadow(ctx, &assets, world)?;
                 }
 
-                player.draw(ctx, &self.assets, world)?;
+                player.draw(ctx, &assets, world)?;
 
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
@@ -688,11 +625,11 @@ impl<Writer: Write> Match<Writer> {
             }
 
             for player in self.players.iter() {
-                player.draw_particles(ctx, &self.assets, world, &self.particles)?;
+                player.draw_particles(ctx, &assets, world, &self.runtime_data.particles)?;
             }
 
             for player in self.players.iter() {
-                player.draw_bullets(ctx, &self.assets, world)?;
+                player.draw_bullets(ctx, &assets, world)?;
             }
         }
 
@@ -703,7 +640,7 @@ impl<Writer: Write> Match<Writer> {
 
         self.players.p1_mut().draw_ui(
             ctx,
-            &self.ui,
+            &self.runtime_data.ui,
             Matrix4::new_translation(&Vec3::new(30.0, 720.0, 0.0)),
             false,
             *self.game_state.wins.p1(),
@@ -711,7 +648,7 @@ impl<Writer: Write> Match<Writer> {
         )?;
         self.players.p2_mut().draw_ui(
             ctx,
-            &self.ui,
+            &self.runtime_data.ui,
             Matrix4::new_translation(&Vec3::new(1250.0, 720.0, 0.0))
                 * Matrix4::new_nonuniform_scaling(&Vec3::new(-1.0, 1.0, 1.0)),
             true,
@@ -732,18 +669,18 @@ impl<Writer: Write> Match<Writer> {
             ggez::graphics::Text::new(format!(" {}", self.game_state.timer / FRAMES_PER_WS_SECOND));
         game_timer
             .set_bounds([1275.0, 80.0], graphics::Align::Center)
-            .set_font(self.ui.font, graphics::Scale::uniform(38.0));
+            .set_font(self.runtime_data.ui.font, graphics::Scale::uniform(38.0));
 
         ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(0.0, 50.0, 0.0)));
         ggez::graphics::apply_transformations(ctx)?;
 
         ggez::graphics::draw(ctx, &game_timer, ggez::graphics::DrawParam::default())?;
 
-        let _lock = graphics::use_shader(ctx, &self.assets.shader);
+        let _lock = graphics::use_shader(ctx, &assets.shader);
 
         match &self.game_state.mode {
             UpdateMode::GameEnd => {
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -788,13 +725,16 @@ impl<Writer: Write> Match<Writer> {
                 };
 
                 let image = if *duration < 120 as i32 {
-                    Some((&self.ui.roundstart.roundend, 120 - *duration as usize))
+                    Some((
+                        &self.runtime_data.ui.roundstart.roundend,
+                        120 - *duration as usize,
+                    ))
                 } else {
                     None
                 };
                 if let Some((image, duration)) = image {
                     graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-                    self.assets.shader.send(
+                    assets.shader.send(
                         ctx,
                         ValueAlpha {
                             value: 1.0,
@@ -812,7 +752,7 @@ impl<Writer: Write> Match<Writer> {
                     ggez::graphics::apply_transformations(ctx)?;
                     ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
                 }
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -836,7 +776,7 @@ impl<Writer: Write> Match<Writer> {
                         },
                     ],
                 };
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -849,7 +789,7 @@ impl<Writer: Write> Match<Writer> {
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
                 graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -873,7 +813,7 @@ impl<Writer: Write> Match<Writer> {
                         },
                     ],
                 };
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -886,7 +826,7 @@ impl<Writer: Write> Match<Writer> {
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
                 graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -926,14 +866,14 @@ impl<Writer: Write> Match<Writer> {
 
                 let image = if *duration < animation_duration as i32 {
                     Some((
-                        &self.ui.roundstart.gamestart,
+                        &self.runtime_data.ui.roundstart.gamestart,
                         animation_duration - *duration as usize,
                     ))
                 } else {
                     None
                 };
                 if let Some((image, duration)) = image {
-                    self.assets.shader.send(
+                    assets.shader.send(
                         ctx,
                         ValueAlpha {
                             value: 1.0,
@@ -951,7 +891,7 @@ impl<Writer: Write> Match<Writer> {
                     ggez::graphics::apply_transformations(ctx)?;
                     ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
                 }
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -991,7 +931,7 @@ impl<Writer: Write> Match<Writer> {
 
                 let image = if *duration < animation_duration as i32 {
                     Some((
-                        &self.ui.roundstart.action,
+                        &self.runtime_data.ui.roundstart.action,
                         animation_duration - *duration as usize,
                     ))
                 } else if *duration < animation_duration as i32 * 2 {
@@ -1000,14 +940,15 @@ impl<Writer: Write> Match<Writer> {
                         x => x,
                     };
                     Some((
-                        &self.ui.roundstart.round[idx.min(self.ui.roundstart.round.len() - 1)],
+                        &self.runtime_data.ui.roundstart.round
+                            [idx.min(self.runtime_data.ui.roundstart.round.len() - 1)],
                         animation_duration * 2 - *duration as usize,
                     ))
                 } else {
                     None
                 };
                 if let Some((image, duration)) = image {
-                    self.assets.shader.send(
+                    assets.shader.send(
                         ctx,
                         ValueAlpha {
                             value: 1.0,
@@ -1025,7 +966,7 @@ impl<Writer: Write> Match<Writer> {
                     ggez::graphics::apply_transformations(ctx)?;
                     ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
                 }
-                self.assets.shader.send(
+                assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
@@ -1041,11 +982,11 @@ impl<Writer: Write> Match<Writer> {
 
     pub fn render_sounds(&mut self, fps: u32, audio_device: &rodio::Device) -> GameResult<()> {
         for player in self.players.iter_mut() {
-            player.render_sound(&audio_device, &self.sounds, fps);
+            player.render_sound(&audio_device, &self.runtime_data.sounds, fps);
         }
         self.sound_renderer.render_frame(
             &audio_device,
-            &self.sounds.data,
+            &self.runtime_data.sounds.data,
             &self.game_state.sound_state,
             fps,
         );

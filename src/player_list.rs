@@ -91,8 +91,4 @@ impl PlayerList {
             .chain(self.spectators.iter())
             .filter_map(PlayerType::addr)
     }
-
-    pub fn swap_players(&mut self) {
-        self.current_players.swap(0, 1);
-    }
 }

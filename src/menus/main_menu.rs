@@ -67,7 +67,6 @@ impl AppState for MainMenu {
                     let file = std::io::BufReader::new(file);
 
                     let next = crate::menus::loading_screen::LoadingScreen::new(
-                        "".to_owned(),
                         Transition::Replace(Box::new(WatchReplay::new(ctx, settings, file)?)),
                     );
 

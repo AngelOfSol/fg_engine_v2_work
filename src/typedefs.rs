@@ -110,4 +110,17 @@ pub mod player {
             (&mut data.0[0], &mut data.1[0])
         }
     }
+
+    impl<T: std::fmt::Debug, E: std::fmt::Debug> PlayerData<Result<T, E>> {
+        pub fn transpose(self) -> Result<PlayerData<T>, E> {
+            let PlayerData([lhs, rhs]) = self;
+            if lhs.is_err() {
+                Err(lhs.unwrap_err())
+            } else if rhs.is_err() {
+                Err(rhs.unwrap_err())
+            } else {
+                Ok([lhs.unwrap(), rhs.unwrap()].into())
+            }
+        }
+    }
 }

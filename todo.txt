@@ -197,20 +197,19 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] FIX WATCH REPLAYS BUGS
         [x] hitting 0 and being hit by a lethal attack ends the game
         [x] up to 3 rounds
-        [] ending the game brings you to character select/retry/main menu
+        [x] ending the game brings you to character select/retry/main menu
             [] have a win quote
             [] prevent reloading of assets
-            [] rework character select to use new methodology.
-            [] move socket into apps_context
-            [] create player_list struct containing players and match settings and specs
-            [] rework controller select to create a proper list of players
-            [] for trainign mode use the dummy PlayerType
+            [x] rework character select to use new methodology.
+            [x] move socket into apps_context
+            [x] create player_list struct containing players and match settings and specs
+            [x] rework controller select to create a proper list of players
+            [x] for training mode use the dummy PlayerType
             
         [x] display rounds in the UI
         [x] have multiple rounds
         [x] combo ui
         [] move round start graphics to particles as an easy way to render
-    [] implemnt pwnat
     [] button check at character select 
         [] on press start
     [x] move to E button
