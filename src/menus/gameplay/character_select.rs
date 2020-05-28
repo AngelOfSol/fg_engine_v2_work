@@ -3,7 +3,7 @@ use crate::app_state::{AppContext, AppState, Transition};
 use crate::enum_helpers::NextPrev;
 use crate::game_match::{FromMatchSettings, MatchSettings};
 use crate::input::pads_context::{Button, EventType};
-use crate::player_list::{PlayerList, PlayerType};
+use crate::player_list::PlayerList;
 use crate::roster::Character;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
@@ -17,7 +17,7 @@ enum NextState {
     Back,
 }
 
-#[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Clone, Copy, Debug)]
 pub enum Status {
     Confirmed,
     None,
@@ -26,34 +26,34 @@ pub enum Status {
 
 impl<Target> FromControllerList for CharacterSelect<Target> {
     fn from_controllers(data: PlayerList) -> GameResult<Box<Self>> {
-        Ok(Box::new(Self::new(data)))
+        Ok(Box::new(Self::new(data, None)))
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Debug)]
 struct SelectState {
     selected: Character,
     confirmed: Status,
 }
 
-// TODO parameterize this on SelectBy/Local to allow things to be handled easier
-// use traits to
 pub struct CharacterSelect<Target> {
     next: Option<NextState>,
     player_list: PlayerList,
+    settings: MatchSettings,
     chosen_characters: PlayerData<SelectState>,
     _secret: std::marker::PhantomData<Target>,
 }
 
 impl<Target> CharacterSelect<Target> {
-    pub fn new(player_list: PlayerList) -> Self {
+    pub fn new(player_list: PlayerList, settings: Option<MatchSettings>) -> Self {
+        let settings = settings.unwrap_or(MatchSettings::new());
         Self {
             player_list,
-            chosen_characters: [SelectState {
-                selected: Character::default(),
+            chosen_characters: settings.characters.map(|chara| SelectState {
+                selected: chara,
                 confirmed: Status::None,
-            }; 2]
-                .into(),
+            }),
+            settings,
             next: None,
             _secret: std::marker::PhantomData,
         }
@@ -74,78 +74,71 @@ where
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         while let Some(event) = pads.next_event() {
-            let id = self
+            'event: for (idx, _) in self
                 .player_list
                 .current_players
                 .iter()
-                .zip(self.chosen_characters.iter())
-                .position(|(input_method, state)| {
-                    input_method == &event.id.into() && state.confirmed != Status::Confirmed
-                })
-                .or_else(|| {
+                .enumerate()
+                .filter(|item| item.1 == &event.id.into())
+                .chain(
                     self.player_list
                         .current_players
                         .iter()
-                        .position(PlayerType::is_dummy)
-                });
+                        .enumerate()
+                        .filter(|item| item.1.is_dummy()),
+                )
+            {
+                let player = &mut self.chosen_characters[idx];
 
-            let (id, player) = if let Some(data) = id.and_then(|id| {
-                self.chosen_characters
-                    .get_mut(id)
-                    .map(|player| (id, player))
-            }) {
-                data
-            } else {
-                continue;
-            };
+                let mut dirty = false;
 
-            let mut dirty = false;
-
-            match event.event {
-                EventType::ButtonPressed(button) => match button {
-                    Button::DPadUp => {
-                        if player.confirmed == Status::None {
-                            player.selected = Character::prev(player.selected);
-                            dirty = true;
+                match event.event {
+                    EventType::ButtonPressed(button) => match button {
+                        Button::DPadUp => {
+                            if player.confirmed == Status::None {
+                                player.selected = Character::prev(player.selected);
+                                dirty = true;
+                            }
                         }
-                    }
-                    Button::DPadDown => {
-                        if player.confirmed == Status::None {
-                            player.selected = Character::next(player.selected);
-                            dirty = true;
+                        Button::DPadDown => {
+                            if player.confirmed == Status::None {
+                                player.selected = Character::next(player.selected);
+                                dirty = true;
+                            }
                         }
-                    }
-                    Button::B => match player.confirmed {
-                        Status::None => {
-                            player.confirmed = Status::Quit;
-                            dirty = true;
-                        }
-                        Status::Confirmed => {
-                            player.confirmed = Status::None;
-                            dirty = true;
+                        Button::B => match player.confirmed {
+                            Status::None => {
+                                player.confirmed = Status::Quit;
+                                dirty = true;
+                            }
+                            Status::Confirmed => {
+                                player.confirmed = Status::None;
+                                dirty = true;
+                            }
+                            _ => (),
+                        },
+                        Button::Start | Button::A => {
+                            if player.confirmed == Status::None {
+                                player.confirmed = Status::Confirmed;
+                                dirty = true;
+                            }
                         }
                         _ => (),
                     },
-                    Button::Start | Button::A => {
-                        if player.confirmed == Status::None {
-                            player.confirmed = Status::Confirmed;
-                            dirty = true;
-                        }
-                    }
                     _ => (),
-                },
-                _ => (),
-            }
+                }
 
-            if let Some(ref mut socket) = socket {
-                if dirty {
-                    let data = player.clone();
-                    for addr in self.player_list.network_addrs() {
-                        let _ = socket.send(Packet::reliable_sequenced(
-                            addr,
-                            bincode::serialize(&(id, data.clone())).unwrap(),
-                            None,
-                        ));
+                if let Some(ref mut socket) = socket {
+                    if dirty {
+                        let data = player.clone();
+                        for addr in self.player_list.network_addrs() {
+                            let _ = socket.send(Packet::reliable_ordered(
+                                addr,
+                                bincode::serialize(&(idx, data.clone())).unwrap(),
+                                None,
+                            ));
+                        }
+                        break 'event;
                     }
                 }
             }
@@ -162,6 +155,19 @@ where
                                 Err(_) => break,
                             };
                         self.chosen_characters[player] = state;
+
+                        // for addr in self
+                        //     .player_list
+                        //     .spectators
+                        //     .iter()
+                        //     .filter_map(|item| item.addr())
+                        // {
+                        //     let _ = socket.send(Packet::reliable_ordered(
+                        //         addr,
+                        //         packet.payload().iter().copied().collect(),
+                        //         None,
+                        //     ));
+                        // }
                     }
                     SocketEvent::Timeout(_) => {}
                     SocketEvent::Connect(_) => {}
@@ -188,18 +194,14 @@ where
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
                 NextState::Next => {
-                    let next = Target::from_settings(
-                        ctx,
-                        self.player_list.clone(),
-                        MatchSettings::new(self.chosen_characters.map(|item| item.selected))
-                            .first_to(2)
-                            .build(),
-                    )?;
+                    let mut settings = self.settings.clone();
+                    settings.characters = self.chosen_characters.map(|item| item.selected);
+                    settings.load(ctx)?;
 
-                    let next = crate::menus::loading_screen::LoadingScreen::new(
-                        "".to_owned(),
-                        Transition::Replace(next),
-                    );
+                    let next = Target::from_settings(ctx, self.player_list.clone(), settings)?;
+
+                    let next =
+                        crate::menus::loading_screen::LoadingScreen::new(Transition::Replace(next));
 
                     Ok(Transition::Replace(Box::new(next)))
                 }

@@ -14,9 +14,7 @@ pub struct Modifiers {
     pub scale: [Keyframes; 2],
     pub coords: [Keyframes; 2],
     pub coord_type: Coordinates,
-    // TODO use this
     pub alpha: Keyframes,
-    // TODO use this
     pub value: Keyframes,
 }
 

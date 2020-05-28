@@ -1,19 +1,38 @@
+use crate::assets::Assets;
+use crate::game_match::{
+    GlobalParticle, GlobalSound, Particle, PlayArea, RoundStartUi, ShieldUi, SoundList, Stage,
+    UiElements,
+};
 use crate::player_list::PlayerList;
 use crate::roster::Character;
+use crate::roster::CharacterData;
 use crate::typedefs::player::PlayerData;
-use ggez::{Context, GameResult};
+use ggez::{graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::rc::Rc;
+use std::str::FromStr;
+use strum::IntoEnumIterator;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MatchSettings {
     replay_version: usize,
     pub first_to: usize,
     pub characters: PlayerData<Character>,
+    #[serde(skip)]
+    pub runtime_data: Option<Rc<RuntimeData>>,
 }
 
-pub struct MatchSettingsBuilder {
-    first_to: usize,
-    characters: PlayerData<Character>,
+#[derive(Clone)]
+pub struct RuntimeData {
+    pub character_data: PlayerData<CharacterData>,
+    pub assets: Assets,
+    pub sounds: SoundList<GlobalSound>,
+    pub particles: HashMap<GlobalParticle, Particle>,
+    pub ui: UiElements,
+    pub background: Stage,
+    pub play_area: PlayArea,
 }
 
 pub enum MatchSettingsError {
@@ -28,10 +47,12 @@ impl From<bincode::Error> for MatchSettingsError {
 }
 
 impl MatchSettings {
-    pub fn new(characters: PlayerData<Character>) -> MatchSettingsBuilder {
-        MatchSettingsBuilder {
+    pub fn new() -> MatchSettings {
+        MatchSettings {
             first_to: 2,
-            characters,
+            characters: [Character::default(); 2].into(),
+            replay_version: crate::typedefs::REPLAY_VERSION,
+            runtime_data: None,
         }
     }
 
@@ -42,21 +63,120 @@ impl MatchSettings {
 
         Ok(())
     }
+
+    pub fn load(&mut self, ctx: &mut Context) -> GameResult<()> {
+        match self.runtime_data {
+            Some(ref mut data) => {
+                let data = Rc::make_mut(data);
+                data.character_data = self
+                    .characters
+                    .iter()
+                    .map(|chara| {
+                        data.character_data
+                            .iter()
+                            .find(|data| data.is_for(*chara))
+                            .cloned()
+                            .map(|item| Ok(item))
+                            .unwrap_or_else(|| chara.load_data(ctx, &mut data.assets))
+                    })
+                    .collect::<GameResult<PlayerData<_>>>()?;
+            }
+            None => {
+                let mut assets = Assets::new(ctx)?;
+
+                let mut sounds = SoundList::new();
+
+                for path in glob::glob("./resources/global/sounds/**/*.mp3")
+                    .unwrap()
+                    .filter_map(Result::ok)
+                {
+                    let sound = path
+                        .file_stem()
+                        .and_then(|item| item.to_str())
+                        .and_then(|item| GlobalSound::from_str(item).ok());
+                    if let Some(sound) = sound {
+                        use rodio::source::Source;
+                        let source = rodio::decoder::Decoder::new(std::io::BufReader::new(
+                            std::fs::File::open(&path)?,
+                        ))
+                        .unwrap();
+                        let source = rodio::buffer::SamplesBuffer::new(
+                            source.channels(),
+                            source.sample_rate(),
+                            source.convert_samples().collect::<Vec<_>>(),
+                        )
+                        .buffered();
+
+                        sounds.data.insert(sound, source);
+                    }
+                }
+
+                let background = Stage::new(ctx, "/bg_14.png")?;
+                let play_area = PlayArea {
+                    width: background.width() as i32 * 100,
+                };
+
+                let mut particles = HashMap::new();
+                let mut path = PathBuf::from("./resources/global/particles");
+                for particle in GlobalParticle::iter() {
+                    path.push(format!("{}.json", particle));
+
+                    particles.insert(
+                        particle,
+                        Particle::load_from_json(ctx, &mut assets, path.clone())?,
+                    );
+
+                    path.pop();
+                }
+
+                self.runtime_data = Some(Rc::new(RuntimeData {
+                    character_data: self
+                        .characters
+                        .clone()
+                        .map(|item| item.load_data(ctx, &mut assets))
+                        .transpose()?,
+                    assets,
+                    particles,
+                    sounds,
+                    ui: UiElements {
+                        font: graphics::Font::new(ctx, "/font.ttf")?,
+                        shield: ShieldUi {
+                            active: graphics::Image::new(
+                                ctx,
+                                "/global/ui/lockout/active_shield.png",
+                            )?,
+                            disabled: graphics::Image::new(
+                                ctx,
+                                "/global/ui/lockout/disabled_shield.png",
+                            )?,
+                            passive: graphics::Image::new(
+                                ctx,
+                                "/global/ui/lockout/passive_shield.png",
+                            )?,
+                        },
+                        roundstart: RoundStartUi {
+                            action: graphics::Image::new(ctx, "/global/ui/roundstart/riot.png")?,
+                            gamestart: graphics::Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
+                            roundend: graphics::Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
+                            round: [
+                                graphics::Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
+                                graphics::Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
+                                graphics::Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
+                                graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                                graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                            ],
+                        },
+                    },
+                    background,
+                    play_area,
+                }));
+            }
+        }
+
+        Ok(())
+    }
 }
 
-impl MatchSettingsBuilder {
-    pub fn first_to(mut self, wins: usize) -> Self {
-        self.first_to = wins;
-        self
-    }
-    pub fn build(self) -> MatchSettings {
-        MatchSettings {
-            replay_version: crate::typedefs::REPLAY_VERSION,
-            characters: self.characters,
-            first_to: self.first_to,
-        }
-    }
-}
 pub trait FromMatchSettings {
     fn from_settings(
         ctx: &mut Context,

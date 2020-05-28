@@ -130,7 +130,18 @@ pub trait GenericCharacterBehaviour {
     fn is_dead(&self) -> bool;
     fn health(&self) -> i32;
 
-    fn reset_to_position(&mut self, play_area: &PlayArea, position: collision::Int, facing: Facing);
+    fn reset_to_position_roundstart(
+        &mut self,
+        play_area: &PlayArea,
+        position: collision::Int,
+        facing: Facing,
+    );
+    fn reset_to_position_gamestart(
+        &mut self,
+        play_area: &PlayArea,
+        position: collision::Int,
+        facing: Facing,
+    );
 }
 
 use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};

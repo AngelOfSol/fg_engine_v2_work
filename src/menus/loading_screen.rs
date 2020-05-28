@@ -4,15 +4,11 @@ use imgui::im_str;
 
 pub struct LoadingScreen {
     next: Transition,
-    currently_loading: String,
 }
 
 impl LoadingScreen {
-    pub fn new(currently_loading: String, next: Transition) -> Self {
-        Self {
-            next,
-            currently_loading,
-        }
+    pub fn new(next: Transition) -> Self {
+        Self { next }
     }
 }
 
@@ -40,9 +36,7 @@ impl AppState for LoadingScreen {
 
         frame
             .run(|ui| {
-                imgui::Window::new(im_str!("Loading...")).build(ui, || {
-                    ui.text(im_str!("Current loading: {}", self.currently_loading));
-                });
+                imgui::Window::new(im_str!("Loading...")).build(ui, || {});
             })
             .render(ctx);
 

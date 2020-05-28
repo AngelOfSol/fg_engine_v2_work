@@ -3,7 +3,7 @@ use super::netplay_versus::NetplayVersus;
 use super::CharacterSelect;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
-use crate::input::pads_context::{Button, EventType, GamepadId};
+use crate::input::pads_context::{Button, EventType};
 use crate::player_list::{PlayerList, PlayerType};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
@@ -12,10 +12,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::net::SocketAddr;
 use std::time::Instant;
+use strum::IntoEnumIterator;
 use strum_macros::Display;
+use strum_macros::EnumIter;
 
 enum NextState {
-    Next(GamepadId),
+    Next,
     Back,
 }
 
@@ -34,10 +36,11 @@ impl Display for PotentialAddress {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Display, EnumIter)]
 enum Mode {
     Host,
     Client,
+    Spectate,
 }
 
 impl FromControllerList for NetworkConnect {
@@ -50,16 +53,25 @@ pub struct NetworkConnect {
     next: Option<NextState>,
     mode: Mode,
     target_addr: PotentialAddress,
+    local_player: PlayerType,
     connected: bool,
     player_list: PlayerList,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 enum NetPacket {
+    Ping,
     Close,
+    CloseSpectate,
     RequestJoin,
     DenyJoin,
-    ConfirmJoin,
+    DenySpectate,
+    RequestSpectate,
+    UpdatePlayer(SocketAddr),
+    ConfirmSpectate,
+    AddSpectate,
+    RemoveSpectate(SocketAddr),
+    ConfirmJoin(Vec<SocketAddr>),
     MoveToCharacterSelect,
 }
 
@@ -68,8 +80,14 @@ impl NetworkConnect {
         Ok(Self {
             next: None,
             connected: false,
-            target_addr: PotentialAddress::Almost(String::with_capacity(30)),
+            target_addr: PotentialAddress::Almost("192.168.1.155:10800".to_owned()),
             mode: Mode::Host,
+            local_player: player_list
+                .current_players
+                .iter()
+                .find(|item| !item.is_dummy() && !item.is_networked())
+                .unwrap()
+                .clone(),
             player_list,
         })
     }
@@ -90,22 +108,178 @@ impl AppState for NetworkConnect {
             .expect("expected to have a socket during netcode select");
         socket.manual_poll(Instant::now());
 
-        while let Some(packet) = socket.recv() {
+        'packets: while let Some(packet) = socket.recv() {
             match packet {
-                SocketEvent::Packet(_) => self.connected = true,
-                SocketEvent::Connect(addr) => {
-                    if self.mode == Mode::Host {
-                        self.target_addr = PotentialAddress::Address(addr);
-                        *self.player_list.current_players.p2_mut() = PlayerType::Networked(addr);
+                SocketEvent::Packet(packet) => {
+                    match bincode::deserialize(packet.payload()).unwrap() {
+                        NetPacket::RequestJoin => {
+                            if self.mode == Mode::Host && !self.connected {
+                                self.target_addr = PotentialAddress::Address(packet.addr());
+                                *self.player_list.current_players.p2_mut() =
+                                    PlayerType::Networked(packet.addr());
+                                self.connected = true;
+                                let _ = socket.send(Packet::reliable_ordered(
+                                    packet.addr(),
+                                    bincode::serialize(&NetPacket::ConfirmJoin(
+                                        self.player_list
+                                            .spectators
+                                            .iter()
+                                            .filter_map(PlayerType::addr)
+                                            .collect(),
+                                    ))
+                                    .unwrap(),
+                                    None,
+                                ));
+                                for addr in self
+                                    .player_list
+                                    .spectators
+                                    .iter()
+                                    .filter_map(PlayerType::addr)
+                                {
+                                    let _ = socket.send(Packet::reliable_ordered(
+                                        addr,
+                                        bincode::serialize(&NetPacket::UpdatePlayer(packet.addr()))
+                                            .unwrap(),
+                                        None,
+                                    ));
+                                }
+                            } else {
+                                let _ = socket.send(Packet::reliable_ordered(
+                                    packet.addr(),
+                                    bincode::serialize(&NetPacket::DenyJoin).unwrap(),
+                                    None,
+                                ));
+                            }
+                        }
+                        NetPacket::UpdatePlayer(player) => {
+                            *self.player_list.current_players.p2_mut() = player.into();
+
+                            let _ = socket.send(Packet::reliable_ordered(
+                                player,
+                                bincode::serialize(&NetPacket::AddSpectate).unwrap(),
+                                None,
+                            ));
+                        }
+                        NetPacket::ConfirmJoin(spectators) => {
+                            self.connected = true;
+                            *self.player_list.current_players.p1_mut() =
+                                PlayerType::Networked(packet.addr());
+                            self.player_list.spectators =
+                                spectators.into_iter().map(Into::into).collect();
+                        }
+                        NetPacket::MoveToCharacterSelect => {
+                            self.next = Some(NextState::Next);
+                            break 'packets;
+                        }
+                        NetPacket::RemoveSpectate(addr) => {
+                            self.player_list.spectators.retain(|item| {
+                                item.addr().map(|item| item != addr).unwrap_or(true)
+                            });
+                        }
+                        NetPacket::AddSpectate => {
+                            self.player_list
+                                .spectators
+                                .push(PlayerType::Networked(packet.addr()));
+                            let _ = socket.send(Packet::unreliable(
+                                packet.addr(),
+                                bincode::serialize(&NetPacket::Ping).unwrap(),
+                            ));
+                        }
+
+                        NetPacket::RequestSpectate => {
+                            if self.mode == Mode::Host {
+                                self.player_list
+                                    .spectators
+                                    .push(PlayerType::Networked(packet.addr()));
+
+                                let _ = socket.send(Packet::reliable_ordered(
+                                    packet.addr(),
+                                    bincode::serialize(&NetPacket::ConfirmSpectate).unwrap(),
+                                    None,
+                                ));
+
+                                if let Some(addr) = self.player_list.current_players.p2().addr() {
+                                    let _ = socket.send(Packet::reliable_ordered(
+                                        packet.addr(),
+                                        bincode::serialize(&NetPacket::UpdatePlayer(addr)).unwrap(),
+                                        None,
+                                    ));
+                                }
+                            } else {
+                                let _ = socket.send(Packet::reliable_ordered(
+                                    packet.addr(),
+                                    bincode::serialize(&NetPacket::DenySpectate).unwrap(),
+                                    None,
+                                ));
+                            }
+                        }
+
+                        NetPacket::ConfirmSpectate => {
+                            self.player_list.current_players =
+                                [packet.addr().into(), PlayerType::Dummy].into();
+                            self.connected = true;
+                        }
+                        NetPacket::CloseSpectate => {
+                            let addr = packet.addr();
+
+                            self.player_list.spectators.retain(|item| {
+                                item.addr().map(|item| item != addr).unwrap_or(true)
+                            });
+
+                            for update_addr in self
+                                .player_list
+                                .current_players
+                                .iter()
+                                .filter_map(PlayerType::addr)
+                            {
+                                let _ = socket.send(Packet::reliable_ordered(
+                                    update_addr,
+                                    bincode::serialize(&NetPacket::RemoveSpectate(addr)).unwrap(),
+                                    None,
+                                ));
+                            }
+                        }
+                        NetPacket::DenySpectate | NetPacket::DenyJoin | NetPacket::Close => {
+                            self.connected = false;
+
+                            for player in self.player_list.current_players.iter_mut() {
+                                if *player == packet.addr().into() {
+                                    *player = PlayerType::Dummy;
+                                }
+                            }
+                        }
+                        NetPacket::Ping => {}
                     }
-                    self.connected = true;
-                    socket
-                        .send(Packet::reliable_sequenced(addr, vec![], None))
-                        .map_err(|_| {
-                            ggez::GameError::EventLoopError("Could not send packet".to_owned())
-                        })?;
                 }
-                SocketEvent::Timeout(_) => self.connected = false,
+                SocketEvent::Connect(_) => (),
+                SocketEvent::Timeout(addr) => {
+                    if self
+                        .player_list
+                        .current_players
+                        .iter()
+                        .filter_map(PlayerType::addr)
+                        .any(|item| item == addr)
+                    {
+                        self.connected = false;
+                    } else if self.mode != Mode::Spectate {
+                        self.player_list
+                            .spectators
+                            .retain(|item| item.addr().map(|item| item != addr).unwrap_or(true));
+
+                        for update_addr in self
+                            .player_list
+                            .current_players
+                            .iter()
+                            .filter_map(PlayerType::addr)
+                        {
+                            let _ = socket.send(Packet::reliable_ordered(
+                                update_addr,
+                                bincode::serialize(&NetPacket::RemoveSpectate(addr)).unwrap(),
+                                None,
+                            ));
+                        }
+                    }
+                }
             }
         }
 
@@ -114,8 +288,25 @@ impl AppState for NetworkConnect {
         while let Some(event) = pads.next_event() {
             match event.event {
                 EventType::ButtonPressed(button) => {
-                    if button == Button::Start && self.connected {
-                        self.next = Some(NextState::Next(event.id));
+                    if button == Button::Start
+                        && self.connected
+                        && self.mode == Mode::Host
+                        && self
+                            .player_list
+                            .current_players
+                            .p1()
+                            .gamepad_id()
+                            .map(|id| id == event.id)
+                            .unwrap_or(false)
+                    {
+                        for addr in self.player_list.network_addrs() {
+                            let _ = socket.send(Packet::reliable_ordered(
+                                addr,
+                                bincode::serialize(&NetPacket::MoveToCharacterSelect).unwrap(),
+                                None,
+                            ));
+                        }
+                        self.next = Some(NextState::Next);
                     }
                 }
                 _ => (),
@@ -124,38 +315,12 @@ impl AppState for NetworkConnect {
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => match state {
-                NextState::Next(id) => match self.mode {
-                    Mode::Host => Ok(Transition::Replace(Box::new(CharacterSelect::<
-                        NetplayVersus,
-                    >::new(
-                        PlayerList::new(
-                            [
-                                id.into(),
-                                match self.target_addr {
-                                    PotentialAddress::Address(addr) => addr,
-                                    _ => unreachable!(),
-                                }
-                                .into(),
-                            ]
-                            .into(),
-                        ),
-                    )))),
-                    Mode::Client => Ok(Transition::Replace(Box::new(CharacterSelect::<
-                        NetplayVersus,
-                    >::new(
-                        PlayerList::new(
-                            [
-                                match self.target_addr {
-                                    PotentialAddress::Address(addr) => addr,
-                                    _ => unreachable!(),
-                                }
-                                .into(),
-                                id.into(),
-                            ]
-                            .into(),
-                        ),
-                    )))),
-                },
+                NextState::Next => Ok(Transition::Replace(Box::new(CharacterSelect::<
+                    NetplayVersus,
+                >::new(
+                    self.player_list.clone(),
+                    None,
+                )))),
                 NextState::Back => Ok(Transition::Pop),
             },
             None => Ok(Transition::None),
@@ -194,13 +359,22 @@ impl AppState for NetworkConnect {
                         if ui.combo_items(
                             im_str!("Mode"),
                             &mut self.mode,
-                            &[Mode::Host, Mode::Client],
-                            &|item| match item {
-                                Mode::Host => im_str!("Host").into(),
-                                Mode::Client => im_str!("Client").into(),
-                            },
+                            &Mode::iter().collect::<Vec<_>>(),
+                            &|item| im_str!("{}", item).into(),
                         ) {
-                            self.player_list.swap_players();
+                            match self.mode {
+                                Mode::Host => {
+                                    self.player_list.current_players =
+                                        [self.local_player.clone(), PlayerType::Dummy].into()
+                                }
+                                Mode::Client => {
+                                    self.player_list.current_players =
+                                        [PlayerType::Dummy, self.local_player.clone()].into()
+                                }
+                                Mode::Spectate => {
+                                    self.player_list.current_players = [PlayerType::Dummy; 2].into()
+                                }
+                            }
                         }
                     }
 
@@ -212,22 +386,67 @@ impl AppState for NetworkConnect {
                             .unwrap_or("Error".to_owned())
                     ));
 
+                    if self.mode != Mode::Spectate {
+                        ui.text(im_str!(
+                            "Spectators: {}",
+                            self.player_list
+                                .spectators
+                                .iter()
+                                .filter_map(PlayerType::addr)
+                                .fold("".to_owned(), |acc, item| acc + &item.to_string()),
+                        ));
+                    } else {
+                        ui.text(im_str!(
+                            "Watching: {}, {}",
+                            self.player_list
+                                .current_players
+                                .p1()
+                                .addr()
+                                .map(|item| item.to_string())
+                                .unwrap_or("None".to_owned()),
+                            self.player_list
+                                .current_players
+                                .p2()
+                                .addr()
+                                .map(|item| item.to_string())
+                                .unwrap_or("None".to_owned()),
+                        ));
+                    }
+
                     if self.mode == Mode::Host || self.connected {
                         ui.text(&im_str!("IP: {}", self.target_addr));
 
-                        if let PotentialAddress::Address(addr) = self.target_addr {
+                        if let PotentialAddress::Address(_) = self.target_addr {
                             if ui.small_button(im_str!("Disconnect")) {
                                 self.connected = false;
-                                let _ = socket.send(Packet::reliable_sequenced(
-                                    addr,
-                                    bincode::serialize(&NetPacket::Close).unwrap(),
-                                    None,
-                                ));
-                            }
-                        }
 
-                        if self.mode == Mode::Host {
-                            ui.text("Press start to move to character select.");
+                                for addr in self.player_list.network_addrs() {
+                                    let _ = socket.send(Packet::reliable_sequenced(
+                                        addr,
+                                        bincode::serialize(&match self.mode {
+                                            Mode::Spectate => NetPacket::CloseSpectate,
+                                            Mode::Host | Mode::Client => NetPacket::Close,
+                                        })
+                                        .unwrap(),
+                                        None,
+                                    ));
+                                }
+                                self.player_list.spectators.clear();
+                                match self.mode {
+                                    Mode::Host => {
+                                        self.player_list.current_players =
+                                            [self.local_player.clone(), PlayerType::Dummy].into()
+                                    }
+                                    Mode::Client => {
+                                        self.player_list.current_players =
+                                            [PlayerType::Dummy, self.local_player.clone()].into()
+                                    }
+                                    Mode::Spectate => {
+                                        self.player_list.current_players =
+                                            [PlayerType::Dummy; 2].into()
+                                    }
+                                }
+                            }
                         }
                     } else {
                         let mut buffer = self.target_addr.to_string();
@@ -242,11 +461,20 @@ impl AppState for NetworkConnect {
                             if ui.small_button(im_str!("Connect")) {
                                 let _ = socket.send(Packet::reliable_sequenced(
                                     addr,
-                                    bincode::serialize(&NetPacket::RequestJoin).unwrap(),
+                                    bincode::serialize(&match self.mode {
+                                        Mode::Client => NetPacket::RequestJoin,
+                                        Mode::Spectate => NetPacket::RequestSpectate,
+                                        Mode::Host => unreachable!(),
+                                    })
+                                    .unwrap(),
                                     None,
                                 ));
                             }
                         }
+                    }
+
+                    if self.mode == Mode::Host && self.connected {
+                        ui.text("Press start to move to character select.");
                     }
                 });
             })

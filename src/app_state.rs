@@ -23,6 +23,7 @@ pub struct AppContext {
     pub audio: rodio::Device,
     pub socket: Option<Socket>,
     pub sdl_events: sdl2::EventPump,
+
     _sdl: sdl2::Sdl,
 }
 
@@ -35,6 +36,7 @@ pub trait AppState {
 pub struct AppStateRunner {
     history: Vec<Box<dyn AppState>>,
     app_ctx: AppContext,
+    last_draw_time: std::time::Instant,
 }
 
 impl AppStateRunner {
@@ -65,7 +67,16 @@ impl AppStateRunner {
                             .find(|item| item.is_ipv4())
                             .cloned()
                     })
-                    .map(|ip| vec![ip.to_string() + ":10800", ip.to_string() + ":10801"])
+                    .map(|ip| {
+                        vec![
+                            ip.to_string() + ":10800",
+                            ip.to_string() + ":10801",
+                            ip.to_string() + ":10802",
+                            ip.to_string() + ":10803",
+                            ip.to_string() + ":10804",
+                            ip.to_string() + ":10805",
+                        ]
+                    })
                     .unwrap_or(vec!["127.0.0.1:10800".to_owned()])
                     .into_iter()
                     .filter_map(|item| item.to_socket_addrs().ok())
@@ -76,7 +87,7 @@ impl AppStateRunner {
                     blocking_mode: false,
                     rtt_max_value: 2000,
                     idle_connection_timeout: Duration::from_secs(5),
-                    heartbeat_interval: Some(Duration::from_secs(1)),
+                    heartbeat_interval: Some(Duration::from_millis(200)),
                     ..Config::default()
                 },
             )
@@ -88,6 +99,7 @@ impl AppStateRunner {
         Ok(AppStateRunner {
             history: vec![start],
             app_ctx,
+            last_draw_time: std::time::Instant::now(),
         })
     }
 }
@@ -173,8 +185,13 @@ impl EventHandler for AppStateRunner {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        if let Some(state) = self.history.last_mut() {
-            state.draw(ctx, &mut self.app_ctx)?;
+        let time = std::time::Instant::now();
+        // draw at most 100FPS
+        if time - self.last_draw_time > std::time::Duration::from_millis(10) {
+            self.last_draw_time = time;
+            if let Some(state) = self.history.last_mut() {
+                state.draw(ctx, &mut self.app_ctx)?;
+            }
         }
         Ok(())
     }

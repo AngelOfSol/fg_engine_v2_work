@@ -93,7 +93,7 @@ impl<Target> RetryScreen<Target> {
             state: [PlayerMenuState::new(), PlayerMenuState::new()].into(),
             player_list,
             settings,
-            delay: 60,
+            delay: 10,
             _secret: std::marker::PhantomData,
         }
     }
@@ -193,8 +193,14 @@ impl<Target: FromMatchSettings + AppState + 'static> AppState for RetryScreen<Ta
                 .iter()
                 .any(|item| item.selected_button == MenuButton::CharacterSelect)
             {
+                use super::CharacterSelect;
                 // TODO TBD rework of character_select to use a different method
-                Ok(Transition::Pop)
+                Ok(Transition::Replace(Box::new(
+                    CharacterSelect::<Target>::new(
+                        self.player_list.clone(),
+                        Some(self.settings.clone()),
+                    ),
+                )))
             } else if self
                 .state
                 .iter()
@@ -202,10 +208,8 @@ impl<Target: FromMatchSettings + AppState + 'static> AppState for RetryScreen<Ta
             {
                 let next =
                     Target::from_settings(ctx, self.player_list.clone(), self.settings.clone())?;
-                let next = crate::menus::loading_screen::LoadingScreen::new(
-                    "".to_owned(),
-                    Transition::Replace(next),
-                );
+                let next =
+                    crate::menus::loading_screen::LoadingScreen::new(Transition::Replace(next));
 
                 Ok(Transition::Replace(Box::new(next)))
             } else {

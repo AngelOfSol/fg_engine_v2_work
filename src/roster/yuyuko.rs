@@ -45,6 +45,7 @@ use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
@@ -192,7 +193,7 @@ impl Default for YuyukoSound {
 }
 
 pub struct YuyukoPlayer {
-    pub data: Yuyuko,
+    pub data: Rc<Yuyuko>,
     pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
     pub last_combo_state: Option<(ComboState, usize)>,
     pub state: YuyukoState,
@@ -223,7 +224,7 @@ pub struct YuyukoState {
 }
 
 impl YuyukoState {
-    fn new(data: &Yuyuko, facing: Facing) -> Self {
+    fn new(data: &Yuyuko) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
@@ -235,7 +236,7 @@ impl YuyukoState {
             spirit_gauge: 0,
             spirit_delay: 0,
             hitstop: 0,
-            facing,
+            facing: Facing::Right,
             last_hit_using: None,
             health: data.properties.health,
             current_combo: None,
@@ -253,9 +254,9 @@ impl YuyukoState {
 use crate::game_match::sounds::PlayerSoundState;
 
 impl YuyukoPlayer {
-    pub fn new(data: Yuyuko, facing: Facing) -> Self {
+    pub fn new(data: Rc<Yuyuko>) -> Self {
         Self {
-            state: YuyukoState::new(&data, facing),
+            state: YuyukoState::new(&data),
             data,
             last_combo_state: None,
             sound_renderer: SoundRenderer::new(),
@@ -463,7 +464,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.state.dead
     }
 
-    fn reset_to_position(
+    fn reset_to_position_roundstart(
         &mut self,
         play_area: &PlayArea,
         position: collision::Int,
@@ -473,6 +474,37 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             position: collision::Vec2::new(position, 0),
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::Stand),
+            extra_data: ExtraData::None,
+            particles: Vec::new(),
+            bullets: Vec::new(),
+            air_actions: self.data.properties.max_air_actions,
+            spirit_gauge: 0,
+            spirit_delay: 0,
+            hitstop: 0,
+            facing,
+            last_hit_using: None,
+            health: self.data.properties.health,
+            current_combo: None,
+            allowed_cancels: AllowedCancel::Always,
+            rebeat_chain: HashSet::new(),
+            should_pushback: true,
+            sound_state: PlayerSoundState::new(),
+            meter: 0,
+            lockout: 0,
+            dead: false,
+        };
+        self.validate_position(play_area);
+    }
+    fn reset_to_position_gamestart(
+        &mut self,
+        play_area: &PlayArea,
+        position: collision::Int,
+        facing: Facing,
+    ) {
+        self.state = YuyukoState {
+            position: collision::Vec2::new(position, 0),
+            velocity: collision::Vec2::zeros(),
+            current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
             particles: Vec::new(),
             bullets: Vec::new(),
