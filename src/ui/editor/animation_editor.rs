@@ -1,7 +1,6 @@
 use super::character_editor::ItemResource;
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::Assets;
-use crate::game_match::ValueAlpha;
+use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::Animation;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};

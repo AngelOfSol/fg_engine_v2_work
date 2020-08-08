@@ -1,9 +1,8 @@
 use super::character_editor::{BulletAnimationResource, BulletResource, ItemResource};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::Assets;
+use crate::assets::{Assets, ValueAlpha};
 use crate::character::components::BulletInfo;
 use crate::character::PlayerCharacter;
-use crate::game_match::ValueAlpha;
 use crate::timeline::AtTime;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::components::BulletInfoUi;

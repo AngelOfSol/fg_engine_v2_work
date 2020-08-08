@@ -13,34 +13,30 @@ impl ModifiersUi {
             &Coordinates::iter().collect::<Vec<_>>(),
             &|item| im_str!("{}", item).into(),
         );
-        if ui
-            .collapsing_header(im_str!("Rotation"))
+        if imgui::CollapsingHeader::new(im_str!("Rotation"))
             .default_open(false)
-            .build()
+            .build(ui)
         {
             let id = ui.push_id("Rotation");
             draw_ui_keyframes(ui, &mut mods.rotation);
             id.pop(ui);
         }
-        if ui
-            .collapsing_header(im_str!("Scale"))
+        if imgui::CollapsingHeader::new(im_str!("Scale"))
             .default_open(false)
-            .build()
+            .build(ui)
         {
             let id = ui.push_id("Scale");
-            if ui
-                .collapsing_header(im_str!("X"))
+            if imgui::CollapsingHeader::new(im_str!("X"))
                 .default_open(false)
-                .build()
+                .build(ui)
             {
                 let id = ui.push_id("X");
                 draw_ui_keyframes(ui, &mut mods.scale[0]);
                 id.pop(ui);
             }
-            if ui
-                .collapsing_header(im_str!("Y"))
+            if imgui::CollapsingHeader::new(im_str!("Y"))
                 .default_open(false)
-                .build()
+                .build(ui)
             {
                 let id = ui.push_id("Y");
                 draw_ui_keyframes(ui, &mut mods.scale[1]);
@@ -49,37 +45,34 @@ impl ModifiersUi {
 
             id.pop(ui);
         }
-        if ui
-            .collapsing_header(im_str!("Offset"))
+        if imgui::CollapsingHeader::new(im_str!("Offset"))
             .default_open(false)
-            .build()
+            .build(ui)
         {
             let id = ui.push_id("Offset");
-            if ui
-                .collapsing_header(&im_str!(
-                    "{}",
-                    match mods.coord_type {
-                        Coordinates::Cartesian => "X",
-                        Coordinates::Polar => "Radius",
-                    }
-                ))
-                .default_open(false)
-                .build()
+            if imgui::CollapsingHeader::new(&im_str!(
+                "{}",
+                match mods.coord_type {
+                    Coordinates::Cartesian => "X",
+                    Coordinates::Polar => "Radius",
+                }
+            ))
+            .default_open(false)
+            .build(ui)
             {
                 let id = ui.push_id("X");
                 draw_ui_keyframes(ui, &mut mods.coords[0]);
                 id.pop(ui);
             }
-            if ui
-                .collapsing_header(&im_str!(
-                    "{}",
-                    match mods.coord_type {
-                        Coordinates::Cartesian => "Y",
-                        Coordinates::Polar => "Theta",
-                    }
-                ))
-                .default_open(false)
-                .build()
+            if imgui::CollapsingHeader::new(&im_str!(
+                "{}",
+                match mods.coord_type {
+                    Coordinates::Cartesian => "Y",
+                    Coordinates::Polar => "Theta",
+                }
+            ))
+            .default_open(false)
+            .build(ui)
             {
                 let id = ui.push_id("Y");
                 draw_ui_keyframes(ui, &mut mods.coords[1]);
@@ -89,20 +82,18 @@ impl ModifiersUi {
             id.pop(ui);
         }
 
-        if ui
-            .collapsing_header(im_str!("Alpha##Modifier"))
+        if imgui::CollapsingHeader::new(im_str!("Alpha##Modifier"))
             .default_open(false)
-            .build()
+            .build(ui)
         {
             let id = ui.push_id("Alpha##Modifier");
             draw_ui_keyframes(ui, &mut mods.alpha);
             id.pop(ui);
         }
 
-        if ui
-            .collapsing_header(im_str!("Value"))
+        if imgui::CollapsingHeader::new(im_str!("Value"))
             .default_open(false)
-            .build()
+            .build(ui)
         {
             let id = ui.push_id("Value");
             draw_ui_keyframes(ui, &mut mods.value);

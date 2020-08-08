@@ -53,12 +53,13 @@ pub fn save(
     let writer = BufWriter::new(output);
     let png_writer = PNGEncoder::new(writer);
 
-    let image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
+    let mut image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
         u32::from(image.width()),
         u32::from(image.height()),
         image.to_rgba8(ctx)?.to_vec(),
     )
     .unwrap();
+    image::imageops::flip_vertical_in_place(&mut image);
 
     png_writer
         .encode(&image, image.width(), image.height(), ColorType::Rgba8)

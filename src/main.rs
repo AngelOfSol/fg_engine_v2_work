@@ -53,7 +53,7 @@ fn main() {
             .modules(conf::ModuleConf::default().gamepad(false));
         conf.window_setup = conf::WindowSetup::default()
             .title("World Scarred")
-            .vsync(false);
+            .vsync(true);
         conf
     };
 
@@ -61,7 +61,7 @@ fn main() {
     let (mut ctx, mut event_loop) = ContextBuilder::new("world_scared", "aos-studios")
         .add_resource_path(resource_dir)
         .conf(default_conf)
-        .with_conf_file(true)
+        .with_conf_file(false)
         .build()
         .expect("expected context");
 

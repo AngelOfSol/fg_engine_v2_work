@@ -199,21 +199,42 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] up to 3 rounds
         [x] ending the game brings you to character select/retry/main menu
             [] have a win quote
-            [] prevent reloading of assets
+            [x] prevent reloading of assets
             [x] rework character select to use new methodology.
             [x] move socket into apps_context
             [x] create player_list struct containing players and match settings and specs
             [x] rework controller select to create a proper list of players
             [x] for training mode use the dummy PlayerType
-            
+            [x] remove default IP
+            [x] reset 5b damage to 400
+            [] fix UI perforamance by changing all of hte bars to their own images instead of recreating a mesh every frame
+                [x] hp
+                [x] meter
+                [x] mana
+                [] round windicators
         [x] display rounds in the UI
         [x] have multiple rounds
         [x] combo ui
+        [x] add graphic install so that the player who gets hit gets moved to the background
         [] move round start graphics to particles as an easy way to render
     [] button check at character select 
         [] on press start
     [x] move to E button
     [] create object system
+        [] spawner type
+            [] defines parameters it needs to spawn
+                [] special handling for spawn x/y parameters
+            [] spawns character bullet types
+        [] bullet implementation type
+            [] defines a gamestate
+            [] defines a type that holds information
+                [] this can be parameterized by additional types if things such as particle spawners or bullet spawners are needed
+            [] defines behaviour on that gamestate
+        [] character bullet type
+            [] contains a bullet implementation
+            [] takes the character resource and passes the particular state info to the implementation
+
+
         [] bullet spawner type is sperate from bullet type
             [] this allows characters to determine what bullet to spawn based on resources
             [] ie: elemental spawner spawns fire/water/wind bullet based on current element
@@ -224,7 +245,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] position
 
             [] color?? (just make different bulelts for idfferent colors)
-    [] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
+    [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
     [] rework chaining description
         [] hit
             [] allow based on move type
@@ -238,6 +259,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] keyboard support
     [] add untech
         [] when you enter untech without limit bounce tech
+        [] untech is basically just airhitstun
     [] update attack AttackInfo
         [] add head/foot/body
         [x] remove attack levels, change to manual hitstun/blockstun selection
@@ -263,6 +285,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] expose training mode options via additional methods on game_match?
         [] expose it via character behavior, and just expose the characters instead?
     [] reset HP when player hits idle
+        [] trainingmode
     [] handle standing reset limit
         [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
     [] treat triggers as buttons for the purpose of this game
@@ -270,6 +293,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] have replays handle multiple rounds
     [x] 4ab to 6ab 
     [] add better knockdowns
+        [] fast forward/back/neutral for bounce tech (combo that KDs without using all limit)
+        [] slow back/neutral tech for HKD (combo that KDs and has used all available limit)
     [] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
         [x] add two things to shader as a uniform (mimic u_Rate)
             [x] value

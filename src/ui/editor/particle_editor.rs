@@ -1,7 +1,6 @@
 use super::character_editor::{ItemResource, ParticleAnimationResource};
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::Assets;
-use crate::game_match::ValueAlpha;
+use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::particle::Particle;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
