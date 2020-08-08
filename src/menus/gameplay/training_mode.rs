@@ -18,6 +18,7 @@ pub struct TrainingMode {
     inputs: PlayerData<Vec<InputState>>,
     player_list: PlayerList,
     game_state: TrainingMatch,
+    dirty: bool,
 }
 
 impl FromMatchSettings for TrainingMode {
@@ -45,6 +46,7 @@ impl TrainingMode {
                 settings,
                 crate::replay::create_new_replay_file("training")?,
             )?,
+            dirty: true,
         })
     }
 }
@@ -90,7 +92,9 @@ impl AppState for TrainingMode {
             }
         }
 
+        let mut count = 0;
         while ggez::timer::check_update_time(ctx, 60) {
+            count += 1;
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
             self.game_state.render_sounds(60, audio)?;
@@ -110,6 +114,10 @@ impl AppState for TrainingMode {
                 control_scheme.update_frame(&mut last_frame);
                 input.push(last_frame);
             }
+            self.dirty = true;
+        }
+        if count > 1 {
+            dbg!(count);
         }
 
         match std::mem::replace(&mut self.next, None) {
@@ -135,12 +143,20 @@ impl AppState for TrainingMode {
         Ok(())
     }
     fn draw(&mut self, ctx: &mut Context, AppContext { .. }: &mut AppContext) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        if self.dirty {
+            let start = std::time::Instant::now();
+            graphics::clear(ctx, graphics::BLACK);
 
-        self.game_state.draw(ctx)?;
+            self.game_state.draw(ctx)?;
 
-        graphics::present(ctx)?;
-
+            graphics::present(ctx)?;
+            let duration = std::time::Instant::now() - start;
+            if duration.as_millis() > 10 {
+                println!("Frame render time exceeded 10ms.");
+                dbg!(duration);
+            }
+            self.dirty = false;
+        }
         Ok(())
     }
 }

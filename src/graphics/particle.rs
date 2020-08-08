@@ -1,8 +1,6 @@
 mod file;
 pub mod version;
-
-use crate::assets::Assets;
-use crate::game_match::ValueAlpha;
+use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::animation::{self, Animation};
 use crate::graphics::keyframe::Modifiers;
 use crate::typedefs::graphics::Matrix4;

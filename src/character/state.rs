@@ -15,9 +15,7 @@ pub mod components {
     pub use super::particle_spawn_data::*;
     pub use super::sound_play_info::*;
 }
-
-use crate::assets::Assets;
-use crate::game_match::ValueAlpha;
+use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::{self, Animation};
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;

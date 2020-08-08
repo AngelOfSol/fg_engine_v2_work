@@ -2,8 +2,7 @@ mod file;
 pub mod version;
 
 use super::keyframe::Modifiers;
-use crate::assets::Assets;
-use crate::game_match::ValueAlpha;
+use crate::assets::{Assets, ValueAlpha};
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};

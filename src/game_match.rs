@@ -6,6 +6,7 @@ pub mod sounds;
 pub use flash::FlashType;
 pub use match_settings::{FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData};
 
+use crate::assets::ValueAlpha;
 use crate::character::state::components::GlobalParticle;
 use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
@@ -23,7 +24,6 @@ use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use flash::FlashOverlay;
-use gfx::{self, *};
 use ggez::graphics::Image;
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
@@ -40,11 +40,6 @@ const FRAMES_PER_ROUND: usize = WS_SECONDS_PER_ROUND * FRAMES_PER_WS_SECOND;
 pub struct PlayArea {
     pub width: i32,
 }
-gfx_defines! { constant Shadow { rate: f32 = "u_Rate", } }
-gfx_defines! { constant ValueAlpha { value: f32 = "u_Value", alpha: f32 = "u_Alpha", } }
-
-pub type GameShader = graphics::Shader<ValueAlpha>;
-pub type ShadowShader = graphics::Shader<Shadow>;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -55,6 +50,8 @@ pub struct GameState {
     wins: PlayerData<usize>,
     round: usize,
     timer: usize,
+
+    p1_install: bool,
 
     sound_state: sounds::PlayerSoundState<GlobalSound>,
 }
@@ -75,10 +72,23 @@ pub struct RoundStartUi {
 }
 
 #[derive(Clone)]
+pub struct PlayerUi {
+    pub limit_bar: Particle,
+    pub overlay: Particle,
+    pub underlay: Particle,
+    pub hp_bar: Particle,
+    pub spirit_bar: Particle,
+    pub meter_bar: Particle,
+}
+
+#[derive(Clone)]
 pub struct UiElements {
     pub font: graphics::Font,
     pub shield: ShieldUi,
     pub roundstart: RoundStartUi,
+    pub player: PlayerUi,
+    pub timer_backdrop: Image,
+    pub fade_out_overlay: Image,
 }
 
 pub struct Match<Writer> {
@@ -93,6 +103,14 @@ pub struct Match<Writer> {
 
     writer: Writer,
     sound_renderer: sounds::SoundRenderer<sounds::GlobalSound>,
+
+    text: GameText,
+}
+
+struct GameText {
+    pub prerender_timer: ggez::graphics::Text,
+    pub prerender_combo: ggez::graphics::Text,
+    pub timer: ggez::graphics::Text,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -120,7 +138,9 @@ impl<Writer: Write> Match<Writer> {
             width: background.width() as i32 * 100,
         };
 
-        let runtime_data = settings.runtime_data.as_mut().unwrap();
+        settings.load(ctx)?;
+
+        let runtime_data = settings.runtime_data.as_ref().unwrap();
 
         let mut players = runtime_data
             .character_data
@@ -136,6 +156,24 @@ impl<Writer: Write> Match<Writer> {
 
         let _ = bincode::serialize_into(&mut writer, &settings);
 
+        let mut timer = ggez::graphics::Text::new("99");
+
+        timer
+            .set_bounds([1280.0, 80.0], graphics::Align::Center)
+            .set_font(runtime_data.ui.font, graphics::Scale::uniform(38.0));
+
+        let mut prerender_timer = ggez::graphics::Text::new("0123456789");
+        prerender_timer
+            .set_bounds([1280.0, 720.0], graphics::Align::Center)
+            .set_font(runtime_data.ui.font, graphics::Scale::uniform(38.0));
+
+        let mut prerender_combo = ggez::graphics::Text::new(
+            "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789",
+        );
+        prerender_combo
+            .set_bounds([1280.0, 720.0], graphics::Align::Center)
+            .set_font(runtime_data.ui.font, graphics::Scale::uniform(30.0));
+
         Ok(Self {
             players,
             game_state: GameState {
@@ -146,6 +184,7 @@ impl<Writer: Write> Match<Writer> {
                 wins: [0; 2].into(),
                 timer: FRAMES_PER_ROUND,
                 round: 1,
+                p1_install: false,
             },
 
             runtime_data: settings.runtime_data.clone().unwrap(),
@@ -154,6 +193,11 @@ impl<Writer: Write> Match<Writer> {
 
             game_over: None,
             writer,
+            text: GameText {
+                timer,
+                prerender_combo,
+                prerender_timer,
+            },
         })
     }
 
@@ -348,6 +392,13 @@ impl<Writer: Write> Match<Writer> {
 
         for player in self.players.iter_mut() {
             player.prune_bullets(&self.runtime_data.play_area);
+        }
+
+        if self.players.p1().draw_order_priority() > self.players.p2().draw_order_priority() {
+            self.game_state.p1_install = true;
+        } else if self.players.p1().draw_order_priority() < self.players.p2().draw_order_priority()
+        {
+            self.game_state.p1_install = false;
         }
 
         let lockouts: Vec<_> = self
@@ -549,6 +600,19 @@ impl<Writer: Write> Match<Writer> {
     pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)?;
 
+        // TODO use a better text rendering method
+        // this is a hack to prerender all the glyphs asap
+        ggez::graphics::draw(
+            ctx,
+            &self.text.prerender_timer,
+            ggez::graphics::DrawParam::default(),
+        )?;
+        ggez::graphics::draw(
+            ctx,
+            &self.text.prerender_combo,
+            ggez::graphics::DrawParam::default(),
+        )?;
+
         let assets = &self.runtime_data.assets;
 
         let screen = Rect::new(0.0, 0.0, 1280.0, 720.0);
@@ -603,27 +667,51 @@ impl<Writer: Write> Match<Writer> {
                 graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
             }
 
-            for player in self.players.iter() {
-                {
-                    let _lock = graphics::use_shader(ctx, &assets.shadow_shader);
-                    let skew = Matrix4::new(
-                        1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-                        1.0,
-                    );
-                    let world =
-                        world * skew * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
+            if self.game_state.p1_install {
+                for player in self.players.iter().rev() {
+                    {
+                        let _lock = graphics::use_shader(ctx, &assets.shadow_shader);
+                        let skew = Matrix4::new(
+                            1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                            0.0, 1.0,
+                        );
+                        let world = world
+                            * skew
+                            * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-                    player.draw_shadow(ctx, &assets, world)?;
+                        player.draw_shadow(ctx, &assets, world)?;
+                    }
+
+                    player.draw(ctx, &assets, world)?;
+
+                    graphics::set_transform(ctx, Matrix4::identity());
+                    graphics::apply_transformations(ctx)?;
+
+                    graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
                 }
+            } else {
+                for player in self.players.iter() {
+                    {
+                        let _lock = graphics::use_shader(ctx, &assets.shadow_shader);
+                        let skew = Matrix4::new(
+                            1.0, -0.7, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                            0.0, 1.0,
+                        );
+                        let world = world
+                            * skew
+                            * Matrix4::new_nonuniform_scaling(&Vec3::new(1.0, -0.3, 1.0));
 
-                player.draw(ctx, &assets, world)?;
+                        player.draw_shadow(ctx, &assets, world)?;
+                    }
 
-                graphics::set_transform(ctx, Matrix4::identity());
-                graphics::apply_transformations(ctx)?;
+                    player.draw(ctx, &assets, world)?;
 
-                graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+                    graphics::set_transform(ctx, Matrix4::identity());
+                    graphics::apply_transformations(ctx)?;
+
+                    graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
+                }
             }
-
             for player in self.players.iter() {
                 player.draw_particles(ctx, &assets, world, &self.runtime_data.particles)?;
             }
@@ -640,16 +728,18 @@ impl<Writer: Write> Match<Writer> {
 
         self.players.p1_mut().draw_ui(
             ctx,
+            &assets,
             &self.runtime_data.ui,
-            Matrix4::new_translation(&Vec3::new(30.0, 720.0, 0.0)),
+            Matrix4::new_translation(&Vec3::new(320.0, 360.0, 0.0)),
             false,
             *self.game_state.wins.p1(),
             self.settings.first_to,
         )?;
         self.players.p2_mut().draw_ui(
             ctx,
+            &assets,
             &self.runtime_data.ui,
-            Matrix4::new_translation(&Vec3::new(1250.0, 720.0, 0.0))
+            Matrix4::new_translation(&Vec3::new(960.0, 360.0, 0.0))
                 * Matrix4::new_nonuniform_scaling(&Vec3::new(-1.0, 1.0, 1.0)),
             true,
             *self.game_state.wins.p2(),
@@ -658,23 +748,25 @@ impl<Writer: Write> Match<Writer> {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
-        let backdrop = graphics::Image::solid(ctx, 80, graphics::BLACK)?;
-
-        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 30.0, 0.0)));
+        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(600.0, 10.0, 0.0)));
         ggez::graphics::apply_transformations(ctx)?;
 
-        ggez::graphics::draw(ctx, &backdrop, ggez::graphics::DrawParam::default())?;
+        ggez::graphics::draw(
+            ctx,
+            &self.runtime_data.ui.timer_backdrop,
+            ggez::graphics::DrawParam::default(),
+        )?;
 
-        let mut game_timer =
-            ggez::graphics::Text::new(format!(" {}", self.game_state.timer / FRAMES_PER_WS_SECOND));
-        game_timer
-            .set_bounds([1275.0, 80.0], graphics::Align::Center)
-            .set_font(self.runtime_data.ui.font, graphics::Scale::uniform(38.0));
+        let text = format!("{}", self.game_state.timer / FRAMES_PER_WS_SECOND);
 
-        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(0.0, 50.0, 0.0)));
+        if self.text.timer.fragments()[0].text != text {
+            self.text.timer.fragments_mut()[0] = ggez::graphics::TextFragment::new(text);
+        }
+
+        ggez::graphics::set_transform(ctx, Matrix4::new_translation(&Vec3::new(0.0, 30.0, 0.0)));
         ggez::graphics::apply_transformations(ctx)?;
 
-        ggez::graphics::draw(ctx, &game_timer, ggez::graphics::DrawParam::default())?;
+        ggez::graphics::draw(ctx, &self.text.timer, ggez::graphics::DrawParam::default())?;
 
         let _lock = graphics::use_shader(ctx, &assets.shader);
 
@@ -688,11 +780,13 @@ impl<Writer: Write> Match<Writer> {
                     },
                 )?;
 
-                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
-
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
-                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+                graphics::draw(
+                    ctx,
+                    &self.runtime_data.ui.fade_out_overlay,
+                    graphics::DrawParam::default(),
+                )?;
             }
 
             UpdateMode::Normal => {}
@@ -784,11 +878,13 @@ impl<Writer: Write> Match<Writer> {
                     },
                 )?;
 
-                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
-
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
-                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+                graphics::draw(
+                    ctx,
+                    &self.runtime_data.ui.fade_out_overlay,
+                    graphics::DrawParam::default(),
+                )?;
                 assets.shader.send(
                     ctx,
                     ValueAlpha {
@@ -821,11 +917,13 @@ impl<Writer: Write> Match<Writer> {
                     },
                 )?;
 
-                let overlay = graphics::Image::solid(ctx, 1280, graphics::BLACK)?;
-
                 graphics::set_transform(ctx, Matrix4::identity());
                 graphics::apply_transformations(ctx)?;
-                graphics::draw(ctx, &overlay, graphics::DrawParam::default())?;
+                graphics::draw(
+                    ctx,
+                    &self.runtime_data.ui.fade_out_overlay,
+                    graphics::DrawParam::default(),
+                )?;
                 assets.shader.send(
                     ctx,
                     ValueAlpha {
@@ -975,6 +1073,7 @@ impl<Writer: Write> Match<Writer> {
                 )?;
             }
         }
+
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         Ok(())

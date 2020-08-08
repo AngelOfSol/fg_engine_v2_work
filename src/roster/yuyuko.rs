@@ -4,7 +4,7 @@ mod command_list;
 mod moves;
 mod particles;
 
-use crate::assets::Assets;
+use crate::assets::{Assets, UiProgress};
 use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath};
 use crate::character::state::State;
@@ -197,7 +197,11 @@ pub struct YuyukoPlayer {
     pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
     pub last_combo_state: Option<(ComboState, usize)>,
     pub state: YuyukoState,
+    pub combo_text: RefCell<Option<ggez::graphics::Text>>,
 }
+
+use std::cell::RefCell;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct YuyukoState {
     pub velocity: collision::Vec2,
@@ -260,6 +264,7 @@ impl YuyukoPlayer {
             data,
             last_combo_state: None,
             sound_renderer: SoundRenderer::new(),
+            combo_text: RefCell::new(None),
         }
     }
     impl_handle_fly!(fly_start: MoveId::FlyStart);
@@ -462,6 +467,13 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn is_dead(&self) -> bool {
         self.state.dead
+    }
+
+    fn draw_order_priority(&self) -> i32 {
+        match self.data.states[&self.state.current_state.1].state_type {
+            MoveType::Blockstun | MoveType::WrongBlockstun | MoveType::Hitstun => -1,
+            _ => 0,
+        }
     }
 
     fn reset_to_position_roundstart(

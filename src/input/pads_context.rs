@@ -15,7 +15,7 @@ pub enum EventType {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct GamepadId(i32);
+pub struct GamepadId(u32);
 
 impl std::fmt::Display for GamepadId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -60,7 +60,7 @@ impl PadsContext {
                 self.controllers.swap_remove(
                     self.controllers
                         .iter()
-                        .position(|item| item.instance_id() as u32 == which)
+                        .position(|item| item.instance_id() == which)
                         .unwrap(),
                 );
             }
@@ -68,7 +68,7 @@ impl PadsContext {
                 self.events.insert(
                     0,
                     Event {
-                        id: GamepadId(which as i32),
+                        id: GamepadId(which),
                         event: EventType::ButtonPressed(button),
                     },
                 );
@@ -77,7 +77,7 @@ impl PadsContext {
                 self.events.insert(
                     0,
                     Event {
-                        id: GamepadId(which as i32),
+                        id: GamepadId(which),
                         event: EventType::ButtonReleased(button),
                     },
                 );

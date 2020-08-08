@@ -23,7 +23,7 @@ impl AttackInfoUi {
         ui.radio_button(im_str!("High"), &mut data.guard, Guard::High);
         let can_wrongblock = data.guard != Guard::Mid;
 
-        if ui.collapsing_header(im_str!("On Hit")).build() {
+        if imgui::CollapsingHeader::new(im_str!("On Hit")).build(ui) {
             let info = &mut data.on_hit;
 
             let id = ui.push_id("On Hit");
@@ -91,7 +91,8 @@ impl AttackInfoUi {
 
             id.pop(ui);
         }
-        if data.can_counter_hit && ui.collapsing_header(im_str!("On Counter Hit")).build() {
+        if data.can_counter_hit && imgui::CollapsingHeader::new(im_str!("On Counter Hit")).build(ui)
+        {
             let info = &mut data.on_counter_hit;
 
             let id = ui.push_id("On Counter Hit");
@@ -160,7 +161,7 @@ impl AttackInfoUi {
         let can_crush =
             data.on_block.spirit_cost > 0 || (can_wrongblock && data.on_wrongblock.spirit_cost > 0);
 
-        if can_crush && ui.collapsing_header(im_str!("On Guard Crush")).build() {
+        if can_crush && imgui::CollapsingHeader::new(im_str!("On Guard Crush")).build(ui) {
             let info = &mut data.on_guard_crush;
 
             let id = ui.push_id("On Guard Hit");
@@ -219,7 +220,7 @@ impl AttackInfoUi {
             id.pop(ui);
         }
 
-        if ui.collapsing_header(im_str!("On Block")).build() {
+        if imgui::CollapsingHeader::new(im_str!("On Block")).build(ui) {
             let id = ui.push_id("On Block");
             let info = &mut data.on_block;
 
@@ -263,7 +264,7 @@ impl AttackInfoUi {
 
             id.pop(ui);
         }
-        if can_wrongblock && ui.collapsing_header(im_str!("On Wrongblock")).build() {
+        if can_wrongblock && imgui::CollapsingHeader::new(im_str!("On Wrongblock")).build(ui) {
             let id = ui.push_id("On Wrongblock");
             let info = &mut data.on_wrongblock;
 
@@ -300,7 +301,7 @@ impl AttackInfoUi {
             id.pop(ui);
         }
 
-        if data.grazeable && ui.collapsing_header(im_str!("On Graze")).build() {
+        if data.grazeable && imgui::CollapsingHeader::new(im_str!("On Graze")).build(ui) {
             let id = ui.push_id("On Graze");
             let info = &mut data.on_graze;
 

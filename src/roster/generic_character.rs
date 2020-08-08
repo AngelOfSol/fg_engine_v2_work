@@ -75,6 +75,7 @@ pub trait GenericCharacterBehaviour {
     fn draw_ui(
         &self,
         ctx: &mut Context,
+        assets: &Assets,
         ui: &UiElements,
         bottom_line: graphics::Matrix4,
         flipped: bool,
@@ -118,6 +119,7 @@ pub trait GenericCharacterBehaviour {
     fn facing(&self) -> Facing;
     fn bullets_mut<'a>(&'a mut self) -> OpaqueBulletIterator<'a>;
     fn in_cutscene(&self) -> bool;
+    fn draw_order_priority(&self) -> i32;
 
     fn save(&self) -> GameResult<OpaqueStateData>;
     fn load(&mut self, value: OpaqueStateData) -> GameResult<()>;

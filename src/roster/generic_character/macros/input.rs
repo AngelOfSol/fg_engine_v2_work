@@ -26,15 +26,15 @@ macro_rules! impl_handle_input {
                         .into_iter()
                         .copied()
                         .filter(|new_move_id| {
-                            let state_type = &self.data.states[&new_move_id].state_type;
+                            let new_state_type = &self.data.states[&new_move_id].state_type;
 
                             let is_self = *new_move_id == move_id;
 
                             let is_allowed_cancel = match self.state.allowed_cancels {
-                                AllowedCancel::Hit => cancels.hit.contains(state_type),
-                                AllowedCancel::Block => cancels.block.contains(state_type),
+                                AllowedCancel::Hit => cancels.hit.contains(new_state_type),
+                                AllowedCancel::Block => cancels.block.contains(new_state_type),
                                 AllowedCancel::Always => false,
-                            } || cancels.always.contains(state_type)
+                            } || cancels.always.contains(new_state_type)
                                 && !cancels.disallow.contains(&new_move_id);
 
                             let can_rebeat = !self.state.rebeat_chain.contains(&new_move_id);
@@ -47,7 +47,7 @@ macro_rules! impl_handle_input {
                             let has_required_meter = self.state.meter
                                 >= self.data.states[&new_move_id].minimum_meter_required;
 
-                            let in_blockstun = *state_type == MoveType::Blockstun;
+                            let in_blockstun = state_type == MoveType::Blockstun;
 
                             let locked_out = self.state.lockout > 0;
 

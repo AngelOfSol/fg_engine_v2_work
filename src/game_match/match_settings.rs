@@ -1,8 +1,9 @@
 use crate::assets::Assets;
 use crate::game_match::{
-    GlobalParticle, GlobalSound, Particle, PlayArea, RoundStartUi, ShieldUi, SoundList, Stage,
+    GlobalParticle, GlobalSound, PlayArea, PlayerUi, RoundStartUi, ShieldUi, SoundList, Stage,
     UiElements,
 };
+use crate::graphics::particle::Particle;
 use crate::player_list::PlayerList;
 use crate::roster::Character;
 use crate::roster::CharacterData;
@@ -129,6 +130,67 @@ impl MatchSettings {
                     path.pop();
                 }
 
+                let ui = UiElements {
+                    font: graphics::Font::new(ctx, "/font.ttf")?,
+                    shield: ShieldUi {
+                        active: graphics::Image::new(ctx, "/global/ui/lockout/active_shield.png")?,
+                        disabled: graphics::Image::new(
+                            ctx,
+                            "/global/ui/lockout/disabled_shield.png",
+                        )?,
+                        passive: graphics::Image::new(
+                            ctx,
+                            "/global/ui/lockout/passive_shield.png",
+                        )?,
+                    },
+                    roundstart: RoundStartUi {
+                        action: graphics::Image::new(ctx, "/global/ui/roundstart/riot.png")?,
+                        gamestart: graphics::Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
+                        roundend: graphics::Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
+                        round: [
+                            graphics::Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
+                            graphics::Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
+                            graphics::Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
+                            graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                            graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                        ],
+                    },
+                    player: PlayerUi {
+                        limit_bar: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/limit_bar.json".into(),
+                        )?,
+                        overlay: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/player_overlay.json".into(),
+                        )?,
+                        underlay: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/underlay.json".into(),
+                        )?,
+                        hp_bar: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/hp_bar.json".into(),
+                        )?,
+                        spirit_bar: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/spirit_bar.json".into(),
+                        )?,
+                        meter_bar: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/meter_bar.json".into(),
+                        )?,
+                    },
+                    timer_backdrop: graphics::Image::solid(ctx, 80, graphics::BLACK)?,
+                    fade_out_overlay: graphics::Image::solid(ctx, 1280, graphics::BLACK)?,
+                };
+
                 self.runtime_data = Some(Rc::new(RuntimeData {
                     character_data: self
                         .characters
@@ -138,35 +200,7 @@ impl MatchSettings {
                     assets,
                     particles,
                     sounds,
-                    ui: UiElements {
-                        font: graphics::Font::new(ctx, "/font.ttf")?,
-                        shield: ShieldUi {
-                            active: graphics::Image::new(
-                                ctx,
-                                "/global/ui/lockout/active_shield.png",
-                            )?,
-                            disabled: graphics::Image::new(
-                                ctx,
-                                "/global/ui/lockout/disabled_shield.png",
-                            )?,
-                            passive: graphics::Image::new(
-                                ctx,
-                                "/global/ui/lockout/passive_shield.png",
-                            )?,
-                        },
-                        roundstart: RoundStartUi {
-                            action: graphics::Image::new(ctx, "/global/ui/roundstart/riot.png")?,
-                            gamestart: graphics::Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
-                            roundend: graphics::Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
-                            round: [
-                                graphics::Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
-                                graphics::Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
-                                graphics::Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
-                                graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
-                                graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
-                            ],
-                        },
-                    },
+                    ui,
                     background,
                     play_area,
                 }));
