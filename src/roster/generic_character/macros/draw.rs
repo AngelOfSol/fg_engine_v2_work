@@ -286,7 +286,7 @@ macro_rules! impl_draw_ui {
                         * graphics::Matrix4::new_translation(&graphics::Vec3::new(
                             -185.0, -25.0, 0.0,
                         )),
-                );
+                )?;
             }
 
             ui.player
@@ -371,8 +371,7 @@ macro_rules! impl_draw_ui {
             ggez::graphics::set_transform(
                 ctx,
                 bottom_line
-                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, 230.0, 0.0))
-                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(-45.0, 0.0, 0.0)),
+                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(-45.0, 230.0, 0.0)),
             );
             ggez::graphics::apply_transformations(ctx)?;
             let shield = if self.state.lockout > 0 {

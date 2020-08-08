@@ -144,17 +144,11 @@ impl AppState for TrainingMode {
     }
     fn draw(&mut self, ctx: &mut Context, AppContext { .. }: &mut AppContext) -> GameResult<()> {
         if self.dirty {
-            let start = std::time::Instant::now();
             graphics::clear(ctx, graphics::BLACK);
 
             self.game_state.draw(ctx)?;
 
             graphics::present(ctx)?;
-            let duration = std::time::Instant::now() - start;
-            if duration.as_millis() > 10 {
-                println!("Frame render time exceeded 10ms.");
-                dbg!(duration);
-            }
             self.dirty = false;
         }
         Ok(())

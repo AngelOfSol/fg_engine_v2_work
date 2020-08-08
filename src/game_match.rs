@@ -105,11 +105,10 @@ pub struct Match<Writer> {
     sound_renderer: sounds::SoundRenderer<sounds::GlobalSound>,
 
     text: GameText,
+    scale_factor: f32,
 }
 
 struct GameText {
-    pub prerender_timer: ggez::graphics::Text,
-    pub prerender_combo: ggez::graphics::Text,
     pub timer: ggez::graphics::Text,
 }
 
@@ -162,18 +161,6 @@ impl<Writer: Write> Match<Writer> {
             .set_bounds([1280.0, 80.0], graphics::Align::Center)
             .set_font(runtime_data.ui.font, graphics::Scale::uniform(38.0));
 
-        let mut prerender_timer = ggez::graphics::Text::new("0123456789");
-        prerender_timer
-            .set_bounds([1280.0, 720.0], graphics::Align::Center)
-            .set_font(runtime_data.ui.font, graphics::Scale::uniform(38.0));
-
-        let mut prerender_combo = ggez::graphics::Text::new(
-            "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789",
-        );
-        prerender_combo
-            .set_bounds([1280.0, 720.0], graphics::Align::Center)
-            .set_font(runtime_data.ui.font, graphics::Scale::uniform(30.0));
-
         Ok(Self {
             players,
             game_state: GameState {
@@ -193,11 +180,8 @@ impl<Writer: Write> Match<Writer> {
 
             game_over: None,
             writer,
-            text: GameText {
-                timer,
-                prerender_combo,
-                prerender_timer,
-            },
+            scale_factor: 3.6,
+            text: GameText { timer },
         })
     }
 
@@ -600,30 +584,17 @@ impl<Writer: Write> Match<Writer> {
     pub fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         crate::graphics::prepare_screen_for_game(ctx)?;
 
-        // TODO use a better text rendering method
-        // this is a hack to prerender all the glyphs asap
-        ggez::graphics::draw(
-            ctx,
-            &self.text.prerender_timer,
-            ggez::graphics::DrawParam::default(),
-        )?;
-        ggez::graphics::draw(
-            ctx,
-            &self.text.prerender_combo,
-            ggez::graphics::DrawParam::default(),
-        )?;
-
         let assets = &self.runtime_data.assets;
 
         let screen = Rect::new(0.0, 0.0, 1280.0, 720.0);
 
-        let game_offset = Matrix4::new_translation(&Vec3::new(screen.w / 2.0, 660.0, 0.0));
+        let game_offset = Matrix4::new_translation(&Vec3::new(screen.w / 2.0, 610.0, 0.0));
 
-        let p1_x = self.players.p1().position().x.into_graphical();
-        let p2_x = self.players.p2().position().x.into_graphical();
+        let p1_graphical = self.players.p1().position().into_graphical();
+        let p2_graphical = self.players.p2().position().into_graphical();
 
-        let center_point = (p1_x + p2_x) / 2.0;
-        let dist = (p1_x - p2_x).abs();
+        let center_point = (p1_graphical.x + p2_graphical.x) / 2.0;
+        let dist = (p1_graphical - p2_graphical).abs();
 
         // min zoom level, determined by our camera size vs how big are image is
         // this is a number between 0 and 1 because the background will usually be greater
@@ -638,8 +609,10 @@ impl<Writer: Write> Match<Writer> {
         // its relative to the distance between characters, and the size of the camera
         // we add a constant so the characters try to float in the inside edges
         // rather than right next to the edge of the screen
-        let factor = screen.w / (dist + 140.0);
-        let scaling = f32::min(f32::max(factor, min_scale), max_scale);
+        let factor = (screen.w / (dist.x + 140.0)).min(screen.h / (dist.y + 200.0));
+        let iir = 0.1;
+        self.scale_factor = self.scale_factor * (1.0 - iir) + factor * iir;
+        let scaling = f32::min(f32::max(self.scale_factor, min_scale), max_scale);
 
         // this is how much we can move the camera horizontally either way
         // we have to componensate the give from the camera size via the scaling

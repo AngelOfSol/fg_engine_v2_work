@@ -131,7 +131,7 @@ impl MatchSettings {
                 }
 
                 let ui = UiElements {
-                    font: graphics::Font::new(ctx, "/font.ttf")?,
+                    font: graphics::Font::default(), //graphics::Font::new(ctx, "/font.ttf")?,
                     shield: ShieldUi {
                         active: graphics::Image::new(ctx, "/global/ui/lockout/active_shield.png")?,
                         disabled: graphics::Image::new(
