@@ -10,82 +10,6 @@ macro_rules! impl_draw_ui {
             wins: usize,
             first_to: usize,
         ) -> GameResult<()> {
-            /*
-
-                                                // draw HP bar
-
-                                                ggez::graphics::set_transform(
-                                                    ctx,
-                                                    bottom_line
-                                                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -700.0, 0.0)),
-                                                );
-                                                ggez::graphics::apply_transformations(ctx)?;
-
-                                                let hp_length = 300.0;
-                                                let hp_current = ggez::graphics::Rect::new(
-                                                    0.0,
-                                                    0.0,
-                                                    (hp_length * self.state.health as f32 / self.data.properties.health as f32)
-                                                        .max(0.0),
-                                                    20.0,
-                                                );
-                                                let hp_backdrop = ggez::graphics::Rect::new(0.0, 0.0, hp_length, 20.0);
-                                                let hp_max = ggez::graphics::Rect::new(-5.0, -5.0, hp_length + 10.0, 30.0);
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    hp_max,
-                                                    ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    hp_backdrop,
-                                                    ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    hp_current,
-                                                    ggez::graphics::Color::new(0.0, 1.0, 0.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                // draw meter text
-
-                                                let meter_text = ggez::graphics::Text::new(format!("{}", self.state.meter / 100));
-                                                let width = meter_text.width(ctx) as f32;
-
-                                                ggez::graphics::set_transform(
-                                                    ctx,
-                                                    graphics::Matrix4::new_translation(&graphics::Vec3::new(
-                                                        if flipped { -width - 40.0 } else { 40.0 },
-                                                        -97.5,
-                                                        0.0,
-                                                    )) * bottom_line
-                                                        * graphics::Matrix4::new_nonuniform_scaling(&graphics::Vec3::new(
-                                                            if flipped { -1.0 } else { 1.0 },
-                                                            1.0,
-                                                            1.0,
-                                                        )),
-                                                );
-                                                ggez::graphics::apply_transformations(ctx)?;
-
-                                                ggez::graphics::draw(
-                                                    ctx,
-                                                    &meter_text,
-                                                    ggez::graphics::DrawParam::default()
-                                                        .color(ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0)),
-                                                )?;
-            */
             if let Some((combo, timer)) = self.last_combo_state {
                 let text = format!(
                     "{} hits\n{} damage\n{} limit",
@@ -351,22 +275,6 @@ macro_rules! impl_draw {
                         self.state.facing.graphics_multiplier(),
                     )),
             )?;
-
-            /*
-            let test = ggez::graphics::Text::new(format!(
-                "{}, {}",
-                self.state.current_state.0, self.state.current_state.1
-            ));
-
-            ggez::graphics::set_transform(
-                ctx,
-                position
-                    * graphics::Matrix4::new_translation(&graphics::Vec3::new(-25.0, -100.0, 0.0)),
-            );
-            ggez::graphics::apply_transformations(ctx)?;
-
-            ggez::graphics::draw(ctx, &test, ggez::graphics::DrawParam::default());
-            */
 
             Ok(())
         }
