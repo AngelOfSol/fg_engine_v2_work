@@ -186,6 +186,15 @@ impl MatchSettings {
                             &mut assets,
                             "./resources/global/ui/meter_bar.json".into(),
                         )?,
+                        underlay_round_windicator: graphics::Image::new(
+                            ctx,
+                            "/global/ui/underlay_windicator.png",
+                        )?,
+                        overlay_round_windicator: graphics::Image::new(
+                            ctx,
+                            "/global/ui/overlay_windicator.png",
+                        )?,
+                        round_windicator: graphics::Image::new(ctx, "/global/ui/windicator.png")?,
                     },
                     timer_backdrop: graphics::Image::solid(ctx, 80, graphics::BLACK)?,
                     fade_out_overlay: graphics::Image::solid(ctx, 1280, graphics::BLACK)?,

@@ -79,6 +79,9 @@ pub struct PlayerUi {
     pub hp_bar: Particle,
     pub spirit_bar: Particle,
     pub meter_bar: Particle,
+    pub underlay_round_windicator: Image,
+    pub overlay_round_windicator: Image,
+    pub round_windicator: Image,
 }
 
 #[derive(Clone)]

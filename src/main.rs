@@ -61,7 +61,7 @@ fn main() {
     let (mut ctx, mut event_loop) = ContextBuilder::new("world_scared", "aos-studios")
         .add_resource_path(resource_dir)
         .conf(default_conf)
-        .with_conf_file(false)
+        .with_conf_file(true)
         .build()
         .expect("expected context");
 
