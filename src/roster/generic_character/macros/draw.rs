@@ -11,126 +11,6 @@ macro_rules! impl_draw_ui {
             first_to: usize,
         ) -> GameResult<()> {
             /*
-                                                ggez::graphics::set_transform(
-                                                    ctx,
-                                                    bottom_line
-                                                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -50.0, 0.0)),
-                                                );
-                                                ggez::graphics::apply_transformations(ctx)?;
-                                                ggez::graphics::set_blend_mode(ctx, ggez::graphics::BlendMode::Alpha)?;
-
-                                                let spirit_rate =
-                                                    self.state.spirit_gauge as f32 / self.data.properties.max_spirit_gauge as f32;
-
-                                                let spirit_current = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
-                                                let spirit_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
-                                                let spirit_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    spirit_max,
-                                                    ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    spirit_backdrop,
-                                                    ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    spirit_current,
-                                                    ggez::graphics::Color::new(0.0, 0.0, 1.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-
-                                                // draw meter
-
-                                                ggez::graphics::set_transform(
-                                                    ctx,
-                                                    bottom_line
-                                                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(0.0, -100.0, 0.0)),
-                                                );
-                                                ggez::graphics::apply_transformations(ctx)?;
-
-                                                let meter_current = ggez::graphics::Rect::new(
-                                                    0.0,
-                                                    0.0,
-                                                    100.0 * self.state.meter as f32 / 200_00.0,
-                                                    20.0,
-                                                );
-                                                let meter_backdrop = ggez::graphics::Rect::new(0.0, 0.0, 100.0, 20.0);
-                                                let meter_max = ggez::graphics::Rect::new(-5.0, -5.0, 110.0, 30.0);
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    meter_max,
-                                                    ggez::graphics::Color::new(0.0, 0.0, 0.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    meter_backdrop,
-                                                    ggez::graphics::Color::new(1.0, 1.0, 1.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                let rect = ggez::graphics::Mesh::new_rectangle(
-                                                    ctx,
-                                                    ggez::graphics::DrawMode::Fill(ggez::graphics::FillOptions::default()),
-                                                    meter_current,
-                                                    ggez::graphics::Color::new(1.0, 0.0, 0.0, 1.0),
-                                                )?;
-
-                                                ggez::graphics::draw(ctx, &rect, ggez::graphics::DrawParam::default())?;
-
-                                                // draw round win markers
-
-                                                let win_box = ggez::graphics::Image::solid(ctx, 20, ggez::graphics::BLACK)?;
-                                                let tick_win_box = ggez::graphics::Image::solid(ctx, 15, ggez::graphics::WHITE)?;
-
-                                                for idx in 0..first_to {
-                                                    ggez::graphics::set_transform(
-                                                        ctx,
-                                                        bottom_line
-                                                            * graphics::Matrix4::new_translation(&graphics::Vec3::new(
-                                                                320.0 + idx as f32 * 25.0,
-                                                                -700.0,
-                                                                0.0,
-                                                            )),
-                                                    );
-                                                    ggez::graphics::apply_transformations(ctx)?;
-                                                    ggez::graphics::draw(ctx, &win_box, ggez::graphics::DrawParam::default())?;
-                                                    if idx < wins {
-                                                        ggez::graphics::set_transform(
-                                                            ctx,
-                                                            bottom_line
-                                                                * graphics::Matrix4::new_translation(&graphics::Vec3::new(
-                                                                    322.5 + idx as f32 * 25.0,
-                                                                    -697.5,
-                                                                    0.0,
-                                                                )),
-                                                        );
-                                                        ggez::graphics::apply_transformations(ctx)?;
-                                                        ggez::graphics::draw(ctx, &tick_win_box, ggez::graphics::DrawParam::default())?;
-                                                    }
-                                                    //
-                                                }
 
                                                 // draw HP bar
 
@@ -382,6 +262,60 @@ macro_rules! impl_draw_ui {
                 &ui.shield.passive
             };
             ggez::graphics::draw(ctx, shield, ggez::graphics::DrawParam::default())?;
+
+            // draw round win markers
+
+            for idx in 0..first_to {
+                ggez::graphics::set_transform(
+                    ctx,
+                    bottom_line
+                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                            191.0 - idx as f32 * 25.0,
+                            -279.0,
+                            0.0,
+                        )),
+                );
+                ggez::graphics::apply_transformations(ctx)?;
+                ggez::graphics::draw(
+                    ctx,
+                    &ui.player.underlay_round_windicator,
+                    ggez::graphics::DrawParam::default(),
+                )?;
+                if idx < wins {
+                    ggez::graphics::set_transform(
+                        ctx,
+                        bottom_line
+                            * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                                191.0 - idx as f32 * 25.0,
+                                -279.0,
+                                0.0,
+                            )),
+                    );
+                    ggez::graphics::apply_transformations(ctx)?;
+                    ggez::graphics::draw(
+                        ctx,
+                        &ui.player.round_windicator,
+                        ggez::graphics::DrawParam::default(),
+                    )?;
+                }
+                ggez::graphics::set_transform(
+                    ctx,
+                    bottom_line
+                        * graphics::Matrix4::new_translation(&graphics::Vec3::new(
+                            190.0 - idx as f32 * 25.0,
+                            -280.0,
+                            0.0,
+                        )),
+                );
+                ggez::graphics::apply_transformations(ctx)?;
+                ggez::graphics::draw(
+                    ctx,
+                    &ui.player.overlay_round_windicator,
+                    ggez::graphics::DrawParam::default(),
+                )?;
+                //
+            }
+
             Ok(())
         }
     };
