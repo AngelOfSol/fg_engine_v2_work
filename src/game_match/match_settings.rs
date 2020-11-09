@@ -131,7 +131,7 @@ impl MatchSettings {
                 }
 
                 let ui = UiElements {
-                    font: graphics::Font::default(), //graphics::Font::new(ctx, "/font.ttf")?,
+                    font: graphics::Font::default(),
                     shield: ShieldUi {
                         active: graphics::Image::new(ctx, "/global/ui/lockout/active_shield.png")?,
                         disabled: graphics::Image::new(
@@ -144,15 +144,47 @@ impl MatchSettings {
                         )?,
                     },
                     roundstart: RoundStartUi {
-                        action: graphics::Image::new(ctx, "/global/ui/roundstart/riot.png")?,
-                        gamestart: graphics::Image::new(ctx, "/global/ui/roundstart/rrr.png")?,
-                        roundend: graphics::Image::new(ctx, "/global/ui/roundstart/ruin.png")?,
+                        gamestart: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/roundstart/game_start.json".into(),
+                        )?,
+                        action: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/roundstart/round_start.json".into(),
+                        )?,
+                        roundend: Particle::load_from_json(
+                            ctx,
+                            &mut assets,
+                            "./resources/global/ui/roundstart/round_end.json".into(),
+                        )?,
                         round: [
-                            graphics::Image::new(ctx, "/global/ui/roundstart/lastrift.png")?,
-                            graphics::Image::new(ctx, "/global/ui/roundstart/rift1.png")?,
-                            graphics::Image::new(ctx, "/global/ui/roundstart/rift2.png")?,
-                            graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
-                            graphics::Image::new(ctx, "/global/ui/roundstart/rift3.png")?,
+                            Particle::load_from_json(
+                                ctx,
+                                &mut assets,
+                                "./resources/global/ui/roundstart/last_round.json".into(),
+                            )?,
+                            Particle::load_from_json(
+                                ctx,
+                                &mut assets,
+                                "./resources/global/ui/roundstart/round_one.json".into(),
+                            )?,
+                            Particle::load_from_json(
+                                ctx,
+                                &mut assets,
+                                "./resources/global/ui/roundstart/round_two.json".into(),
+                            )?,
+                            Particle::load_from_json(
+                                ctx,
+                                &mut assets,
+                                "./resources/global/ui/roundstart/round_three.json".into(),
+                            )?,
+                            Particle::load_from_json(
+                                ctx,
+                                &mut assets,
+                                "./resources/global/ui/roundstart/round_three.json".into(),
+                            )?,
                         ],
                     },
                     player: PlayerUi {
