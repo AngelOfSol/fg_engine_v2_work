@@ -211,7 +211,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
                 [x] hp
                 [x] meter
                 [x] mana
-                [] round windicators
+                [x] round windicators
         [x] display rounds in the UI
         [x] have multiple rounds
         [x] combo ui
@@ -245,6 +245,22 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] position
 
             [] color?? (just make different bulelts for idfferent colors)
+        [] data types
+            [] BulletState
+            [] BulletParams
+                [] StaticParams
+                    [] Expire Type: Offscreen, TimeBased, Both (just a list of flags)
+                    [] hitsparks belong in attackData
+                [] Timeline<Params>
+                [] Animations
+                [] BulletSpawners
+                [] ParticleSpawners
+                [] Timeline<HitboxSet>
+            [] Spawner
+        [] editor
+            [] untagged enum for all bullet spawners
+            [] untagged enum for all bullet types
+            [] BulletParam(Static) impl DrawEditableUI
     [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
     [] rework chaining description
         [] hit
@@ -316,3 +332,49 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [x] fix copy paste 
 
 random key: 4D 6D 9C 6C 2B
+
+
+struct LinearBulletState {
+  vel: Vec2<i32>,
+  pos: Vec2<i32>,
+  time: usize,
+}
+struct LinearBulletParameters {
+  accel: Vec2<i32>,
+  reset_velocity: Vec2<i32>,
+}
+
+
+pub struct BulletData<StaticParams, TimeBasedParams> {
+  static_params: StaticParams,
+  params: Timeline<TimeBasedParams>,
+  hitboxes: Timeline<HitboxSet>,
+  animations: AnimationSet,
+}
+
+trait DrawEditableUi {
+}
+
+
+enum CharacterASpawner {
+  Basic { x_vel: i32, y_vel: i32 },
+  Stationary { color: Color },
+}
+struct EditorCharacter {
+  bullet_data: HashMap<String, BulletDataEnum>
+}
+
+struct ConcreteCharacter {
+  bullet_data: CCBulletData { main_bullet: LinearBulletData, secondary_bullet: LinearBulletData }
+}
+
+enum CharacterBSpawner {
+  Basic { x_vel: i32 },
+  Stationary { color: Color, y_vel: i32 },
+}
+#[serde(untagged)]
+enum AllSpawners {
+  CharacterASpawner(CharacterASpawner),
+  CharacterBSpawner(CharacterBSpawner),
+}
+pub type EditorCharacterState = State<String, String, AllSpawners, String, String>;

@@ -187,7 +187,7 @@ impl EventHandler for AppStateRunner {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let time = std::time::Instant::now();
         // draw at most 100FPS
-        if true || time - self.last_draw_time > std::time::Duration::from_millis(6) {
+        if time - self.last_draw_time > std::time::Duration::from_millis(6) {
             self.last_draw_time = time;
             if let Some(state) = self.history.last_mut() {
                 state.draw(ctx, &mut self.app_ctx)?;

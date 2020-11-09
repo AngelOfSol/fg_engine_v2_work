@@ -65,10 +65,10 @@ pub struct ShieldUi {
 
 #[derive(Clone)]
 pub struct RoundStartUi {
-    pub action: Image,
-    pub gamestart: Image,
-    pub roundend: Image,
-    pub round: [Image; 5],
+    pub action: Particle,
+    pub gamestart: Particle,
+    pub roundend: Particle,
+    pub round: [Particle; 5],
 }
 
 #[derive(Clone)]
@@ -746,90 +746,25 @@ impl<Writer: Write> Match<Writer> {
 
         let _lock = graphics::use_shader(ctx, &assets.shader);
 
+        if self.game_state.mode == UpdateMode::GameEnd {
+            assets.shader.send(
+                ctx,
+                ValueAlpha {
+                    value: 1.0,
+                    alpha: 1.0,
+                },
+            )?;
+
+            graphics::set_transform(ctx, Matrix4::identity());
+            graphics::apply_transformations(ctx)?;
+            graphics::draw(
+                ctx,
+                &self.runtime_data.ui.fade_out_overlay,
+                graphics::DrawParam::default(),
+            )?;
+        }
+
         match &self.game_state.mode {
-            UpdateMode::GameEnd => {
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?;
-
-                graphics::set_transform(ctx, Matrix4::identity());
-                graphics::apply_transformations(ctx)?;
-                graphics::draw(
-                    ctx,
-                    &self.runtime_data.ui.fade_out_overlay,
-                    graphics::DrawParam::default(),
-                )?;
-            }
-
-            UpdateMode::Normal => {}
-            UpdateMode::RoundEnd { duration } => {
-                use crate::graphics::keyframe::*;
-
-                let alpha_keyframes = Keyframes {
-                    frames: vec![
-                        Keyframe {
-                            frame: 0,
-                            value: 0.0,
-                            function: EaseType::EaseIn,
-                        },
-                        Keyframe {
-                            frame: 10,
-                            value: 1.0,
-                            function: EaseType::Constant,
-                        },
-                        Keyframe {
-                            frame: 50,
-                            value: 1.0,
-                            function: EaseType::EaseOut,
-                        },
-                        Keyframe {
-                            frame: 60,
-                            value: 0.0,
-                            function: EaseType::EaseOut,
-                        },
-                    ],
-                };
-
-                let image = if *duration < 120 as i32 {
-                    Some((
-                        &self.runtime_data.ui.roundstart.roundend,
-                        120 - *duration as usize,
-                    ))
-                } else {
-                    None
-                };
-                if let Some((image, duration)) = image {
-                    graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
-                    assets.shader.send(
-                        ctx,
-                        ValueAlpha {
-                            value: 1.0,
-                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
-                        },
-                    )?;
-                    ggez::graphics::set_transform(
-                        ctx,
-                        Matrix4::new_translation(&Vec3::new(
-                            640.0 - image.width() as f32 / 2.0,
-                            360.0 - image.height() as f32 / 2.0,
-                            0.0,
-                        )),
-                    );
-                    ggez::graphics::apply_transformations(ctx)?;
-                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
-                }
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?;
-            }
             UpdateMode::FadeOut { duration } => {
                 use crate::graphics::keyframe::*;
                 let alpha_keyframes = Keyframes {
@@ -860,13 +795,6 @@ impl<Writer: Write> Match<Writer> {
                     ctx,
                     &self.runtime_data.ui.fade_out_overlay,
                     graphics::DrawParam::default(),
-                )?;
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
                 )?;
             }
             UpdateMode::FadeIn { duration } => {
@@ -900,155 +828,79 @@ impl<Writer: Write> Match<Writer> {
                     &self.runtime_data.ui.fade_out_overlay,
                     graphics::DrawParam::default(),
                 )?;
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?;
+            }
+            _ => {}
+        }
+
+        if let Some((image, duration)) = match &self.game_state.mode {
+            UpdateMode::GameEnd
+            | UpdateMode::Normal
+            | UpdateMode::FadeOut { .. }
+            | UpdateMode::FadeIn { .. } => None,
+            UpdateMode::RoundEnd { duration } => {
+                const ROUNDEND_DURATION: usize = 120;
+                let duration = *duration as usize;
+                if duration < ROUNDEND_DURATION {
+                    Some((
+                        &self.runtime_data.ui.roundstart.roundend,
+                        ROUNDEND_DURATION - duration,
+                    ))
+                } else {
+                    None
+                }
             }
             UpdateMode::GameStart { duration } => {
-                use crate::graphics::keyframe::*;
+                let duration = *duration as usize;
+                let animation = &self.runtime_data.ui.roundstart.gamestart;
 
-                let animation_duration = 120;
-
-                let alpha_keyframes = Keyframes {
-                    frames: vec![
-                        Keyframe {
-                            frame: 0,
-                            value: 0.0,
-                            function: EaseType::EaseIn,
-                        },
-                        Keyframe {
-                            frame: 10,
-                            value: 1.0,
-                            function: EaseType::Constant,
-                        },
-                        Keyframe {
-                            frame: animation_duration - 10,
-                            value: 1.0,
-                            function: EaseType::EaseOut,
-                        },
-                        Keyframe {
-                            frame: animation_duration,
-                            value: 0.0,
-                            function: EaseType::EaseOut,
-                        },
-                    ],
-                };
-
-                let image = if *duration < animation_duration as i32 {
+                if duration < animation.duration() {
                     Some((
                         &self.runtime_data.ui.roundstart.gamestart,
-                        animation_duration - *duration as usize,
+                        animation.duration() - duration,
                     ))
                 } else {
                     None
-                };
-                if let Some((image, duration)) = image {
-                    assets.shader.send(
-                        ctx,
-                        ValueAlpha {
-                            value: 1.0,
-                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
-                        },
-                    )?;
-                    ggez::graphics::set_transform(
-                        ctx,
-                        Matrix4::new_translation(&Vec3::new(
-                            640.0 - image.width() as f32 / 2.0,
-                            360.0 - image.height() as f32 / 2.0,
-                            0.0,
-                        )),
-                    );
-                    ggez::graphics::apply_transformations(ctx)?;
-                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
                 }
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?;
             }
             UpdateMode::RoundStart { duration } => {
-                use crate::graphics::keyframe::*;
-
-                let animation_duration = 60;
-
-                let alpha_keyframes = Keyframes {
-                    frames: vec![
-                        Keyframe {
-                            frame: 0,
-                            value: 0.0,
-                            function: EaseType::EaseIn,
-                        },
-                        Keyframe {
-                            frame: 10,
-                            value: 1.0,
-                            function: EaseType::Constant,
-                        },
-                        Keyframe {
-                            frame: animation_duration - 10,
-                            value: 1.0,
-                            function: EaseType::EaseOut,
-                        },
-                        Keyframe {
-                            frame: animation_duration,
-                            value: 0.0,
-                            function: EaseType::EaseOut,
-                        },
-                    ],
-                };
-
-                let image = if *duration < animation_duration as i32 {
+                let duration = *duration as usize;
+                let idx = match self.game_state.round {
+                    x if x as usize >= self.settings.first_to * 2 - 1 => 0,
+                    x => x,
+                }
+                .min(self.runtime_data.ui.roundstart.round.len() - 1);
+                let pre_duration = self.runtime_data.ui.roundstart.action.duration()
+                    + self.runtime_data.ui.roundstart.round[idx].duration();
+                if duration < self.runtime_data.ui.roundstart.action.duration() {
                     Some((
                         &self.runtime_data.ui.roundstart.action,
-                        animation_duration - *duration as usize,
+                        self.runtime_data.ui.roundstart.action.duration() - duration,
                     ))
-                } else if *duration < animation_duration as i32 * 2 {
-                    let idx = match self.game_state.round {
-                        x if x as usize >= self.settings.first_to * 2 - 1 => 0,
-                        x => x,
-                    };
+                } else if duration < pre_duration {
                     Some((
-                        &self.runtime_data.ui.roundstart.round
-                            [idx.min(self.runtime_data.ui.roundstart.round.len() - 1)],
-                        animation_duration * 2 - *duration as usize,
+                        &self.runtime_data.ui.roundstart.round[idx],
+                        pre_duration - duration,
                     ))
                 } else {
                     None
-                };
-                if let Some((image, duration)) = image {
-                    assets.shader.send(
-                        ctx,
-                        ValueAlpha {
-                            value: 1.0,
-                            alpha: alpha_keyframes.at_time(duration).unwrap_or(0.0),
-                        },
-                    )?;
-                    ggez::graphics::set_transform(
-                        ctx,
-                        Matrix4::new_translation(&Vec3::new(
-                            640.0 - image.width() as f32 / 2.0,
-                            360.0 - image.height() as f32 / 2.0,
-                            0.0,
-                        )),
-                    );
-                    ggez::graphics::apply_transformations(ctx)?;
-                    ggez::graphics::draw(ctx, image, ggez::graphics::DrawParam::default())?;
                 }
-                assets.shader.send(
-                    ctx,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?;
             }
+        } {
+            image.draw_at_time(
+                ctx,
+                assets,
+                duration,
+                Matrix4::new_translation(&Vec3::new(640.0, 360.0, 0.0)),
+            )?;
         }
+
+        assets.shader.send(
+            ctx,
+            ValueAlpha {
+                value: 1.0,
+                alpha: 1.0,
+            },
+        )?;
 
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
