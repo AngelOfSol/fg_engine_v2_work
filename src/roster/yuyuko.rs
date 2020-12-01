@@ -4,7 +4,8 @@ mod command_list;
 mod moves;
 mod particles;
 
-use crate::assets::{Assets, UiProgress};
+use crate::assets::Assets;
+use crate::character::components::Properties;
 use crate::character::components::{AttackInfo, GroundAction};
 use crate::character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath};
 use crate::character::state::State;
@@ -58,17 +59,6 @@ pub struct BulletData {
 #[derive(Clone, Debug, Deserialize)]
 pub struct BulletList {
     pub butterfly: BulletData,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Properties {
-    health: i32,
-    neutral_jump_accel: collision::Vec2,
-    neutral_super_jump_accel: collision::Vec2,
-    directed_jump_accel: collision::Vec2,
-    directed_super_jump_accel: collision::Vec2,
-    max_air_actions: usize,
-    max_spirit_gauge: i32,
 }
 
 #[derive(Clone)]
@@ -395,7 +385,35 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
     impl_update_frame_mut!();
 
-    impl_draw_ui!();
+    fn draw_ui(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        ui: &UiElements,
+        bottom_line: graphics::Matrix4,
+        flipped: bool,
+        wins: usize,
+        first_to: usize,
+    ) -> GameResult<()> {
+        use std::ops::DerefMut;
+        crate::roster::generic_character::impls::draw_ui(
+            ctx,
+            assets,
+            ui,
+            bottom_line,
+            flipped,
+            wins,
+            first_to,
+            &self.last_combo_state,
+            self.combo_text.borrow_mut().deref_mut(),
+            self.state.health,
+            self.state.spirit_gauge,
+            self.state.meter,
+            self.state.lockout,
+            &self.data.properties,
+        )
+    }
+
     impl_draw!();
     impl_draw_particles!();
     impl_draw_bullets!();

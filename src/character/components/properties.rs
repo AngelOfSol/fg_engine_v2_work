@@ -3,9 +3,9 @@ use crate::typedefs::collision::Vec2;
 use serde::{Deserialize, Serialize};
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Properties {
-    pub health: u32,
+    pub health: i32,
     pub name: String,
 
     #[serde(default = "default_neutral_jump_accel")]
@@ -21,7 +21,7 @@ pub struct Properties {
     #[serde(default = "default_max_air_actions")]
     pub max_air_actions: usize,
     #[serde(default = "default_max_spirit_gauge")]
-    pub max_spirit_gauge: usize,
+    pub max_spirit_gauge: i32,
 
     #[serde(default)]
     pub character: Character,
@@ -42,7 +42,7 @@ fn default_directed_super_jump_accel() -> Vec2 {
 fn default_max_air_actions() -> usize {
     2
 }
-fn default_max_spirit_gauge() -> usize {
+fn default_max_spirit_gauge() -> i32 {
     500
 }
 
