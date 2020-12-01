@@ -277,3 +277,19 @@ pub fn draw_ui(
 
     Ok(())
 }
+use crate::typedefs::collision::IntoGraphical;
+pub fn get_transform(
+    world: graphics::Matrix4,
+    offset: collision::Vec2,
+    position: collision::Vec2,
+    facing: Facing,
+) -> graphics::Matrix4 {
+    world
+        * graphics::Matrix4::new_translation(&graphics::up_dimension(position.into_graphical()))
+        * graphics::Matrix4::new_translation(&graphics::up_dimension(
+            facing.fix_graphics(-offset.into_graphical()),
+        ))
+        * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
+            facing.graphics_multiplier(),
+        ))
+}

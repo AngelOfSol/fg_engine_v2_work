@@ -414,7 +414,24 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         )
     }
 
-    impl_draw!();
+    fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()> {
+        let (frame, move_id) = self.state.current_state;
+
+        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
+
+        self.data.states[&move_id].draw_at_time(
+            ctx,
+            assets,
+            frame,
+            crate::roster::impls::get_transform(
+                world,
+                collision.center,
+                self.state.position,
+                self.state.facing,
+            ),
+        )
+    }
+
     impl_draw_particles!();
     impl_draw_bullets!();
     impl_draw_shadow!();
