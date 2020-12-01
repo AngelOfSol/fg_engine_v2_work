@@ -53,8 +53,6 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
             ..
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        let start = chrono::Utc::now();
-        let mut frames_ran = 0;
         'game_play: while ggez::timer::check_update_time(ctx, 60) {
             let speed = 1; // this can be changed to do a performance test
             for _ in 0..speed {
@@ -62,15 +60,11 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                     let next_frame: u32 = match bincode::deserialize_from(&mut self.reader) {
                         Ok(value) => value,
                         Err(kind) => {
-                            match kind.as_ref() {
-                                bincode::ErrorKind::Io(err) => match err.kind() {
-                                    std::io::ErrorKind::UnexpectedEof => {
-                                        self.next = Some(NextState::Back);
-                                        break 'game_play;
-                                    }
-                                    _ => (),
-                                },
-                                _ => (),
+                            if let bincode::ErrorKind::Io(err) = kind.as_ref() {
+                                if let std::io::ErrorKind::UnexpectedEof = err.kind() {
+                                    self.next = Some(NextState::Back);
+                                    break 'game_play;
+                                }
                             }
                             self.next = Some(NextState::Error);
                             break 'game_play;
@@ -78,31 +72,33 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                     };
                     let p1_input: InputState = bincode::deserialize_from(&mut self.reader).unwrap();
                     let p2_input: InputState = bincode::deserialize_from(&mut self.reader).unwrap();
-                    if next_frame == self.game_state.current_frame() {
-                        self.inputs.p1_mut().push(p1_input);
-                        self.inputs.p2_mut().push(p2_input);
-                        break 'stream_inputs;
-                    } else if next_frame < self.game_state.current_frame() {
-                        let next_frame = next_frame as usize;
-                        self.inputs.p1_mut()[next_frame] = p1_input;
-                        self.inputs.p2_mut()[next_frame] = p2_input;
-                        let target_frame = self.game_state.current_frame();
-                        self.game_state
-                            .load_state(self.previous_states[next_frame].clone());
-                        while self.game_state.current_frame() < target_frame {
-                            self.previous_states[self.game_state.current_frame() as usize] =
-                                self.game_state.save_state();
-                            self.game_state.update(
-                                self.inputs
-                                    .as_ref()
-                                    .map(|item| &item[..=self.game_state.current_frame() as usize]),
-                            );
-                            frames_ran += 1;
+
+                    match next_frame.cmp(&self.game_state.current_frame()) {
+                        std::cmp::Ordering::Equal => {
+                            self.inputs.p1_mut().push(p1_input);
+                            self.inputs.p2_mut().push(p2_input);
+                            break 'stream_inputs;
                         }
-                    } else {
-                        println!("if this number ({}), is greater than or equal to {}, then the replay file was too long", next_frame, i16::MAX);
-                        self.next = Some(NextState::Error);
-                        break 'game_play;
+                        std::cmp::Ordering::Less => {
+                            let next_frame = next_frame as usize;
+                            self.inputs.p1_mut()[next_frame] = p1_input;
+                            self.inputs.p2_mut()[next_frame] = p2_input;
+                            let target_frame = self.game_state.current_frame();
+                            self.game_state
+                                .load_state(self.previous_states[next_frame].clone());
+                            while self.game_state.current_frame() < target_frame {
+                                self.previous_states[self.game_state.current_frame() as usize] =
+                                    self.game_state.save_state();
+                                self.game_state.update(self.inputs.as_ref().map(|item| {
+                                    &item[..=self.game_state.current_frame() as usize]
+                                }));
+                            }
+                        }
+                        std::cmp::Ordering::Greater => {
+                            println!("if this number ({}), is greater than or equal to {}, then the replay file was too long", next_frame, i16::MAX);
+                            self.next = Some(NextState::Error);
+                            break 'game_play;
+                        }
                     }
                 }
 
@@ -116,37 +112,21 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                     self.next = Some(NextState::Back);
                 }
 
-                frames_ran += 1;
-
                 self.game_state.render_sounds(60 * speed, audio)?;
             }
-        }
-        let end = chrono::Utc::now() - start;
-        if frames_ran > 0 && false {
-            println!(
-                "total frames {} ran in {}ms",
-                frames_ran,
-                end.num_milliseconds()
-            );
         }
 
         while let Some(event) = pads.next_event() {
             let Event { event, .. } = event;
-            match event {
-                EventType::ButtonPressed(button) => {
-                    //
-                    match button {
-                        Button::B | Button::Start => {
-                            self.next = Some(NextState::Back);
-                        }
-                        _ => {}
+            if let EventType::ButtonPressed(button) = event {
+                match button {
+                    Button::B | Button::Start => {
+                        self.next = Some(NextState::Back);
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         }
-
-        //
 
         match std::mem::replace(&mut self.next, None) {
             Some(state) => {

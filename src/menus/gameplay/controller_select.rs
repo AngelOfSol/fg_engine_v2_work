@@ -40,8 +40,8 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
         AppContext { ref mut pads, .. }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         while let Some(event) = pads.next_event() {
-            match event.event {
-                EventType::ButtonPressed(button) => match button {
+            if let EventType::ButtonPressed(button) = event.event {
+                match button {
                     Button::DPadLeft => {
                         if &Some(event.id.into()) == self.selected_gamepad.p2() {
                             *self.selected_gamepad.p2_mut() = None;
@@ -66,6 +66,7 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
                         }
                     }
                     Button::Start | Button::A => {
+                        #[allow(clippy::clippy::blocks_in_if_conditions)]
                         if self
                             .selectable
                             .iter()
@@ -78,8 +79,7 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
                         }
                     }
                     _ => (),
-                },
-                _ => (),
+                }
             }
         }
 

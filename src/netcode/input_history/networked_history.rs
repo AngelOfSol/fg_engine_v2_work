@@ -48,40 +48,44 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
         }
         let relative_frame = relative_frame.unwrap();
 
-        if relative_frame == self.data.len() {
-            self.canon.push(Canon::Canon);
-            self.data.push(data);
-            PredictionResult::Unpredicted
-        } else if relative_frame > self.data.len() {
-            self.canon.resize(relative_frame + 1, Canon::Empty);
-            self.data.resize(relative_frame + 1, Default::default());
+        match relative_frame.cmp(&self.data.len()) {
+            std::cmp::Ordering::Equal => {
+                self.canon.push(Canon::Canon);
+                self.data.push(data);
+                PredictionResult::Unpredicted
+            }
+            std::cmp::Ordering::Greater => {
+                self.canon.resize(relative_frame + 1, Canon::Empty);
+                self.data.resize(relative_frame + 1, Default::default());
 
-            self.canon[relative_frame] = Canon::Canon;
-            self.data[relative_frame] = data;
-            PredictionResult::Unpredicted
-        } else {
-            match self.canon[relative_frame] {
-                Canon::Canon => {
-                    //
-                    if self.data[relative_frame] == data {
-                    } else {
-                        dbg!("canon data is different than recieved data");
+                self.canon[relative_frame] = Canon::Canon;
+                self.data[relative_frame] = data;
+                PredictionResult::Unpredicted
+            }
+            std::cmp::Ordering::Less => {
+                match self.canon[relative_frame] {
+                    Canon::Canon => {
+                        //
+                        if self.data[relative_frame] == data {
+                        } else {
+                            dbg!("canon data is different than recieved data");
+                        }
+
+                        PredictionResult::Unpredicted
                     }
-
-                    PredictionResult::Unpredicted
-                }
-                Canon::Empty => {
-                    self.canon[relative_frame] = Canon::Canon;
-                    self.data[relative_frame] = data;
-                    PredictionResult::Unpredicted
-                }
-                Canon::Predicted => {
-                    self.canon[relative_frame] = Canon::Canon;
-                    if self.data[relative_frame] == data {
-                        PredictionResult::Correct
-                    } else {
+                    Canon::Empty => {
+                        self.canon[relative_frame] = Canon::Canon;
                         self.data[relative_frame] = data;
-                        PredictionResult::Wrong
+                        PredictionResult::Unpredicted
+                    }
+                    Canon::Predicted => {
+                        self.canon[relative_frame] = Canon::Canon;
+                        if self.data[relative_frame] == data {
+                            PredictionResult::Correct
+                        } else {
+                            self.data[relative_frame] = data;
+                            PredictionResult::Wrong
+                        }
                     }
                 }
             }

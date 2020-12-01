@@ -31,7 +31,7 @@ impl FlagsUi {
                 im_str!(
                     "{}",
                     item.map(|item| item.to_string())
-                        .unwrap_or("None".to_owned())
+                        .unwrap_or_else(|| "None".to_owned())
                 )
                 .into()
             },

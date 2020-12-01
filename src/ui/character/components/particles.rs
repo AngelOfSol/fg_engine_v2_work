@@ -50,7 +50,7 @@ impl ParticlesUi {
                             .to_owned();
                         let animation = Particle::load_from_json(ctx, assets, path).unwrap();
                         self.particle_keys.push(name.clone());
-                        data.particles.insert(name.clone(), animation);
+                        data.particles.insert(name, animation);
                     }
                     Response::OkayMultiple(paths) => {
                         for path in paths {

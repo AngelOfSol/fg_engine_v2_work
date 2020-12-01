@@ -31,7 +31,7 @@ impl Default for Modifiers {
             scale: [percentage_default.clone(), percentage_default.clone()],
             rotation: default,
             alpha: percentage_default.clone(),
-            value: percentage_default.clone(),
+            value: percentage_default,
         }
     }
 }

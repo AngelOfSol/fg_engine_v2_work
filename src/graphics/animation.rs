@@ -27,7 +27,7 @@ pub struct AnimationV1 {
 }
 
 impl Animation {
-    pub fn to_modern(self) -> Animation {
+    pub fn into_modern(self) -> Animation {
         self
     }
 

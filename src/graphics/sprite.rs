@@ -22,7 +22,7 @@ pub struct SpriteV1 {
 }
 
 impl Sprite {
-    fn to_modern(self) -> Self {
+    fn into_modern(self) -> Self {
         self
     }
 

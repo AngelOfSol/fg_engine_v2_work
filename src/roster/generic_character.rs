@@ -7,6 +7,7 @@ pub mod particle_id;
 
 #[macro_use]
 pub mod macros;
+pub mod impls;
 
 use crate::assets::Assets;
 use crate::character::state::components::GlobalParticle;
@@ -27,7 +28,7 @@ use std::collections::HashMap;
 #[enum_dispatch(OpaqueBullet)]
 pub trait BulletMut {
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
-    fn on_touch_bullet(&mut self, value: ());
+    fn on_touch_bullet(&mut self);
     fn attack_data(&self) -> AttackInfo;
     fn deal_hit(&mut self, hit: &HitResult);
     fn hash(&self) -> u64;
@@ -72,6 +73,7 @@ pub trait GenericCharacterBehaviour {
         global_particles: &HashMap<GlobalParticle, Particle>,
     );
 
+    #[allow(clippy::clippy::too_many_arguments)]
     fn draw_ui(
         &self,
         ctx: &mut Context,
@@ -110,14 +112,14 @@ pub trait GenericCharacterBehaviour {
         audio_device: &Device,
         sound_list: &SoundList<GlobalSound>,
         fps: u32,
-    ) -> ();
+    );
 
     fn position(&self) -> collision::Vec2;
     fn position_mut(&mut self) -> &mut collision::Vec2;
 
     fn velocity(&self) -> collision::Vec2;
     fn facing(&self) -> Facing;
-    fn bullets_mut<'a>(&'a mut self) -> OpaqueBulletIterator<'a>;
+    fn bullets_mut(&mut self) -> OpaqueBulletIterator;
     fn in_cutscene(&self) -> bool;
     fn draw_order_priority(&self) -> i32;
 

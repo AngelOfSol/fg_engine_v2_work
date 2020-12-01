@@ -1,6 +1,5 @@
 use clipboard::ClipboardProvider;
 use gfx_core::{handle::RenderTargetView, memory::Typed};
-use gfx_device_gl;
 use ggez::graphics;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::Context;
@@ -69,10 +68,7 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, RunUi> {
         }
     }
 
-    pub fn run<F: FnOnce(&Ui<'ui>) -> ()>(
-        self,
-        run_ui: F,
-    ) -> ImguiFrameRunner<'ui, 'parent, Render> {
+    pub fn run<F: FnOnce(&Ui<'ui>)>(self, run_ui: F) -> ImguiFrameRunner<'ui, 'parent, Render> {
         run_ui(&self.ui);
 
         ImguiFrameRunner {
@@ -90,7 +86,7 @@ impl<'ui, 'parent: 'ui> ImguiFrameRunner<'ui, 'parent, Render> {
             .render(
                 &mut *factory,
                 encoder,
-                &mut RenderTargetView::new(render_target.clone()),
+                &mut RenderTargetView::new(render_target),
                 self.ui.render(),
             )
             .unwrap();

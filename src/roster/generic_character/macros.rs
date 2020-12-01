@@ -9,15 +9,11 @@ mod draw;
 #[macro_use]
 mod hit;
 #[macro_use]
-mod crush;
-#[macro_use]
 mod update;
 #[macro_use]
 mod jump;
 #[macro_use]
 mod bullet;
-#[macro_use]
-mod combo;
 #[macro_use]
 mod rebeat;
 #[macro_use]

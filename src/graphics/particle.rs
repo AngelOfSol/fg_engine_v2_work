@@ -18,7 +18,7 @@ pub struct ParticleV1 {
 }
 
 impl Particle {
-    pub fn to_modern(self) -> Self {
+    pub fn into_modern(self) -> Self {
         self
     }
 

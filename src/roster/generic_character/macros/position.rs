@@ -113,23 +113,3 @@ macro_rules! impl_validate_position {
         }
     };
 }
-
-macro_rules! impl_handle_refacing {
-    () => {
-        fn handle_refacing(&mut self, other_player: collision::Int) {
-            let flags = self.current_flags();
-            if flags.allow_reface {
-                self.state.facing = if self.state.position.x > other_player
-                    && self.state.facing == Facing::Right
-                {
-                    Facing::Left
-                } else if self.state.position.x < other_player && self.state.facing == Facing::Left
-                {
-                    Facing::Right
-                } else {
-                    self.state.facing
-                }
-            }
-        }
-    };
-}

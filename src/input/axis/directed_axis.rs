@@ -27,13 +27,10 @@ impl DirectedAxis {
     }
 
     pub fn is_cardinal(self) -> bool {
-        match self {
-            DirectedAxis::Forward
-            | DirectedAxis::Up
-            | DirectedAxis::Backward
-            | DirectedAxis::Down => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            DirectedAxis::Forward | DirectedAxis::Up | DirectedAxis::Backward | DirectedAxis::Down
+        )
     }
     pub fn matches_cardinal(self, target: DirectedAxis) -> bool {
         target.is_cardinal()
@@ -44,16 +41,14 @@ impl DirectedAxis {
                     }
                     _ => false,
                 },
-                DirectedAxis::Up => match self {
-                    DirectedAxis::UpForward | DirectedAxis::UpBackward | DirectedAxis::Up => true,
-                    _ => false,
-                },
-                DirectedAxis::Backward => match self {
-                    DirectedAxis::UpBackward
-                    | DirectedAxis::DownBackward
-                    | DirectedAxis::Backward => true,
-                    _ => false,
-                },
+                DirectedAxis::Up => matches!(
+                    self,
+                    DirectedAxis::UpForward | DirectedAxis::UpBackward | DirectedAxis::Up
+                ),
+                DirectedAxis::Backward => matches!(
+                    self,
+                    DirectedAxis::UpBackward | DirectedAxis::DownBackward | DirectedAxis::Backward
+                ),
                 DirectedAxis::Down => match self {
                     DirectedAxis::DownForward | DirectedAxis::DownBackward | DirectedAxis::Down => {
                         true
@@ -65,22 +60,22 @@ impl DirectedAxis {
     }
 
     pub fn is_backward(self) -> bool {
-        match self {
-            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward
+        )
     }
     pub fn is_forward(self) -> bool {
-        match self {
-            DirectedAxis::Forward | DirectedAxis::UpForward | DirectedAxis::DownForward => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            DirectedAxis::Forward | DirectedAxis::UpForward | DirectedAxis::DownForward
+        )
     }
     pub fn is_down(self) -> bool {
-        match self {
-            DirectedAxis::Down | DirectedAxis::DownBackward | DirectedAxis::DownForward => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            DirectedAxis::Down | DirectedAxis::DownBackward | DirectedAxis::DownForward
+        )
     }
 
     pub fn invert(self) -> Self {
@@ -115,10 +110,10 @@ impl DirectedAxis {
     }
 
     pub fn is_horizontal(self) -> bool {
-        match self {
-            DirectedAxis::Up | DirectedAxis::Neutral | DirectedAxis::Down => false,
-            _ => true,
-        }
+        !matches!(
+            self,
+            DirectedAxis::Up | DirectedAxis::Neutral | DirectedAxis::Down
+        )
     }
 
     pub fn is_guarding(self, guard: Guard) -> bool {

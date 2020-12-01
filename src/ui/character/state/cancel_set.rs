@@ -65,7 +65,7 @@ impl CancelSetUi {
             &|item| im_str!("{}", item).into(),
         );
 
-        if ui.small_button(im_str!("Add")) && self.new_disallow != "" {
+        if ui.small_button(im_str!("Add")) && self.new_disallow.is_empty() {
             data.disallow.insert(self.new_disallow.clone());
         }
     }

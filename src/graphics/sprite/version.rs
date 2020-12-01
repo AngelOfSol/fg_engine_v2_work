@@ -14,7 +14,7 @@ pub mod vec {
     {
         Ok(Timeline::<SpriteVersioned>::deserialize(deserializer)?
             .into_iter()
-            .map(|(sprite, time)| (sprite.to_modern(), time))
+            .map(|(sprite, time)| (sprite.into_modern(), time))
             .collect())
     }
 }
@@ -26,10 +26,10 @@ enum SpriteVersioned {
     Legacy(SpriteLegacy),
 }
 impl SpriteVersioned {
-    fn to_modern(self) -> Sprite {
+    fn into_modern(self) -> Sprite {
         match self {
-            SpriteVersioned::V1(value) => value.to_modern(),
-            SpriteVersioned::Legacy(value) => value.to_modern(),
+            SpriteVersioned::V1(value) => value.into_modern(),
+            SpriteVersioned::Legacy(value) => value.into_modern(),
         }
     }
 }
@@ -48,11 +48,11 @@ struct SpriteLegacy {
 }
 
 impl SpriteLegacy {
-    fn to_modern(self) -> Sprite {
+    fn into_modern(self) -> Sprite {
         SpriteV1 {
             image: None,
             modifiers: Modifiers::with_basic(self.rotation, self.scale, self.offset),
         }
-        .to_modern()
+        .into_modern()
     }
 }

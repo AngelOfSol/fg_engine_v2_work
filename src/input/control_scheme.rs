@@ -15,15 +15,15 @@ pub struct ControlScheme<ButtonCode> {
 }
 
 pub fn is_valid_input_button(button: SdlButton) -> bool {
-    match button {
+    matches!(
+        button,
         SdlButton::A
-        | SdlButton::B
-        | SdlButton::X
-        | SdlButton::Y
-        | SdlButton::LeftShoulder
-        | SdlButton::RightShoulder => true,
-        _ => false,
-    }
+            | SdlButton::B
+            | SdlButton::X
+            | SdlButton::Y
+            | SdlButton::LeftShoulder
+            | SdlButton::RightShoulder
+    )
 }
 
 pub fn render_button_list(list: &HashSet<SdlButton>) -> String {
@@ -40,7 +40,7 @@ pub fn render_button_list(list: &HashSet<SdlButton>) -> String {
             SdlButton::RightShoulder => "R1",
             _ => "invalid",
         };
-        if ret == "" {
+        if ret.is_empty() {
             ret = string_value.to_owned();
         } else {
             ret = format!("{}, {}", ret, string_value);

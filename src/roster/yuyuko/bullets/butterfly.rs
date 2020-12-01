@@ -91,7 +91,7 @@ impl ButterflyState {
         self.facing
     }
 
-    pub fn on_touch_bullet(&mut self, _: &BulletList, _: ()) {
+    pub fn on_touch_bullet(&mut self, _: &BulletList) {
         self.alive = false;
     }
 

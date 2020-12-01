@@ -131,7 +131,7 @@ impl AppState for ButtonCheck {
             let scheme = control_schemes
                 .get(&id)
                 .cloned()
-                .unwrap_or(PadControlScheme::new(id));
+                .unwrap_or_else(|| PadControlScheme::new(id));
             self.active_control_schemes.push(CreateScheme::new(scheme));
         }
         Ok(())
@@ -146,7 +146,7 @@ impl AppState for ButtonCheck {
         }: &mut AppContext,
     ) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
-            self.delay = self.delay.checked_sub(1).unwrap_or(0);
+            self.delay = self.delay.saturating_sub(1);
             while let Some(event) = pads.next_event() {
                 if self.delay > 0 {
                     // delay so the button moving into controller select does not
@@ -155,21 +155,18 @@ impl AppState for ButtonCheck {
                 // let id = event.id;
                 let Event { id, event, .. } = event;
                 if let EventType::ButtonPressed(button) = event {
-                    match button {
-                        Button::Start => {
-                            if !self
-                                .active_control_schemes
-                                .iter()
-                                .any(|item| item.scheme.gamepad == id)
-                            {
-                                let scheme = control_schemes
-                                    .get(&id)
-                                    .cloned()
-                                    .unwrap_or(PadControlScheme::new(id));
-                                self.active_control_schemes.push(CreateScheme::new(scheme));
-                            }
+                    if let Button::Start = button {
+                        if !self
+                            .active_control_schemes
+                            .iter()
+                            .any(|item| item.scheme.gamepad == id)
+                        {
+                            let scheme = control_schemes
+                                .get(&id)
+                                .cloned()
+                                .unwrap_or_else(|| PadControlScheme::new(id));
+                            self.active_control_schemes.push(CreateScheme::new(scheme));
                         }
-                        _ => {}
                     }
                     for scheme in self.active_control_schemes.iter_mut() {
                         scheme.update_button(id, button);
@@ -186,7 +183,7 @@ impl AppState for ButtonCheck {
             }
         }
 
-        if self.active_control_schemes.len() > 0 {
+        if !self.active_control_schemes.is_empty() {
             Ok(Transition::None)
         } else {
             Ok(Transition::Pop)

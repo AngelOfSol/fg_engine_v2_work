@@ -23,19 +23,15 @@ pub enum Axis {
 
 impl From<[i8; 2]> for Axis {
     fn from([x, y]: [i8; 2]) -> Self {
-        if x > 0 {
-            Axis::Right
-        } else if x < 0 {
-            Axis::Left
-        } else {
-            Axis::Neutral
+        match x.cmp(&0) {
+            std::cmp::Ordering::Greater => Axis::Right,
+            std::cmp::Ordering::Less => Axis::Left,
+            std::cmp::Ordering::Equal => Axis::Neutral,
         }
-        .add(if y > 0 {
-            Axis::Up
-        } else if y < 0 {
-            Axis::Down
-        } else {
-            Axis::Neutral
+        .add(match y.cmp(&0) {
+            std::cmp::Ordering::Greater => Axis::Up,
+            std::cmp::Ordering::Less => Axis::Down,
+            std::cmp::Ordering::Equal => Axis::Neutral,
         })
     }
 }

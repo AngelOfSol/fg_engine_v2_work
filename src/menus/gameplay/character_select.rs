@@ -46,7 +46,7 @@ pub struct CharacterSelect<Target> {
 
 impl<Target> CharacterSelect<Target> {
     pub fn new(player_list: PlayerList, settings: Option<MatchSettings>) -> Self {
-        let settings = settings.unwrap_or(MatchSettings::new());
+        let settings = settings.unwrap_or_else(MatchSettings::new);
         Self {
             player_list,
             chosen_characters: settings.characters.map(|chara| SelectState {
@@ -92,8 +92,8 @@ where
 
                 let mut dirty = false;
 
-                match event.event {
-                    EventType::ButtonPressed(button) => match button {
+                if let EventType::ButtonPressed(button) = event.event {
+                    match button {
                         Button::DPadUp => {
                             if player.confirmed == Status::None {
                                 player.selected = Character::prev(player.selected);
@@ -124,17 +124,16 @@ where
                             }
                         }
                         _ => (),
-                    },
-                    _ => (),
+                    }
                 }
 
                 if let Some(ref mut socket) = socket {
                     if dirty {
-                        let data = player.clone();
+                        let data = *player;
                         for addr in self.player_list.network_addrs() {
                             let _ = socket.send(Packet::reliable_ordered(
                                 addr,
-                                bincode::serialize(&(idx, data.clone())).unwrap(),
+                                bincode::serialize(&(idx, data)).unwrap(),
                                 None,
                             ));
                         }

@@ -38,7 +38,7 @@ impl PadsContext {
         }
     }
 
-    pub fn gamepads<'a>(&'a self) -> impl Iterator<Item = (GamepadId, &'a GameController)> {
+    pub fn gamepads(&self) -> impl Iterator<Item = (GamepadId, &GameController)> {
         self.controllers
             .iter()
             .map(|item| (GamepadId(item.instance_id()), item))

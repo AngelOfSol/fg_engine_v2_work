@@ -17,7 +17,7 @@ pub mod hash_map {
     {
         Ok(HashMap::<K, ParticleVersioned>::deserialize(deserializer)?
             .into_iter()
-            .map(|(key, value)| (key, value.to_modern()))
+            .map(|(key, value)| (key, value.into_modern()))
             .collect())
     }
 }
@@ -31,14 +31,14 @@ enum ParticleVersioned {
 }
 
 impl ParticleVersioned {
-    fn to_modern(self) -> Particle {
+    fn into_modern(self) -> Particle {
         match self {
-            Self::V1(value) => value.to_modern(),
+            Self::V1(value) => value.into_modern(),
             Self::Legacy(value) => ParticleV1 {
                 animations: vec![value],
                 modifiers: Modifiers::new(),
             }
-            .to_modern(),
+            .into_modern(),
         }
     }
 }

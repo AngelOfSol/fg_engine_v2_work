@@ -7,7 +7,7 @@ pub mod version;
 pub type AttackInfo = AttackInfoV1;
 
 impl AttackInfoV1 {
-    pub fn to_modern(self) -> AttackInfoV1 {
+    pub fn into_modern(self) -> AttackInfoV1 {
         self
     }
 }

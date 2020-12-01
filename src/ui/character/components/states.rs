@@ -100,7 +100,7 @@ impl StatesUi {
             }
 
             let new = data.guarentee_unique_key(new);
-            data.rest.insert(new.clone(), state.clone());
+            data.rest.insert(new.clone(), state);
             if let Some(idx) = self.state_name_keys.iter().position(|item| item == &old) {
                 self.state_name_keys.remove(idx);
                 self.state_name_keys.insert(idx, new);

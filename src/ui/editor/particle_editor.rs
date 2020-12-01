@@ -126,16 +126,14 @@ impl AppState for ParticleEditor {
                             {
                                 let assets = &mut self.assets.borrow_mut();
                                 // TODO: use this error
-                                match Particle::load_from_json(ctx, assets, PathBuf::from(path)) {
-                                    Ok(state) => {
-                                        *self.resource.borrow_mut() = state;
-                                        self.ui_data = ParticleUi::new();
-                                    }
-                                    Err(_) => (),
+                                if let Ok(state) =
+                                    Particle::load_from_json(ctx, assets, PathBuf::from(path))
+                                {
+                                    *self.resource.borrow_mut() = state;
+                                    self.ui_data = ParticleUi::new();
                                 }
                             }
                         }
-                        ui.separator();
                         ui.separator();
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
                             self.done = Status::DoneAndSave;

@@ -84,7 +84,7 @@ impl BulletInfoUi {
         }
         ui.input_string(im_str!("##Property Name"), &mut self.new_property);
         ui.same_line(0.0);
-        if ui.small_button(im_str!("Add##Property")) && self.new_property != "" {
+        if ui.small_button(im_str!("Add##Property")) && self.new_property.is_empty() {
             let new = std::mem::replace(&mut self.new_property, "".to_owned());
             data.properties.insert(new);
         }

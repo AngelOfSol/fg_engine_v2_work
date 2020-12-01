@@ -82,12 +82,11 @@ impl NetworkConnect {
             connected: false,
             target_addr: PotentialAddress::Almost("192.168.1.155:10800".to_owned()),
             mode: Mode::Host,
-            local_player: player_list
+            local_player: *player_list
                 .current_players
                 .iter()
                 .find(|item| !item.is_dummy() && !item.is_networked())
-                .unwrap()
-                .clone(),
+                .unwrap(),
             player_list,
         })
     }
@@ -286,30 +285,27 @@ impl AppState for NetworkConnect {
         while ggez::timer::check_update_time(ctx, 2) {}
 
         while let Some(event) = pads.next_event() {
-            match event.event {
-                EventType::ButtonPressed(button) => {
-                    if button == Button::Start
-                        && self.connected
-                        && self.mode == Mode::Host
-                        && self
-                            .player_list
-                            .current_players
-                            .p1()
-                            .gamepad_id()
-                            .map(|id| id == event.id)
-                            .unwrap_or(false)
-                    {
-                        for addr in self.player_list.network_addrs() {
-                            let _ = socket.send(Packet::reliable_ordered(
-                                addr,
-                                bincode::serialize(&NetPacket::MoveToCharacterSelect).unwrap(),
-                                None,
-                            ));
-                        }
-                        self.next = Some(NextState::Next);
+            if let EventType::ButtonPressed(button) = event.event {
+                if button == Button::Start
+                    && self.connected
+                    && self.mode == Mode::Host
+                    && self
+                        .player_list
+                        .current_players
+                        .p1()
+                        .gamepad_id()
+                        .map(|id| id == event.id)
+                        .unwrap_or(false)
+                {
+                    for addr in self.player_list.network_addrs() {
+                        let _ = socket.send(Packet::reliable_ordered(
+                            addr,
+                            bincode::serialize(&NetPacket::MoveToCharacterSelect).unwrap(),
+                            None,
+                        ));
                     }
+                    self.next = Some(NextState::Next);
                 }
-                _ => (),
             }
         }
 
@@ -355,25 +351,23 @@ impl AppState for NetworkConnect {
 
                     if self.connected {
                         ui.text(im_str!("Mode: {}", self.mode));
-                    } else {
-                        if ui.combo_items(
-                            im_str!("Mode"),
-                            &mut self.mode,
-                            &Mode::iter().collect::<Vec<_>>(),
-                            &|item| im_str!("{}", item).into(),
-                        ) {
-                            match self.mode {
-                                Mode::Host => {
-                                    self.player_list.current_players =
-                                        [self.local_player.clone(), PlayerType::Dummy].into()
-                                }
-                                Mode::Client => {
-                                    self.player_list.current_players =
-                                        [PlayerType::Dummy, self.local_player.clone()].into()
-                                }
-                                Mode::Spectate => {
-                                    self.player_list.current_players = [PlayerType::Dummy; 2].into()
-                                }
+                    } else if ui.combo_items(
+                        im_str!("Mode"),
+                        &mut self.mode,
+                        &Mode::iter().collect::<Vec<_>>(),
+                        &|item| im_str!("{}", item).into(),
+                    ) {
+                        match self.mode {
+                            Mode::Host => {
+                                self.player_list.current_players =
+                                    [self.local_player, PlayerType::Dummy].into()
+                            }
+                            Mode::Client => {
+                                self.player_list.current_players =
+                                    [PlayerType::Dummy, self.local_player].into()
+                            }
+                            Mode::Spectate => {
+                                self.player_list.current_players = [PlayerType::Dummy; 2].into()
                             }
                         }
                     }
@@ -383,7 +377,7 @@ impl AppState for NetworkConnect {
                         socket
                             .local_addr()
                             .map(|item| item.to_string())
-                            .unwrap_or("Error".to_owned())
+                            .unwrap_or_else(|_| "Error".to_owned())
                     ));
 
                     if self.mode != Mode::Spectate {
@@ -403,13 +397,13 @@ impl AppState for NetworkConnect {
                                 .p1()
                                 .addr()
                                 .map(|item| item.to_string())
-                                .unwrap_or("None".to_owned()),
+                                .unwrap_or_else(|| "None".to_owned()),
                             self.player_list
                                 .current_players
                                 .p2()
                                 .addr()
                                 .map(|item| item.to_string())
-                                .unwrap_or("None".to_owned()),
+                                .unwrap_or_else(|| "None".to_owned()),
                         ));
                     }
 
@@ -435,11 +429,11 @@ impl AppState for NetworkConnect {
                                 match self.mode {
                                     Mode::Host => {
                                         self.player_list.current_players =
-                                            [self.local_player.clone(), PlayerType::Dummy].into()
+                                            [self.local_player, PlayerType::Dummy].into()
                                     }
                                     Mode::Client => {
                                         self.player_list.current_players =
-                                            [PlayerType::Dummy, self.local_player.clone()].into()
+                                            [PlayerType::Dummy, self.local_player].into()
                                     }
                                     Mode::Spectate => {
                                         self.player_list.current_players =

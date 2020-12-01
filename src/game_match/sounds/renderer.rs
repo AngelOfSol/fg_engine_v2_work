@@ -35,7 +35,7 @@ impl<T: Copy + Eq + std::hash::Hash + std::fmt::Debug> SoundRenderer<SoundPath<T
                 }
                 Vacant(vacant) => {
                     if let Some(new) = new {
-                        vacant.insert(Channel::new(new.clone(), local, global, device, fps));
+                        vacant.insert(Channel::new(*new, local, global, device, fps));
                     }
                 }
             };
@@ -60,7 +60,7 @@ impl SoundRenderer<GlobalSound> {
                 }
                 Vacant(vacant) => {
                     if let Some(new) = new {
-                        vacant.insert(Channel::new_global(new.clone(), global, device, fps));
+                        vacant.insert(Channel::new_global(*new, global, device, fps));
                     }
                 }
             };

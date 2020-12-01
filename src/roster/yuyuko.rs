@@ -282,7 +282,6 @@ impl YuyukoPlayer {
     );
     impl_in_corner!();
     impl_current_flags!();
-    impl_handle_combo_state!();
     impl_handle_rebeat_data!();
     impl_handle_expire!(dead: MoveId::Dead, hit_ground: MoveId::HitGround);
     impl_handle_hitstun!(
@@ -310,6 +309,16 @@ impl YuyukoPlayer {
     );
 
     impl_update_sound!();
+
+    fn handle_combo_state(&mut self) {
+        let (_, move_id) = self.state.current_state;
+        let current_state_type = self.data.states[&move_id].state_type;
+        crate::roster::impls::handle_combo_state(
+            &mut self.state.current_combo,
+            &mut self.last_combo_state,
+            current_state_type,
+        );
+    }
 
     fn update_meter(&mut self, opponent_position: collision::Vec2) {
         let flags = self.current_flags();
@@ -374,7 +383,16 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     );
     impl_deal_hit!(on_hit_particle: Particle::HitEffect);
 
-    impl_handle_refacing!();
+    fn handle_refacing(&mut self, other_player: collision::Int) {
+        let (frame, move_id) = self.state.current_state;
+        let flags = self.data.states[&move_id].flags.at_time(frame);
+        crate::roster::generic_character::impls::handle_refacing(
+            &mut self.state.facing,
+            flags,
+            &self.state.position,
+            other_player,
+        );
+    }
     impl_update_frame_mut!();
 
     impl_draw_ui!();
@@ -400,7 +418,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     impl_save!();
     impl_load!();
 
-    fn bullets_mut<'a>(&'a mut self) -> super::generic_character::OpaqueBulletIterator<'a> {
+    fn bullets_mut(&mut self) -> super::generic_character::OpaqueBulletIterator {
         super::generic_character::OpaqueBulletIterator::YuyukoIter(YuyukoBulletIterator {
             iter: self.state.bullets.iter_mut(),
             bullet_list: &self.data.bullets,
@@ -580,8 +598,8 @@ impl<'a> BulletMut for YuyukoBulletMut<'a> {
     fn hitboxes(&self) -> Vec<PositionedHitbox> {
         self.state.hitbox(self.list)
     }
-    fn on_touch_bullet(&mut self, value: ()) {
-        self.state.on_touch_bullet(&self.list, value);
+    fn on_touch_bullet(&mut self) {
+        self.state.on_touch_bullet(&self.list);
     }
     fn attack_data(&self) -> AttackInfo {
         self.state.attack_data(&self.list, &self.attacks)

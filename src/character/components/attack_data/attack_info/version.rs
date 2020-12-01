@@ -21,7 +21,7 @@ pub mod hashmap {
         Ok(
             HashMap::<Key, AttackInfoVersioned>::deserialize(deserializer)?
                 .into_iter()
-                .map(|(key, item)| (key, item.to_modern()))
+                .map(|(key, item)| (key, item.into_modern()))
                 .collect(),
         )
     }
@@ -35,16 +35,16 @@ enum AttackInfoVersioned {
 }
 
 impl AttackInfoVersioned {
-    fn to_modern(self) -> AttackInfo {
+    fn into_modern(self) -> AttackInfo {
         match self {
-            Self::AttackInfoV1(value) => value.to_modern(),
-            Self::AttackInfoLegacy(value) => value.to_modern(),
+            Self::AttackInfoV1(value) => value.into_modern(),
+            Self::AttackInfoLegacy(value) => value.into_modern(),
         }
     }
 }
 
 impl AttackLegacy {
-    pub fn to_modern(self) -> AttackInfoV1 {
+    pub fn into_modern(self) -> AttackInfoV1 {
         AttackInfoV1 {
             melee: self.melee,
             magic: !self.melee,
@@ -120,7 +120,7 @@ impl AttackLegacy {
                 ..Default::default()
             },
         }
-        .to_modern()
+        .into_modern()
     }
 }
 

@@ -225,10 +225,8 @@ impl<Writer: Write> Match<Writer> {
                 &self.runtime_data.play_area,
                 &self.runtime_data.particles,
             );
-            self.game_state.flash = player
-                .get_flash()
-                .map(|item| item.into())
-                .or(self.game_state.flash.take());
+            let flash = self.game_state.flash.take();
+            self.game_state.flash = player.get_flash().map(|item| item.into()).or(flash);
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -276,11 +274,12 @@ impl<Writer: Write> Match<Writer> {
             .zip(attack_data.into_iter().rev())
             .zip(input.iter())
             .map(|(((player, touched), attack_data), input)| {
-                if *touched && attack_data.is_some() {
-                    player.would_be_hit(input, attack_data.unwrap(), None)
-                } else {
-                    (None, None)
+                if let Some(attack_data) = attack_data {
+                    if *touched {
+                        return player.would_be_hit(input, attack_data, None);
+                    }
                 }
+                (None, None)
             })
             .unzip();
 
@@ -300,8 +299,8 @@ impl<Writer: Write> Match<Writer> {
             for mut p2_bullet in p2.bullets_mut() {
                 if PositionedHitbox::overlaps_any(&p1_bullet.hitboxes(), &p2_bullet.hitboxes()) {
                     // TODO, replace unit parameter with bullet tier/hp system
-                    p1_bullet.on_touch_bullet(());
-                    p2_bullet.on_touch_bullet(());
+                    p1_bullet.on_touch_bullet();
+                    p2_bullet.on_touch_bullet();
                 }
             }
         }
@@ -359,11 +358,8 @@ impl<Writer: Write> Match<Writer> {
             .zip(hit_effects.into_iter())
             .flat_map(|(player, item)| item.map(|item| (player, item)))
         {
-            match effect.hit_type {
-                HitEffectType::GuardCrush => {
-                    self.game_state.flash = Some(FlashType::GuardCrush.into())
-                }
-                _ => (),
+            if let HitEffectType::GuardCrush = effect.hit_type {
+                self.game_state.flash = Some(FlashType::GuardCrush.into())
             }
             player.take_hit(effect, &self.runtime_data.play_area);
         }
@@ -381,11 +377,19 @@ impl<Writer: Write> Match<Writer> {
             player.prune_bullets(&self.runtime_data.play_area);
         }
 
-        if self.players.p1().draw_order_priority() > self.players.p2().draw_order_priority() {
-            self.game_state.p1_install = true;
-        } else if self.players.p1().draw_order_priority() < self.players.p2().draw_order_priority()
+        match self
+            .players
+            .p1()
+            .draw_order_priority()
+            .cmp(&self.players.p2().draw_order_priority())
         {
-            self.game_state.p1_install = false;
+            std::cmp::Ordering::Greater => {
+                self.game_state.p1_install = true;
+            }
+            std::cmp::Ordering::Less => {
+                self.game_state.p1_install = false;
+            }
+            std::cmp::Ordering::Equal => (),
         }
 
         let lockouts: Vec<_> = self
@@ -406,7 +410,7 @@ impl<Writer: Write> Match<Writer> {
                 self.game_state.flash = player
                     .get_flash()
                     .map(|item| item.into())
-                    .or(self.game_state.flash.take());
+                    .or(self.game_state.flash);
             }
         } else {
             self.update_normal(input);
@@ -419,7 +423,7 @@ impl<Writer: Write> Match<Writer> {
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
-                .or(self.game_state.flash.take());
+                .or(self.game_state.flash);
         }
 
         let (p1, p2) = self.players.both_mut();
@@ -455,10 +459,14 @@ impl<Writer: Write> Match<Writer> {
                     self.game_state.round += 1;
                     UpdateMode::RoundEnd { duration: 120 }
                 } else if self.game_state.timer == 0 {
-                    if self.players.p1().health() > self.players.p2().health() {
-                        *self.game_state.wins.p1_mut() += 1;
-                    } else if self.players.p1().health() < self.players.p2().health() {
-                        *self.game_state.wins.p2_mut() += 1;
+                    match self.players.p1().health().cmp(&self.players.p2().health()) {
+                        std::cmp::Ordering::Greater => {
+                            *self.game_state.wins.p1_mut() += 1;
+                        }
+                        std::cmp::Ordering::Less => {
+                            *self.game_state.wins.p2_mut() += 1;
+                        }
+                        std::cmp::Ordering::Equal => (),
                     }
                     self.game_state.round += 1;
                     UpdateMode::RoundEnd { duration: 120 }
@@ -937,7 +945,7 @@ impl<Writer: Write> RollbackableGameState for Match<Writer> {
     }
 
     fn load_state(&mut self, (players, game_state): Self::SavedState) {
-        for (player, new_state) in self.players.iter_mut().zip(players.into_iter().cloned()) {
+        for (player, new_state) in self.players.iter_mut().zip(players.iter().cloned()) {
             player.load(new_state).unwrap();
             // TODO log load error
         }

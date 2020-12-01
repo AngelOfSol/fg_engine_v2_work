@@ -132,7 +132,7 @@ impl Channel<GlobalSound> {
             self.sink.play();
         }
         if let Some(new_hit) = next {
-            self.state = new_hit.clone();
+            self.state = *new_hit;
         }
     }
 }

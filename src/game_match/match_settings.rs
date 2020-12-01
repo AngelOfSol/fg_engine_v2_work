@@ -77,7 +77,7 @@ impl MatchSettings {
                             .iter()
                             .find(|data| data.is_for(*chara))
                             .cloned()
-                            .map(|item| Ok(item))
+                            .map(Result::Ok)
                             .unwrap_or_else(|| chara.load_data(ctx, &mut data.assets))
                     })
                     .collect::<GameResult<PlayerData<_>>>()?;

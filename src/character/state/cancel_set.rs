@@ -119,16 +119,13 @@ impl MoveType {
         }
     }
     pub fn is_stun(self) -> bool {
-        match self {
-            MoveType::Hitstun | MoveType::Blockstun | MoveType::WrongBlockstun => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            MoveType::Hitstun | MoveType::Blockstun | MoveType::WrongBlockstun
+        )
     }
     pub fn is_blockstun(self) -> bool {
-        match self {
-            MoveType::Blockstun | MoveType::WrongBlockstun => true,
-            _ => false,
-        }
+        matches!(self, MoveType::Blockstun | MoveType::WrongBlockstun)
     }
 }
 impl Display for MoveType {

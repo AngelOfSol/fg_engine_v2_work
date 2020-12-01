@@ -45,7 +45,7 @@ impl DisplaySettings {
             save: SaveStatus::None,
             next: None,
             display_sizes,
-            window_mode: ggez::graphics::conf(ctx).window_mode.clone(),
+            window_mode: ggez::graphics::conf(ctx).window_mode,
         }
     }
 }
@@ -100,6 +100,7 @@ impl AppState for DisplaySettings {
         frame
             .run(|ui| {
                 imgui::Window::new(im_str!("Main Menu")).build(ui, || {
+                    #[allow(clippy::blocks_in_if_conditions)]
                     if ui.combo_items(
                         im_str!("Display Mode"),
                         &mut self.window_mode.fullscreen_type,

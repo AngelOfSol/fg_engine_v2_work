@@ -77,7 +77,7 @@ impl AppStateRunner {
                             ip.to_string() + ":10805",
                         ]
                     })
-                    .unwrap_or(vec!["127.0.0.1:10800".to_owned()])
+                    .unwrap_or_else(|| vec!["127.0.0.1:10800".to_owned()])
                     .into_iter()
                     .filter_map(|item| item.to_socket_addrs().ok())
                     .flatten()
@@ -220,18 +220,9 @@ impl EventHandler for AppStateRunner {
 
     fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
         self.app_ctx.imgui.update_mouse_down((
-            match button {
-                MouseButton::Left => false,
-                _ => true,
-            },
-            match button {
-                MouseButton::Right => false,
-                _ => true,
-            },
-            match button {
-                MouseButton::Middle => false,
-                _ => true,
-            },
+            button != MouseButton::Left,
+            button != MouseButton::Right,
+            button != MouseButton::Middle,
         ));
     }
 

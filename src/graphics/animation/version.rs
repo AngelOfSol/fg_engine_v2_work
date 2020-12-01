@@ -12,7 +12,7 @@ pub mod single {
     where
         D: Deserializer<'de>,
     {
-        Ok(AnimationVersioned::deserialize(deserializer)?.to_modern())
+        Ok(AnimationVersioned::deserialize(deserializer)?.into_modern())
     }
 }
 
@@ -27,7 +27,7 @@ pub mod vec {
     {
         Ok(Vec::<AnimationVersioned>::deserialize(deserializer)?
             .into_iter()
-            .map(|item| item.to_modern())
+            .map(|item| item.into_modern())
             .collect())
     }
 }
@@ -40,10 +40,10 @@ enum AnimationVersioned {
 }
 
 impl AnimationVersioned {
-    fn to_modern(self) -> Animation {
+    fn into_modern(self) -> Animation {
         match self {
-            Self::AnimationV1(value) => value.to_modern(),
-            Self::AnimationDataLegacy(value) => value.to_modern(),
+            Self::AnimationV1(value) => value.into_modern(),
+            Self::AnimationDataLegacy(value) => value.into_modern(),
         }
     }
 }
@@ -57,13 +57,13 @@ struct AnimationData {
 }
 
 impl AnimationData {
-    fn to_modern(self) -> Animation {
+    fn into_modern(self) -> Animation {
         AnimationV1 {
             delay: self.delay,
             modifiers: Modifiers::with_basic(0.0, self.scale, self.offset),
 
             ..self.animation
         }
-        .to_modern()
+        .into_modern()
     }
 }

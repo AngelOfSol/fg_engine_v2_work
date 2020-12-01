@@ -2,6 +2,7 @@ use crate::roster::Character;
 use crate::typedefs::collision::Vec2;
 use serde::{Deserialize, Serialize};
 
+#[non_exhaustive]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Properties {
     pub health: u32,
@@ -24,9 +25,6 @@ pub struct Properties {
 
     #[serde(default)]
     pub character: Character,
-
-    #[serde(skip)]
-    _secret: (),
 }
 
 fn default_neutral_jump_accel() -> Vec2 {
@@ -61,7 +59,6 @@ impl Properties {
             max_air_actions: default_max_air_actions(),
             max_spirit_gauge: default_max_spirit_gauge(),
             character: Default::default(),
-            _secret: (),
         }
     }
 }

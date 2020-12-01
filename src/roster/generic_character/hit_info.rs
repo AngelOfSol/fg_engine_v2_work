@@ -35,7 +35,7 @@ pub struct EffectData {
 }
 
 impl EffectData {
-    pub fn new() -> EffectDataBuilder<()> {
+    pub fn builder() -> EffectDataBuilder<()> {
         EffectDataBuilder {
             take_damage: 0,
             set_should_pushback: false,
@@ -68,7 +68,7 @@ impl EffectData {
     pub fn graze(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
         let graze_info = &info.attack_info.on_graze;
 
-        EffectData::new()
+        EffectData::builder()
             .set_force(if airborne {
                 Force::Airborne(Vec2::zeros())
             } else {
@@ -87,7 +87,7 @@ impl EffectData {
         let guard_crush_info = &info.attack_info.on_guard_crush;
         let will_be_airborne = airborne || guard_crush_info.launcher;
 
-        EffectData::new()
+        EffectData::builder()
             .set_force(if will_be_airborne {
                 Force::Airborne(info.facing.fix_collision(guard_crush_info.air_force))
             } else {
@@ -113,7 +113,7 @@ impl EffectData {
     pub fn block(info: &HitAction, airborne: bool) -> EffectDataBuilder<Force> {
         let block_info = &info.attack_info.on_block;
 
-        EffectData::new()
+        EffectData::builder()
             .set_force(if airborne {
                 Force::Airborne(info.facing.fix_collision(block_info.air_force))
             } else {
@@ -138,7 +138,7 @@ impl EffectData {
     pub fn wrong_block(info: &HitAction) -> EffectDataBuilder<Force> {
         let wrongblock_info = &info.attack_info.on_wrongblock;
 
-        EffectData::new()
+        EffectData::builder()
             .set_force(Force::Grounded(info.facing.fix_collision(
                 collision::Vec2::new(wrongblock_info.ground_pushback, 0_00),
             )))
@@ -161,7 +161,7 @@ impl EffectData {
         let will_be_airborne = airborne || hit_info.launcher;
 
         let current_combo = ComboState::update(current_combo, &info.attack_info, HitModifier::None);
-        EffectData::new()
+        EffectData::builder()
             .set_force(if will_be_airborne {
                 Force::Airborne(info.facing.fix_collision(hit_info.air_force))
             } else {
@@ -192,7 +192,7 @@ impl EffectData {
 
         let current_combo =
             ComboState::update(current_combo, &info.attack_info, HitModifier::CounterHit);
-        EffectData::new()
+        EffectData::builder()
             .set_force(if will_be_airborne {
                 Force::Airborne(info.facing.fix_collision(counter_hit_info.air_force))
             } else {
@@ -284,6 +284,7 @@ impl<T> EffectDataBuilder<T> {
         self.set_combo = Some(value);
         self
     }
+    #[allow(clippy::clippy::wrong_self_convention)]
     pub fn is_lethal(mut self, value: bool) -> Self {
         self.is_lethal = self.is_lethal || value;
         self

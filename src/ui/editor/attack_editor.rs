@@ -29,7 +29,7 @@ impl AppState for AttackInfoEditor {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
                 let mut overwrite_target = self.path.get_from_mut().unwrap();
-                *overwrite_target = std::mem::replace(&mut self.resource, AttackInfo::default());
+                *overwrite_target = std::mem::take(&mut self.resource);
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),

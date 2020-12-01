@@ -71,10 +71,9 @@ impl CharacterData {
         }
     }
     pub fn is_for(&self, character: Character) -> bool {
-        match (self, character) {
-            (CharacterData::Yuyuko(_), Character::Yuyuko) => true,
-            #[allow(unreachable_patterns)]
-            _ => false,
-        }
+        matches!(
+            (self, character),
+            (CharacterData::Yuyuko(_), Character::Yuyuko)
+        )
     }
 }

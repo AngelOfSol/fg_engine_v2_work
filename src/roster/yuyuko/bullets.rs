@@ -100,9 +100,9 @@ impl BulletState {
     }
     // REMOVE when actually passing damage in
     #[allow(clippy::unit_arg)]
-    pub fn on_touch_bullet(&mut self, bullets: &BulletList, damage: ()) {
+    pub fn on_touch_bullet(&mut self, bullets: &BulletList) {
         match self {
-            BulletState::Butterfly(state) => state.on_touch_bullet(bullets, damage),
+            BulletState::Butterfly(state) => state.on_touch_bullet(bullets),
         }
     }
 }

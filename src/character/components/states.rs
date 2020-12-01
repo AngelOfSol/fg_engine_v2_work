@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct States<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
     #[serde(flatten)]
     #[serde(bound(
@@ -11,8 +12,6 @@ pub struct States<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
         deserialize = "HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>: Deserialize<'de>"
     ))]
     pub rest: HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>,
-    #[serde(skip)]
-    _secret: (),
 }
 
 impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> std::fmt::Debug
@@ -35,7 +34,6 @@ impl<Id, ParticleId, BulletSpawnInfo: Eq + Default, AttackId, SoundType>
     pub fn new() -> Self {
         Self {
             rest: HashMap::new(),
-            _secret: (),
         }
     }
 

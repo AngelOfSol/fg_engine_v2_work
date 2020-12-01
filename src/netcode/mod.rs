@@ -170,7 +170,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
                 player,
                 self.current_frame,
                 range.first,
-                data.iter().cloned().collect(),
+                data.to_vec(),
             ))
         } else {
             None
@@ -259,9 +259,7 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
                     .local_players
                     .iter()
                     .map(|(handle, player)| (handle, player.get_inputs(frame, 1)))
-                    .map(|(handle, (range, player))| {
-                        (*handle, range.first, player.iter().cloned().collect())
-                    })
+                    .map(|(handle, (range, player))| (*handle, range.first, player.to_vec()))
                     .collect();
                 if requested_data.is_empty() {
                     // we don't have any local players or anything to send back.
@@ -281,8 +279,8 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
         }
     }
 
-    pub fn update<'a, Game: RollbackableGameState<SavedState = GameState, Input = Input>>(
-        &'a mut self,
+    pub fn update<Game: RollbackableGameState<SavedState = GameState, Input = Input>>(
+        &mut self,
         game: &mut Game,
     ) -> Option<Packet<Input>> {
         if let Some((rollback_frame, state)) = self.rollback_to.take() {
@@ -389,46 +387,44 @@ impl<Input: Clone + Default + PartialEq + std::fmt::Debug, GameState>
             self.current_frame += 1;
 
             None
-        } else {
-            if earliest_predicted_input_diff < self.allowed_rollback
-                && self.current_frame > self.allowed_rollback
+        } else if earliest_predicted_input_diff < self.allowed_rollback
+            && self.current_frame > self.allowed_rollback
+        {
+            self.saved_rollback_states
+                .insert(self.current_frame, game.save_state());
+
+            let current_frame = self.current_frame;
+
+            for net_player in self
+                .net_players
+                .values_mut()
+                .filter(|net_player| net_player.is_empty_input(current_frame))
             {
-                self.saved_rollback_states
-                    .insert(self.current_frame, game.save_state());
-
-                let current_frame = self.current_frame;
-
-                for net_player in self
-                    .net_players
-                    .values_mut()
-                    .filter(|net_player| net_player.is_empty_input(current_frame))
-                {
-                    net_player.predict(self.current_frame);
-                }
-                game.advance_frame(InputSet {
-                    inputs: self
-                        .players
-                        .iter()
-                        .map(|info| {
-                            let (range, inputs) = match info.player_type {
-                                PlayerType::Local => self.local_players[&info.id]
-                                    .get_inputs(self.current_frame, self.held_input_count),
-                                PlayerType::Net => self.net_players[&info.id]
-                                    .get_inputs(self.current_frame, self.held_input_count),
-                            };
-                            assert!(range.last == self.current_frame, "The last frame of input in the queue, should match the currently being predicted frame.");
-                            inputs
-                        })
-                        .collect(),
-                });
-                self.current_frame += 1;
-
-                None
-            } else {
-                Some(Packet::Request(
-                    self.current_frame - earliest_predicted_input_diff,
-                ))
+                net_player.predict(self.current_frame);
             }
+            game.advance_frame(InputSet {
+                inputs: self
+                    .players
+                    .iter()
+                    .map(|info| {
+                        let (range, inputs) = match info.player_type {
+                            PlayerType::Local => self.local_players[&info.id]
+                                .get_inputs(self.current_frame, self.held_input_count),
+                            PlayerType::Net => self.net_players[&info.id]
+                                .get_inputs(self.current_frame, self.held_input_count),
+                        };
+                        assert!(range.last == self.current_frame, "The last frame of input in the queue, should match the currently being predicted frame.");
+                        inputs
+                    })
+                    .collect(),
+            });
+            self.current_frame += 1;
+
+            None
+        } else {
+            Some(Packet::Request(
+                self.current_frame - earliest_predicted_input_diff,
+            ))
         }
     }
 }

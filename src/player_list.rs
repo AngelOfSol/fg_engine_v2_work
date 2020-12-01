@@ -12,10 +12,7 @@ pub enum PlayerType {
 
 impl PlayerType {
     pub fn is_networked(&self) -> bool {
-        match self {
-            Self::Networked(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Networked(_))
     }
 
     pub fn is_local(&self) -> bool {
@@ -24,17 +21,11 @@ impl PlayerType {
 
     #[allow(dead_code)]
     pub fn is_gamepad(&self) -> bool {
-        match self {
-            Self::LocalGamepad(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::LocalGamepad(_))
     }
 
     pub fn is_dummy(&self) -> bool {
-        match self {
-            Self::Dummy => true,
-            _ => false,
-        }
+        matches!(self, Self::Dummy)
     }
 
     pub fn gamepad_id(&self) -> Option<GamepadId> {
@@ -79,13 +70,13 @@ impl PlayerList {
         }
     }
 
-    pub fn gamepads<'a>(&'a self) -> impl Iterator<Item = GamepadId> + 'a {
+    pub fn gamepads(&self) -> impl Iterator<Item = GamepadId> + '_ {
         self.current_players
             .iter()
             .filter_map(PlayerType::gamepad_id)
     }
 
-    pub fn network_addrs<'a>(&'a self) -> impl Iterator<Item = SocketAddr> + 'a {
+    pub fn network_addrs(&self) -> impl Iterator<Item = SocketAddr> + '_ {
         self.current_players
             .iter()
             .chain(self.spectators.iter())

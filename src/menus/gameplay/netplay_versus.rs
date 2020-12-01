@@ -218,9 +218,7 @@ impl AppState for NetplayVersus {
 
         while ggez::timer::check_update_time(ctx, 60) {
             for (handle, current_frame) in self.local_input.iter_mut() {
-                let output = self
-                    .client
-                    .handle_local_input(current_frame.clone(), *handle);
+                let output = self.client.handle_local_input(*current_frame, *handle);
                 if let Some(ref mut socket) = socket {
                     if let Some(output) = output {
                         let output = NetworkData::Client(output);
@@ -286,7 +284,7 @@ impl AppState for NetplayVersus {
         for player in self.player_list.gamepads() {
             control_schemes
                 .entry(player)
-                .or_insert(PadControlScheme::new(player));
+                .or_insert_with(|| PadControlScheme::new(player));
         }
         Ok(())
     }

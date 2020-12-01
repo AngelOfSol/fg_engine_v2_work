@@ -107,7 +107,7 @@ impl AppState for LocalVersus {
                 .zip(self.player_list.current_players.iter())
             {
                 let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
-                let mut last_frame = input.last().unwrap().clone();
+                let mut last_frame = *input.last().unwrap();
                 control_scheme.update_frame(&mut last_frame);
                 input.push(last_frame);
             }
@@ -136,7 +136,7 @@ impl AppState for LocalVersus {
         for player in self.player_list.gamepads() {
             control_schemes
                 .entry(player)
-                .or_insert(PadControlScheme::new(player));
+                .or_insert_with(|| PadControlScheme::new(player));
         }
         Ok(())
     }

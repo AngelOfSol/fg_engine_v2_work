@@ -81,7 +81,6 @@ impl AppState for EditorMenu {
                                 &mut assets.borrow_mut(),
                                 PathBuf::from(path),
                             );
-                            let particle = particle.map(|result| result);
 
                             if let Ok(particle) = particle {
                                 self.next = Transition::Push(Box::new(

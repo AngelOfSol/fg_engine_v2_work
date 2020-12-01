@@ -47,7 +47,7 @@ pub trait UiExtensions {
         T,
         Display: FnMut(&T) -> ImString,
         New: FnMut() -> T,
-        Delete: FnMut(T) -> (),
+        Delete: FnMut(T),
     >(
         &self,
         label: &ImStr,
@@ -265,7 +265,7 @@ impl<'a> UiExtensions for Ui<'a> {
         T,
         Display: FnMut(&T) -> ImString,
         New: FnMut() -> T,
-        Delete: FnMut(T) -> (),
+        Delete: FnMut(T),
     >(
         &self,
         label: &ImStr,
