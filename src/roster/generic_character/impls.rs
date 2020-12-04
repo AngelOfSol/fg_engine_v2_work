@@ -272,7 +272,6 @@ pub fn draw_ui(
             &ui.player.overlay_round_windicator,
             ggez::graphics::DrawParam::default(),
         )?;
-        //
     }
 
     Ok(())
