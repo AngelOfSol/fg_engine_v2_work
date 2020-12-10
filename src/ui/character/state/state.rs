@@ -1,8 +1,6 @@
-use super::{
-    AnimationUi, BulletSpawnUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi, SoundPlayInfoUi,
-};
+use super::{AnimationUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi, SoundPlayInfoUi};
 use crate::character::state::components::{
-    BulletSpawn, CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
+    CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
 };
 
 use crate::assets::Assets;
@@ -14,7 +12,6 @@ use ggez::Context;
 use imgui::*;
 use nfd::Response;
 use std::cmp;
-use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 pub struct StateUi {
@@ -22,7 +19,7 @@ pub struct StateUi {
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
     current_particle: Option<usize>,
-    current_bullet: Option<usize>,
+    current_sound: Option<usize>,
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
@@ -36,7 +33,7 @@ impl StateUi {
             current_flags: None,
             current_cancels: None,
             current_particle: None,
-            current_bullet: None,
+            current_sound: None,
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
@@ -157,30 +154,7 @@ impl StateUi {
             id.pop(ui);
         }
     }
-    pub fn draw_bullet_editor(
-        &mut self,
-        ui: &Ui<'_>,
-        bullet_list: &HashMap<String, HashSet<String>>,
-        data: &mut Vec<BulletSpawn>,
-    ) {
-        if !bullet_list.is_empty() {
-            let id = ui.push_id("Bullets");
-            let default_bullet = bullet_list.keys().next().cloned().unwrap();
-            let default_properties = bullet_list[&default_bullet].clone();
-            if let (_, Some(bullet)) = ui.new_delete_list_box(
-                im_str!("List"),
-                &mut self.current_bullet,
-                data,
-                |item| im_str!("{} (frame {})", item.bullet_id.clone(), item.frame),
-                || BulletSpawn::new(default_bullet.clone(), &default_properties),
-                |_| {},
-                5,
-            ) {
-                BulletSpawnUi::draw_ui(ui, bullet, &bullet_list);
-            }
-            id.pop(ui);
-        }
-    }
+
     pub fn draw_sounds_editor(
         &mut self,
         ui: &Ui<'_>,
@@ -192,7 +166,7 @@ impl StateUi {
             let default_bullet = sounds_list[0].clone();
             if let (_, Some(sound)) = ui.new_delete_list_box(
                 im_str!("List"),
-                &mut self.current_bullet,
+                &mut self.current_sound,
                 data,
                 |item| im_str!("{} @ {} (frame {})", item.name, item.channel, item.frame),
                 || SoundPlayInfo::new(default_bullet.clone().into()),

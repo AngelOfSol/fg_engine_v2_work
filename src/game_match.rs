@@ -13,9 +13,7 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
-use crate::roster::generic_character::hit_info::{
-    HitAction, HitEffect, HitEffectType, HitResult, HitSource,
-};
+use crate::roster::generic_character::hit_info::HitEffectType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::roster::CharacterBehavior;
@@ -283,69 +281,65 @@ impl<Writer: Write> Match<Writer> {
             })
             .unzip();
 
-        for (ref mut player, ref result) in
-            self.players.iter_mut().zip(hit_results.into_iter().rev())
-        {
+        for (ref mut player, ref result) in self.players.iter_mut().zip(hit_results.iter().rev()) {
             if let Some(result) = result {
                 player.deal_hit(result);
             }
         }
 
+        /*
         let (p1, p2) = self.players.both_mut();
+                        for mut p1_bullet in p1.bullets_mut() {
+                            for mut p2_bullet in p2.bullets_mut() {
+                                if PositionedHitbox::overlaps_any(&p1_bullet.hitboxes(), &p2_bullet.hitboxes()) {
+                                    // TODO, replace unit parameter with bullet tier/hp system
+                                    p1_bullet.on_touch_bullet();
+                                    p2_bullet.on_touch_bullet();
+                                }
+                            }
+                        }
 
-        use crate::roster::generic_character::BulletMut;
+                        for player in self.players.iter_mut() {
+                            player.prune_bullets(&self.runtime_data.play_area);
+                        }
 
-        for mut p1_bullet in p1.bullets_mut() {
-            for mut p2_bullet in p2.bullets_mut() {
-                if PositionedHitbox::overlaps_any(&p1_bullet.hitboxes(), &p2_bullet.hitboxes()) {
-                    // TODO, replace unit parameter with bullet tier/hp system
-                    p1_bullet.on_touch_bullet();
-                    p2_bullet.on_touch_bullet();
-                }
-            }
-        }
+                        fn handle_bullets(
+                            acting: &mut CharacterBehavior,
+                            reference: &mut CharacterBehavior,
+                            acting_input: &[InputState],
+                            mut effect: Option<HitEffect>,
+                        ) -> (Option<HitEffect>, Vec<HitResult>) {
+                            let mut results = Vec::new();
+                            for mut bullet in reference.bullets_mut().filter(|bullet| {
+                                PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
+                            }) {
+                                let result = acting.would_be_hit(
+                                    acting_input,
+                                    HitAction {
+                                        attack_info: bullet.attack_data(),
+                                        hash: bullet.hash(),
+                                        facing: bullet.facing(),
+                                        source: HitSource::Object,
+                                    },
+                                    effect,
+                                );
+                                if let Some(result) = result.1 {
+                                    bullet.deal_hit(&result);
+                                    results.push(result);
+                                }
+                                effect = result.0;
+                            }
+                            (effect, results)
+                        }
 
-        for player in self.players.iter_mut() {
-            player.prune_bullets(&self.runtime_data.play_area);
-        }
-
-        fn handle_bullets(
-            acting: &mut CharacterBehavior,
-            reference: &mut CharacterBehavior,
-            acting_input: &[InputState],
-            mut effect: Option<HitEffect>,
-        ) -> (Option<HitEffect>, Vec<HitResult>) {
-            let mut results = Vec::new();
-            for mut bullet in reference.bullets_mut().filter(|bullet| {
-                PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
-            }) {
-                let result = acting.would_be_hit(
-                    acting_input,
-                    HitAction {
-                        attack_info: bullet.attack_data(),
-                        hash: bullet.hash(),
-                        facing: bullet.facing(),
-                        source: HitSource::Object,
-                    },
-                    effect,
-                );
-                if let Some(result) = result.1 {
-                    bullet.deal_hit(&result);
-                    results.push(result);
-                }
-                effect = result.0;
-            }
-            (effect, results)
-        }
-
-        let (p1, p2) = self.players.both_mut();
-        let (hit_effects, hit_results): (Vec<_>, Vec<_>) = vec![
-            handle_bullets(p1, p2, input.p1(), hit_effects[0]),
-            handle_bullets(p2, p1, input.p2(), hit_effects[1]),
-        ]
-        .into_iter()
-        .unzip();
-
+                let (p1, p2) = self.players.both_mut();
+                let (hit_effects, hit_results): (Vec<_>, Vec<_>) = vec![
+                    handle_bullets(p1, p2, input.p1(), hit_effects[0]),
+                    handle_bullets(p2, p1, input.p2(), hit_effects[1]),
+                ]
+                .into_iter()
+                .unzip();
+        */
         for (player, results) in self.players.iter_mut().zip(hit_results.into_iter().rev()) {
             for result in results.into_iter() {
                 player.deal_hit(&result);
@@ -700,8 +694,8 @@ impl<Writer: Write> Match<Writer> {
                 player.draw_particles(ctx, &assets, world, &self.runtime_data.particles)?;
             }
 
-            for player in self.players.iter() {
-                player.draw_bullets(ctx, &assets, world)?;
+            for _player in self.players.iter() {
+                //player.draw_bullets(ctx, &assets, world)?;
             }
         }
 

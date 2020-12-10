@@ -1,5 +1,4 @@
 mod attacks;
-mod bullets;
 mod command_list;
 mod moves;
 mod particles;
@@ -14,12 +13,9 @@ use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::particle::Particle;
-use crate::graphics::Animation;
-use crate::hitbox::Hitbox;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
 use crate::input::{read_inputs, DirectedAxis, Facing, InputState};
-use crate::roster::generic_character::bullet::{GenericBulletSpawn, GenericBulletState};
 use crate::roster::generic_character::combo_state::{AllowedCancel, ComboState};
 use crate::roster::generic_character::extra_data::ExtraData;
 use crate::roster::generic_character::hit_info::{
@@ -31,8 +27,6 @@ use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
 use attacks::AttackId;
-use bullets::BulletSpawn;
-pub use bullets::BulletState;
 use ggez::{Context, GameResult};
 use moves::MoveId;
 use particles::ParticleId;
@@ -49,22 +43,10 @@ use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct BulletData {
-    pub animation: Animation,
-    pub hitbox: Hitbox,
-    pub attack_id: AttackId,
-}
-#[derive(Clone, Debug, Deserialize)]
-pub struct BulletList {
-    pub butterfly: BulletData,
-}
-
 #[derive(Clone)]
 pub struct Yuyuko {
     pub states: StateList,
     pub particles: ParticleList,
-    pub bullets: BulletList,
     pub attacks: AttackList,
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
@@ -76,7 +58,7 @@ impl std::fmt::Debug for Yuyuko {
     }
 }
 
-type StateList = HashMap<MoveId, State<MoveId, ParticleId, BulletSpawn, AttackId, YuyukoSound>>;
+type StateList = HashMap<MoveId, State<MoveId, ParticleId, AttackId, YuyukoSound>>;
 type ParticleList = HashMap<ParticleId, Particle>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
@@ -92,7 +74,6 @@ impl Yuyuko {
             particles: data.particles,
             properties: data.properties,
             attacks: data.attacks,
-            bullets: data.bullets,
             command_list: command_list::generate_command_list(),
             sounds: data.sounds,
         })
@@ -103,7 +84,6 @@ impl Yuyuko {
 pub struct YuyukoData {
     states: StateList,
     particles: ParticleList,
-    bullets: BulletList,
     properties: Properties,
     attacks: AttackList,
     #[serde(skip)]
@@ -134,14 +114,6 @@ impl YuyukoData {
             Particle::load(ctx, assets, particle, path.clone())?;
             path.pop();
         }
-        path.pop();
-        path.push("bullets");
-        Animation::load(
-            ctx,
-            assets,
-            &mut character.bullets.butterfly.animation,
-            path.clone(),
-        )?;
 
         path.pop();
         path.push("sounds");
@@ -198,7 +170,6 @@ pub struct YuyukoState {
     pub current_state: (usize, MoveId),
     pub extra_data: ExtraData,
     pub particles: Vec<(usize, collision::Vec2, ParticlePath<ParticleId>)>,
-    pub bullets: Vec<BulletState>,
     pub facing: Facing,
     pub air_actions: usize,
     pub spirit_gauge: i32,
@@ -224,7 +195,6 @@ impl YuyukoState {
             current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
             particles: Vec::new(),
-            bullets: Vec::new(),
             air_actions: data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -495,26 +465,6 @@ impl YuyukoPlayer {
             self.state.particles.push((0, position, particle_id));
         }
     }
-    fn update_bullets(&mut self, play_area: &PlayArea) {
-        // first update all active bullets
-        for bullet in self.state.bullets.iter_mut() {
-            bullet.update(&self.data);
-        }
-
-        self.prune_bullets(play_area);
-
-        // then spawn bullets
-        let (frame, move_id) = self.state.current_state;
-        for spawn in self.data.states[&move_id]
-            .bullets
-            .iter()
-            .filter(|item| item.get_spawn_frame() == frame)
-        {
-            self.state
-                .bullets
-                .push(spawn.instantiate(self.state.position, self.state.facing));
-        }
-    }
     fn update_spirit(&mut self) {
         let (ref mut frame, ref mut move_id) = &mut self.state.current_state;
         let move_data = &self.data.states[move_id];
@@ -723,12 +673,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             self.state.position.y = hitboxes.collision.half_size.y;
         }
     }
-    fn prune_bullets(&mut self, play_area: &PlayArea) {
-        let bullet_data = &self.data;
-        self.state
-            .bullets
-            .retain(|item| item.alive(bullet_data, play_area));
-    }
+    fn prune_bullets(&mut self, _play_area: &PlayArea) {}
     fn would_be_hit(
         &self,
         input: &[InputState],
@@ -1133,7 +1078,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.update_lockout();
         self.update_meter(opponent_position);
         self.update_particles(global_particles);
-        self.update_bullets(play_area);
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
     }
@@ -1200,18 +1144,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             &self.state.particles,
         )
     }
-    fn draw_bullets(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        world: graphics::Matrix4,
-    ) -> GameResult<()> {
-        for bullet in &self.state.bullets {
-            bullet.draw(ctx, &self.data, assets, world)?;
-        }
 
-        Ok(())
-    }
     fn draw_shadow(
         &self,
         ctx: &mut Context,
@@ -1355,14 +1288,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         Ok(())
     }
 
-    fn bullets_mut(&mut self) -> super::generic_character::OpaqueBulletIterator {
-        super::generic_character::OpaqueBulletIterator::YuyukoIter(YuyukoBulletIterator {
-            iter: self.state.bullets.iter_mut(),
-            bullet_list: &self.data.bullets,
-            attacks: &self.data.attacks,
-        })
-    }
-
     fn update_cutscene(&mut self, play_area: &PlayArea) {
         if self.in_cutscene() {
             self.handle_expire();
@@ -1415,7 +1340,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.update_spirit();
         self.update_lockout();
         self.update_particles(global_particles);
-        self.update_bullets(play_area);
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
     }
@@ -1443,7 +1367,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             current_state: (0, MoveId::Stand),
             extra_data: ExtraData::None,
             particles: Vec::new(),
-            bullets: Vec::new(),
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -1474,7 +1397,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
             particles: Vec::new(),
-            bullets: Vec::new(),
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -1497,57 +1419,5 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn health(&self) -> i32 {
         self.state.health
-    }
-}
-
-pub struct YuyukoBulletIterator<'a> {
-    iter: std::slice::IterMut<'a, BulletState>,
-    bullet_list: &'a BulletList,
-    attacks: &'a AttackList,
-}
-
-impl<'a> Iterator for YuyukoBulletIterator<'a> {
-    type Item = super::generic_character::OpaqueBullet<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|state| {
-            YuyukoBulletMut {
-                state,
-                list: self.bullet_list,
-                attacks: self.attacks,
-            }
-            .into()
-        })
-    }
-}
-
-//impl<'a> super::generic_character::BulletIterator<'a> for YuyukoBulletIterator<'a> {}
-
-use super::generic_character::BulletMut;
-
-pub struct YuyukoBulletMut<'a> {
-    state: &'a mut BulletState,
-    list: &'a BulletList,
-    attacks: &'a AttackList,
-}
-
-impl<'a> BulletMut for YuyukoBulletMut<'a> {
-    fn hitboxes(&self) -> Vec<PositionedHitbox> {
-        self.state.hitbox(self.list)
-    }
-    fn on_touch_bullet(&mut self) {
-        self.state.on_touch_bullet(&self.list);
-    }
-    fn attack_data(&self) -> AttackInfo {
-        self.state.attack_data(&self.list, &self.attacks)
-    }
-    fn deal_hit(&mut self, hit: &HitResult) {
-        self.state.deal_hit(&self.list, hit)
-    }
-    fn hash(&self) -> u64 {
-        self.state.hash()
-    }
-    fn facing(&self) -> Facing {
-        self.state.facing()
     }
 }

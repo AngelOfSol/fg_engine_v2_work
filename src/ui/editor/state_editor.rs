@@ -35,7 +35,6 @@ struct DrawMode {
     hitbox_alpha: f32,
     debug_animation: bool,
     show_axes: bool,
-    show_all_bullets: bool,
 }
 
 impl AppState for StateEditor {
@@ -65,7 +64,7 @@ impl AppState for StateEditor {
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
-        let (state_list, particles_list, bullet_list, attack_ids, sounds_list) = {
+        let (state_list, particles_list, attack_ids, sounds_list) = {
             let character_data = self.character_data.borrow();
 
             let state_list = {
@@ -81,13 +80,6 @@ impl AppState for StateEditor {
                 particles_list
             };
 
-            let bullet_list = character_data
-                .bullets
-                .bullets
-                .iter()
-                .map(|(key, value)| (key.clone(), value.properties.clone()))
-                .collect();
-
             let attack_ids: Vec<_> = character_data.attacks.attacks.keys().cloned().collect();
 
             let sounds_list: Vec<_> = character_data
@@ -96,13 +88,7 @@ impl AppState for StateEditor {
                 .sound_name_iterator()
                 .collect();
 
-            (
-                state_list,
-                particles_list,
-                bullet_list,
-                attack_ids,
-                sounds_list,
-            )
+            (state_list, particles_list, attack_ids, sounds_list)
         };
         imgui
             .frame()
@@ -169,8 +155,6 @@ impl AppState for StateEditor {
                         ui.checkbox(im_str!("Debug"), &mut self.draw_mode.debug_animation);
                         ui.same_line(0.0);
                         ui.checkbox(im_str!("Axes"), &mut self.draw_mode.show_axes);
-                        ui.same_line(0.0);
-                        ui.checkbox(im_str!("All Bullets"), &mut self.draw_mode.show_all_bullets);
                         ui.text(im_str!("Alpha"));
 
                         ui.separator();
@@ -191,17 +175,6 @@ impl AppState for StateEditor {
                             ui,
                             &particles_list,
                             &mut self.resource.borrow_mut().particles,
-                        );
-                    });
-                imgui::Window::new(im_str!("Bullets##State"))
-                    .size([300.0, 400.0], Condition::Once)
-                    .position([300.0, 303.0], Condition::Once)
-                    .collapsed(true, Condition::Once)
-                    .build(ui, || {
-                        self.ui_data.draw_bullet_editor(
-                            ui,
-                            &bullet_list,
-                            &mut self.resource.borrow_mut().bullets,
                         );
                     });
                 imgui::Window::new(im_str!("Sounds##State"))
@@ -457,15 +430,16 @@ impl AppState for StateEditor {
             draw_cross(ctx, offset)?;
 
             // TODO draw particles too
+            // TODO draw generic position component as cross
         }
-        for bullet_spawn in resource
+        /*for bullet_spawn in resource
             .bullets
             .iter()
             .filter(|item| item.frame == self.frame || self.draw_mode.show_all_bullets)
         {
             let offset = bullet_spawn.offset.into_graphical();
             draw_cross(ctx, offset)?;
-        }
+        }*/
         if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(
@@ -511,7 +485,6 @@ impl StateEditor {
                 hitbox_alpha: 0.15,
                 debug_animation: true,
                 show_axes: true,
-                show_all_bullets: false,
             },
         })
     }

@@ -1,10 +1,10 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
-use crate::character::components::{AttackInfo, BulletInfo};
+use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
-use crate::ui::character::components::{AttacksUi, BulletsUi, ParticlesUi, PropertiesUi, StatesUi};
-use crate::ui::editor::{AttackInfoEditor, BulletInfoEditor, ParticleEditor, StateEditor};
+use crate::ui::character::components::{AttacksUi, ParticlesUi, PropertiesUi, StatesUi};
+use crate::ui::editor::{AttackInfoEditor, ParticleEditor, StateEditor};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -39,34 +39,6 @@ impl ItemResource for AttackResource {
         if character.attacks.attacks.contains_key(&self.attack) {
             Some(RefMut::map(character, |character| {
                 character.attacks.attacks.get_mut(&self.attack).unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-}
-
-pub struct BulletResource {
-    pub bullet: String,
-    pub data: Rc<RefCell<PlayerCharacter>>,
-}
-impl ItemResource for BulletResource {
-    type Output = BulletInfo;
-    fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let character = self.data.borrow();
-        if character.bullets.bullets.contains_key(&self.bullet) {
-            Some(Ref::map(character, |character| {
-                character.bullets.bullets.get(&self.bullet).unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let character = self.data.borrow_mut();
-        if character.bullets.bullets.contains_key(&self.bullet) {
-            Some(RefMut::map(character, |character| {
-                character.bullets.bullets.get_mut(&self.bullet).unwrap()
             }))
         } else {
             None
@@ -187,22 +159,6 @@ impl ItemResource for StandaloneParticleResource {
     }
 }
 
-pub struct BulletAnimationResource {
-    pub data: Rc<RefCell<BulletInfo>>,
-}
-
-impl ItemResource for BulletAnimationResource {
-    type Output = crate::graphics::Animation;
-    fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let bullet = self.data.borrow();
-        Some(Ref::map(bullet, |bullet| &bullet.animation))
-    }
-    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let bullet = self.data.borrow_mut();
-        Some(RefMut::map(bullet, |bullet| &mut bullet.animation))
-    }
-}
-
 pub struct StateAnimationResource {
     pub data: Rc<RefCell<EditorCharacterState>>,
     pub name: String,
@@ -246,7 +202,6 @@ pub struct CharacterEditor {
     transition: Transition,
     particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
-    bullet_ui_data: BulletsUi,
     attacks_ui_data: AttacksUi,
 }
 
@@ -324,33 +279,7 @@ impl AppState for CharacterEditor {
                             ));
                         }
                     });
-                imgui::Window::new(im_str!("Bullets"))
-                    .size([300.0, 526.0], Condition::Once)
-                    .position([900.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        let edit_change = {
-                            let mut resource = self.resource.borrow_mut();
-                            if !resource.attacks.attacks.is_empty() {
-                                let key = resource.attacks.attacks.keys().next().unwrap().clone();
-                                self.bullet_ui_data.draw_ui(ui, &mut resource.bullets, key)
-                            } else {
-                                None
-                            }
-                        };
-                        if let Some(bullet) = edit_change {
-                            self.transition = Transition::Push(Box::new(
-                                BulletInfoEditor::new(
-                                    self.resource.clone(),
-                                    self.assets.clone(),
-                                    BulletResource {
-                                        bullet,
-                                        data: self.resource.clone(),
-                                    },
-                                )
-                                .unwrap(),
-                            ));
-                        }
-                    });
+
                 imgui::Window::new(im_str!("Attacks"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([1200.0, 20.0], Condition::Once)
@@ -429,14 +358,12 @@ impl CharacterEditor {
     pub fn new(resource: Rc<RefCell<PlayerCharacter>>, assets: Rc<RefCell<Assets>>) -> Self {
         let particle_ui_data = ParticlesUi::new(&resource.borrow().particles);
         let states_ui_data = StatesUi::new(&resource.borrow().states);
-        let bullet_ui_data = BulletsUi::new(&resource.borrow().bullets);
         let attacks_ui_data = AttacksUi::new(&resource.borrow().attacks);
         Self {
             resource,
             assets,
             particle_ui_data,
             states_ui_data,
-            bullet_ui_data,
             attacks_ui_data,
             transition: Transition::None,
         }

@@ -8,7 +8,6 @@ pub use generic_character::*;
 pub use yuyuko::*;
 
 use crate::assets::Assets;
-use crate::character::components::AttackInfo;
 use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea, UiElements};

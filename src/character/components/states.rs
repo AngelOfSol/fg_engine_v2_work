@@ -1,23 +1,22 @@
-use crate::character::state::components::BulletSpawn;
 use crate::character::state::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 #[non_exhaustive]
-pub struct States<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> {
+pub struct States<Id, ParticleId, AttackId, SoundType> {
     #[serde(flatten)]
     #[serde(bound(
-        serialize = "HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>: Serialize",
-        deserialize = "HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>: Deserialize<'de>"
+        serialize = "HashMap<String, State<Id, ParticleId, AttackId, SoundType>>: Serialize",
+        deserialize = "HashMap<String, State<Id, ParticleId, AttackId, SoundType>>: Deserialize<'de>"
     ))]
-    pub rest: HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>,
+    pub rest: HashMap<String, State<Id, ParticleId, AttackId, SoundType>>,
 }
 
-impl<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType> std::fmt::Debug
-    for States<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
+impl<Id, ParticleId, AttackId, SoundType> std::fmt::Debug
+    for States<Id, ParticleId, AttackId, SoundType>
 where
-    HashMap<String, State<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>>: std::fmt::Debug,
+    HashMap<String, State<Id, ParticleId, AttackId, SoundType>>: std::fmt::Debug,
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut builder = fmt.debug_struct("States");
@@ -26,11 +25,9 @@ where
     }
 }
 
-pub type EditorStates = States<String, String, BulletSpawn, String, String>;
+pub type EditorStates = States<String, String, String, String>;
 
-impl<Id, ParticleId, BulletSpawnInfo: Eq + Default, AttackId, SoundType>
-    States<Id, ParticleId, BulletSpawnInfo, AttackId, SoundType>
-{
+impl<Id, ParticleId, AttackId, SoundType> States<Id, ParticleId, AttackId, SoundType> {
     pub fn new() -> Self {
         Self {
             rest: HashMap::new(),

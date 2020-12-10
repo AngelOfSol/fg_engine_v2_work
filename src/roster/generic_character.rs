@@ -1,4 +1,3 @@
-pub mod bullet;
 pub mod combo_state;
 pub mod extra_data;
 pub mod hit_info;
@@ -15,23 +14,12 @@ use crate::game_match::{FlashType, PlayArea};
 use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
-use crate::roster::AttackInfo;
 use crate::typedefs::{collision, graphics};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
 use std::collections::HashMap;
-
-#[enum_dispatch(OpaqueBullet)]
-pub trait BulletMut {
-    fn hitboxes(&self) -> Vec<PositionedHitbox>;
-    fn on_touch_bullet(&mut self);
-    fn attack_data(&self) -> AttackInfo;
-    fn deal_hit(&mut self, hit: &HitResult);
-    fn hash(&self) -> u64;
-    fn facing(&self) -> Facing;
-}
 
 #[enum_dispatch(CharacterBehavior)]
 pub trait GenericCharacterBehaviour {
@@ -92,12 +80,6 @@ pub trait GenericCharacterBehaviour {
         global_particles: &HashMap<GlobalParticle, Particle>,
     ) -> GameResult<()>;
 
-    fn draw_bullets(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        world: graphics::Matrix4,
-    ) -> GameResult<()>;
     fn draw_shadow(
         &self,
         ctx: &mut Context,
@@ -117,7 +99,6 @@ pub trait GenericCharacterBehaviour {
 
     fn velocity(&self) -> collision::Vec2;
     fn facing(&self) -> Facing;
-    fn bullets_mut(&mut self) -> OpaqueBulletIterator;
     fn in_cutscene(&self) -> bool;
     fn draw_order_priority(&self) -> i32;
 
@@ -146,7 +127,7 @@ pub trait GenericCharacterBehaviour {
     );
 }
 
-use super::yuyuko::{YuyukoBulletIterator, YuyukoBulletMut, YuyukoState};
+use super::yuyuko::YuyukoState;
 
 #[derive(Clone)]
 #[non_exhaustive]
@@ -154,24 +135,4 @@ pub enum OpaqueStateData {
     Yuyuko(YuyukoState),
     #[allow(dead_code)]
     Broken,
-}
-
-#[enum_dispatch]
-pub enum OpaqueBulletIterator<'a> {
-    YuyukoIter(YuyukoBulletIterator<'a>),
-}
-
-impl<'a> Iterator for OpaqueBulletIterator<'a> {
-    type Item = OpaqueBullet<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            OpaqueBulletIterator::YuyukoIter(iter) => iter.next(),
-        }
-    }
-}
-
-#[enum_dispatch]
-pub enum OpaqueBullet<'a> {
-    YuyukoBulletMut(YuyukoBulletMut<'a>),
 }

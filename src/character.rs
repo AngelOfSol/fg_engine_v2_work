@@ -3,8 +3,7 @@ pub mod state;
 
 use crate::assets::Assets;
 use crate::graphics::particle::Particle;
-use crate::graphics::Animation;
-use components::{Attacks, BulletInfo, Bullets, EditorStates, Particles, Properties, States};
+use components::{Attacks, EditorStates, Particles, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
@@ -20,8 +19,7 @@ pub struct PlayerCharacter {
     pub properties: Properties,
     #[serde(default)]
     pub particles: Particles,
-    #[serde(default)]
-    pub bullets: Bullets,
+
     #[serde(default)]
     pub attacks: Attacks,
     #[serde(default)]
@@ -34,7 +32,6 @@ impl PlayerCharacter {
             states: States::new(),
             properties: Properties::new(),
             particles: Particles::new(),
-            bullets: Bullets::new(),
             attacks: Attacks::new(),
             sounds: HashSet::new(),
         }
@@ -80,10 +77,6 @@ impl PlayerCharacter {
             path.pop();
         }
         path.pop();
-        path.push("bullets");
-        for (_, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter_mut() {
-            Animation::load(ctx, assets, animation, path.clone())?;
-        }
 
         Ok(())
     }
@@ -122,17 +115,6 @@ impl PlayerCharacter {
         for (name, particle) in player_character.particles.particles.iter() {
             path.push(format!("{}.json", name));
             Particle::save(ctx, assets, particle, path.clone())?;
-            path.pop();
-        }
-        path.pop();
-        path.push("bullets");
-        if path.exists() {
-            std::fs::remove_dir_all(&path)?;
-        }
-        std::fs::create_dir_all(&path)?;
-        for (key, BulletInfo { animation, .. }) in player_character.bullets.bullets.iter() {
-            path.push(format!("{}.json", key));
-            Animation::save(ctx, assets, animation, path.clone())?;
             path.pop();
         }
         path.pop();

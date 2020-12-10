@@ -103,7 +103,7 @@ impl AppState for ParticleEditor {
                     .build(ui, || {});
 
                 ui.main_menu_bar(|| {
-                    ui.menu(im_str!("Bullet Info Editor"), true, || {
+                    ui.menu(im_str!("Particle Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("New")).build(ui) {
                             *self.resource.borrow_mut() = Particle::new();
                             self.ui_data = ParticleUi::new();
