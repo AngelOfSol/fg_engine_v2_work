@@ -5,8 +5,6 @@ pub mod hit_info;
 pub mod move_id;
 pub mod particle_id;
 
-#[macro_use]
-pub mod macros;
 pub mod impls;
 
 use crate::assets::Assets;
