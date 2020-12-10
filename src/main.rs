@@ -9,30 +9,30 @@ use std::path;
 
 #[macro_use]
 mod imgui_extra;
-mod assets;
-mod graphics;
-mod hitbox;
-mod imgui_wrapper;
-mod menus;
-mod timeline;
-mod typedefs;
-mod ui;
-#[macro_use]
-mod character;
-mod game_match;
-mod input;
-#[macro_use]
-mod roster;
-mod stage;
 #[macro_use]
 mod command_list;
 #[macro_use]
 mod input_macros;
+
 mod app_state;
+mod assets;
+mod character;
 mod enum_helpers;
+mod game_match;
+mod game_object;
+mod graphics;
+mod hitbox;
+mod imgui_wrapper;
+mod input;
+mod menus;
 mod netcode;
 mod player_list;
 mod replay;
+mod roster;
+mod stage;
+mod timeline;
+mod typedefs;
+mod ui;
 
 fn main() {
     let resource_dir = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
