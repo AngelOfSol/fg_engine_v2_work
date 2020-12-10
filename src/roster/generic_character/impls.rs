@@ -1,7 +1,10 @@
-use crate::character::state::components::{Flags, MoveType};
 use crate::input::Facing;
 use crate::roster::generic_character::combo_state::ComboState;
 use crate::typedefs::collision;
+use crate::{
+    character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath},
+    input::DirectedAxis,
+};
 
 pub fn handle_refacing(
     facing: &mut Facing,
@@ -291,4 +294,59 @@ pub fn get_transform(
         * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
             facing.graphics_multiplier(),
         ))
+}
+use crate::graphics::particle::Particle;
+use std::collections::HashMap;
+use std::hash::Hash;
+
+use super::extra_data::ExtraData;
+
+pub fn draw_particles<K: Hash + Eq>(
+    ctx: &mut Context,
+    assets: &Assets,
+    world: graphics::Matrix4,
+    local_particles: &HashMap<K, Particle>,
+    global_particles: &HashMap<GlobalParticle, Particle>,
+    particle_list: &[(usize, collision::Vec2, ParticlePath<K>)],
+) -> GameResult<()> {
+    for (frame, position, id) in particle_list {
+        let particle = id.get(local_particles, global_particles);
+
+        particle.draw_at_time(
+            ctx,
+            assets,
+            *frame,
+            world
+                * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                    position.into_graphical(),
+                )),
+        )?;
+    }
+
+    Ok(())
+}
+
+pub fn handle_fly<MoveId: Eq>(
+    move_id: MoveId,
+    fly_start: MoveId,
+    extra_data: &mut ExtraData,
+) -> collision::Vec2 {
+    if move_id == fly_start {
+        let fly_dir = extra_data.unwrap_fly_direction();
+        *extra_data = ExtraData::FlyDirection(fly_dir);
+        let speed = match fly_dir {
+            DirectedAxis::Forward => collision::Vec2::new(1_00, 0_00),
+            DirectedAxis::UpForward => collision::Vec2::new(0_71, 0_71),
+            DirectedAxis::DownForward => collision::Vec2::new(0_71, -0_71),
+            DirectedAxis::Backward => collision::Vec2::new(-1_00, 0_00),
+            DirectedAxis::UpBackward => collision::Vec2::new(-0_71, 0_71),
+            DirectedAxis::DownBackward => collision::Vec2::new(-0_71, -0_71),
+            DirectedAxis::Up => collision::Vec2::new(0_00, 1_00),
+            DirectedAxis::Down => collision::Vec2::new(0_00, -1_00),
+            _ => unreachable!(),
+        };
+        3 * speed / 4
+    } else {
+        collision::Vec2::zeros()
+    }
 }

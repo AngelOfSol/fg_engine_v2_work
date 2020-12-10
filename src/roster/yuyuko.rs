@@ -29,7 +29,6 @@ use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::timeline::AtTime;
 use crate::typedefs::collision;
-use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics;
 use attacks::AttackId;
 use bullets::BulletSpawn;
@@ -257,7 +256,9 @@ impl YuyukoPlayer {
             combo_text: RefCell::new(None),
         }
     }
-    impl_handle_fly!(fly_start: MoveId::FlyStart);
+    fn handle_fly(move_id: MoveId, extra_data: &mut ExtraData) -> collision::Vec2 {
+        crate::roster::impls::handle_fly(move_id, MoveId::FlyStart, extra_data)
+    }
     impl_handle_jump!(
         jump: MoveId::Jump,
         super_jump: MoveId::SuperJump,
@@ -431,10 +432,56 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             ),
         )
     }
+    fn draw_particles(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+        global_particles: &HashMap<GlobalParticle, Particle>,
+    ) -> GameResult<()> {
+        crate::roster::impls::draw_particles(
+            ctx,
+            assets,
+            world,
+            &self.data.particles,
+            global_particles,
+            &self.state.particles,
+        )
+    }
+    fn draw_bullets(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
+        for bullet in &self.state.bullets {
+            bullet.draw(ctx, &self.data, assets, world)?;
+        }
 
-    impl_draw_particles!();
-    impl_draw_bullets!();
-    impl_draw_shadow!();
+        Ok(())
+    }
+    fn draw_shadow(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
+        let (frame, move_id) = self.state.current_state;
+
+        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
+
+        self.data.states[&move_id].draw_shadow_at_time(
+            ctx,
+            assets,
+            frame,
+            crate::roster::impls::get_transform(
+                world,
+                collision.center,
+                self.state.position,
+                self.state.facing,
+            ),
+        )
+    }
 
     impl_get_pushback!();
     impl_collision!();

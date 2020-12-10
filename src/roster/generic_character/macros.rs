@@ -5,8 +5,6 @@ mod pushback;
 #[macro_use]
 mod getters;
 #[macro_use]
-mod draw;
-#[macro_use]
 mod hit;
 #[macro_use]
 mod update;
