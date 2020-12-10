@@ -6,8 +6,6 @@ pub mod particle_id;
 
 pub mod impls;
 
-use crate::assets::Assets;
-use crate::character::state::components::GlobalParticle;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -15,11 +13,40 @@ use crate::graphics::particle::Particle;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
+use crate::{assets::Assets, character::state::components::ParticlePath};
+use crate::{
+    character::state::components::GlobalParticle,
+    game_match::sounds::{PlayerSoundState, SoundPath},
+};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
 use rodio::Device;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+#[derive(Debug, Clone)]
+pub struct PlayerState<MoveId, ParticleId, SoundId> {
+    pub velocity: collision::Vec2,
+    pub position: collision::Vec2,
+    pub current_state: (usize, MoveId),
+    pub extra_data: ExtraData,
+    pub particles: Vec<(usize, collision::Vec2, ParticlePath<ParticleId>)>,
+    pub facing: Facing,
+    pub air_actions: usize,
+    pub spirit_gauge: i32,
+    pub spirit_delay: i32,
+    pub hitstop: i32,
+    pub last_hit_using: Option<u64>,
+    pub current_combo: Option<ComboState>,
+    pub health: i32,
+    pub allowed_cancels: AllowedCancel,
+    pub rebeat_chain: HashSet<MoveId>,
+    pub should_pushback: bool,
+    pub sound_state: PlayerSoundState<SoundPath<SoundId>>,
+    pub meter: i32,
+    pub lockout: i32,
+    pub dead: bool,
+}
 
 #[enum_dispatch(CharacterBehavior)]
 pub trait GenericCharacterBehaviour {
@@ -126,6 +153,11 @@ pub trait GenericCharacterBehaviour {
         facing: Facing,
     );
 }
+
+use self::{
+    combo_state::{AllowedCancel, ComboState},
+    extra_data::ExtraData,
+};
 
 use super::yuyuko::YuyukoState;
 

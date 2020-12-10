@@ -1,5 +1,12 @@
+use super::constructors::{ConstructError, ConstructTag};
 use crate::typedefs::collision;
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+use hecs::EntityBuilder;
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Position {
-    value: collision::Vec2,
+    pub value: collision::Vec2,
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct Render;
+impl ConstructTag for Render {}

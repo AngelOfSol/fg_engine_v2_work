@@ -46,8 +46,8 @@ pub trait UiExtensions {
         'items,
         T,
         Display: FnMut(&T) -> ImString,
-        New: FnMut() -> T,
-        Delete: FnMut(T),
+        New: FnOnce() -> T,
+        Delete: FnOnce(T),
     >(
         &self,
         label: &ImStr,
@@ -264,16 +264,16 @@ impl<'a> UiExtensions for Ui<'a> {
         'items,
         T,
         Display: FnMut(&T) -> ImString,
-        New: FnMut() -> T,
-        Delete: FnMut(T),
+        New: FnOnce() -> T,
+        Delete: FnOnce(T),
     >(
         &self,
         label: &ImStr,
         idx: &mut Option<usize>,
         items: &'items mut Vec<T>,
         display: Display,
-        mut new: New,
-        mut delete: Delete,
+        new: New,
+        delete: Delete,
         height_in_items: i32,
     ) -> (bool, Option<&'items mut T>) {
         let mut ret = self.rearrangable_list_box(label, idx, items, display, height_in_items);

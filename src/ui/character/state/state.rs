@@ -1,6 +1,7 @@
-use super::{AnimationUi, CancelSetUi, FlagsUi, HitboxSetUi, ParticleSpawnUi, SoundPlayInfoUi};
-use crate::character::state::components::{
-    CancelSet, Flags, HitboxSet, MoveType, ParticleSpawn, SoundPlayInfo,
+use super::{AnimationUi, CancelSetUi, FlagsUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
+use crate::character::state::{
+    components::{CancelSet, Flags, HitboxSet, MoveType, SoundPlayInfo},
+    SpawnerInfo,
 };
 
 use crate::assets::Assets;
@@ -18,12 +19,12 @@ pub struct StateUi {
     current_animation: Option<usize>,
     current_flags: Option<usize>,
     current_cancels: Option<usize>,
-    current_particle: Option<usize>,
     current_sound: Option<usize>,
+    current_spawner: Option<usize>,
     current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
-    particle_ui_data: ParticleSpawnUi,
+    spawner_ui_data: SpawnerUi,
 }
 
 impl StateUi {
@@ -32,12 +33,12 @@ impl StateUi {
             current_animation: None,
             current_flags: None,
             current_cancels: None,
-            current_particle: None,
             current_sound: None,
             current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
-            particle_ui_data: ParticleSpawnUi::new(),
+            current_spawner: None,
+            spawner_ui_data: SpawnerUi::new(),
         }
     }
 
@@ -131,30 +132,21 @@ impl StateUi {
         ret
     }
 
-    pub fn draw_particle_editor(
-        &mut self,
-        ui: &Ui<'_>,
-        particle_list: &[String],
-        data: &mut Vec<ParticleSpawn<String>>,
-    ) {
-        if !particle_list.is_empty() {
-            let id = ui.push_id("Particles");
-            let default_particle = particle_list[0].clone();
-            if let (_, Some(particle)) = ui.new_delete_list_box(
-                im_str!("List"),
-                &mut self.current_particle,
-                data,
-                |item| im_str!("{}", item.particle_id.clone()),
-                || ParticleSpawn::new(default_particle.clone().into()),
-                |_| {},
-                5,
-            ) {
-                self.particle_ui_data.draw_ui(ui, particle_list, particle);
-            }
-            id.pop(ui);
+    pub fn draw_spawner_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<SpawnerInfo>) {
+        let id = ui.push_id("Spawner");
+        if let (_, Some(spawner)) = ui.new_delete_list_box(
+            im_str!("List"),
+            &mut self.current_spawner,
+            data,
+            |item| im_str!("(frame {})", item.frame),
+            SpawnerInfo::default,
+            |_| {},
+            5,
+        ) {
+            self.spawner_ui_data.draw_ui(ui, spawner);
         }
+        id.pop(ui);
     }
-
     pub fn draw_sounds_editor(
         &mut self,
         ui: &Ui<'_>,

@@ -6,7 +6,7 @@ mod particles;
 use crate::assets::Assets;
 use crate::character::components::Properties;
 use crate::character::components::{AttackInfo, GroundAction};
-use crate::character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath};
+use crate::character::state::components::{Flags, GlobalParticle, MoveType};
 use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
@@ -163,29 +163,7 @@ pub struct YuyukoPlayer {
 
 use std::cell::RefCell;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct YuyukoState {
-    pub velocity: collision::Vec2,
-    pub position: collision::Vec2,
-    pub current_state: (usize, MoveId),
-    pub extra_data: ExtraData,
-    pub particles: Vec<(usize, collision::Vec2, ParticlePath<ParticleId>)>,
-    pub facing: Facing,
-    pub air_actions: usize,
-    pub spirit_gauge: i32,
-    pub spirit_delay: i32,
-    pub hitstop: i32,
-    pub last_hit_using: Option<u64>,
-    pub current_combo: Option<ComboState>,
-    pub health: i32,
-    pub allowed_cancels: AllowedCancel,
-    pub rebeat_chain: HashSet<MoveId>,
-    pub should_pushback: bool,
-    pub sound_state: PlayerSoundState<SoundPath<YuyukoSound>>,
-    pub meter: i32,
-    pub lockout: i32,
-    pub dead: bool,
-}
+pub type YuyukoState = PlayerState<MoveId, ParticleId, YuyukoSound>;
 
 impl YuyukoState {
     fn new(data: &Yuyuko) -> Self {
@@ -215,6 +193,8 @@ impl YuyukoState {
 }
 
 use crate::game_match::sounds::PlayerSoundState;
+
+use super::PlayerState;
 
 impl YuyukoPlayer {
     pub fn new(data: Rc<Yuyuko>) -> Self {

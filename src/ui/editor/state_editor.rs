@@ -64,20 +64,13 @@ impl AppState for StateEditor {
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
         let mut editor_result = Ok(());
-        let (state_list, particles_list, attack_ids, sounds_list) = {
+        let (state_list, attack_ids, sounds_list) = {
             let character_data = self.character_data.borrow();
 
             let state_list = {
                 let mut state_list: Vec<_> = character_data.states.rest.keys().cloned().collect();
                 state_list.sort();
                 state_list
-            };
-
-            let particles_list = {
-                let mut particles_list: Vec<_> =
-                    character_data.particles.particles.keys().cloned().collect();
-                particles_list.sort();
-                particles_list
             };
 
             let attack_ids: Vec<_> = character_data.attacks.attacks.keys().cloned().collect();
@@ -88,7 +81,7 @@ impl AppState for StateEditor {
                 .sound_name_iterator()
                 .collect();
 
-            (state_list, particles_list, attack_ids, sounds_list)
+            (state_list, attack_ids, sounds_list)
         };
         imgui
             .frame()
@@ -166,16 +159,14 @@ impl AppState for StateEditor {
                         imgui::Slider::new(im_str!("Hitbox"), 0.0..=1.0)
                             .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
-                imgui::Window::new(im_str!("Particles##State"))
+
+                imgui::Window::new(im_str!("Spawners##State"))
                     .size([300.0, 420.0], Condition::Once)
                     .position([300.0, 283.0], Condition::Once)
                     .collapsed(true, Condition::Once)
                     .build(ui, || {
-                        self.ui_data.draw_particle_editor(
-                            ui,
-                            &particles_list,
-                            &mut self.resource.borrow_mut().particles,
-                        );
+                        self.ui_data
+                            .draw_spawner_editor(ui, &mut self.resource.borrow_mut().spawns);
                     });
                 imgui::Window::new(im_str!("Sounds##State"))
                     .size([300.0, 400.0], Condition::Once)

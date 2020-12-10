@@ -13,10 +13,13 @@ pub mod components {
     pub use super::particle_spawn_data::*;
     pub use super::sound_play_info::*;
 }
-use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::{self, Animation};
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
+use crate::{
+    assets::{Assets, ValueAlpha},
+    game_object::constructors::Constructor,
+};
 use cancel_set::{CancelSet, MoveType};
 use flags::Flags;
 use ggez::{Context, GameResult};
@@ -28,6 +31,12 @@ use sound_play_info::SoundPlayInfo;
 use std::cmp;
 use std::hash::Hash;
 use std::path::PathBuf;
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct SpawnerInfo {
+    pub frame: usize,
+    pub data: Vec<Constructor>,
+}
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct State<Id, ParticleId, AttackId, SoundType> {
@@ -42,6 +51,8 @@ pub struct State<Id, ParticleId, AttackId, SoundType> {
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
     #[serde(default)]
     pub particles: Vec<ParticleSpawn<ParticleId>>,
+    #[serde(default)]
+    pub spawns: Vec<SpawnerInfo>,
 
     #[serde(default)]
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
@@ -243,6 +254,7 @@ impl EditorCharacterState {
             minimum_spirit_required: 0,
             minimum_meter_required: 0,
             particles: Vec::new(),
+            spawns: Vec::new(),
             sounds: Vec::new(),
         }
     }

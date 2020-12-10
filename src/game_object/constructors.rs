@@ -1,33 +1,115 @@
 mod position;
 
+use std::fmt::{Display, Formatter};
+
 pub use position::*;
 
+use crate::typedefs::collision;
+
+use super::state::{Position, Render};
+use enum_dispatch::*;
 use hecs::EntityBuilder;
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ConstructError {}
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub enum ConstructError {
+    MissingRequiredComponent,
+}
 pub trait Construct {
-    fn construct_on_to<'c, 'eb>(
-        &'c self,
-        builder: &'eb mut EntityBuilder,
-    ) -> Result<&'eb mut EntityBuilder, ConstructError>;
+    type Context;
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        context: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError>;
 }
 
-pub trait EntityBuilderExtension: Sized {
-    fn try_construct<'c, 'eb, C: Construct>(
-        &'eb mut self,
-        constructor: &'c C,
-    ) -> Result<&mut Self, ConstructError>;
-    fn construct<'c, 'eb, C: Construct>(&'eb mut self, constructor: &'c C) -> &'eb mut Self {
-        self.try_construct(constructor).unwrap()
+pub trait ConstructTag: Default {}
+
+impl<Tag: ConstructTag + hecs::Component> Construct for Tag {
+    type Context = ();
+    fn construct_on_to<'builder>(
+        &self,
+        builder: &'builder mut EntityBuilder,
+        _: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        Ok(builder.add(Self::default()))
     }
 }
 
-impl EntityBuilderExtension for EntityBuilder {
-    fn try_construct<'c, 'eb, C: Construct>(
-        &'eb mut self,
-        constructor: &'c C,
-    ) -> Result<&'eb mut Self, ConstructError> {
-        constructor.construct_on_to(self)
+/// Each variant represents what context needs to be provided to the constructor.
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum Constructor {
+    Contextless(ContextlessConstructor),
+    Position(PositionConstructor),
+}
+
+impl Display for Constructor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Contextless(value) => value.fmt(f),
+            Self::Position(value) => value.fmt(f),
+        }
     }
 }
+
+impl From<ContextlessConstructor> for Constructor {
+    fn from(value: ContextlessConstructor) -> Self {
+        Self::Contextless(value)
+    }
+}
+impl From<PositionConstructor> for Constructor {
+    fn from(value: PositionConstructor) -> Self {
+        Self::Position(value)
+    }
+}
+
+impl Constructor {
+    pub fn iter() -> impl Iterator<Item = Constructor> {
+        ContextlessConstructor::iter()
+            .map(Constructor::from)
+            .chain(PositionConstructor::iter().map(Constructor::from))
+    }
+}
+
+macro_rules! construct_variant {
+    ($name:ident; $context:ty; $($variant:tt),+) => {
+        #[enum_dispatch]
+        #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq)]
+        pub enum $name {
+            $($variant($variant)),+
+        }
+        $(
+            impl From<$variant> for $name {
+                fn from(value: $variant) -> Self {
+                    Self::$variant(value)
+                }
+            }
+        )+
+
+        impl Construct for $name {
+            type Context = $context;
+            fn construct_on_to<'constructor, 'builder>(
+                &'constructor self,
+                builder: &'builder mut EntityBuilder,
+                context: Self::Context,
+            ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+                match self {
+                    $(
+                        Self::$variant(ref value) => value.construct_on_to(builder, context),
+                    )+
+                }
+            }
+        }
+
+    };
+}
+
+construct_variant!(ContextlessConstructor; (); Render);
+construct_variant!(PositionConstructor; collision::Vec2; Position);
+
+// TODO: how to do context?????
+// what about character specific context
+// context is an associated type, two levels of enums are provided, one that tells requested context, and the next that is just enum_dispatch

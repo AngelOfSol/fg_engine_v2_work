@@ -1,14 +1,16 @@
+use super::{Construct, ConstructError};
+use crate::{game_object::state::Position, typedefs::collision};
 use hecs::EntityBuilder;
 
-use crate::game_object::state::Position;
-
-use super::{Construct, ConstructError};
-
 impl Construct for Position {
-    fn construct_on_to<'c, 'eb>(
-        &'c self,
-        builder: &'eb mut EntityBuilder,
-    ) -> Result<&'eb mut EntityBuilder, ConstructError> {
-        Ok(builder.add(*self))
+    type Context = collision::Vec2;
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        offset: collision::Vec2,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        Ok(builder.add(Self {
+            value: self.value + offset,
+        }))
     }
 }
