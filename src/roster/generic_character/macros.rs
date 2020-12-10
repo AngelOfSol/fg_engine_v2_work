@@ -1,6 +1,4 @@
 #[macro_use]
-mod fly;
-#[macro_use]
 mod pushback;
 #[macro_use]
 mod getters;

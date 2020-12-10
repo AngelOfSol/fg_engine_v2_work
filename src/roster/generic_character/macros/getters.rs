@@ -85,24 +85,6 @@ macro_rules! impl_get_attack_data {
     };
 }
 
-macro_rules! impl_current_flags {
-    () => {
-        fn current_flags(&self) -> &Flags {
-            let (frame, move_id) = self.state.current_state;
-            self.data.states[&move_id].flags.at_time(frame)
-        }
-    };
-}
-
-macro_rules! impl_in_corner {
-    () => {
-        fn in_corner(&self, play_area: &PlayArea) -> bool {
-            let collision = self.collision();
-            i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
-        }
-    };
-}
-
 macro_rules! impl_position {
     () => {
         fn position(&self) -> collision::Vec2 {

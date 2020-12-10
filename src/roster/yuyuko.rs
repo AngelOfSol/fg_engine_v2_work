@@ -259,21 +259,94 @@ impl YuyukoPlayer {
     fn handle_fly(move_id: MoveId, extra_data: &mut ExtraData) -> collision::Vec2 {
         crate::roster::impls::handle_fly(move_id, MoveId::FlyStart, extra_data)
     }
-    impl_handle_jump!(
-        jump: MoveId::Jump,
-        super_jump: MoveId::SuperJump,
-        border_escape: MoveId::BorderEscapeJump
-    );
-    impl_on_enter_move!(
-        fly_start: MoveId::FlyStart,
-        jump: MoveId::Jump,
-        super_jump: MoveId::SuperJump,
-        border_escape: MoveId::BorderEscapeJump,
-        melee_restitution: MoveId::MeleeRestitution
-    );
-    impl_in_corner!();
-    impl_current_flags!();
-    impl_handle_rebeat_data!();
+    fn handle_jump(
+        flags: &Flags,
+        data: &Properties,
+        move_id: MoveId,
+        extra_data: &mut ExtraData,
+    ) -> collision::Vec2 {
+        if flags.jump_start {
+            let axis = extra_data.unwrap_jump_direction();
+            *extra_data = ExtraData::None;
+            match move_id {
+                MoveId::Jump => {
+                    if !axis.is_horizontal() {
+                        data.neutral_jump_accel
+                    } else {
+                        data.directed_jump_accel
+                            .component_mul(&collision::Vec2::new(
+                                axis.direction_multiplier(true),
+                                1,
+                            ))
+                    }
+                }
+                MoveId::SuperJump | MoveId::BorderEscapeJump => {
+                    if !axis.is_horizontal() {
+                        data.neutral_super_jump_accel
+                    } else {
+                        data.directed_super_jump_accel
+                            .component_mul(&collision::Vec2::new(
+                                axis.direction_multiplier(true),
+                                1,
+                            ))
+                    }
+                }
+                _ => panic!("jump_start not allowed on non jump moves"),
+            }
+        } else {
+            collision::Vec2::zeros()
+        }
+    }
+    fn on_enter_move(&mut self, input: &[InputState], move_id: MoveId) {
+        self.state.allowed_cancels = AllowedCancel::Always;
+        self.state.last_hit_using = None;
+        self.state.rebeat_chain.insert(move_id);
+
+        match move_id {
+            MoveId::BorderEscapeJump => {
+                self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    input.last().unwrap().axis,
+                    self.state.facing,
+                ));
+            }
+            MoveId::Jump | MoveId::SuperJump => {
+                self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                    input.last().unwrap().axis,
+                    self.state.facing,
+                ));
+            }
+            MoveId::FlyStart => {
+                self.state.air_actions -= 1;
+                let mut dir =
+                    DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
+                if dir.is_backward() {
+                    self.state.facing = self.state.facing.invert();
+                    dir = dir.invert();
+                }
+                self.state.extra_data = ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
+                    DirectedAxis::Forward
+                } else {
+                    dir
+                });
+            }
+            _ => (),
+        }
+    }
+    fn in_corner(&self, play_area: &PlayArea) -> bool {
+        let collision = self.collision();
+        i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
+    }
+    fn current_flags(&self) -> &Flags {
+        let (frame, move_id) = self.state.current_state;
+        self.data.states[&move_id].flags.at_time(frame)
+    }
+    fn handle_rebeat_data(&mut self) {
+        let (_, move_id) = self.state.current_state;
+
+        if !self.data.states[&move_id].state_type.is_attack() {
+            self.state.rebeat_chain.clear();
+        }
+    }
     impl_handle_expire!(dead: MoveId::Dead, hit_ground: MoveId::HitGround);
     impl_handle_hitstun!(
         air_idle: MoveId::AirIdle,
