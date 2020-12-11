@@ -6,7 +6,7 @@ pub use directed_axis::DirectedAxis;
 pub use direction::Direction;
 pub use facing::Facing;
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum::Display;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Display)]
 pub enum Axis {

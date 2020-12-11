@@ -4,7 +4,7 @@ use keyframe::{
     keyframes, AnimationSequence,
 };
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum::Display;
 
 #[derive(Debug, Clone, Copy)]
 pub struct FlashOverlay {

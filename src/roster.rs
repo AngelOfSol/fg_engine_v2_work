@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumCount, EnumIter};
+use strum::{Display, EnumCount, EnumIter};
 
 #[enum_dispatch]
 pub enum CharacterBehavior {

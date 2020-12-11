@@ -2,7 +2,7 @@ use super::AudioBuffer;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use strum_macros::{Display, EnumIter, EnumString};
+use strum::{Display, EnumIter, EnumString};
 
 #[derive(
     PartialEq, Eq, Copy, Clone, Hash, Display, EnumString, EnumIter, Debug, Serialize, Deserialize,

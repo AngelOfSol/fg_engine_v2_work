@@ -1,7 +1,7 @@
 use crate::input::pads_context::GamepadId;
 use crate::typedefs::player::PlayerData;
 use std::net::SocketAddr;
-use strum_macros::Display;
+use strum::Display;
 
 #[derive(Debug, Copy, Clone, PartialEq, Display)]
 pub enum PlayerType {

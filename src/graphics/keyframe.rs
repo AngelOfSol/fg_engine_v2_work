@@ -1,6 +1,6 @@
 use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumIter};
+use strum::{Display, EnumIter};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display, EnumIter)]
 pub enum Coordinates {

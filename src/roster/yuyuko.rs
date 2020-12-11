@@ -41,7 +41,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
+use strum::{Display, EnumIter};
 
 #[derive(Clone)]
 pub struct Yuyuko {

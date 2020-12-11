@@ -1,7 +1,7 @@
 use crate::typedefs::collision::Vec2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use strum_macros::{Display, EnumIter};
+use strum::{Display, EnumIter};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Display, EnumIter, Copy, Hash)]
 pub enum GlobalParticle {

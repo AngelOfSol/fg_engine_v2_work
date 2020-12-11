@@ -10,7 +10,7 @@ use imgui::im_str;
 use laminar::{Packet, SocketEvent};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumCount, EnumIter};
+use strum::{Display, EnumCount, EnumIter};
 
 #[derive(Debug, Copy, Clone)]
 struct PlayerMenuState {

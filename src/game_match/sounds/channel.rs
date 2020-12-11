@@ -3,7 +3,7 @@ use rodio::Device;
 use rodio::SpatialSink;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use strum_macros::{Display, EnumIter};
+use strum::{Display, EnumIter};
 
 use super::{AudioBuffer, GlobalSound, SoundPath, SoundState};
 

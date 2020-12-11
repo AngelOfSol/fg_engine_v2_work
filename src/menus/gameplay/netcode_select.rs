@@ -12,9 +12,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::net::SocketAddr;
 use std::time::Instant;
+use strum::Display;
+use strum::EnumIter;
 use strum::IntoEnumIterator;
-use strum_macros::Display;
-use strum_macros::EnumIter;
 
 enum NextState {
     Next,

@@ -15,7 +15,7 @@ where
                     .position(|item| item == value)
                     .unwrap()
                     .checked_sub(1)
-                    .unwrap_or(Self::count() - 1),
+                    .unwrap_or(Self::COUNT - 1),
             )
             .unwrap()
     }
@@ -27,7 +27,7 @@ where
                     .unwrap()
                     .checked_add(1)
                     .unwrap_or(0)
-                    % Self::count(),
+                    % Self::COUNT,
             )
             .unwrap()
     }

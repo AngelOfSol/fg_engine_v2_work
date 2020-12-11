@@ -8,7 +8,7 @@ use hecs::EntityBuilder;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter};
+use strum::{Display, EnumIter};
 
 pub use position::*;
 

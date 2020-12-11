@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum::Display;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Display)]
 #[serde(rename_all = "snake_case")]
