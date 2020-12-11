@@ -1,17 +1,16 @@
+mod inspect;
 mod position;
 
-use std::fmt::{Display, Formatter};
-
-pub use position::*;
-
-use crate::typedefs::collision;
-
 use super::state::{Position, Render};
+use crate::typedefs::collision;
 use enum_dispatch::*;
 use hecs::EntityBuilder;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
+
+pub use position::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ConstructError {
