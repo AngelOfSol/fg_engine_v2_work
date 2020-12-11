@@ -1,3 +1,4 @@
+use crate::game_object::constructors::Inspect;
 use crate::imgui_extra::UiExtensions;
 use crate::{character::state::SpawnerInfo, game_object::constructors::Constructor};
 use imgui::*;
@@ -35,7 +36,9 @@ impl SpawnerUi {
             || selected_type,
             |_| {},
             5,
-        ) {}
+        ) {
+            spawner.inspect_mut(ui);
+        }
         id.pop(ui);
     }
 }

@@ -5,11 +5,13 @@ use super::state::{Position, Render};
 use crate::typedefs::collision;
 use enum_dispatch::*;
 use hecs::EntityBuilder;
+use imgui::Ui;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
 
+pub use inspect::Inspect;
 pub use position::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
@@ -37,8 +39,12 @@ impl<Tag: ConstructTag + hecs::Component> Construct for Tag {
         Ok(builder.add(Self::default()))
     }
 }
+impl<Tag: ConstructTag> Inspect for Tag {
+    fn inspect_mut(&mut self, _: &Ui<'_>) {}
+}
 
 /// Each variant represents what context needs to be provided to the constructor.
+#[enum_dispatch(Inspect)]
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub enum Constructor {
     Contextless(ContextlessConstructor),
@@ -54,17 +60,6 @@ impl Display for Constructor {
     }
 }
 
-impl From<ContextlessConstructor> for Constructor {
-    fn from(value: ContextlessConstructor) -> Self {
-        Self::Contextless(value)
-    }
-}
-impl From<PositionConstructor> for Constructor {
-    fn from(value: PositionConstructor) -> Self {
-        Self::Position(value)
-    }
-}
-
 impl Constructor {
     pub fn iter() -> impl Iterator<Item = Constructor> {
         ContextlessConstructor::iter()
@@ -75,18 +70,12 @@ impl Constructor {
 
 macro_rules! construct_variant {
     ($name:ident; $context:ty; $($variant:tt),+) => {
-        #[enum_dispatch]
+        #[enum_dispatch(Inspect)]
         #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq)]
         pub enum $name {
             $($variant($variant)),+
         }
-        $(
-            impl From<$variant> for $name {
-                fn from(value: $variant) -> Self {
-                    Self::$variant(value)
-                }
-            }
-        )+
+
 
         impl Construct for $name {
             type Context = $context;

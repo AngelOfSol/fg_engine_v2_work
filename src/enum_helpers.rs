@@ -13,8 +13,7 @@ where
             .nth(
                 Self::iter()
                     .position(|item| item == value)
-                    .unwrap()
-                    .checked_sub(1)
+                    .and_then(|i| i.checked_sub(1))
                     .unwrap_or(Self::COUNT - 1),
             )
             .unwrap()
@@ -24,8 +23,7 @@ where
             .nth(
                 Self::iter()
                     .position(|item| item == value)
-                    .unwrap()
-                    .checked_add(1)
+                    .and_then(|i| i.checked_add(1))
                     .unwrap_or(0)
                     % Self::COUNT,
             )
