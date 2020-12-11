@@ -189,6 +189,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] rewind 5 seconds/fast forward 5seconds
         [] play backwards
         [] play forwards at 2x,4x,8x speed
+    
     [] add rounds
         [x] first 5 seconds have a countdown
             [x] roudn start animation
@@ -221,46 +222,26 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] on press start
     [x] move to E button
     [] create object system
-        [] spawner type
-            [] defines parameters it needs to spawn
-                [] special handling for spawn x/y parameters
-            [] spawns character bullet types
-        [] bullet implementation type
-            [] defines a gamestate
-            [] defines a type that holds information
-                [] this can be parameterized by additional types if things such as particle spawners or bullet spawners are needed
-            [] defines behaviour on that gamestate
-        [] character bullet type
-            [] contains a bullet implementation
-            [] takes the character resource and passes the particular state info to the implementation
-
-
-        [] bullet spawner type is sperate from bullet type
-            [] this allows characters to determine what bullet to spawn based on resources
-            [] ie: elemental spawner spawns fire/water/wind bullet based on current element
-        [] decide on structure and how to process
-            [] decide on how to determine state transitions
-        [] migrate all bullets into objects
-        [] standardize functionality that bullets need/input parameters
-            [] position
-
-            [] color?? (just make different bulelts for idfferent colors)
-        [] data types
-            [] BulletState
-            [] BulletParams
-                [] StaticParams
-                    [] Expire Type: Offscreen, TimeBased, Both (just a list of flags)
-                    [] hitsparks belong in attackData
-                [] Timeline<Params>
-                [] Animations
-                [] BulletSpawners
-                [] ParticleSpawners
-                [] Timeline<HitboxSet>
-            [] Spawner
-        [] editor
-            [] untagged enum for all bullet spawners
-            [] untagged enum for all bullet types
-            [] BulletParam(Static) impl DrawEditableUI
+        [x] spawner type
+            [x] defines parameters it needs to spawn
+            [] add position indicator to editor ui
+                [] this is a special case for position the position constructor
+        [] actually use the constructors to spawn bullets
+            [] render basic box
+            [] spawn at position
+        [] add graphic_id
+            [] render graphic from hashmap<GraphicId, Particle[rename this]>
+        [] add global_graphics_id
+            [] render graphic from hashmap<GraphicId, Particle[rename this]>
+            [] move all particles to objects
+        [] add expire_at component
+        [] add timer component
+        [] add velocity
+        [] add data_id for Hitboxes
+            [] for rendering, add graphic_id to overlay 
+            [] property
+                [] inspect_mut
+                [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
     [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
     [] rework chaining description
         [] hit

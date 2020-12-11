@@ -7,7 +7,10 @@ use enum_dispatch::*;
 use hecs::EntityBuilder;
 use imgui::Ui;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
+use std::{
+    convert::{TryFrom, TryInto},
+    fmt::{Display, Formatter},
+};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
 
@@ -76,6 +79,15 @@ macro_rules! construct_variant {
             $($variant($variant)),+
         }
 
+        $(
+            impl TryInto<$variant> for Constructor {
+                type Error = &'static str;
+                fn try_into(self) -> Result<$variant, Self::Error> {
+                    let value: $name = self.try_into()?;
+                    value.try_into()
+                }
+            }
+        )+
 
         impl Construct for $name {
             type Context = $context;
