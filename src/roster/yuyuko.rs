@@ -3,8 +3,6 @@ mod command_list;
 mod moves;
 mod particles;
 
-use crate::command_list::CommandList;
-use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
@@ -32,6 +30,8 @@ use crate::{
     game_object::state::Render,
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
+use crate::{command_list::CommandList, game_object::state::Timer};
+use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
 use attacks::AttackId;
 use ggez::{Context, GameResult};
 use hecs::{EntityBuilder, World};
@@ -632,6 +632,22 @@ impl YuyukoPlayer {
             self.world.spawn(builder.build());
         }
     }
+    fn update_objects(&mut self) {
+        for (_, Timer(timer)) in self.world.query::<&mut Timer>().iter() {
+            *timer += 1;
+        }
+        let to_destroy: Vec<_> = self
+            .world
+            .query::<(&Timer, &YuyukoGraphic)>()
+            .with::<ExpiresAfterAnimation>()
+            .iter()
+            .filter(|(_, (Timer(timer), graphic))| *timer >= self.data.graphics[graphic].duration())
+            .map(|(entity, _)| entity)
+            .collect();
+        for entity in to_destroy {
+            self.world.despawn(entity).unwrap();
+        }
+    }
 
     fn update_sound(&mut self) {
         let (frame, move_id) = self.state.current_state;
@@ -1124,6 +1140,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.update_lockout();
         self.update_meter(opponent_position);
         self.update_particles(global_particles);
+        self.update_objects();
         self.spawn_objects();
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
@@ -1191,17 +1208,22 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             &self.state.particles,
         )
     }
+
     fn draw_objects(
         &self,
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
     ) -> GameResult<()> {
-        for (_, position) in self.world.query::<&Position>().with::<Render>().iter() {
-            self.data.graphics[&YuyukoGraphic::HitEffect].draw_at_time(
+        for (_, (position, graphic, Timer(frame))) in self
+            .world
+            .query::<(&Position, &YuyukoGraphic, &Timer)>()
+            .iter()
+        {
+            self.data.graphics[graphic].draw_at_time(
                 ctx,
                 assets,
-                0,
+                *frame % self.data.graphics[graphic].duration(),
                 world
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
                         position.value.into_graphical(),

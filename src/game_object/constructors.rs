@@ -1,7 +1,8 @@
 mod inspect;
 mod position;
+mod timer;
 
-use super::state::{Position, Render};
+use super::state::{ExpiresAfterAnimation, Position, Render};
 use crate::{imgui_extra::UiExtensions, roster::YuyukoGraphic, typedefs::collision};
 use enum_dispatch::*;
 use hecs::EntityBuilder;
@@ -13,6 +14,7 @@ use std::{
 };
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
+use timer::TimerConstructor;
 
 pub use inspect::Inspect;
 pub use position::*;
@@ -49,7 +51,6 @@ pub struct ConstructId<Id> {
 }
 
 impl<Id: hecs::Component + Clone> Construct for ConstructId<Id> {
-    //
     type Context = ();
     fn construct_on_to<'constructor, 'builder>(
         &'constructor self,
@@ -139,6 +140,7 @@ macro_rules! construct_enum_impl {
                     value.try_into()
                 }
             }
+            #[allow(irrefutable_let_patterns)]
             impl TryAsRef<$variant_type> for Constructor {
                  fn try_as_ref(&self) -> Option<&$variant_type> {
                     let value: &$name = self.try_as_ref()?;
@@ -174,6 +176,8 @@ construct_enum_impl!(
     enum ContextlessConstructor {
         Render(Render),
         YuyukoGraphic(ConstructId<YuyukoGraphic>),
+        ExpiresAfterAnimation(ExpiresAfterAnimation),
+        Timer(TimerConstructor),
     }
 );
 construct_enum_impl!(

@@ -1,11 +1,17 @@
-use super::constructors::{ConstructError, ConstructTag};
+use super::constructors::ConstructTag;
 use crate::typedefs::collision;
-use hecs::EntityBuilder;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Position {
     pub value: collision::Vec2,
 }
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct Timer(pub usize);
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct ExpiresAfterAnimation;
+impl ConstructTag for ExpiresAfterAnimation {}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Render;
