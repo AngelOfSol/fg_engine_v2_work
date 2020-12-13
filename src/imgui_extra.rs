@@ -32,6 +32,7 @@ pub trait UiExtensions {
 
     fn input_vec2_float(&self, label: &ImStr, data: &mut graphics::Vec2) -> bool;
     fn input_vec2_whole(&self, label: &ImStr, data: &mut collision::Vec2);
+    fn input_vec2_pixels(&self, label: &ImStr, data: &mut collision::Vec2);
 
     fn rearrangable_list_box<T, F: FnMut(&T) -> ImString>(
         &self,
@@ -309,5 +310,10 @@ impl<'a> UiExtensions for Ui<'a> {
         let _ = self.input_whole(im_str!("X"), &mut data.x);
         let _ = self.input_whole(im_str!("Y"), &mut data.y);
         id.pop(self);
+    }
+    fn input_vec2_pixels(&self, label: &ImStr, data: &mut collision::Vec2) {
+        *data /= 1_00;
+        self.input_vec2_whole(label, data);
+        *data *= 1_00;
     }
 }

@@ -1,6 +1,6 @@
 use crate::assets::Assets;
 use crate::character::components::Particles;
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::imgui_extra::UiExtensions;
 use ggez::Context;
 use imgui::*;
@@ -48,7 +48,7 @@ impl ParticlesUi {
                             .and_then(|path| path.to_str())
                             .unwrap()
                             .to_owned();
-                        let animation = Particle::load_from_json(ctx, assets, path).unwrap();
+                        let animation = AnimationGroup::load_from_json(ctx, assets, path).unwrap();
                         self.particle_keys.push(name.clone());
                         data.particles.insert(name, animation);
                     }
@@ -60,7 +60,8 @@ impl ParticlesUi {
                                 .and_then(|path| path.to_str())
                                 .unwrap()
                                 .to_owned();
-                            let animation = Particle::load_from_json(ctx, assets, path).unwrap();
+                            let animation =
+                                AnimationGroup::load_from_json(ctx, assets, path).unwrap();
                             self.particle_keys.push(name.clone());
                             data.particles.insert(name.clone(), animation);
                         }
@@ -74,7 +75,7 @@ impl ParticlesUi {
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
             data.particles
-                .insert("new_particle".to_owned(), Particle::new());
+                .insert("new_particle".to_owned(), AnimationGroup::new());
             self.particle_keys.push("new_particle".to_owned());
             self.particle_keys.sort();
         }

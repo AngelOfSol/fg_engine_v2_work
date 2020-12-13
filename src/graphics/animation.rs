@@ -14,7 +14,7 @@ use std::path::PathBuf;
 
 pub type Animation = AnimationV1;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct AnimationV1 {
     pub name: String,
     #[serde(deserialize_with = "sprite::version::vec::deserialize")]

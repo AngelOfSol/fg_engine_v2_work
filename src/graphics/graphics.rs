@@ -7,6 +7,12 @@ pub enum BlendMode {
     Add,
 }
 
+impl Default for BlendMode {
+    fn default() -> Self {
+        Self::Alpha
+    }
+}
+
 impl Into<graphics::BlendMode> for BlendMode {
     fn into(self) -> graphics::BlendMode {
         match self {

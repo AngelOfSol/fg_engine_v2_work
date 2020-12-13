@@ -1,8 +1,8 @@
 pub mod animation;
+pub mod animation_group;
 #[allow(clippy::module_inception)]
 mod graphics;
 pub mod keyframe;
-pub mod particle;
 mod sprite;
 
 pub use animation::Animation;

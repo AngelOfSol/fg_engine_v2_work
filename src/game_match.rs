@@ -7,8 +7,8 @@ pub use flash::FlashType;
 pub use match_settings::{FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData};
 
 use crate::assets::ValueAlpha;
-use crate::character::state::components::GlobalParticle;
-use crate::graphics::particle::Particle;
+use crate::character::state::components::GlobalGraphic;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
 use crate::input::InputState;
@@ -63,20 +63,20 @@ pub struct ShieldUi {
 
 #[derive(Clone)]
 pub struct RoundStartUi {
-    pub action: Particle,
-    pub gamestart: Particle,
-    pub roundend: Particle,
-    pub round: [Particle; 5],
+    pub action: AnimationGroup,
+    pub gamestart: AnimationGroup,
+    pub roundend: AnimationGroup,
+    pub round: [AnimationGroup; 5],
 }
 
 #[derive(Clone)]
 pub struct PlayerUi {
-    pub limit_bar: Particle,
-    pub overlay: Particle,
-    pub underlay: Particle,
-    pub hp_bar: Particle,
-    pub spirit_bar: Particle,
-    pub meter_bar: Particle,
+    pub limit_bar: AnimationGroup,
+    pub overlay: AnimationGroup,
+    pub underlay: AnimationGroup,
+    pub hp_bar: AnimationGroup,
+    pub spirit_bar: AnimationGroup,
+    pub meter_bar: AnimationGroup,
     pub underlay_round_windicator: Image,
     pub overlay_round_windicator: Image,
     pub round_windicator: Image,
@@ -694,8 +694,8 @@ impl<Writer: Write> Match<Writer> {
                 player.draw_particles(ctx, &assets, world, &self.runtime_data.particles)?;
             }
 
-            for _player in self.players.iter() {
-                //player.draw_bullets(ctx, &assets, world)?;
+            for player in self.players.iter() {
+                player.draw_objects(ctx, &assets, world)?;
             }
         }
 

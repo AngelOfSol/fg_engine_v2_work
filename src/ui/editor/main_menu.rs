@@ -1,9 +1,9 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::ui::editor::character_editor::StandaloneParticleResource;
-use crate::ui::editor::{CharacterEditor, ParticleEditor};
+use crate::ui::editor::{AnimationGroupEditor, CharacterEditor};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -61,10 +61,10 @@ impl AppState for EditorMenu {
                         }
                     }
                     if ui.small_button(im_str!("New Particle")) {
-                        let particle = Particle::new();
+                        let particle = AnimationGroup::new();
                         let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                         self.next = Transition::Push(Box::new(
-                            ParticleEditor::new(
+                            AnimationGroupEditor::new(
                                 assets,
                                 Box::new(StandaloneParticleResource::from(particle)),
                             )
@@ -76,7 +76,7 @@ impl AppState for EditorMenu {
                             nfd::open_file_dialog(Some("json"), None)
                         {
                             let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
-                            let particle = Particle::load_from_json(
+                            let particle = AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets.borrow_mut(),
                                 PathBuf::from(path),
@@ -84,7 +84,7 @@ impl AppState for EditorMenu {
 
                             if let Ok(particle) = particle {
                                 self.next = Transition::Push(Box::new(
-                                    ParticleEditor::new(
+                                    AnimationGroupEditor::new(
                                         assets,
                                         Box::new(StandaloneParticleResource::from(particle)),
                                     )

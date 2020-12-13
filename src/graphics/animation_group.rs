@@ -8,16 +8,16 @@ use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-pub type Particle = ParticleV1;
+pub type AnimationGroup = AnimationGroupV1;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ParticleV1 {
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct AnimationGroupV1 {
     #[serde(deserialize_with = "animation::version::vec::deserialize")]
     pub animations: Vec<Animation>,
     pub modifiers: Modifiers,
 }
 
-impl Particle {
+impl AnimationGroup {
     pub fn into_modern(self) -> Self {
         self
     }
@@ -110,17 +110,17 @@ impl Particle {
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,
-        particle: &Self,
+        animation_group: &Self,
         path: PathBuf,
     ) -> GameResult<()> {
-        file::save(ctx, assets, particle, path)
+        file::save(ctx, assets, animation_group, path)
     }
     pub fn load(
         ctx: &mut Context,
         assets: &mut Assets,
-        particle: &mut Self,
+        animation_group: &mut Self,
         path: PathBuf,
     ) -> GameResult<()> {
-        file::load(ctx, assets, particle, path)
+        file::load(ctx, assets, animation_group, path)
     }
 }

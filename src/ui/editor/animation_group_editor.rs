@@ -1,7 +1,7 @@
 use super::character_editor::{ItemResource, ParticleAnimationResource};
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::{Assets, ValueAlpha};
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
 use crate::ui::graphics::modifiers::ModifiersUi;
@@ -20,17 +20,17 @@ enum Status {
     NotDone,
 }
 
-pub struct ParticleEditor {
+pub struct AnimationGroupEditor {
     frame: usize,
-    path: Box<dyn ItemResource<Output = Particle>>,
-    resource: Rc<RefCell<Particle>>,
+    path: Box<dyn ItemResource<Output = AnimationGroup>>,
+    resource: Rc<RefCell<AnimationGroup>>,
     ui_data: ParticleUi,
     done: Status,
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
 }
 
-impl AppState for ParticleEditor {
+impl AppState for AnimationGroupEditor {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
@@ -41,7 +41,7 @@ impl AppState for ParticleEditor {
             Status::DoneAndSave => {
                 let mut overwrite_target = self.path.get_from_mut().unwrap();
                 *overwrite_target =
-                    std::mem::replace(&mut self.resource.borrow_mut(), Particle::new());
+                    std::mem::replace(&mut self.resource.borrow_mut(), AnimationGroup::new());
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),
@@ -105,7 +105,7 @@ impl AppState for ParticleEditor {
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Particle Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("New")).build(ui) {
-                            *self.resource.borrow_mut() = Particle::new();
+                            *self.resource.borrow_mut() = AnimationGroup::new();
                             self.ui_data = ParticleUi::new();
                         }
                         ui.separator();
@@ -117,7 +117,12 @@ impl AppState for ParticleEditor {
                                 path.set_extension("json");
                                 let assets = &mut self.assets.borrow_mut();
                                 // TODO: use this error
-                                let _ = Particle::save(ctx, assets, &self.resource.borrow(), path);
+                                let _ = AnimationGroup::save(
+                                    ctx,
+                                    assets,
+                                    &self.resource.borrow(),
+                                    path,
+                                );
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
@@ -127,7 +132,7 @@ impl AppState for ParticleEditor {
                                 let assets = &mut self.assets.borrow_mut();
                                 // TODO: use this error
                                 if let Ok(state) =
-                                    Particle::load_from_json(ctx, assets, PathBuf::from(path))
+                                    AnimationGroup::load_from_json(ctx, assets, PathBuf::from(path))
                                 {
                                     *self.resource.borrow_mut() = state;
                                     self.ui_data = ParticleUi::new();
@@ -205,10 +210,10 @@ impl AppState for ParticleEditor {
     }
 }
 
-impl ParticleEditor {
+impl AnimationGroupEditor {
     pub fn new(
         assets: Rc<RefCell<Assets>>,
-        path: Box<dyn ItemResource<Output = Particle>>,
+        path: Box<dyn ItemResource<Output = AnimationGroup>>,
     ) -> Option<Self> {
         let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
         Some(Self {

@@ -2,13 +2,13 @@ pub mod components;
 pub mod state;
 
 use crate::assets::Assets;
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use components::{Attacks, EditorStates, Particles, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
 use state::State;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -24,6 +24,9 @@ pub struct PlayerCharacter {
     pub attacks: Attacks,
     #[serde(default)]
     pub sounds: HashSet<String>,
+
+    #[serde(default)]
+    pub graphics: HashMap<String, AnimationGroup>,
 }
 
 impl PlayerCharacter {
@@ -34,6 +37,7 @@ impl PlayerCharacter {
             particles: Particles::new(),
             attacks: Attacks::new(),
             sounds: HashSet::new(),
+            graphics: HashMap::new(),
         }
     }
 
@@ -73,11 +77,18 @@ impl PlayerCharacter {
         path.push("particles");
         for (key, animation) in player_character.particles.particles.iter_mut() {
             path.push(key);
-            Particle::load(ctx, assets, animation, path.clone())?;
+            AnimationGroup::load(ctx, assets, animation, path.clone())?;
             path.pop();
         }
         path.pop();
 
+        path.push("graphics");
+        for (key, animation_group) in player_character.graphics.iter_mut() {
+            path.push(key);
+            AnimationGroup::load(ctx, assets, animation_group, path.clone())?;
+            path.pop();
+        }
+        path.pop();
         Ok(())
     }
     pub fn save(
@@ -114,11 +125,22 @@ impl PlayerCharacter {
         std::fs::create_dir_all(&path)?;
         for (name, particle) in player_character.particles.particles.iter() {
             path.push(format!("{}.json", name));
-            Particle::save(ctx, assets, particle, path.clone())?;
+            AnimationGroup::save(ctx, assets, particle, path.clone())?;
             path.pop();
         }
         path.pop();
 
+        path.push("graphics");
+        if path.exists() {
+            std::fs::remove_dir_all(&path)?;
+        }
+        std::fs::create_dir_all(&path)?;
+        for (name, animation_group) in player_character.graphics.iter() {
+            path.push(format!("{}.json", name));
+            AnimationGroup::save(ctx, assets, animation_group, path.clone())?;
+            path.pop();
+        }
+        path.pop();
         Ok(())
     }
 }

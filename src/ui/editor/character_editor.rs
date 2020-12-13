@@ -1,16 +1,22 @@
-use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
 use crate::ui::character::components::{AttacksUi, ParticlesUi, PropertiesUi, StatesUi};
-use crate::ui::editor::{AttackInfoEditor, ParticleEditor, StateEditor};
+use crate::ui::editor::{AnimationGroupEditor, AttackInfoEditor, StateEditor};
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    graphics::animation_group::AnimationGroup,
+};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::cell::{Ref, RefCell, RefMut};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    ops::DerefMut,
+};
 
 pub trait ItemResource {
     type Output;
@@ -18,6 +24,62 @@ pub trait ItemResource {
     fn get_from_mut(&self) -> Option<RefMut<Self::Output>>;
 }
 
+pub struct GraphicResource {
+    pub graphic_id: String,
+    pub data: Rc<RefCell<PlayerCharacter>>,
+}
+impl ItemResource for GraphicResource {
+    type Output = AnimationGroup;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let character = self.data.borrow();
+        if character.graphics.contains_key(&self.graphic_id) {
+            Some(Ref::map(character, |character| {
+                character.graphics.get(&self.graphic_id).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let character = self.data.borrow_mut();
+        if character.graphics.contains_key(&self.graphic_id) {
+            Some(RefMut::map(character, |character| {
+                character.graphics.get_mut(&self.graphic_id).unwrap()
+            }))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct GraphicAnimationResource {
+    pub animation: String,
+    pub data: Rc<RefCell<AnimationGroup>>,
+}
+
+impl ItemResource for GraphicAnimationResource {
+    type Output = crate::graphics::Animation;
+    fn get_from(&self) -> Option<Ref<Self::Output>> {
+        let particle = self.data.borrow();
+        Some(Ref::map(particle, |particle| {
+            particle
+                .animations
+                .iter()
+                .find(|item| item.name == self.animation)
+                .unwrap()
+        }))
+    }
+    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
+        let particle = self.data.borrow_mut();
+        Some(RefMut::map(particle, |particle| {
+            particle
+                .animations
+                .iter_mut()
+                .find(|item| item.name == self.animation)
+                .unwrap()
+        }))
+    }
+}
 pub struct AttackResource {
     pub attack: String,
     pub data: Rc<RefCell<PlayerCharacter>>,
@@ -77,7 +139,7 @@ impl ItemResource for StateResource {
 
 pub struct ParticleAnimationResource {
     pub animation: String,
-    pub data: Rc<RefCell<crate::graphics::particle::Particle>>,
+    pub data: Rc<RefCell<crate::graphics::animation_group::AnimationGroup>>,
 }
 
 impl ItemResource for ParticleAnimationResource {
@@ -110,7 +172,7 @@ pub struct ParticleResource {
 }
 
 impl ItemResource for ParticleResource {
-    type Output = crate::graphics::particle::Particle;
+    type Output = crate::graphics::animation_group::AnimationGroup;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
         let character = self.data.borrow();
         if character.particles.particles.contains_key(&self.particle) {
@@ -138,11 +200,11 @@ impl ItemResource for ParticleResource {
 }
 
 pub struct StandaloneParticleResource {
-    pub particle: Rc<RefCell<crate::graphics::particle::Particle>>,
+    pub particle: Rc<RefCell<crate::graphics::animation_group::AnimationGroup>>,
 }
 
-impl From<crate::graphics::particle::Particle> for StandaloneParticleResource {
-    fn from(value: crate::graphics::particle::Particle) -> Self {
+impl From<crate::graphics::animation_group::AnimationGroup> for StandaloneParticleResource {
+    fn from(value: crate::graphics::animation_group::AnimationGroup) -> Self {
         Self {
             particle: Rc::new(RefCell::new(value)),
         }
@@ -150,7 +212,7 @@ impl From<crate::graphics::particle::Particle> for StandaloneParticleResource {
 }
 
 impl ItemResource for StandaloneParticleResource {
-    type Output = crate::graphics::particle::Particle;
+    type Output = crate::graphics::animation_group::AnimationGroup;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
         Some(self.particle.borrow())
     }
@@ -207,6 +269,15 @@ pub struct CharacterEditor {
 
 impl AppState for CharacterEditor {
     fn update(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
+        let mut pc = self.resource.borrow_mut();
+        let pc = pc.deref_mut();
+        let (graphics, particles) = (&mut pc.graphics, &mut pc.particles);
+        for key in pc.properties.character.graphic_name_iterator() {
+            graphics
+                .entry(key.clone())
+                .or_insert_with(|| particles.particles[&key].clone());
+        }
+
         Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
 
@@ -256,27 +327,26 @@ impl AppState for CharacterEditor {
                         }
                         editor_result = edit_result.map(|_| ());
                     });
-                imgui::Window::new(im_str!("Particles"))
+
+                imgui::Window::new(im_str!("Graphics"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let should_edit = self.particle_ui_data.draw_ui(
-                            ctx,
-                            &mut self.assets.borrow_mut(),
-                            ui,
-                            &mut self.resource.borrow_mut().particles,
-                        );
-                        if let Some(particle_name) = should_edit {
-                            self.transition = Transition::Push(Box::new(
-                                ParticleEditor::new(
-                                    self.assets.clone(),
-                                    Box::new(ParticleResource {
-                                        data: self.resource.clone(),
-                                        particle: particle_name,
-                                    }),
-                                )
-                                .unwrap(),
-                            ));
+                        for key in self.resource.borrow().graphics.keys() {
+                            ui.text(key);
+                            ui.same_line(0.0);
+                            if ui.small_button(&im_str!("Edit##{}", key)) {
+                                self.transition = Transition::Push(Box::new(
+                                    AnimationGroupEditor::new(
+                                        self.assets.clone(),
+                                        Box::new(GraphicResource {
+                                            data: self.resource.clone(),
+                                            graphic_id: key.clone(),
+                                        }),
+                                    )
+                                    .unwrap(),
+                                ));
+                            }
                         }
                     });
 

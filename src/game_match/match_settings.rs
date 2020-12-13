@@ -1,9 +1,9 @@
 use crate::assets::Assets;
 use crate::game_match::{
-    GlobalParticle, GlobalSound, PlayArea, PlayerUi, RoundStartUi, ShieldUi, SoundList, Stage,
+    GlobalGraphic, GlobalSound, PlayArea, PlayerUi, RoundStartUi, ShieldUi, SoundList, Stage,
     UiElements,
 };
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::player_list::PlayerList;
 use crate::roster::Character;
 use crate::roster::CharacterData;
@@ -30,7 +30,7 @@ pub struct RuntimeData {
     pub character_data: PlayerData<CharacterData>,
     pub assets: Assets,
     pub sounds: SoundList<GlobalSound>,
-    pub particles: HashMap<GlobalParticle, Particle>,
+    pub particles: HashMap<GlobalGraphic, AnimationGroup>,
     pub ui: UiElements,
     pub background: Stage,
     pub play_area: PlayArea,
@@ -119,12 +119,12 @@ impl MatchSettings {
 
                 let mut particles = HashMap::new();
                 let mut path = PathBuf::from("./resources/global/particles");
-                for particle in GlobalParticle::iter() {
+                for particle in GlobalGraphic::iter() {
                     path.push(format!("{}.json", particle));
 
                     particles.insert(
                         particle,
-                        Particle::load_from_json(ctx, &mut assets, path.clone())?,
+                        AnimationGroup::load_from_json(ctx, &mut assets, path.clone())?,
                     );
 
                     path.pop();
@@ -144,43 +144,43 @@ impl MatchSettings {
                         )?,
                     },
                     roundstart: RoundStartUi {
-                        gamestart: Particle::load_from_json(
+                        gamestart: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/roundstart/game_start.json".into(),
                         )?,
-                        action: Particle::load_from_json(
+                        action: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/roundstart/round_start.json".into(),
                         )?,
-                        roundend: Particle::load_from_json(
+                        roundend: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/roundstart/round_end.json".into(),
                         )?,
                         round: [
-                            Particle::load_from_json(
+                            AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets,
                                 "./resources/global/ui/roundstart/last_round.json".into(),
                             )?,
-                            Particle::load_from_json(
+                            AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets,
                                 "./resources/global/ui/roundstart/round_one.json".into(),
                             )?,
-                            Particle::load_from_json(
+                            AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets,
                                 "./resources/global/ui/roundstart/round_two.json".into(),
                             )?,
-                            Particle::load_from_json(
+                            AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets,
                                 "./resources/global/ui/roundstart/round_three.json".into(),
                             )?,
-                            Particle::load_from_json(
+                            AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets,
                                 "./resources/global/ui/roundstart/round_three.json".into(),
@@ -188,32 +188,32 @@ impl MatchSettings {
                         ],
                     },
                     player: PlayerUi {
-                        limit_bar: Particle::load_from_json(
+                        limit_bar: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/limit_bar.json".into(),
                         )?,
-                        overlay: Particle::load_from_json(
+                        overlay: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/player_overlay.json".into(),
                         )?,
-                        underlay: Particle::load_from_json(
+                        underlay: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/underlay.json".into(),
                         )?,
-                        hp_bar: Particle::load_from_json(
+                        hp_bar: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/hp_bar.json".into(),
                         )?,
-                        spirit_bar: Particle::load_from_json(
+                        spirit_bar: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/spirit_bar.json".into(),
                         )?,
-                        meter_bar: Particle::load_from_json(
+                        meter_bar: AnimationGroup::load_from_json(
                             ctx,
                             &mut assets,
                             "./resources/global/ui/meter_bar.json".into(),

@@ -2,7 +2,7 @@ use crate::input::Facing;
 use crate::roster::generic_character::combo_state::ComboState;
 use crate::typedefs::collision;
 use crate::{
-    character::state::components::{Flags, GlobalParticle, MoveType, ParticlePath},
+    character::state::components::{Flags, GlobalGraphic, MoveType, ParticlePath},
     input::DirectedAxis,
 };
 
@@ -295,7 +295,7 @@ pub fn get_transform(
             facing.graphics_multiplier(),
         ))
 }
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -305,8 +305,8 @@ pub fn draw_particles<K: Hash + Eq>(
     ctx: &mut Context,
     assets: &Assets,
     world: graphics::Matrix4,
-    local_particles: &HashMap<K, Particle>,
-    global_particles: &HashMap<GlobalParticle, Particle>,
+    local_particles: &HashMap<K, AnimationGroup>,
+    global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
     particle_list: &[(usize, collision::Vec2, ParticlePath<K>)],
 ) -> GameResult<()> {
     for (frame, position, id) in particle_list {

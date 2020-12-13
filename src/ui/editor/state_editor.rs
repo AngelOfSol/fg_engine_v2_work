@@ -1,6 +1,4 @@
 use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
-use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::Assets;
 use crate::character::state::components::{MovementData, ParticlePath};
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
@@ -10,13 +8,18 @@ use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::state::{CancelSetUi, FlagsUi, StateUi};
 use crate::ui::editor::AnimationEditor;
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    game_object::state::Position,
+};
+use crate::{assets::Assets, game_object::constructors::TryAsRef};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{cell::RefCell, convert::TryFrom};
 
 pub struct StateEditor {
     character_data: Rc<RefCell<PlayerCharacter>>,
@@ -422,6 +425,16 @@ impl AppState for StateEditor {
 
             // TODO draw particles too
             // TODO draw generic position component as cross
+        }
+        for item in resource
+            .spawns
+            .iter()
+            .filter(|item| item.frame == self.frame)
+            .flat_map(|item| item.data.iter())
+            .filter_map(|item| <_ as TryAsRef<Position>>::try_as_ref(item))
+        {
+            let offset = item.value.into_graphical();
+            draw_cross(ctx, offset)?;
         }
         /*for bullet_spawn in resource
             .bullets

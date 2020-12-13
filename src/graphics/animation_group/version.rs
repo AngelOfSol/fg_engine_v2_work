@@ -1,21 +1,21 @@
-use super::{Particle, ParticleV1};
+use super::{AnimationGroup, AnimationGroupV1};
 use crate::graphics::animation::{self, Animation};
 use crate::graphics::keyframe::Modifiers;
 
 use serde::Deserialize;
 
 pub mod hash_map {
-    use super::{Particle, ParticleVersioned};
+    use super::{AnimationGroup, AnimationVersioned};
     use serde::{Deserialize, Deserializer};
     use std::collections::HashMap;
 
-    pub fn deserialize<'de, D, K>(deserializer: D) -> Result<HashMap<K, Particle>, D::Error>
+    pub fn deserialize<'de, D, K>(deserializer: D) -> Result<HashMap<K, AnimationGroup>, D::Error>
     where
         D: Deserializer<'de>,
         K: std::cmp::Eq + std::hash::Hash + Deserialize<'de>,
-        HashMap<K, Particle>: Deserialize<'de>,
+        HashMap<K, AnimationGroup>: Deserialize<'de>,
     {
-        Ok(HashMap::<K, ParticleVersioned>::deserialize(deserializer)?
+        Ok(HashMap::<K, AnimationVersioned>::deserialize(deserializer)?
             .into_iter()
             .map(|(key, value)| (key, value.into_modern()))
             .collect())
@@ -24,17 +24,17 @@ pub mod hash_map {
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum ParticleVersioned {
-    V1(ParticleV1),
+enum AnimationVersioned {
+    V1(AnimationGroupV1),
     #[serde(deserialize_with = "animation::version::single::deserialize")]
     Legacy(Animation),
 }
 
-impl ParticleVersioned {
-    fn into_modern(self) -> Particle {
+impl AnimationVersioned {
+    fn into_modern(self) -> AnimationGroup {
         match self {
             Self::V1(value) => value.into_modern(),
-            Self::Legacy(value) => ParticleV1 {
+            Self::Legacy(value) => AnimationGroupV1 {
                 animations: vec![value],
                 modifiers: Modifiers::new(),
             }

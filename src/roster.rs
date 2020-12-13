@@ -8,10 +8,10 @@ pub use generic_character::*;
 pub use yuyuko::*;
 
 use crate::assets::Assets;
-use crate::character::state::components::GlobalParticle;
+use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea, UiElements};
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
@@ -50,6 +50,11 @@ impl Character {
     pub fn sound_name_iterator(self) -> impl Iterator<Item = String> {
         match self {
             Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
+        }
+    }
+    pub fn graphic_name_iterator(self) -> impl Iterator<Item = String> {
+        match self {
+            Character::Yuyuko => YuyukoGraphic::iter().map(|item| item.file_name()),
         }
     }
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {

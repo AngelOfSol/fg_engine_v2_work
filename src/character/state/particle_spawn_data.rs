@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use strum::{Display, EnumIter};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Display, EnumIter, Copy, Hash)]
-pub enum GlobalParticle {
+pub enum GlobalGraphic {
     SuperJump,
 }
 
-impl<Id> From<GlobalParticle> for ParticlePath<Id> {
-    fn from(value: GlobalParticle) -> Self {
+impl<Id> From<GlobalGraphic> for ParticlePath<Id> {
+    fn from(value: GlobalGraphic) -> Self {
         Self::Global(value)
     }
 }
@@ -17,7 +17,7 @@ impl<Id> From<GlobalParticle> for ParticlePath<Id> {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Hash)]
 #[serde(untagged)]
 pub enum ParticlePath<Id> {
-    Global(GlobalParticle),
+    Global(GlobalGraphic),
     Local(Id),
 }
 
@@ -25,7 +25,7 @@ impl<Id: std::hash::Hash + Eq> ParticlePath<Id> {
     pub fn get<'a, T>(
         &self,
         local: &'a HashMap<Id, T>,
-        global: &'a HashMap<GlobalParticle, T>,
+        global: &'a HashMap<GlobalGraphic, T>,
     ) -> &'a T {
         match self {
             Self::Local(id) => local.get(id).unwrap(),

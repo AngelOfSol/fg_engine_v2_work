@@ -224,8 +224,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] create object system
         [x] spawner type
             [x] defines parameters it needs to spawn
-            [] add position indicator to editor ui
-                [] this is a special case for position the position constructor
+            [x] add position indicator to editor ui
+                [x] this is a special case for position the position constructor
         [] actually use the constructors to spawn bullets
             [] render basic box
             [] spawn at position

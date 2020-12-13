@@ -54,6 +54,25 @@ pub enum Constructor {
     Position(PositionConstructor),
 }
 
+impl TryAsRef<ContextlessConstructor> for Constructor {
+    fn try_as_ref(&self) -> Option<&ContextlessConstructor> {
+        if let Constructor::Contextless(ref value) = self {
+            Some(value)
+        } else {
+            None
+        }
+    }
+}
+
+impl TryAsRef<PositionConstructor> for Constructor {
+    fn try_as_ref(&self) -> Option<&PositionConstructor> {
+        if let Constructor::Position(ref value) = self {
+            Some(value)
+        } else {
+            None
+        }
+    }
+}
 impl Display for Constructor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -71,8 +90,12 @@ impl Constructor {
     }
 }
 
-macro_rules! construct_variant {
-    ($name:ident; $context:ty; $($variant:tt),+) => {
+pub trait TryAsRef<T> {
+    fn try_as_ref(&self) -> Option<&T>;
+}
+
+macro_rules! construct_enum_impl {
+    (enum $name:ident<Context = $context:ty> { $($variant:tt,)+ }) => {
         #[enum_dispatch(Inspect)]
         #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq)]
         pub enum $name {
@@ -85,6 +108,15 @@ macro_rules! construct_variant {
                 fn try_into(self) -> Result<$variant, Self::Error> {
                     let value: $name = self.try_into()?;
                     value.try_into()
+                }
+            }
+            impl TryAsRef<$variant> for Constructor {
+                 fn try_as_ref(&self) -> Option<&$variant> {
+                    let value: &$name = self.try_as_ref()?;
+                    match value {
+                        $name::$variant(ref value) => Some(value),
+                        _ => None,
+                    }
                 }
             }
         )+
@@ -107,8 +139,16 @@ macro_rules! construct_variant {
     };
 }
 
-construct_variant!(ContextlessConstructor; (); Render);
-construct_variant!(PositionConstructor; collision::Vec2; Position);
+construct_enum_impl!(
+    enum ContextlessConstructor<Context = ()> {
+        Render,
+    }
+);
+construct_enum_impl!(
+    enum PositionConstructor<Context = collision::Vec2> {
+        Position,
+    }
+);
 
 // TODO: how to do context?????
 // what about character specific context

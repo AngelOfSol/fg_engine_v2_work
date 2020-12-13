@@ -6,7 +6,7 @@ use imgui::*;
 
 impl Inspect for Position {
     fn inspect_mut(&mut self, ui: &Ui<'_>) {
-        ui.input_vec2_whole(im_str!("Offset"), &mut self.value);
+        ui.input_vec2_pixels(im_str!("Offset"), &mut self.value);
     }
 }
 

@@ -3,16 +3,11 @@ mod command_list;
 mod moves;
 mod particles;
 
-use crate::assets::Assets;
-use crate::character::components::Properties;
-use crate::character::components::{AttackInfo, GroundAction};
-use crate::character::state::components::{Flags, GlobalParticle, MoveType};
-use crate::character::state::State;
 use crate::command_list::CommandList;
 use crate::game_match::sounds::SoundPath;
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
-use crate::graphics::particle::Particle;
+use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
 use crate::input::{read_inputs, DirectedAxis, Facing, InputState};
@@ -26,8 +21,20 @@ use crate::roster::generic_character::OpaqueStateData;
 use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
+use crate::{assets::Assets, game_object::constructors::Construct};
+use crate::{character::components::Properties, game_object::constructors::Constructor};
+use crate::{
+    character::components::{AttackInfo, GroundAction},
+    game_object::state::Position,
+};
+use crate::{
+    character::state::components::{Flags, GlobalGraphic, MoveType},
+    game_object::state::Render,
+};
+use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use attacks::AttackId;
 use ggez::{Context, GameResult};
+use hecs::{EntityBuilder, World};
 use moves::MoveId;
 use particles::ParticleId;
 use rodio::Device;
@@ -51,6 +58,7 @@ pub struct Yuyuko {
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
     pub sounds: SoundList<YuyukoSound>,
+    pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
 }
 impl std::fmt::Debug for Yuyuko {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -59,7 +67,7 @@ impl std::fmt::Debug for Yuyuko {
 }
 
 type StateList = HashMap<MoveId, State<MoveId, ParticleId, AttackId, YuyukoSound>>;
-type ParticleList = HashMap<ParticleId, Particle>;
+type ParticleList = HashMap<ParticleId, AnimationGroup>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
@@ -76,6 +84,7 @@ impl Yuyuko {
             attacks: data.attacks,
             command_list: command_list::generate_command_list(),
             sounds: data.sounds,
+            graphics: data.graphics,
         })
     }
 }
@@ -89,6 +98,7 @@ pub struct YuyukoData {
     #[serde(skip)]
     #[serde(default = "SoundList::new")]
     sounds: SoundList<YuyukoSound>,
+    graphics: HashMap<YuyukoGraphic, AnimationGroup>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -111,7 +121,8 @@ impl YuyukoData {
         path.push("particles");
         for (name, particle) in character.particles.iter_mut() {
             path.push(name.file_name());
-            Particle::load(ctx, assets, particle, path.clone())?;
+            dbg!(&path);
+            AnimationGroup::load(ctx, assets, particle, path.clone())?;
             path.pop();
         }
 
@@ -134,6 +145,14 @@ impl YuyukoData {
             path.pop();
         }
 
+        path.pop();
+        path.push("graphics");
+        for (name, animation_group) in character.graphics.iter_mut() {
+            path.push(name.file_name());
+            dbg!(&path);
+            AnimationGroup::load(ctx, assets, animation_group, path.clone())?;
+            path.pop();
+        }
         Ok(character)
     }
 }
@@ -141,6 +160,7 @@ impl YuyukoData {
 pub enum YuyukoSound {
     Grunt,
 }
+
 impl Into<SoundPath<YuyukoSound>> for YuyukoSound {
     fn into(self) -> SoundPath<YuyukoSound> {
         SoundPath::Local(self)
@@ -153,8 +173,25 @@ impl Default for YuyukoSound {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter)]
+#[serde(rename_all = "snake_case")]
+pub enum YuyukoGraphic {
+    SuperJumpParticle,
+    HitEffect,
+    ButterflyFlare,
+}
+impl YuyukoGraphic {
+    pub fn file_name(self) -> String {
+        serde_json::to_string(&self)
+            .unwrap()
+            .trim_matches('\"')
+            .to_owned()
+    }
+}
+
 pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
+    pub world: World,
     pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
     pub last_combo_state: Option<(ComboState, usize)>,
     pub state: YuyukoState,
@@ -204,6 +241,7 @@ impl YuyukoPlayer {
             last_combo_state: None,
             sound_renderer: SoundRenderer::new(),
             combo_text: RefCell::new(None),
+            world: World::new(),
         }
     }
     fn handle_fly(move_id: MoveId, extra_data: &mut ExtraData) -> collision::Vec2 {
@@ -423,7 +461,7 @@ impl YuyukoPlayer {
             }
         };
     }
-    fn update_particles(&mut self, global_particles: &HashMap<GlobalParticle, Particle>) {
+    fn update_particles(&mut self, global_particles: &HashMap<GlobalGraphic, AnimationGroup>) {
         let (frame, move_id) = self.state.current_state;
         let particle_data = &self.data.particles;
         let state_particles = &self.data.states[&move_id].particles;
@@ -565,6 +603,27 @@ impl YuyukoPlayer {
         }
 
         self.validate_position(play_area);
+    }
+
+    fn spawn_objects(&mut self) {
+        let (frame, move_id) = self.state.current_state;
+        for spawner in self.data.states[&move_id]
+            .spawns
+            .iter()
+            .filter(|item| item.frame == frame)
+        {
+            let mut builder = EntityBuilder::new();
+            for constructor in spawner.data.iter() {
+                let _ = match constructor {
+                    Constructor::Contextless(c) => c.construct_on_to(&mut builder, ()),
+                    Constructor::Position(c) => {
+                        c.construct_on_to(&mut builder, self.state.position)
+                    }
+                }
+                .unwrap();
+            }
+            self.world.spawn(builder.build());
+        }
     }
 
     fn update_sound(&mut self) {
@@ -1040,7 +1099,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         input: &[InputState],
         opponent_position: collision::Vec2,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalParticle, Particle>,
+        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
     ) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
@@ -1058,6 +1117,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.update_lockout();
         self.update_meter(opponent_position);
         self.update_particles(global_particles);
+        self.spawn_objects();
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
     }
@@ -1113,7 +1173,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
-        global_particles: &HashMap<GlobalParticle, Particle>,
+        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
     ) -> GameResult<()> {
         crate::roster::impls::draw_particles(
             ctx,
@@ -1123,6 +1183,26 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             global_particles,
             &self.state.particles,
         )
+    }
+    fn draw_objects(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        world: graphics::Matrix4,
+    ) -> GameResult<()> {
+        for (_, position) in self.world.query::<&Position>().with::<Render>().iter() {
+            self.data.graphics[&YuyukoGraphic::HitEffect].draw_at_time(
+                ctx,
+                assets,
+                0,
+                world
+                    * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                        position.value.into_graphical(),
+                    )),
+            )?;
+        }
+
+        Ok(())
     }
 
     fn draw_shadow(
@@ -1305,7 +1385,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn update_no_input(
         &mut self,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalParticle, Particle>,
+        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
     ) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
