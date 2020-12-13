@@ -1,23 +1,24 @@
 mod inspect;
 mod position;
-mod timer;
 
-use super::state::{ExpiresAfterAnimation, Position, Render};
-use crate::{imgui_extra::UiExtensions, roster::YuyukoGraphic, typedefs::collision};
+use super::state::{ExpiresAfterAnimation, Position, Render, Timer};
+use crate::{
+    character::state::components::GlobalGraphic, imgui_extra::UiExtensions, roster::YuyukoGraphic,
+    typedefs::collision,
+};
 use enum_dispatch::*;
 use hecs::EntityBuilder;
 use imgui::{im_str, Ui};
+pub use inspect::Inspect;
+pub use position::*;
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
     fmt::{Display, Formatter},
+    marker::PhantomData,
 };
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
-use timer::TimerConstructor;
-
-pub use inspect::Inspect;
-pub use position::*;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ConstructError {
@@ -44,6 +45,24 @@ impl<Tag: ConstructTag + hecs::Component> Construct for Tag {
         Ok(builder.add(Self::default()))
     }
 }
+
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct ConstructDefault<T> {
+    _marker: PhantomData<T>,
+}
+
+impl<T: hecs::Component + Default> Construct for ConstructDefault<T> {
+    type Context = ();
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        _: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        Ok(builder.add(T::default()))
+    }
+}
+
+impl<T> Inspect for ConstructDefault<T> {}
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ConstructId<Id> {
@@ -74,6 +93,67 @@ impl<Id: IntoEnumIterator + Clone + Display + Eq> Inspect for ConstructId<Id> {
 
 impl<Tag: ConstructTag> Inspect for Tag {
     fn inspect_mut(&mut self, _: &Ui<'_>) {}
+}
+
+impl<Context, T, U> Construct for (T, U)
+where
+    Context: Copy,
+    T: Construct<Context = Context>,
+    U: Construct<Context = Context>,
+{
+    type Context = Context;
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        context: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        self.0.construct_on_to(builder, context)?;
+        self.1.construct_on_to(builder, context)?;
+        Ok(builder)
+    }
+}
+
+impl<Context, T, U, V> Construct for (T, U, V)
+where
+    Context: Copy,
+    T: Construct<Context = Context>,
+    U: Construct<Context = Context>,
+    V: Construct<Context = Context>,
+{
+    type Context = Context;
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        context: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        self.0.construct_on_to(builder, context)?;
+        self.1.construct_on_to(builder, context)?;
+        self.2.construct_on_to(builder, context)?;
+        Ok(builder)
+    }
+}
+
+impl<T, U> Inspect for (T, U)
+where
+    T: Inspect,
+    U: Inspect,
+{
+    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut(ui);
+        self.1.inspect_mut(ui);
+    }
+}
+impl<T, U, V> Inspect for (T, U, V)
+where
+    T: Inspect,
+    U: Inspect,
+    V: Inspect,
+{
+    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut(ui);
+        self.1.inspect_mut(ui);
+        self.2.inspect_mut(ui);
+    }
 }
 
 /// Each variant represents what context needs to be provided to the constructor.
@@ -174,10 +254,12 @@ macro_rules! construct_enum_impl {
 construct_enum_impl!(
     Construct<Context = ()> for
     enum ContextlessConstructor {
-        Render(Render),
+        GlobalParticle((ConstructId<GlobalGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
+        YuyukoParticle((ConstructId<YuyukoGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
         YuyukoGraphic(ConstructId<YuyukoGraphic>),
-        ExpiresAfterAnimation(ExpiresAfterAnimation),
-        Timer(TimerConstructor),
+        Timer(ConstructDefault<Timer>),
+        Render(Render),
+
     }
 );
 construct_enum_impl!(

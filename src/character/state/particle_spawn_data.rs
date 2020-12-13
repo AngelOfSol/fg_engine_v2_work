@@ -8,6 +8,12 @@ pub enum GlobalGraphic {
     SuperJump,
 }
 
+impl Default for GlobalGraphic {
+    fn default() -> Self {
+        Self::SuperJump
+    }
+}
+
 impl<Id> From<GlobalGraphic> for ParticlePath<Id> {
     fn from(value: GlobalGraphic) -> Self {
         Self::Global(value)

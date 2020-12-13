@@ -282,6 +282,10 @@ impl AppState for CharacterEditor {
     }
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+        let mut pc = self.resource.borrow_mut();
+        let pc = pc.deref_mut();
+        let (graphics, particles) = (&mut pc.graphics, &mut pc.particles);
+        dbg!(particles.particles.keys().collect::<Vec<_>>());
         Ok(())
     }
     fn draw(
