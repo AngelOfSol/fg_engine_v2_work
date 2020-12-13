@@ -173,13 +173,20 @@ impl Default for YuyukoSound {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
 #[serde(rename_all = "snake_case")]
 pub enum YuyukoGraphic {
     SuperJumpParticle,
     HitEffect,
     ButterflyFlare,
 }
+
+impl Default for YuyukoGraphic {
+    fn default() -> Self {
+        Self::ButterflyFlare
+    }
+}
+
 impl YuyukoGraphic {
     pub fn file_name(self) -> String {
         serde_json::to_string(&self)
@@ -480,7 +487,7 @@ impl YuyukoPlayer {
             .map(|particle| (particle.particle_id, self.state.position + particle.offset))
             .collect::<Vec<_>>()
         {
-            self.state.particles.push((0, position, particle_id));
+            //self.state.particles.push((0, position, particle_id));
         }
     }
     fn update_spirit(&mut self) {

@@ -10,3 +10,8 @@ pub struct Position {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Render;
 impl ConstructTag for Render {}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default)]
+pub struct RenderGraphic<T> {
+    id: T,
+}

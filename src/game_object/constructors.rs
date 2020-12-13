@@ -2,10 +2,10 @@ mod inspect;
 mod position;
 
 use super::state::{Position, Render};
-use crate::typedefs::collision;
+use crate::{imgui_extra::UiExtensions, roster::YuyukoGraphic, typedefs::collision};
 use enum_dispatch::*;
 use hecs::EntityBuilder;
-use imgui::Ui;
+use imgui::{im_str, Ui};
 use serde::{Deserialize, Serialize};
 use std::{
     convert::{TryFrom, TryInto},
@@ -42,6 +42,35 @@ impl<Tag: ConstructTag + hecs::Component> Construct for Tag {
         Ok(builder.add(Self::default()))
     }
 }
+
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct ConstructId<Id> {
+    value: Id,
+}
+
+impl<Id: hecs::Component + Clone> Construct for ConstructId<Id> {
+    //
+    type Context = ();
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        _: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        Ok(builder.add(self.value.clone()))
+    }
+}
+
+impl<Id: IntoEnumIterator + Clone + Display + Eq> Inspect for ConstructId<Id> {
+    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+        ui.combo_items(
+            im_str!("Value"),
+            &mut self.value,
+            &Id::iter().collect::<Vec<_>>(),
+            &|i| im_str!("{}", i).into(),
+        );
+    }
+}
+
 impl<Tag: ConstructTag> Inspect for Tag {
     fn inspect_mut(&mut self, _: &Ui<'_>) {}
 }
@@ -95,27 +124,28 @@ pub trait TryAsRef<T> {
 }
 
 macro_rules! construct_enum_impl {
-    (enum $name:ident<Context = $context:ty> { $($variant:tt,)+ }) => {
+    (Construct<Context = $context:ty> for enum $name:ident { $($variant_name:ident($variant_type:ty),)+ }) => {
         #[enum_dispatch(Inspect)]
         #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq)]
         pub enum $name {
-            $($variant($variant)),+
+            $($variant_name($variant_type)),+
         }
 
         $(
-            impl TryInto<$variant> for Constructor {
+            impl TryInto<$variant_type> for Constructor {
                 type Error = &'static str;
-                fn try_into(self) -> Result<$variant, Self::Error> {
+                fn try_into(self) -> Result<$variant_type, Self::Error> {
                     let value: $name = self.try_into()?;
                     value.try_into()
                 }
             }
-            impl TryAsRef<$variant> for Constructor {
-                 fn try_as_ref(&self) -> Option<&$variant> {
+            impl TryAsRef<$variant_type> for Constructor {
+                 fn try_as_ref(&self) -> Option<&$variant_type> {
                     let value: &$name = self.try_as_ref()?;
-                    match value {
-                        $name::$variant(ref value) => Some(value),
-                        _ => None,
+                    if let $name::$variant_name(ref value) = value {
+                        Some(value)
+                    } else {
+                        None
                     }
                 }
             }
@@ -130,7 +160,7 @@ macro_rules! construct_enum_impl {
             ) -> Result<&'builder mut EntityBuilder, ConstructError> {
                 match self {
                     $(
-                        Self::$variant(ref value) => value.construct_on_to(builder, context),
+                        Self::$variant_name(ref value) => value.construct_on_to(builder, context),
                     )+
                 }
             }
@@ -140,16 +170,15 @@ macro_rules! construct_enum_impl {
 }
 
 construct_enum_impl!(
-    enum ContextlessConstructor<Context = ()> {
-        Render,
+    Construct<Context = ()> for
+    enum ContextlessConstructor {
+        Render(Render),
+        YuyukoGraphic(ConstructId<YuyukoGraphic>),
     }
 );
 construct_enum_impl!(
-    enum PositionConstructor<Context = collision::Vec2> {
-        Position,
+    Construct<Context = collision::Vec2> for
+    enum PositionConstructor {
+        Position(Position),
     }
 );
-
-// TODO: how to do context?????
-// what about character specific context
-// context is an associated type, two levels of enums are provided, one that tells requested context, and the next that is just enum_dispatch
