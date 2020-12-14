@@ -1,11 +1,15 @@
+use crate::{
+    character::state::components::GlobalGraphic,
+    game_object::constructors::{TryAsMut, TryAsRef},
+    roster::YuyukoGraphic,
+};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
     hash::Hash,
 };
-
-use crate::game_object::constructors::{TryAsMut, TryAsRef};
+use strum::EnumIter;
 
 macro_rules! impl_property_type {
     (
@@ -13,7 +17,7 @@ macro_rules! impl_property_type {
             $($variant_name:ident($variant_type:ty),)+
         }
     ) => {
-        #[derive(Serialize, Deserialize, Clone, Debug)]
+        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter)]
         pub enum PropertyType {
             $($variant_name($variant_type),)+
         }
@@ -48,18 +52,22 @@ macro_rules! impl_property_type {
 
 impl_property_type! {
     pub enum PropertyType {
-        Int(i32),
-        Float(f32),
+        GlobalGraphic(GlobalGraphic),
+        YuyukoGraphic(YuyukoGraphic),
     }
 }
 
-pub struct InstanceData<DataId> {
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct InstanceData<DataId>
+where
+    HashMap<(TypeId, DataId), PropertyType>: PartialEq + Eq,
+{
     data: HashMap<(TypeId, DataId), PropertyType>,
 }
 
 impl<DataId> Serialize for InstanceData<DataId>
 where
-    DataId: Serialize + Hash + Eq,
+    DataId: Serialize + Hash + Eq + std::fmt::Debug,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -80,7 +88,7 @@ where
                     value,
                 )
             })
-            .collect::<HashMap<(&String, &DataId), &PropertyType>>()
+            .collect::<Vec<((&String, &DataId), &PropertyType)>>()
             .serialize(serializer)
     }
 }
@@ -88,12 +96,13 @@ where
 impl<'de, DataId> Deserialize<'de> for InstanceData<DataId>
 where
     DataId: Deserialize<'de> + Hash + Eq,
+    (String, DataId): Deserialize<'de>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let data: HashMap<(String, DataId), PropertyType> = HashMap::deserialize(deserializer)?;
+        let data: Vec<((String, DataId), PropertyType)> = Vec::deserialize(deserializer)?;
         Ok(Self {
             data: data
                 .into_iter()
@@ -116,6 +125,11 @@ where
 }
 
 impl<DataId: Hash + Eq> InstanceData<DataId> {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+        }
+    }
     pub fn get<T>(&self, key: DataId) -> Option<&T>
     where
         T: Any,
@@ -133,6 +147,12 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
         self.data
             .get_mut(&(TypeId::of::<T>(), key))
             .and_then(|item| item.try_as_mut())
+    }
+    pub fn exists<T>(&self, key: DataId) -> bool
+    where
+        T: Any,
+    {
+        self.data.contains_key(&(TypeId::of::<T>(), key))
     }
 
     pub fn insert<T>(&mut self, key: DataId, value: T) -> Option<PropertyType>
@@ -160,10 +180,54 @@ struct Mapping {
 }
 
 impl Mapping {
-    fn new<T: Any>(name: String) -> Self {
+    fn new<T: Default + Any>(name: String) -> Self
+    where
+        PropertyType: From<T>,
+    {
         Self {
             name,
             type_id: TypeId::of::<T>(),
         }
     }
+}
+
+#[test]
+fn test_instance_data() {
+    let mut props = InstanceData::new();
+    props.insert(0, YuyukoGraphic::HitEffect);
+    props.insert(1, GlobalGraphic::SuperJump);
+    props.insert(2, YuyukoGraphic::SuperJumpParticle);
+    props.insert(2, GlobalGraphic::SuperJump);
+
+    let string_variant = serde_json::to_string(&props);
+    let round_trip: InstanceData<i32> = serde_json::from_str(&string_variant.unwrap()).unwrap();
+    assert_eq!(props, round_trip);
+
+    assert_eq!(
+        round_trip.get::<YuyukoGraphic>(0),
+        Some(&YuyukoGraphic::HitEffect)
+    );
+    assert_eq!(round_trip.get(1), None::<&YuyukoGraphic>);
+    assert_eq!(
+        round_trip.get::<YuyukoGraphic>(2),
+        Some(&YuyukoGraphic::SuperJumpParticle)
+    );
+
+    assert_eq!(round_trip.get(0), None::<&GlobalGraphic>);
+    assert_eq!(
+        round_trip.get::<GlobalGraphic>(1),
+        Some(&GlobalGraphic::SuperJump)
+    );
+    assert_eq!(
+        round_trip.get::<GlobalGraphic>(2),
+        Some(&GlobalGraphic::SuperJump)
+    );
+
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(0), true);
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(1), false);
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(2), true);
+
+    assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
+    assert_eq!(round_trip.exists::<GlobalGraphic>(1), true);
+    assert_eq!(round_trip.exists::<GlobalGraphic>(2), true);
 }
