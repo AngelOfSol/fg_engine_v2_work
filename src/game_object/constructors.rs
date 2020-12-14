@@ -173,10 +173,29 @@ impl TryAsRef<ContextlessConstructor> for Constructor {
         }
     }
 }
+impl TryAsMut<ContextlessConstructor> for Constructor {
+    fn try_as_mut(&mut self) -> Option<&mut ContextlessConstructor> {
+        if let Constructor::Contextless(ref mut value) = self {
+            Some(value)
+        } else {
+            None
+        }
+    }
+}
 
 impl TryAsRef<PositionConstructor> for Constructor {
     fn try_as_ref(&self) -> Option<&PositionConstructor> {
         if let Constructor::Position(ref value) = self {
+            Some(value)
+        } else {
+            None
+        }
+    }
+}
+
+impl TryAsMut<PositionConstructor> for Constructor {
+    fn try_as_mut(&mut self) -> Option<&mut PositionConstructor> {
+        if let Constructor::Position(ref mut value) = self {
             Some(value)
         } else {
             None
@@ -202,6 +221,9 @@ impl Constructor {
 
 pub trait TryAsRef<T> {
     fn try_as_ref(&self) -> Option<&T>;
+}
+pub trait TryAsMut<T> {
+    fn try_as_mut(&mut self) -> Option<&mut T>;
 }
 
 macro_rules! construct_enum_impl {
@@ -230,6 +252,17 @@ macro_rules! construct_enum_impl {
                  fn try_as_ref(&self) -> Option<&$variant_type> {
                     let value: &$name = self.try_as_ref()?;
                     if let $name::$variant_name(ref value) = value {
+                        Some(value)
+                    } else {
+                        None
+                    }
+                }
+            }
+            #[allow(irrefutable_let_patterns)]
+            impl TryAsMut<$variant_type> for Constructor {
+                 fn try_as_mut(&mut self) -> Option<&mut $variant_type> {
+                    let value: &mut $name = self.try_as_mut()?;
+                    if let $name::$variant_name(ref mut value) = value {
                         Some(value)
                     } else {
                         None
