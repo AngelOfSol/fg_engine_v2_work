@@ -1,7 +1,7 @@
 mod cancel_set;
 mod flags;
+mod global_graphics;
 mod hitbox_set;
-mod particle_spawn_data;
 mod sound_play_info;
 
 mod file;
@@ -9,11 +9,11 @@ mod file;
 pub mod components {
     pub use super::cancel_set::*;
     pub use super::flags::*;
+    pub use super::global_graphics::*;
     pub use super::hitbox_set::*;
-    pub use super::particle_spawn_data::*;
     pub use super::sound_play_info::*;
 }
-use crate::graphics::{self, Animation};
+use crate::graphics::Animation;
 use crate::timeline::{AtTime, Timeline};
 use crate::typedefs::graphics::Matrix4;
 use crate::{
@@ -24,7 +24,6 @@ use cancel_set::{CancelSet, MoveType};
 use flags::Flags;
 use ggez::{Context, GameResult};
 use hitbox_set::HitboxSet;
-use particle_spawn_data::ParticleSpawn;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sound_play_info::SoundPlayInfo;
@@ -32,15 +31,14 @@ use std::cmp;
 use std::hash::Hash;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 pub struct SpawnerInfo {
     pub frame: usize,
     pub data: Vec<Constructor>,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct State<Id, ParticleId, AttackId, SoundType> {
-    #[serde(deserialize_with = "graphics::animation::version::vec::deserialize")]
+pub struct State<Id, AttackId, SoundType> {
     pub animations: Vec<Animation>,
     pub flags: Timeline<Flags>,
     #[serde(bound(
@@ -49,8 +47,6 @@ pub struct State<Id, ParticleId, AttackId, SoundType> {
     ))]
     pub cancels: Timeline<CancelSet<Id>>,
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
-    #[serde(default)]
-    pub particles: Vec<ParticleSpawn<ParticleId>>,
     #[serde(default)]
     pub spawns: Vec<SpawnerInfo>,
 
@@ -66,10 +62,9 @@ pub struct State<Id, ParticleId, AttackId, SoundType> {
     pub minimum_meter_required: i32,
 }
 
-impl<Id, ParticleId, AttackId, SoundType> PartialEq for State<Id, ParticleId, AttackId, SoundType>
+impl<Id, AttackId, SoundType> PartialEq for State<Id, AttackId, SoundType>
 where
     Id: PartialEq,
-    ParticleId: PartialEq,
     AttackId: PartialEq,
     CancelSet<Id>: PartialEq,
 {
@@ -78,7 +73,6 @@ where
             && self.flags.eq(&rhs.flags)
             && self.cancels.eq(&rhs.cancels)
             && self.hitboxes.eq(&rhs.hitboxes)
-            && self.particles.eq(&rhs.particles)
             && self.state_type.eq(&rhs.state_type)
             && self.on_expire_state.eq(&rhs.on_expire_state)
             && self
@@ -86,20 +80,17 @@ where
                 .eq(&rhs.minimum_spirit_required)
     }
 }
-impl<Id, ParticleId, AttackId, SoundType> Eq for State<Id, ParticleId, AttackId, SoundType>
+impl<Id, AttackId, SoundType> Eq for State<Id, AttackId, SoundType>
 where
     Id: PartialEq,
-    ParticleId: PartialEq,
     AttackId: PartialEq,
     CancelSet<Id>: PartialEq,
 {
 }
 
-impl<Id, ParticleId, AttackId, SoundType> std::fmt::Debug
-    for State<Id, ParticleId, AttackId, SoundType>
+impl<Id, AttackId, SoundType> std::fmt::Debug for State<Id, AttackId, SoundType>
 where
     Id: std::fmt::Debug,
-    ParticleId: std::fmt::Debug,
     AttackId: std::fmt::Debug,
     CancelSet<Id>: std::fmt::Debug,
 {
@@ -108,7 +99,6 @@ where
         let _ = builder.field("flags", &self.flags);
         let _ = builder.field("cancels", &self.cancels);
         let _ = builder.field("hitboxes", &self.hitboxes);
-        let _ = builder.field("particles", &self.particles);
         let _ = builder.field("state_type", &self.state_type);
         let _ = builder.field("on_expire_state", &self.on_expire_state);
         let _ = builder.field("minimum_spirit_required", &self.minimum_spirit_required);
@@ -116,16 +106,15 @@ where
     }
 }
 
-pub type EditorCharacterState = State<String, String, String, String>;
+pub type EditorCharacterState = State<String, String, String>;
 fn default_move_type() -> MoveType {
     MoveType::Idle
 }
 impl<
         Id: Serialize + DeserializeOwned + Eq + Hash + Default,
-        ParticleId: Serialize + DeserializeOwned + Default,
         AttackId: Serialize + DeserializeOwned + Default,
         SoundType: Serialize + DeserializeOwned + Default,
-    > State<Id, ParticleId, AttackId, SoundType>
+    > State<Id, AttackId, SoundType>
 {
     pub fn load_from_json(
         ctx: &mut Context,
@@ -253,7 +242,6 @@ impl EditorCharacterState {
             on_expire_state: "".to_owned(),
             minimum_spirit_required: 0,
             minimum_meter_required: 0,
-            particles: Vec::new(),
             spawns: Vec::new(),
             sounds: Vec::new(),
         }

@@ -7,11 +7,11 @@ use imgui::{im_str, Ui};
 use nfd::Response;
 use std::path::PathBuf;
 
-pub struct ParticleUi {
+pub struct AnimationsUi {
     current_animation: Option<usize>,
 }
 
-impl ParticleUi {
+impl AnimationsUi {
     pub fn draw_ui(
         &mut self,
         ctx: &mut Context,

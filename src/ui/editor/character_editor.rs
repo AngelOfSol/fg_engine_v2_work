@@ -2,7 +2,7 @@ use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
-use crate::ui::character::components::{AttacksUi, ParticlesUi, PropertiesUi, StatesUi};
+use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{AnimationGroupEditor, AttackInfoEditor, StateEditor};
 use crate::{
     app_state::{AppContext, AppState, Transition},
@@ -11,12 +11,9 @@ use crate::{
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::{Ref, RefCell, RefMut};
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    ops::DerefMut,
-};
 
 pub trait ItemResource {
     type Output;
@@ -60,9 +57,9 @@ pub struct GraphicAnimationResource {
 impl ItemResource for GraphicAnimationResource {
     type Output = crate::graphics::Animation;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let particle = self.data.borrow();
-        Some(Ref::map(particle, |particle| {
-            particle
+        let graphic_animation = self.data.borrow();
+        Some(Ref::map(graphic_animation, |graphic_animation| {
+            graphic_animation
                 .animations
                 .iter()
                 .find(|item| item.name == self.animation)
@@ -70,9 +67,9 @@ impl ItemResource for GraphicAnimationResource {
         }))
     }
     fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let particle = self.data.borrow_mut();
-        Some(RefMut::map(particle, |particle| {
-            particle
+        let graphic_animation = self.data.borrow_mut();
+        Some(RefMut::map(graphic_animation, |graphic_animation| {
+            graphic_animation
                 .animations
                 .iter_mut()
                 .find(|item| item.name == self.animation)
@@ -137,17 +134,17 @@ impl ItemResource for StateResource {
     }
 }
 
-pub struct ParticleAnimationResource {
+pub struct AnimationGroupResource {
     pub animation: String,
     pub data: Rc<RefCell<crate::graphics::animation_group::AnimationGroup>>,
 }
 
-impl ItemResource for ParticleAnimationResource {
+impl ItemResource for AnimationGroupResource {
     type Output = crate::graphics::Animation;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let particle = self.data.borrow();
-        Some(Ref::map(particle, |particle| {
-            particle
+        let animation = self.data.borrow();
+        Some(Ref::map(animation, |animation| {
+            animation
                 .animations
                 .iter()
                 .find(|item| item.name == self.animation)
@@ -155,9 +152,9 @@ impl ItemResource for ParticleAnimationResource {
         }))
     }
     fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let particle = self.data.borrow_mut();
-        Some(RefMut::map(particle, |particle| {
-            particle
+        let animation = self.data.borrow_mut();
+        Some(RefMut::map(animation, |animation| {
+            animation
                 .animations
                 .iter_mut()
                 .find(|item| item.name == self.animation)
@@ -166,58 +163,25 @@ impl ItemResource for ParticleAnimationResource {
     }
 }
 
-pub struct ParticleResource {
-    pub particle: String,
-    pub data: Rc<RefCell<PlayerCharacter>>,
+pub struct StandaloneAnimationGroupResource {
+    pub animation_group: Rc<RefCell<crate::graphics::animation_group::AnimationGroup>>,
 }
 
-impl ItemResource for ParticleResource {
-    type Output = crate::graphics::animation_group::AnimationGroup;
-    fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let character = self.data.borrow();
-        if character.particles.particles.contains_key(&self.particle) {
-            Some(Ref::map(character, |character| {
-                character.particles.particles.get(&self.particle).unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let character = self.data.borrow_mut();
-        if character.particles.particles.contains_key(&self.particle) {
-            Some(RefMut::map(character, |character| {
-                character
-                    .particles
-                    .particles
-                    .get_mut(&self.particle)
-                    .unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-}
-
-pub struct StandaloneParticleResource {
-    pub particle: Rc<RefCell<crate::graphics::animation_group::AnimationGroup>>,
-}
-
-impl From<crate::graphics::animation_group::AnimationGroup> for StandaloneParticleResource {
+impl From<crate::graphics::animation_group::AnimationGroup> for StandaloneAnimationGroupResource {
     fn from(value: crate::graphics::animation_group::AnimationGroup) -> Self {
         Self {
-            particle: Rc::new(RefCell::new(value)),
+            animation_group: Rc::new(RefCell::new(value)),
         }
     }
 }
 
-impl ItemResource for StandaloneParticleResource {
+impl ItemResource for StandaloneAnimationGroupResource {
     type Output = crate::graphics::animation_group::AnimationGroup;
     fn get_from(&self) -> Option<Ref<Self::Output>> {
-        Some(self.particle.borrow())
+        Some(self.animation_group.borrow())
     }
     fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        Some(self.particle.borrow_mut())
+        Some(self.animation_group.borrow_mut())
     }
 }
 
@@ -262,30 +226,16 @@ pub struct CharacterEditor {
     resource: Rc<RefCell<PlayerCharacter>>,
     assets: Rc<RefCell<Assets>>,
     transition: Transition,
-    particle_ui_data: ParticlesUi,
     states_ui_data: StatesUi,
     attacks_ui_data: AttacksUi,
 }
 
 impl AppState for CharacterEditor {
     fn update(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
-        let mut pc = self.resource.borrow_mut();
-        let pc = pc.deref_mut();
-        let (graphics, particles) = (&mut pc.graphics, &mut pc.particles);
-        for key in pc.properties.character.graphic_name_iterator() {
-            graphics
-                .entry(key.clone())
-                .or_insert_with(|| particles.particles[&key].clone());
-        }
-
         Ok(std::mem::replace(&mut self.transition, Transition::None))
     }
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
-        let mut pc = self.resource.borrow_mut();
-        let pc = pc.deref_mut();
-        let (graphics, particles) = (&mut pc.graphics, &mut pc.particles);
-        dbg!(particles.particles.keys().collect::<Vec<_>>());
         Ok(())
     }
     fn draw(
@@ -375,8 +325,6 @@ impl AppState for CharacterEditor {
                     ui.menu(im_str!("Player Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             *self.resource.borrow_mut() = PlayerCharacter::new();
-                            self.particle_ui_data =
-                                ParticlesUi::new(&self.resource.borrow_mut().particles);
                             self.states_ui_data = StatesUi::new(&self.resource.borrow_mut().states)
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
@@ -404,8 +352,6 @@ impl AppState for CharacterEditor {
                                 ) {
                                     Ok(character) => {
                                         *self.resource.borrow_mut() = character;
-                                        self.particle_ui_data =
-                                            ParticlesUi::new(&self.resource.borrow_mut().particles);
                                         self.states_ui_data =
                                             StatesUi::new(&self.resource.borrow_mut().states)
                                     }
@@ -430,13 +376,11 @@ impl AppState for CharacterEditor {
 
 impl CharacterEditor {
     pub fn new(resource: Rc<RefCell<PlayerCharacter>>, assets: Rc<RefCell<Assets>>) -> Self {
-        let particle_ui_data = ParticlesUi::new(&resource.borrow().particles);
         let states_ui_data = StatesUi::new(&resource.borrow().states);
         let attacks_ui_data = AttacksUi::new(&resource.borrow().attacks);
         Self {
             resource,
             assets,
-            particle_ui_data,
             states_ui_data,
             attacks_ui_data,
             transition: Transition::None,

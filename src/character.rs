@@ -3,7 +3,7 @@ pub mod state;
 
 use crate::assets::Assets;
 use crate::graphics::animation_group::AnimationGroup;
-use components::{Attacks, EditorStates, Particles, Properties, States};
+use components::{Attacks, EditorStates, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
@@ -17,8 +17,6 @@ use std::path::PathBuf;
 pub struct PlayerCharacter {
     pub states: EditorStates,
     pub properties: Properties,
-    #[serde(default)]
-    pub particles: Particles,
 
     #[serde(default)]
     pub attacks: Attacks,
@@ -34,7 +32,6 @@ impl PlayerCharacter {
         PlayerCharacter {
             states: States::new(),
             properties: Properties::new(),
-            particles: Particles::new(),
             attacks: Attacks::new(),
             sounds: HashSet::new(),
             graphics: HashMap::new(),
@@ -74,13 +71,6 @@ impl PlayerCharacter {
             State::load(ctx, assets, state, name, path.clone())?;
         }
         path.pop();
-        path.push("particles");
-        for (key, animation) in player_character.particles.particles.iter_mut() {
-            path.push(key);
-            AnimationGroup::load(ctx, assets, animation, path.clone())?;
-            path.pop();
-        }
-        path.pop();
 
         path.push("graphics");
         for (key, animation_group) in player_character.graphics.iter_mut() {
@@ -114,18 +104,6 @@ impl PlayerCharacter {
         for (state_name, state) in player_character.states.rest.iter() {
             path.push(format!("{}.json", state_name));
             State::save(ctx, assets, state, path.clone())?;
-            path.pop();
-        }
-        path.pop();
-
-        path.push("particles");
-        if path.exists() {
-            std::fs::remove_dir_all(&path)?;
-        }
-        std::fs::create_dir_all(&path)?;
-        for (name, particle) in player_character.particles.particles.iter() {
-            path.push(format!("{}.json", name));
-            AnimationGroup::save(ctx, assets, particle, path.clone())?;
             path.pop();
         }
         path.pop();

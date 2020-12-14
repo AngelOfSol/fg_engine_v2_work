@@ -2,10 +2,10 @@ pub mod combo_state;
 pub mod extra_data;
 pub mod hit_info;
 pub mod move_id;
-pub mod particle_id;
 
 pub mod impls;
 
+use crate::assets::Assets;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -13,7 +13,6 @@ use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
-use crate::{assets::Assets, character::state::components::ParticlePath};
 use crate::{
     character::state::components::GlobalGraphic,
     game_match::sounds::{PlayerSoundState, SoundPath},
@@ -25,12 +24,11 @@ use rodio::Device;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
-pub struct PlayerState<MoveId, ParticleId, SoundId> {
+pub struct PlayerState<MoveId, SoundId> {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
     pub extra_data: ExtraData,
-    pub particles: Vec<(usize, collision::Vec2, ParticlePath<ParticleId>)>,
     pub facing: Facing,
     pub air_actions: usize,
     pub spirit_gauge: i32,
@@ -77,13 +75,13 @@ pub trait GenericCharacterBehaviour {
         input: &[InputState],
         opponent_position: collision::Vec2,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     );
     fn update_cutscene(&mut self, play_area: &PlayArea);
     fn update_no_input(
         &mut self,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     );
 
     #[allow(clippy::clippy::too_many_arguments)]
@@ -99,18 +97,13 @@ pub trait GenericCharacterBehaviour {
     ) -> GameResult<()>;
 
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()>;
-    fn draw_particles(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        world: graphics::Matrix4,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
-    ) -> GameResult<()>;
+
     fn draw_objects(
         &self,
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) -> GameResult<()>;
 
     fn draw_shadow(

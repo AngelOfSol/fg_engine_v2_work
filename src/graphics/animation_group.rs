@@ -1,7 +1,7 @@
 mod file;
 pub mod version;
 use crate::assets::{Assets, ValueAlpha};
-use crate::graphics::animation::{self, Animation};
+use crate::graphics::animation::Animation;
 use crate::graphics::keyframe::Modifiers;
 use crate::typedefs::graphics::Matrix4;
 use ggez::{Context, GameResult};
@@ -12,16 +12,11 @@ pub type AnimationGroup = AnimationGroupV1;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct AnimationGroupV1 {
-    #[serde(deserialize_with = "animation::version::vec::deserialize")]
     pub animations: Vec<Animation>,
     pub modifiers: Modifiers,
 }
 
 impl AnimationGroup {
-    pub fn into_modern(self) -> Self {
-        self
-    }
-
     pub fn new() -> Self {
         Self {
             animations: vec![],
@@ -35,6 +30,7 @@ impl AnimationGroup {
             .map(|item| item.delay + item.duration())
             .fold(0, std::cmp::max)
     }
+    #[allow(dead_code)]
     pub fn draw_frame(
         &self,
         ctx: &mut Context,

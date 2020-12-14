@@ -52,11 +52,7 @@ impl Character {
             Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
         }
     }
-    pub fn graphic_name_iterator(self) -> impl Iterator<Item = String> {
-        match self {
-            Character::Yuyuko => YuyukoGraphic::iter().map(|item| item.file_name()),
-        }
-    }
+
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
         match self {
             Character::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(Yuyuko::new_with_path(

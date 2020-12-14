@@ -1,8 +1,8 @@
 mod attacks;
 mod command_list;
 mod moves;
-mod particles;
 
+use crate::character::state::components::{Flags, GlobalGraphic, MoveType};
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
@@ -25,10 +25,6 @@ use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
 };
-use crate::{
-    character::state::components::{Flags, GlobalGraphic, MoveType},
-    game_object::state::Render,
-};
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{command_list::CommandList, game_object::state::Timer};
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
@@ -36,7 +32,6 @@ use attacks::AttackId;
 use ggez::{Context, GameResult};
 use hecs::{EntityBuilder, World};
 use moves::MoveId;
-use particles::ParticleId;
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
@@ -53,7 +48,6 @@ use strum::{Display, EnumIter};
 #[derive(Clone)]
 pub struct Yuyuko {
     pub states: StateList,
-    pub particles: ParticleList,
     pub attacks: AttackList,
     pub properties: Properties,
     pub command_list: CommandList<MoveId>,
@@ -66,8 +60,7 @@ impl std::fmt::Debug for Yuyuko {
     }
 }
 
-type StateList = HashMap<MoveId, State<MoveId, ParticleId, AttackId, YuyukoSound>>;
-type ParticleList = HashMap<ParticleId, AnimationGroup>;
+type StateList = HashMap<MoveId, State<MoveId, AttackId, YuyukoSound>>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
@@ -79,7 +72,6 @@ impl Yuyuko {
         let data = YuyukoData::load_from_json(ctx, assets, path)?;
         Ok(Yuyuko {
             states: data.states,
-            particles: data.particles,
             properties: data.properties,
             attacks: data.attacks,
             command_list: command_list::generate_command_list(),
@@ -92,7 +84,6 @@ impl Yuyuko {
 #[derive(Deserialize)]
 pub struct YuyukoData {
     states: StateList,
-    particles: ParticleList,
     properties: Properties,
     attacks: AttackList,
     #[serde(skip)]
@@ -118,15 +109,6 @@ impl YuyukoData {
         }
         path.pop();
 
-        path.push("particles");
-        for (name, particle) in character.particles.iter_mut() {
-            path.push(name.file_name());
-            dbg!(&path);
-            AnimationGroup::load(ctx, assets, particle, path.clone())?;
-            path.pop();
-        }
-
-        path.pop();
         path.push("sounds");
         for sound in YuyukoSound::iter() {
             path.push(format!("{}.mp3", sound));
@@ -149,7 +131,6 @@ impl YuyukoData {
         path.push("graphics");
         for (name, animation_group) in character.graphics.iter_mut() {
             path.push(name.file_name());
-            dbg!(&path);
             AnimationGroup::load(ctx, assets, animation_group, path.clone())?;
             path.pop();
         }
@@ -207,7 +188,7 @@ pub struct YuyukoPlayer {
 
 use std::cell::RefCell;
 
-pub type YuyukoState = PlayerState<MoveId, ParticleId, YuyukoSound>;
+pub type YuyukoState = PlayerState<MoveId, YuyukoSound>;
 
 impl YuyukoState {
     fn new(data: &Yuyuko) -> Self {
@@ -216,7 +197,6 @@ impl YuyukoState {
             position: collision::Vec2::zeros(),
             current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
-            particles: Vec::new(),
             air_actions: data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -468,28 +448,7 @@ impl YuyukoPlayer {
             }
         };
     }
-    fn update_particles(&mut self, global_particles: &HashMap<GlobalGraphic, AnimationGroup>) {
-        let (frame, move_id) = self.state.current_state;
-        let particle_data = &self.data.particles;
-        let state_particles = &self.data.states[&move_id].particles;
 
-        for (ref mut frame, _, _) in self.state.particles.iter_mut() {
-            *frame += 1;
-        }
-
-        self.state
-            .particles
-            .retain(|item| item.0 < item.2.get(particle_data, global_particles).duration());
-
-        for (particle_id, position) in state_particles
-            .iter()
-            .filter(|item| item.frame == frame)
-            .map(|particle| (particle.particle_id, self.state.position + particle.offset))
-            .collect::<Vec<_>>()
-        {
-            //self.state.particles.push((0, position, particle_id));
-        }
-    }
     fn update_spirit(&mut self) {
         let (ref mut frame, ref mut move_id) = &mut self.state.current_state;
         let move_data = &self.data.states[move_id];
@@ -632,7 +591,7 @@ impl YuyukoPlayer {
             self.world.spawn(builder.build());
         }
     }
-    fn update_objects(&mut self) {
+    fn update_objects(&mut self, global_graphics: &HashMap<GlobalGraphic, AnimationGroup>) {
         for (_, Timer(timer)) in self.world.query::<&mut Timer>().iter() {
             *timer += 1;
         }
@@ -643,6 +602,16 @@ impl YuyukoPlayer {
             .iter()
             .filter(|(_, (Timer(timer), graphic))| *timer >= self.data.graphics[graphic].duration())
             .map(|(entity, _)| entity)
+            .chain(
+                self.world
+                    .query::<(&Timer, &GlobalGraphic)>()
+                    .with::<ExpiresAfterAnimation>()
+                    .iter()
+                    .filter(|(_, (Timer(timer), graphic))| {
+                        *timer >= global_graphics[graphic].duration()
+                    })
+                    .map(|(entity, _)| entity),
+            )
             .collect();
         for entity in to_destroy {
             self.world.despawn(entity).unwrap();
@@ -1122,7 +1091,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         input: &[InputState],
         opponent_position: collision::Vec2,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
@@ -1139,8 +1108,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.update_spirit();
         self.update_lockout();
         self.update_meter(opponent_position);
-        self.update_particles(global_particles);
-        self.update_objects();
+        self.update_objects(global_graphics);
         self.spawn_objects();
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
@@ -1192,28 +1160,13 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             ),
         )
     }
-    fn draw_particles(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        world: graphics::Matrix4,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
-    ) -> GameResult<()> {
-        crate::roster::impls::draw_particles(
-            ctx,
-            assets,
-            world,
-            &self.data.particles,
-            global_particles,
-            &self.state.particles,
-        )
-    }
 
     fn draw_objects(
         &self,
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) -> GameResult<()> {
         for (_, (position, graphic, Timer(frame))) in self
             .world
@@ -1224,6 +1177,21 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                 ctx,
                 assets,
                 *frame % self.data.graphics[graphic].duration(),
+                world
+                    * graphics::Matrix4::new_translation(&graphics::up_dimension(
+                        position.value.into_graphical(),
+                    )),
+            )?;
+        }
+        for (_, (position, graphic, Timer(frame))) in self
+            .world
+            .query::<(&Position, &GlobalGraphic, &Timer)>()
+            .iter()
+        {
+            global_graphics[graphic].draw_at_time(
+                ctx,
+                assets,
+                *frame % global_graphics[graphic].duration(),
                 world
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
                         position.value.into_graphical(),
@@ -1414,7 +1382,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn update_no_input(
         &mut self,
         play_area: &PlayArea,
-        global_particles: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
@@ -1428,7 +1396,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.handle_combo_state();
         self.update_spirit();
         self.update_lockout();
-        self.update_particles(global_particles);
+        self.update_objects(global_graphics);
+        self.spawn_objects();
         self.state.sound_state.update();
         self.state.hitstop = i32::max(0, self.state.hitstop);
     }
@@ -1455,7 +1424,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::Stand),
             extra_data: ExtraData::None,
-            particles: Vec::new(),
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -1485,7 +1453,6 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::RoundStart),
             extra_data: ExtraData::None,
-            particles: Vec::new(),
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,

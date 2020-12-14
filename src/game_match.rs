@@ -221,7 +221,7 @@ impl<Writer: Write> Match<Writer> {
                 input,
                 position,
                 &self.runtime_data.play_area,
-                &self.runtime_data.particles,
+                &self.runtime_data.graphics,
             );
             let flash = self.game_state.flash.take();
             self.game_state.flash = player.get_flash().map(|item| item.into()).or(flash);
@@ -413,7 +413,7 @@ impl<Writer: Write> Match<Writer> {
 
     fn update_pregame(&mut self) {
         for player in self.players.iter_mut() {
-            player.update_no_input(&self.runtime_data.play_area, &self.runtime_data.particles);
+            player.update_no_input(&self.runtime_data.play_area, &self.runtime_data.graphics);
             self.game_state.flash = player
                 .get_flash()
                 .map(|item| item.into())
@@ -690,12 +690,9 @@ impl<Writer: Write> Match<Writer> {
                     graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
                 }
             }
-            for player in self.players.iter() {
-                player.draw_particles(ctx, &assets, world, &self.runtime_data.particles)?;
-            }
 
             for player in self.players.iter() {
-                player.draw_objects(ctx, &assets, world)?;
+                player.draw_objects(ctx, &assets, world, &self.runtime_data.graphics)?;
             }
         }
 

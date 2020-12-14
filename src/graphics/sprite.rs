@@ -22,10 +22,6 @@ pub struct SpriteV1 {
 }
 
 impl Sprite {
-    fn into_modern(self) -> Self {
-        self
-    }
-
     pub fn save(
         ctx: &mut Context,
         assets: &mut Assets,

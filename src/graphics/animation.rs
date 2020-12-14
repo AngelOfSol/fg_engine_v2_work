@@ -2,7 +2,7 @@ mod file;
 pub mod version;
 
 use super::keyframe::Modifiers;
-use super::sprite::{self, Sprite};
+use super::sprite::Sprite;
 use super::BlendMode;
 use crate::assets::{Assets, ValueAlpha};
 use crate::timeline::{AtTime, Timeline};
@@ -17,7 +17,6 @@ pub type Animation = AnimationV1;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct AnimationV1 {
     pub name: String,
-    #[serde(deserialize_with = "sprite::version::vec::deserialize")]
     pub frames: Timeline<Sprite>,
     pub blend_mode: BlendMode,
     #[serde(default)]
@@ -27,10 +26,6 @@ pub struct AnimationV1 {
 }
 
 impl Animation {
-    pub fn into_modern(self) -> Animation {
-        self
-    }
-
     pub fn duration(&self) -> usize {
         self.frames.duration()
     }

@@ -1,11 +1,13 @@
-use super::character_editor::{ItemResource, ParticleAnimationResource};
-use crate::app_state::{AppContext, AppState, Transition};
+use super::character_editor::{AnimationGroupResource, ItemResource};
 use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::animation_group::AnimationGroup;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
 use crate::ui::graphics::modifiers::ModifiersUi;
-use crate::ui::graphics::particle::ParticleUi;
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    ui::graphics::animations::AnimationsUi,
+};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -24,7 +26,7 @@ pub struct AnimationGroupEditor {
     frame: usize,
     path: Box<dyn ItemResource<Output = AnimationGroup>>,
     resource: Rc<RefCell<AnimationGroup>>,
-    ui_data: ParticleUi,
+    ui_data: AnimationsUi,
     done: Status,
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
@@ -78,7 +80,7 @@ impl AppState for AnimationGroupEditor {
                             self.transition = Transition::Push(Box::new(
                                 AnimationEditor::new(
                                     self.assets.clone(),
-                                    Box::new(ParticleAnimationResource {
+                                    Box::new(AnimationGroupResource {
                                         animation: name.clone(),
                                         data: self.resource.clone(),
                                     }),
@@ -106,7 +108,7 @@ impl AppState for AnimationGroupEditor {
                     ui.menu(im_str!("Particle Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("New")).build(ui) {
                             *self.resource.borrow_mut() = AnimationGroup::new();
-                            self.ui_data = ParticleUi::new();
+                            self.ui_data = AnimationsUi::new();
                         }
                         ui.separator();
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
@@ -135,7 +137,7 @@ impl AppState for AnimationGroupEditor {
                                     AnimationGroup::load_from_json(ctx, assets, PathBuf::from(path))
                                 {
                                     *self.resource.borrow_mut() = state;
-                                    self.ui_data = ParticleUi::new();
+                                    self.ui_data = AnimationsUi::new();
                                 }
                             }
                         }
@@ -221,7 +223,7 @@ impl AnimationGroupEditor {
             path,
             frame: 0,
             resource,
-            ui_data: ParticleUi::new(),
+            ui_data: AnimationsUi::new(),
             done: Status::NotDone,
             transition: Transition::None,
         })

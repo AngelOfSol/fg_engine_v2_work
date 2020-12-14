@@ -1,7 +1,7 @@
 mod inspect;
 mod position;
 
-use super::state::{ExpiresAfterAnimation, Position, Render, Timer};
+use super::state::{ExpiresAfterAnimation, Position, Timer};
 use crate::{
     character::state::components::GlobalGraphic, imgui_extra::UiExtensions, roster::YuyukoGraphic,
     typedefs::collision,
@@ -13,7 +13,7 @@ pub use inspect::Inspect;
 pub use position::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryInto,
     fmt::{Display, Formatter},
     marker::PhantomData,
 };
@@ -66,7 +66,7 @@ impl<T> Inspect for ConstructDefault<T> {}
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ConstructId<Id> {
-    value: Id,
+    pub value: Id,
 }
 
 impl<Id: hecs::Component + Clone> Construct for ConstructId<Id> {
@@ -213,6 +213,11 @@ macro_rules! construct_enum_impl {
         }
 
         $(
+            impl Into<Constructor> for $variant_type {
+                fn into(self) -> Constructor {
+                    $name::from(self).into()
+                }
+            }
             impl TryInto<$variant_type> for Constructor {
                 type Error = &'static str;
                 fn try_into(self) -> Result<$variant_type, Self::Error> {
@@ -256,10 +261,6 @@ construct_enum_impl!(
     enum ContextlessConstructor {
         GlobalParticle((ConstructId<GlobalGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
         YuyukoParticle((ConstructId<YuyukoGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
-        YuyukoGraphic(ConstructId<YuyukoGraphic>),
-        Timer(ConstructDefault<Timer>),
-        Render(Render),
-
     }
 );
 construct_enum_impl!(

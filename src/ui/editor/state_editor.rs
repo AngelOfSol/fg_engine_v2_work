@@ -1,5 +1,5 @@
 use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
-use crate::character::state::components::{MovementData, ParticlePath};
+use crate::character::state::components::MovementData;
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
@@ -17,9 +17,9 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::{cell::RefCell, convert::TryFrom};
 
 pub struct StateEditor {
     character_data: Rc<RefCell<PlayerCharacter>>,
@@ -338,28 +338,6 @@ impl AppState for StateEditor {
             } else {
                 resource.draw_at_time(ctx, assets, self.frame, offset)?;
             }
-
-            for particle_spawn in resource.particles.iter() {
-                let current_frame = self.frame.checked_sub(particle_spawn.frame);
-                if let Some(current_frame) = current_frame {
-                    let offset = offset
-                        * Matrix4::new_translation(&Vec3::new(
-                            particle_spawn.offset.into_graphical().x,
-                            particle_spawn.offset.into_graphical().y,
-                            0.0,
-                        ));
-                    if let ParticlePath::Local(particle) = &particle_spawn.particle_id {
-                        dbg!(particle);
-
-                        self.character_data.borrow().particles.particles[particle].draw_at_time(
-                            ctx,
-                            assets,
-                            current_frame,
-                            offset,
-                        )?;
-                    }
-                }
-            }
         }
 
         let offset = {
@@ -415,17 +393,7 @@ impl AppState for StateEditor {
                 DrawParam::default().dest([origin.x, origin.y]),
             )
         };
-        for particle_spawn in resource
-            .particles
-            .iter()
-            .filter(|item| item.frame == self.frame)
-        {
-            let offset = particle_spawn.offset.into_graphical();
-            draw_cross(ctx, offset)?;
 
-            // TODO draw particles too
-            // TODO draw generic position component as cross
-        }
         for item in resource
             .spawns
             .iter()
@@ -436,14 +404,7 @@ impl AppState for StateEditor {
             let offset = item.value.into_graphical();
             draw_cross(ctx, offset)?;
         }
-        /*for bullet_spawn in resource
-            .bullets
-            .iter()
-            .filter(|item| item.frame == self.frame || self.draw_mode.show_all_bullets)
-        {
-            let offset = bullet_spawn.offset.into_graphical();
-            draw_cross(ctx, offset)?;
-        }*/
+
         if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(

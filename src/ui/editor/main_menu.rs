@@ -2,7 +2,7 @@ use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
 use crate::graphics::animation_group::AnimationGroup;
-use crate::ui::editor::character_editor::StandaloneParticleResource;
+use crate::ui::editor::character_editor::StandaloneAnimationGroupResource;
 use crate::ui::editor::{AnimationGroupEditor, CharacterEditor};
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -60,37 +60,39 @@ impl AppState for EditorMenu {
                             }
                         }
                     }
-                    if ui.small_button(im_str!("New Particle")) {
-                        let particle = AnimationGroup::new();
+                    if ui.small_button(im_str!("New Animation Group")) {
+                        let animation_group = AnimationGroup::new();
                         let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
                         self.next = Transition::Push(Box::new(
                             AnimationGroupEditor::new(
                                 assets,
-                                Box::new(StandaloneParticleResource::from(particle)),
+                                Box::new(StandaloneAnimationGroupResource::from(animation_group)),
                             )
                             .unwrap(),
                         ));
                     }
-                    if ui.small_button(im_str!("Load Particle")) {
+                    if ui.small_button(im_str!("Load Animation Group")) {
                         if let Ok(nfd::Response::Okay(path)) =
                             nfd::open_file_dialog(Some("json"), None)
                         {
                             let assets = Rc::new(RefCell::new(Assets::new(ctx).unwrap()));
-                            let particle = AnimationGroup::load_from_json(
+                            let animation_group = AnimationGroup::load_from_json(
                                 ctx,
                                 &mut assets.borrow_mut(),
                                 PathBuf::from(path),
                             );
 
-                            if let Ok(particle) = particle {
+                            if let Ok(animation_group) = animation_group {
                                 self.next = Transition::Push(Box::new(
                                     AnimationGroupEditor::new(
                                         assets,
-                                        Box::new(StandaloneParticleResource::from(particle)),
+                                        Box::new(StandaloneAnimationGroupResource::from(
+                                            animation_group,
+                                        )),
                                     )
                                     .unwrap(),
                                 ));
-                            } else if let Err(err) = particle {
+                            } else if let Err(err) = animation_group {
                                 dbg!(err);
                             }
                         }

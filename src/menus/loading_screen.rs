@@ -51,7 +51,6 @@ impl AppState for LoadingScreen {
         crate::graphics::prepare_screen_for_editor(ctx)?;
 
         let frame = imgui.frame();
-        dbg!("called");
         frame
             .run(|ui| {
                 imgui::Window::new(im_str!("Loading...")).build(ui, || {});

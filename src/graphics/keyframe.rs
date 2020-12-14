@@ -1,4 +1,4 @@
-use crate::typedefs::graphics::{Matrix4, Vec2, Vec3};
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
@@ -37,41 +37,6 @@ impl Default for Modifiers {
 }
 
 impl Modifiers {
-    pub fn with_basic(rotation: f32, scale: Vec2, coords: Vec2) -> Self {
-        Modifiers {
-            rotation: Keyframes::new(Keyframe {
-                frame: 0,
-                value: rotation,
-                function: EaseType::Constant,
-            }),
-            coords: [
-                Keyframes::new(Keyframe {
-                    frame: 0,
-                    value: coords.x,
-                    function: EaseType::Constant,
-                }),
-                Keyframes::new(Keyframe {
-                    frame: 0,
-                    value: coords.y,
-                    function: EaseType::Constant,
-                }),
-            ],
-            scale: [
-                Keyframes::new(Keyframe {
-                    frame: 0,
-                    value: scale.x,
-                    function: EaseType::Constant,
-                }),
-                Keyframes::new(Keyframe {
-                    frame: 0,
-                    value: scale.y,
-                    function: EaseType::Constant,
-                }),
-            ],
-            ..Default::default()
-        }
-    }
-
     pub fn new() -> Self {
         Self::default()
     }

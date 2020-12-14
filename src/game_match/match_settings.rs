@@ -30,7 +30,7 @@ pub struct RuntimeData {
     pub character_data: PlayerData<CharacterData>,
     pub assets: Assets,
     pub sounds: SoundList<GlobalSound>,
-    pub particles: HashMap<GlobalGraphic, AnimationGroup>,
+    pub graphics: HashMap<GlobalGraphic, AnimationGroup>,
     pub ui: UiElements,
     pub background: Stage,
     pub play_area: PlayArea,
@@ -117,13 +117,13 @@ impl MatchSettings {
                     width: background.width() as i32 * 100,
                 };
 
-                let mut particles = HashMap::new();
+                let mut graphics = HashMap::new();
                 let mut path = PathBuf::from("./resources/global/particles");
-                for particle in GlobalGraphic::iter() {
-                    path.push(format!("{}.json", particle));
+                for graphic in GlobalGraphic::iter() {
+                    path.push(format!("{}.json", graphic));
 
-                    particles.insert(
-                        particle,
+                    graphics.insert(
+                        graphic,
                         AnimationGroup::load_from_json(ctx, &mut assets, path.clone())?,
                     );
 
@@ -239,7 +239,7 @@ impl MatchSettings {
                         .map(|item| item.load_data(ctx, &mut assets))
                         .transpose()?,
                     assets,
-                    particles,
+                    graphics,
                     sounds,
                     ui,
                     background,
