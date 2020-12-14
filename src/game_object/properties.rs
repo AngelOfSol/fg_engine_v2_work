@@ -1,54 +1,20 @@
+#[macro_use]
+mod macros;
+use super::constructors::Inspect;
 use crate::{
     character::state::components::GlobalGraphic,
     game_object::constructors::{TryAsMut, TryAsRef},
     roster::YuyukoGraphic,
 };
+use imgui::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    convert::TryInto,
     hash::Hash,
 };
 use strum::EnumIter;
-
-macro_rules! impl_property_type {
-    (
-        pub enum PropertyType {
-            $($variant_name:ident($variant_type:ty),)+
-        }
-    ) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter)]
-        pub enum PropertyType {
-            $($variant_name($variant_type),)+
-        }
-        $(
-            inventory::submit!(Mapping::new::<$variant_type>(stringify!($variant_name).to_owned()));
-            impl From<$variant_type> for PropertyType {
-                fn from(value: $variant_type) -> Self {
-                    PropertyType::$variant_name(value)
-                }
-            }
-            impl TryAsRef<$variant_type> for PropertyType {
-                fn try_as_ref(&self) -> Option<&$variant_type> {
-                    if let PropertyType::$variant_name(value) = self {
-                        Some(value)
-                    } else {
-                        None
-                    }
-                }
-            }
-            impl TryAsMut<$variant_type> for PropertyType {
-                fn try_as_mut(&mut self) -> Option<&mut $variant_type> {
-                    if let PropertyType::$variant_name(value) = self {
-                        Some(value)
-                    } else {
-                        None
-                    }
-                }
-            }
-        )+
-    };
-}
 
 impl_property_type! {
     pub enum PropertyType {
@@ -56,6 +22,9 @@ impl_property_type! {
         YuyukoGraphic(YuyukoGraphic),
     }
 }
+
+impl Inspect for GlobalGraphic {}
+impl Inspect for YuyukoGraphic {}
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct InstanceData<DataId>
@@ -124,6 +93,12 @@ where
     }
 }
 
+impl<DataId: Hash + Eq> Default for InstanceData<DataId> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<DataId: Hash + Eq> InstanceData<DataId> {
     pub fn new() -> Self {
         Self {
@@ -155,20 +130,24 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
         self.data.contains_key(&(TypeId::of::<T>(), key))
     }
 
-    pub fn insert<T>(&mut self, key: DataId, value: T) -> Option<PropertyType>
+    pub fn insert<T>(&mut self, key: DataId, value: T) -> Option<T>
     where
         T: Any,
-        PropertyType: From<T>,
+        PropertyType: From<T> + TryInto<T>,
     {
         self.data
             .insert((TypeId::of::<T>(), key), PropertyType::from(value))
+            .and_then(|i| i.try_into().ok())
     }
-    pub fn remove<T>(&mut self, key: DataId) -> Option<PropertyType>
+
+    pub fn remove<T>(&mut self, key: DataId) -> Option<T>
     where
         T: Any,
-        PropertyType: From<T>,
+        PropertyType: From<T> + TryInto<T>,
     {
-        self.data.remove(&(TypeId::of::<T>(), key))
+        self.data
+            .remove(&(TypeId::of::<T>(), key))
+            .and_then(|i| i.try_into().ok())
     }
 }
 

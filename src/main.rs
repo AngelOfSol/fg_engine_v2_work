@@ -29,7 +29,6 @@ mod player_list;
 mod replay;
 mod roster;
 mod stage;
-mod test;
 mod timeline;
 mod typedefs;
 mod ui;
