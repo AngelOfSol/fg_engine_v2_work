@@ -8,18 +8,32 @@ use crate::{
 };
 use imgui::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
     convert::TryInto,
     hash::Hash,
 };
-use strum::EnumIter;
+use strum::{Display, EnumIter};
 
 impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
         YuyukoGraphic(YuyukoGraphic),
+
+    }
+}
+
+impl PropertyType {
+    pub fn same_type_as(&self, rhs: &Self) -> bool {
+        self.inner_type_id() == rhs.inner_type_id()
+    }
+}
+
+impl Default for PropertyType {
+    fn default() -> Self {
+        PropertyType::GlobalGraphic(Default::default())
     }
 }
 
@@ -96,6 +110,7 @@ impl<DataId: Hash + Eq> Default for InstanceData<DataId> {
     }
 }
 
+#[allow(dead_code)]
 impl<DataId: Hash + Eq> InstanceData<DataId> {
     pub fn new() -> Self {
         Self {
@@ -155,6 +170,41 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
     }
 }
 
+impl<DataId: Hash + Eq + Clone> InstanceData<DataId> {
+    pub fn iter_key(&self, key: DataId) -> impl Iterator<Item = (String, &PropertyType)> {
+        self.data
+            .iter()
+            .filter(move |((_, data_id), _)| &key == data_id)
+            .map(|((type_id, _), value)| {
+                (
+                    inventory::iter::<Mapping>
+                        .into_iter()
+                        .find(|item| &item.type_id == type_id)
+                        .map(|item| item.name.clone())
+                        .unwrap(),
+                    value,
+                )
+            })
+    }
+    pub fn iter_key_mut(
+        &mut self,
+        key: DataId,
+    ) -> impl Iterator<Item = (String, &mut PropertyType)> {
+        self.data
+            .iter_mut()
+            .filter(move |((_, data_id), _)| &key == data_id)
+            .map(|((type_id, _), value)| {
+                (
+                    inventory::iter::<Mapping>
+                        .into_iter()
+                        .find(|item| &item.type_id == type_id)
+                        .map(|item| item.name.clone())
+                        .unwrap(),
+                    value,
+                )
+            })
+    }
+}
 inventory::collect!(Mapping);
 
 struct Mapping {

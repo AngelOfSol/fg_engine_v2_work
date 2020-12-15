@@ -2,6 +2,7 @@ mod animation_editor;
 mod animation_group_editor;
 mod attack_editor;
 mod character_editor;
+mod instance_data_editor;
 mod main_menu;
 mod state_editor;
 

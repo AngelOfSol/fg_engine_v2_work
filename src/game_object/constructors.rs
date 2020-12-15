@@ -115,6 +115,27 @@ where
         Ok(builder)
     }
 }
+impl<Context, T, U, V, W> Construct for (T, U, V, W)
+where
+    Context: Copy,
+    T: Construct<Context = Context>,
+    U: Construct<Context = Context>,
+    V: Construct<Context = Context>,
+    W: Construct<Context = Context>,
+{
+    type Context = Context;
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        builder: &'builder mut EntityBuilder,
+        context: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        self.0.construct_on_to(builder, context)?;
+        self.1.construct_on_to(builder, context)?;
+        self.2.construct_on_to(builder, context)?;
+        self.3.construct_on_to(builder, context)?;
+        Ok(builder)
+    }
+}
 
 impl<T, U> Inspect for (T, U)
 where
@@ -136,6 +157,33 @@ where
         self.0.inspect_mut(ui);
         self.1.inspect_mut(ui);
         self.2.inspect_mut(ui);
+    }
+}
+impl<T, U, V, W> Inspect for (T, U, V, W)
+where
+    T: Inspect,
+    U: Inspect,
+    V: Inspect,
+    W: Inspect,
+{
+    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut(ui);
+        self.1.inspect_mut(ui);
+        self.2.inspect_mut(ui);
+        self.3.inspect_mut(ui);
+    }
+}
+
+impl Inspect for () {}
+impl Construct for () {
+    type Context = ();
+    fn construct_on_to<'constructor, 'builder>(
+        &'constructor self,
+        b: &'builder mut EntityBuilder,
+        _: Self::Context,
+    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        //
+        Ok(b)
     }
 }
 
@@ -277,6 +325,7 @@ construct_enum_impl!(
     enum ContextlessConstructor {
         GlobalParticle((ConstructId<GlobalGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
         YuyukoParticle((ConstructId<YuyukoGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
+
     }
 );
 construct_enum_impl!(

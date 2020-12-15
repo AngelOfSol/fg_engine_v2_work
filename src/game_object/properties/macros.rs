@@ -4,7 +4,7 @@ macro_rules! impl_property_type {
             $($variant_name:ident($variant_type:ty),)+
         }
     ) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter)]
+        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter, Display)]
         pub enum PropertyType {
             $($variant_name($variant_type),)+
         }
@@ -20,7 +20,7 @@ macro_rules! impl_property_type {
         }
 
         impl PropertyType {
-            fn inner_type_id(&self) -> TypeId {
+            pub fn inner_type_id(&self) -> TypeId {
                 match self {
                     $(
                         PropertyType::$variant_name(_) => TypeId::of::<$variant_type>(),

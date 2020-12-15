@@ -47,9 +47,14 @@ impl Default for Character {
 }
 
 impl Character {
-    pub fn sound_name_iterator(self) -> impl Iterator<Item = String> {
+    pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
         match self {
             Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
+        }
+    }
+    pub fn data_id_iter(self) -> impl Iterator<Item = String> {
+        match self {
+            Character::Yuyuko => YuyukoDataId::iter().map(|item| item.to_string()),
         }
     }
 

@@ -186,6 +186,16 @@ impl YuyukoGraphic {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
+pub enum YuyukoDataId {
+    Butterfly,
+}
+impl Default for YuyukoDataId {
+    fn default() -> Self {
+        Self::Butterfly
+    }
+}
+
 pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
     pub world: World,

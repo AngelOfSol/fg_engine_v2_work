@@ -87,6 +87,12 @@ pub trait UiExtensions {
     ) -> bool
     where
         for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>;
+    fn combo_items_display<T: PartialEq + Clone + Display>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+        items: &[T],
+    ) -> bool;
 
     fn combo_enum<T: PartialEq + Clone + IntoEnumIterator + Display>(
         &self,
@@ -123,6 +129,14 @@ impl<'a> UiExtensions for Ui<'a> {
         self.combo_items(label, value, &T::iter().collect::<Vec<_>>(), &|i| {
             im_str!("{}", i).into()
         })
+    }
+    fn combo_items_display<T: PartialEq + Clone + Display>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+        items: &[T],
+    ) -> bool {
+        self.combo_items(label, value, items, &|i| im_str!("{}", i).into())
     }
 
     fn checkbox_set<T: Clone + Hash + PartialEq + Eq + Display>(

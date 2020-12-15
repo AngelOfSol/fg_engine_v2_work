@@ -81,7 +81,7 @@ impl AppState for StateEditor {
             let sounds_list: Vec<_> = character_data
                 .properties
                 .character
-                .sound_name_iterator()
+                .sound_name_iter()
                 .collect();
 
             (state_list, attack_ids, sounds_list)

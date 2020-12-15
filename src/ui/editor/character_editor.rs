@@ -1,4 +1,3 @@
-use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
@@ -8,12 +7,18 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     graphics::animation_group::AnimationGroup,
 };
+use crate::{assets::Assets, game_object::constructors::TryAsRef};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::cell::{Ref, RefCell, RefMut};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    convert::TryInto,
+};
+
+use super::instance_data_editor::InstanceDataEditor;
 
 pub trait ItemResource {
     type Output;
@@ -304,6 +309,27 @@ impl AppState for CharacterEditor {
                         }
                     });
 
+                imgui::Window::new(im_str!("Instance Data"))
+                    .size([300.0, 526.0], Condition::Once)
+                    .position([900.0, 20.0], Condition::Once)
+                    .build(ui, || {
+                        for data_id in self.resource.borrow().properties.character.data_id_iter() {
+                            let id = ui.push_id(&data_id);
+                            ui.text(&data_id);
+                            ui.same_line(0.0);
+                            if ui.small_button(im_str!("Edit")) {
+                                self.transition = Transition::Push(Box::new(
+                                    InstanceDataEditor::new(
+                                        self.assets.clone(),
+                                        self.resource.clone(),
+                                        data_id,
+                                    )
+                                    .unwrap(),
+                                ));
+                            }
+                            id.pop(ui);
+                        }
+                    });
                 imgui::Window::new(im_str!("Attacks"))
                     .size([300.0, 526.0], Condition::Once)
                     .position([1200.0, 20.0], Condition::Once)

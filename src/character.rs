@@ -1,8 +1,8 @@
 pub mod components;
 pub mod state;
 
-use crate::assets::Assets;
 use crate::graphics::animation_group::AnimationGroup;
+use crate::{assets::Assets, game_object::properties::InstanceData};
 use components::{Attacks, EditorStates, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
@@ -12,6 +12,8 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
+
+pub type EditorInstanceData = InstanceData<String>;
 
 #[derive(Serialize, Deserialize)]
 pub struct PlayerCharacter {
@@ -25,6 +27,9 @@ pub struct PlayerCharacter {
 
     #[serde(default)]
     pub graphics: HashMap<String, AnimationGroup>,
+
+    #[serde(default)]
+    pub instance: EditorInstanceData,
 }
 
 impl PlayerCharacter {
@@ -35,6 +40,7 @@ impl PlayerCharacter {
             attacks: Attacks::new(),
             sounds: HashSet::new(),
             graphics: HashMap::new(),
+            instance: EditorInstanceData::new(),
         }
     }
 
