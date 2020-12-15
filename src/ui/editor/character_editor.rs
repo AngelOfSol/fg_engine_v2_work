@@ -1,3 +1,4 @@
+use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
@@ -7,16 +8,12 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     graphics::animation_group::AnimationGroup,
 };
-use crate::{assets::Assets, game_object::constructors::TryAsRef};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
+use std::cell::{Ref, RefCell, RefMut};
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    convert::TryInto,
-};
 
 use super::instance_data_editor::InstanceDataEditor;
 

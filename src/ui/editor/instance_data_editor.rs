@@ -1,16 +1,10 @@
-use super::character_editor::{AnimationGroupResource, ItemResource};
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_object::{constructors::Inspect, properties::PropertyType};
-use crate::ui::editor::AnimationEditor;
-use crate::ui::graphics::modifiers::ModifiersUi;
-use crate::{
-    app_state::{AppContext, AppState, Transition},
-    ui::graphics::animations::AnimationsUi,
-};
+use crate::roster::YuyukoGraphic;
 use crate::{
     assets::{Assets, ValueAlpha},
     character::PlayerCharacter,
 };
-use crate::{graphics::animation_group::AnimationGroup, roster::YuyukoGraphic};
 use crate::{
     imgui_extra::UiExtensions,
     typedefs::graphics::{Matrix4, Vec3},
@@ -20,12 +14,10 @@ use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
 use std::cell::RefCell;
-use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
 
 enum Status {
-    DoneAndSave,
     DoneAndQuit,
     NotDone,
 }
@@ -48,7 +40,6 @@ impl AppState for InstanceDataEditor {
 
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
-            Status::DoneAndSave => Ok(Transition::Pop),
             Status::DoneAndQuit => Ok(Transition::Pop),
         }
     }
@@ -64,8 +55,6 @@ impl AppState for InstanceDataEditor {
         graphics::clear(ctx, graphics::BLACK);
 
         let editor_height = 526.0;
-        let dim = [editor_height / 2.0, editor_height / 2.0];
-        let pos = [300.0, 20.0];
         imgui
             .frame()
             .run(|ui| {
