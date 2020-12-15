@@ -23,9 +23,6 @@ impl_property_type! {
     }
 }
 
-impl Inspect for GlobalGraphic {}
-impl Inspect for YuyukoGraphic {}
-
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct InstanceData<DataId>
 where
@@ -139,6 +136,9 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
             .insert((TypeId::of::<T>(), key), PropertyType::from(value))
             .and_then(|i| i.try_into().ok())
     }
+    pub fn insert_any(&mut self, key: DataId, value: PropertyType) -> Option<PropertyType> {
+        self.data.insert((value.inner_type_id(), key), value)
+    }
 
     pub fn remove<T>(&mut self, key: DataId) -> Option<T>
     where
@@ -148,6 +148,10 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
         self.data
             .remove(&(TypeId::of::<T>(), key))
             .and_then(|i| i.try_into().ok())
+    }
+
+    pub fn remove_any(&mut self, key: DataId, type_id: TypeId) -> Option<PropertyType> {
+        self.data.remove(&(type_id, key))
     }
 }
 
@@ -175,7 +179,7 @@ fn test_instance_data() {
     let mut props = InstanceData::new();
     props.insert(0, YuyukoGraphic::HitEffect);
     props.insert(1, GlobalGraphic::SuperJump);
-    props.insert(2, YuyukoGraphic::SuperJumpParticle);
+    props.insert_any(2, YuyukoGraphic::SuperJumpParticle.into());
     props.insert(2, GlobalGraphic::SuperJump);
 
     let string_variant = serde_json::to_string(&props);
@@ -208,5 +212,20 @@ fn test_instance_data() {
 
     assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(1), true);
+    assert_eq!(round_trip.exists::<GlobalGraphic>(2), true);
+
+    let mut round_trip = round_trip;
+
+    round_trip.remove::<GlobalGraphic>(1);
+    round_trip.remove_any(
+        2,
+        PropertyType::from(YuyukoGraphic::SuperJumpParticle).inner_type_id(),
+    );
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(0), true);
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(1), false);
+    assert_eq!(round_trip.exists::<YuyukoGraphic>(2), false);
+
+    assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
+    assert_eq!(round_trip.exists::<GlobalGraphic>(1), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(2), true);
 }

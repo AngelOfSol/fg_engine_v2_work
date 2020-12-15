@@ -1,5 +1,5 @@
 use enum_dispatch::*;
-use imgui::Ui;
+use imgui::*;
 
 #[enum_dispatch]
 pub trait Inspect {

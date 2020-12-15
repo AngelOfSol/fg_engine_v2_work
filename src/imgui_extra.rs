@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 use std::hash::Hash;
+use strum::IntoEnumIterator;
 
 #[macro_export]
 macro_rules! im_str_owned {
@@ -86,6 +87,12 @@ pub trait UiExtensions {
     ) -> bool
     where
         for<'b> L: Fn(&'b T) -> std::borrow::Cow<'b, ImStr>;
+
+    fn combo_enum<T: PartialEq + Clone + IntoEnumIterator + Display>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+    ) -> bool;
 }
 
 impl<'a> UiExtensions for Ui<'a> {
@@ -107,6 +114,15 @@ impl<'a> UiExtensions for Ui<'a> {
         } else {
             false
         }
+    }
+    fn combo_enum<T: PartialEq + Clone + IntoEnumIterator + Display>(
+        &self,
+        label: &ImStr,
+        value: &mut T,
+    ) -> bool {
+        self.combo_items(label, value, &T::iter().collect::<Vec<_>>(), &|i| {
+            im_str!("{}", i).into()
+        })
     }
 
     fn checkbox_set<T: Clone + Hash + PartialEq + Eq + Display>(

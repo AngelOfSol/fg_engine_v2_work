@@ -33,19 +33,6 @@ pub trait Construct {
     ) -> Result<&'builder mut EntityBuilder, ConstructError>;
 }
 
-pub trait ConstructTag: Default {}
-
-impl<Tag: ConstructTag + hecs::Component> Construct for Tag {
-    type Context = ();
-    fn construct_on_to<'builder>(
-        &self,
-        builder: &'builder mut EntityBuilder,
-        _: Self::Context,
-    ) -> Result<&'builder mut EntityBuilder, ConstructError> {
-        Ok(builder.add(Self::default()))
-    }
-}
-
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct ConstructDefault<T> {
     _marker: PhantomData<T>,
@@ -89,10 +76,6 @@ impl<Id: IntoEnumIterator + Clone + Display + Eq> Inspect for ConstructId<Id> {
             &|i| im_str!("{}", i).into(),
         );
     }
-}
-
-impl<Tag: ConstructTag> Inspect for Tag {
-    fn inspect_mut(&mut self, _: &Ui<'_>) {}
 }
 
 impl<Context, T, U> Construct for (T, U)
@@ -292,8 +275,8 @@ macro_rules! construct_enum_impl {
 construct_enum_impl!(
     Construct<Context = ()> for
     enum ContextlessConstructor {
-        GlobalParticle((ConstructId<GlobalGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
-        YuyukoParticle((ConstructId<YuyukoGraphic>, ExpiresAfterAnimation, ConstructDefault<Timer>)),
+        GlobalParticle((ConstructId<GlobalGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
+        YuyukoParticle((ConstructId<YuyukoGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
     }
 );
 construct_enum_impl!(

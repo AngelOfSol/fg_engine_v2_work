@@ -19,6 +19,15 @@ macro_rules! impl_property_type {
             }
         }
 
+        impl PropertyType {
+            fn inner_type_id(&self) -> TypeId {
+                match self {
+                    $(
+                        PropertyType::$variant_name(_) => TypeId::of::<$variant_type>(),
+                    )+
+                }
+            }
+        }
 
         $(
             inventory::submit!(Mapping::new::<$variant_type>(stringify!($variant_name).to_owned()));

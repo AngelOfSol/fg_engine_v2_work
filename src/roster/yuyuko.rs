@@ -2,7 +2,6 @@ mod attacks;
 mod command_list;
 mod moves;
 
-use crate::character::state::components::{Flags, GlobalGraphic, MoveType};
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
@@ -24,6 +23,10 @@ use crate::{character::components::Properties, game_object::constructors::Constr
 use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
+};
+use crate::{
+    character::state::components::{Flags, GlobalGraphic, MoveType},
+    game_object::constructors::Inspect,
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{command_list::CommandList, game_object::state::Timer};
@@ -160,6 +163,12 @@ pub enum YuyukoGraphic {
     SuperJumpParticle,
     HitEffect,
     ButterflyFlare,
+}
+impl Inspect for YuyukoGraphic {
+    fn inspect_mut(&mut self, ui: &imgui::Ui<'_>) {
+        use crate::imgui_extra::UiExtensions;
+        ui.combo_enum(imgui::im_str!("Value"), self);
+    }
 }
 
 impl Default for YuyukoGraphic {
