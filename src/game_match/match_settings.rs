@@ -117,18 +117,7 @@ impl MatchSettings {
                     width: background.width() as i32 * 100,
                 };
 
-                let mut graphics = HashMap::new();
-                let mut path = PathBuf::from("./resources/global/particles");
-                for graphic in GlobalGraphic::iter() {
-                    path.push(format!("{}.json", graphic));
-
-                    graphics.insert(
-                        graphic,
-                        AnimationGroup::load_from_json(ctx, &mut assets, path.clone())?,
-                    );
-
-                    path.pop();
-                }
+                let graphics = load_global_graphics(ctx, &mut assets)?;
 
                 let ui = UiElements {
                     font: graphics::Font::default(),
@@ -258,4 +247,23 @@ pub trait FromMatchSettings {
         player_list: PlayerList,
         settings: MatchSettings,
     ) -> GameResult<Box<Self>>;
+}
+
+pub fn load_global_graphics(
+    ctx: &mut Context,
+    assets: &mut Assets,
+) -> GameResult<HashMap<GlobalGraphic, AnimationGroup>> {
+    let mut graphics = HashMap::new();
+    let mut path = PathBuf::from("./resources/global/graphics");
+    for graphic in GlobalGraphic::iter() {
+        path.push(format!("{}.json", graphic));
+
+        graphics.insert(
+            graphic,
+            AnimationGroup::load_from_json(ctx, assets, path.clone())?,
+        );
+
+        path.pop();
+    }
+    Ok(graphics)
 }

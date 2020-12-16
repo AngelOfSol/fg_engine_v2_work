@@ -1,9 +1,16 @@
-use crate::app_state::{AppContext, AppState, Transition};
-use crate::game_object::{constructors::Inspect, properties::PropertyType};
 use crate::roster::YuyukoGraphic;
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    character::state::components::GlobalGraphic,
+    graphics::animation_group::AnimationGroup,
+};
 use crate::{
     assets::{Assets, ValueAlpha},
     character::PlayerCharacter,
+};
+use crate::{
+    game_match::load_global_graphics,
+    game_object::{constructors::Inspect, properties::PropertyType},
 };
 use crate::{
     imgui_extra::UiExtensions,
@@ -13,8 +20,8 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::cell::RefCell;
 use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap};
 use strum::IntoEnumIterator;
 
 enum Status {
@@ -30,6 +37,7 @@ pub struct InstanceDataEditor {
     selected_property: PropertyType,
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
+    globals: HashMap<GlobalGraphic, AnimationGroup>,
 }
 
 impl AppState for InstanceDataEditor {
@@ -44,7 +52,8 @@ impl AppState for InstanceDataEditor {
         }
     }
 
-    fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+    fn on_enter(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<()> {
+        self.globals = load_global_graphics(ctx, &mut *self.assets.borrow_mut())?;
         Ok(())
     }
     fn draw(
@@ -177,6 +186,23 @@ impl AppState for InstanceDataEditor {
                 )?;
             }
         }
+        if let Some(animation) = resource.instance.get::<GlobalGraphic>(self.path.clone()) {
+            let resource = self.globals.get(animation).unwrap();
+            if resource.duration() > 0 {
+                let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
+
+                resource.draw_at_time_debug(
+                    ctx,
+                    &self.assets.borrow(),
+                    self.frame % resource.duration(),
+                    offset,
+                    ValueAlpha {
+                        alpha: 1.0,
+                        value: 1.0,
+                    },
+                )?;
+            }
+        }
         // TODO gather global graphics
 
         graphics::set_transform(ctx, Matrix4::identity());
@@ -201,6 +227,7 @@ impl InstanceDataEditor {
             done: Status::NotDone,
             transition: Transition::None,
             selected_property: Default::default(),
+            globals: HashMap::new(),
         })
     }
 }

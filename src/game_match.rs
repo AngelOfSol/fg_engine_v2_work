@@ -4,7 +4,9 @@ mod noop_writer;
 pub mod sounds;
 
 pub use flash::FlashType;
-pub use match_settings::{FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData};
+pub use match_settings::{
+    load_global_graphics, FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData,
+};
 
 use crate::assets::ValueAlpha;
 use crate::character::state::components::GlobalGraphic;
