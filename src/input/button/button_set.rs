@@ -1,8 +1,9 @@
 use super::Button;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::ops::{BitOr, BitOrAssign};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Inspect, Default)]
 pub struct ButtonSet(u8);
 
 impl From<Button> for ButtonSet {

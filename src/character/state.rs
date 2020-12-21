@@ -38,7 +38,7 @@ pub struct SpawnerInfo {
     pub data: Vec<Constructor>,
 }
 
-#[derive(Clone, Deserialize, Serialize, Inspect)]
+#[derive(Clone, Deserialize, Serialize, Inspect, Default)]
 pub struct State<Id, AttackId, SoundType> {
     #[tab = "Animation"]
     pub animations: Vec<Animation>,

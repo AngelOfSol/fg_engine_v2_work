@@ -2,8 +2,9 @@ use super::axis::{Axis, DirectedAxis, Direction, Facing};
 use super::button::{Button, ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
 use super::{InputState, MOTION_DIRECTION_SIZE};
+use inspect_design::Inspect;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Inspect)]
 pub enum Input {
     Idle(DirectedAxis),
     PressButton(DirectedAxis, ButtonSet),
@@ -11,6 +12,12 @@ pub enum Input {
     DragonPunch(Direction, ButtonSet),
     DoubleTap(DirectedAxis),
     SuperJump(DirectedAxis),
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Self::Idle(Default::default())
+    }
 }
 
 impl Input {

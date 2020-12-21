@@ -1,6 +1,7 @@
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Inspect)]
 #[serde(rename_all = "snake_case")]
 pub enum AttackId {
     #[serde(rename = "air5a")]

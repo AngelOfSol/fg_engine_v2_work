@@ -1,7 +1,14 @@
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+use inspect_design::Inspect;
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Inspect)]
 pub enum Direction {
     Forward,
     Backward,
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Self::Forward
+    }
 }
 
 impl Direction {

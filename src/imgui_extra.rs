@@ -1,4 +1,3 @@
-use crate::timeline::Timeline;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
 use imgui::*;

@@ -4,8 +4,10 @@ use crate::input::control_scheme::PadControlScheme;
 use crate::input::pads_context::{Event, EventType};
 use crate::input::InputState;
 use crate::player_list::PlayerList;
+use crate::roster::YuyukoUiState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
+use inspect_design::traits::InspectMut;
 
 type TrainingMatch = Match<crate::replay::ReplayWriterFile>;
 
@@ -19,6 +21,7 @@ pub struct TrainingMode {
     player_list: PlayerList,
     game_state: TrainingMatch,
     dirty: bool,
+    inspect_state: YuyukoUiState,
 }
 
 impl FromMatchSettings for TrainingMode {
@@ -47,6 +50,7 @@ impl TrainingMode {
                 crate::replay::create_new_replay_file("training")?,
             )?,
             dirty: true,
+            inspect_state: Default::default(),
         })
     }
 }
@@ -142,15 +146,41 @@ impl AppState for TrainingMode {
         }
         Ok(())
     }
-    fn draw(&mut self, ctx: &mut Context, AppContext { .. }: &mut AppContext) -> GameResult<()> {
+    fn draw(
+        &mut self,
+        ctx: &mut Context,
+        AppContext { imgui, .. }: &mut AppContext,
+    ) -> GameResult<()> {
         if self.dirty {
             graphics::clear(ctx, graphics::BLACK);
-
             self.game_state.draw(ctx)?;
 
-            graphics::present(ctx)?;
             self.dirty = false;
+
+            // let inspect_state = &mut self.inspect_state;
+            // match self.game_state.players.p1_mut() {
+            //     crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
+            //         //
+            //         imgui
+            //             .frame()
+            //             .run(|ui| {
+            //                 imgui::Window::new(&imgui::im_str!("Window"))
+            //                     .no_nav()
+            //                     .build(ui, || {
+            //                         std::rc::Rc::make_mut(&mut value.data).inspect_mut(
+            //                             "yuyu",
+            //                             inspect_state,
+            //                             ui,
+            //                         );
+            //                     });
+            //             })
+            //             .render(ctx);
+            //     }
+            // }
+
+            graphics::present(ctx)?;
         }
+
         Ok(())
     }
 }

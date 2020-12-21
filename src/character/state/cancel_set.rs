@@ -30,6 +30,13 @@ pub enum MoveType {
     Blockstun,
     WrongBlockstun,
 }
+
+impl Default for MoveType {
+    fn default() -> Self {
+        Self::Idle
+    }
+}
+
 const ALL_MOVE_TYPES: [MoveType; 22] = [
     MoveType::Idle,
     MoveType::Walk,
@@ -161,7 +168,7 @@ impl Display for MoveType {
         )
     }
 }
-#[derive(Clone, Deserialize, Serialize, Inspect)]
+#[derive(Clone, Deserialize, Serialize, Inspect, Default)]
 pub struct CancelSet<Id> {
     // TODO (HASHSET)
     #[skip]

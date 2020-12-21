@@ -188,9 +188,13 @@ impl Construct for () {
     }
 }
 
+#[enum_dispatch]
+trait Auto {}
+
 /// Each variant represents what context needs to be provided to the constructor.
-#[enum_dispatch(InspectOld)]
+#[enum_dispatch(Auto, InspectOld)]
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Inspect)]
+#[no_label]
 pub enum Constructor {
     Contextless(ContextlessConstructor),
     Position(PositionConstructor),
@@ -267,6 +271,7 @@ macro_rules! construct_enum_impl {
     (Construct<Context = $context:ty> for enum $name:ident { $($variant_name:ident($variant_type:ty),)+ }) => {
         #[enum_dispatch(InspectOld)]
         #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq, Inspect)]
+        #[no_label]
         pub enum $name {
             $($variant_name($variant_type)),+
         }
@@ -326,11 +331,17 @@ macro_rules! construct_enum_impl {
     };
 }
 
+type ParticleData<T> = (
+    ConstructId<T>,
+    ConstructDefault<ExpiresAfterAnimation>,
+    ConstructDefault<Timer>,
+);
+
 construct_enum_impl!(
     Construct<Context = ()> for
     enum ContextlessConstructor {
-        GlobalParticle((ConstructId<GlobalGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
-        YuyukoParticle((ConstructId<YuyukoGraphic>, ConstructDefault<ExpiresAfterAnimation>, ConstructDefault<Timer>)),
+        GlobalParticle(ParticleData<GlobalGraphic>),
+        YuyukoParticle(ParticleData<YuyukoGraphic>),
 
     }
 );

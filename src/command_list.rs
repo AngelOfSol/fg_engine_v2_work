@@ -1,4 +1,5 @@
 use crate::input::Input;
+use inspect_design::Inspect;
 use std::collections::HashMap;
 
 #[macro_export]
@@ -14,7 +15,7 @@ macro_rules! make_command_list {
     }};
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Inspect)]
 pub struct CommandList<S> {
     commands: HashMap<Input, Vec<S>>,
 }

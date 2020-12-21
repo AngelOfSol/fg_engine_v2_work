@@ -5,12 +5,13 @@ use crate::graphics::animation::Animation;
 use crate::graphics::keyframe::Modifiers;
 use crate::typedefs::graphics::Matrix4;
 use ggez::{Context, GameResult};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 pub type AnimationGroup = AnimationGroupV1;
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default, Inspect)]
 pub struct AnimationGroupV1 {
     pub animations: Vec<Animation>,
     pub modifiers: Modifiers,

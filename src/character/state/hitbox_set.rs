@@ -19,7 +19,7 @@ impl<AttackId> AttackData<AttackId> {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
 pub struct HitboxSet<AttackId> {
     pub collision: Hitbox,
     pub hurtbox: Vec<Hitbox>,

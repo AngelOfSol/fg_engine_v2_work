@@ -95,7 +95,7 @@ pub struct UiElements {
 }
 
 pub struct Match<Writer> {
-    players: PlayerData<CharacterBehavior>,
+    pub players: PlayerData<CharacterBehavior>,
     game_state: GameState,
 
     game_over: Option<PlayerData<bool>>,

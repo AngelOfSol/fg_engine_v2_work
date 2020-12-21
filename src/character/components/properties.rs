@@ -1,9 +1,10 @@
 use crate::roster::Character;
 use crate::typedefs::collision::Vec2;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Inspect)]
 pub struct Properties {
     pub health: i32,
     pub name: String,
@@ -24,6 +25,7 @@ pub struct Properties {
     pub max_spirit_gauge: i32,
 
     #[serde(default)]
+    #[skip]
     pub character: Character,
 }
 

@@ -1,5 +1,6 @@
 use super::{GroundAction, Guard};
 use crate::typedefs::collision::{Int, Vec2};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
 pub mod version;
@@ -12,7 +13,7 @@ impl AttackInfoV1 {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Inspect)]
 pub struct AttackInfoV1 {
     pub melee: bool,
     pub magic: bool,
@@ -21,11 +22,17 @@ pub struct AttackInfoV1 {
     pub can_counter_hit: bool,
     pub grazeable: bool,
 
+    #[tab = "On Graze"]
     pub on_graze: GrazeInfo,
+    #[tab = "On CH"]
     pub on_counter_hit: CounterHitInfo,
+    #[tab = "On Crush"]
     pub on_guard_crush: GuardCrushInfo,
+    #[tab = "On Hit"]
     pub on_hit: HitInfo,
+    #[tab = "On Block"]
     pub on_block: BlockInfo,
+    #[tab = "On Wrongblock"]
     pub on_wrongblock: WrongBlockInfo,
 }
 
@@ -48,7 +55,7 @@ impl Default for AttackInfoV1 {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct GrazeInfo {
     pub defender_stop: i32,
     pub damage: i32,
@@ -83,7 +90,7 @@ impl Default for GrazeInfo {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct HitInfo {
     pub attacker_stop: i32,
     pub defender_stop: i32,
@@ -140,7 +147,7 @@ impl Default for HitInfo {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct CounterHitInfo {
     pub attacker_stop: i32,
     pub defender_stop: i32,
@@ -194,7 +201,7 @@ impl Default for CounterHitInfo {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct GuardCrushInfo {
     pub attacker_stop: i32,
     pub defender_stop: i32,
@@ -243,7 +250,7 @@ impl Default for GuardCrushInfo {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct BlockInfo {
     pub attacker_stop: i32,
     pub defender_stop: i32,
@@ -288,7 +295,7 @@ impl Default for BlockInfo {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Inspect)]
 pub struct WrongBlockInfo {
     pub attacker_stop: i32,
     pub defender_stop: i32,

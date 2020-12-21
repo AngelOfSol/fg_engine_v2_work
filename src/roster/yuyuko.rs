@@ -48,15 +48,22 @@ use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
 
-#[derive(Clone)]
+#[derive(Clone, Inspect)]
 pub struct Yuyuko {
+    #[tab = "States"]
     pub states: StateList,
+    #[tab = "Attacks"]
     pub attacks: AttackList,
+    #[tab = "Properties"]
     pub properties: Properties,
+    #[tab = "Commands"]
     pub command_list: CommandList<MoveId>,
+    #[skip]
     pub sounds: SoundList<YuyukoSound>,
+    #[tab = "Graphics"]
     pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
 }
+
 impl std::fmt::Debug for Yuyuko {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.states)
@@ -140,7 +147,9 @@ impl YuyukoData {
         Ok(character)
     }
 }
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
+#[derive(
+    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
+)]
 pub enum YuyukoSound {
     Grunt,
 }

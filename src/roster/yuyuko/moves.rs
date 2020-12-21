@@ -1,7 +1,8 @@
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::Display;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Display)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Display, Inspect)]
 #[serde(rename_all = "snake_case")]
 pub enum MoveId {
     Stand,

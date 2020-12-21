@@ -1,6 +1,7 @@
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Inspect)]
 pub enum Guard {
     Low,
     Mid,

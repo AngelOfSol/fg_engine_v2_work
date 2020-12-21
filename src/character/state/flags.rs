@@ -9,6 +9,12 @@ pub enum Hittable {
     Hit,
 }
 
+impl Default for Hittable {
+    fn default() -> Self {
+        Self::Hit
+    }
+}
+
 impl Hittable {
     pub fn is_invuln(self) -> bool {
         match self {
@@ -18,7 +24,7 @@ impl Hittable {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
 pub struct Flags {
     pub melee: Hittable,
     pub bullet: Hittable,
