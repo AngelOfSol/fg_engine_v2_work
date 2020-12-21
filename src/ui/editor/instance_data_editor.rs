@@ -8,10 +8,7 @@ use crate::{
     assets::{Assets, ValueAlpha},
     character::PlayerCharacter,
 };
-use crate::{
-    game_match::load_global_graphics,
-    game_object::{constructors::Inspect, properties::PropertyType},
-};
+use crate::{game_match::load_global_graphics, game_object::properties::PropertyType};
 use crate::{
     imgui_extra::UiExtensions,
     typedefs::graphics::{Matrix4, Vec3},
@@ -20,6 +17,8 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use inspect_design::traits::Inspect;
+use inspect_design::traits::InspectMut;
 use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
 use strum::IntoEnumIterator;
@@ -38,6 +37,7 @@ pub struct InstanceDataEditor {
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
     globals: HashMap<GlobalGraphic, AnimationGroup>,
+    inspect_state: <PropertyType as Inspect>::State,
 }
 
 impl AppState for InstanceDataEditor {
@@ -108,7 +108,9 @@ impl AppState for InstanceDataEditor {
                         for (type_name, value) in pc.instance.iter_key_mut(self.path.clone()) {
                             let id = ui.push_id(&type_name);
                             ui.text(&type_name);
-                            value.inspect_mut(ui);
+
+                            value.inspect_mut("data", &mut self.inspect_state, ui);
+                            // TODO UI
 
                             if ui.small_button(im_str!("Delete")) {
                                 to_remove = Some(value.inner_type_id());
@@ -220,6 +222,7 @@ impl InstanceDataEditor {
         path: String,
     ) -> Option<Self> {
         Some(Self {
+            inspect_state: Default::default(),
             assets,
             path,
             frame: 0,

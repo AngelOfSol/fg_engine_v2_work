@@ -1,12 +1,12 @@
 #[macro_use]
 mod macros;
-use super::constructors::Inspect;
 use crate::{
     character::state::components::GlobalGraphic,
     game_object::constructors::{TryAsMut, TryAsRef},
     roster::YuyukoGraphic,
 };
 use imgui::*;
+use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use std::{

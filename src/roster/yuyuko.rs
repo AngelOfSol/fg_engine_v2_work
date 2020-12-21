@@ -33,6 +33,7 @@ use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnima
 use attacks::AttackId;
 use ggez::{Context, GameResult};
 use hecs::{EntityBuilder, World};
+use inspect_design::Inspect;
 use moves::MoveId;
 use rodio::Device;
 use serde::Deserialize;
@@ -156,7 +157,9 @@ impl Default for YuyukoSound {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
+#[derive(
+    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum YuyukoGraphic {
     SuperJumpParticle,
@@ -165,12 +168,6 @@ pub enum YuyukoGraphic {
     Butterfly2,
     Butterfly3,
     Butterfly4,
-}
-impl Inspect for YuyukoGraphic {
-    fn inspect_mut(&mut self, ui: &imgui::Ui<'_>) {
-        use crate::imgui_extra::UiExtensions;
-        ui.combo_enum(imgui::im_str!("Value"), self);
-    }
 }
 
 impl Default for YuyukoGraphic {

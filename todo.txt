@@ -229,14 +229,14 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] actually use the constructors to spawn bullets
             [] render basic box
             [] spawn at position
-        [] add graphic_id
-            [] render graphic from hashmap<GraphicId, Particle[rename this]>
-        [] add global_graphics_id
-            [] render graphic from hashmap<GraphicId, Particle[rename this]>
-            [] move all particles to objects
-        [] add expire_at component
-        [] add timer component
-        [] add velocity
+        [x] add graphic_id
+            [x] render graphic from hashmap<GraphicId, Particle[rename this]>
+        [x] add global_graphics_id
+            [x] render graphic from hashmap<GraphicId, Particle[rename this]>
+            [x] move all particles to objects
+        [x] add expire_at component
+        [x] add timer component
+        [x] add velocity
         [] add data_id for Hitboxes
             [] for rendering, add graphic_id to overlay 
             [] property
@@ -314,48 +314,3 @@ https://www.gresearch.co.uk/article/defunctionalisation/
 
 random key: 4D 6D 9C 6C 2B
 
-
-struct LinearBulletState {
-  vel: Vec2<i32>,
-  pos: Vec2<i32>,
-  time: usize,
-}
-struct LinearBulletParameters {
-  accel: Vec2<i32>,
-  reset_velocity: Vec2<i32>,
-}
-
-
-pub struct BulletData<StaticParams, TimeBasedParams> {
-  static_params: StaticParams,
-  params: Timeline<TimeBasedParams>,
-  hitboxes: Timeline<HitboxSet>,
-  animations: AnimationSet,
-}
-
-trait DrawEditableUi {
-}
-
-
-enum CharacterASpawner {
-  Basic { x_vel: i32, y_vel: i32 },
-  Stationary { color: Color },
-}
-struct EditorCharacter {
-  bullet_data: HashMap<String, BulletDataEnum>
-}
-
-struct ConcreteCharacter {
-  bullet_data: CCBulletData { main_bullet: LinearBulletData, secondary_bullet: LinearBulletData }
-}
-
-enum CharacterBSpawner {
-  Basic { x_vel: i32 },
-  Stationary { color: Color, y_vel: i32 },
-}
-#[serde(untagged)]
-enum AllSpawners {
-  CharacterASpawner(CharacterASpawner),
-  CharacterBSpawner(CharacterBSpawner),
-}
-pub type EditorCharacterState = State<String, String, AllSpawners, String, String>;

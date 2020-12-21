@@ -4,20 +4,12 @@ macro_rules! impl_property_type {
             $($variant_name:ident($variant_type:ty),)+
         }
     ) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter, Display)]
+        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter, Display, Inspect)]
+        #[static_enum]
         pub enum PropertyType {
             $($variant_name($variant_type),)+
         }
 
-        impl Inspect for PropertyType {
-            fn inspect_mut(&mut self, ui: &Ui<'_>) {
-                match self {
-                    $(
-                        PropertyType::$variant_name(value) => Inspect::inspect_mut(value, ui),
-                    )+
-                }
-            }
-        }
 
         impl PropertyType {
             pub fn inner_type_id(&self) -> TypeId {
