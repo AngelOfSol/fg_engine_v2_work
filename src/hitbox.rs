@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::game_match::PlayArea;
 use crate::imgui_extra::UiExtensions;
 use crate::input::Facing;
@@ -15,6 +17,15 @@ pub struct GenericHitbox<T> {
     pub half_size: Vec2,
     #[serde(skip)]
     _secret: std::marker::PhantomData<T>,
+}
+impl<T> Default for GenericHitbox<T> {
+    fn default() -> Self {
+        Self {
+            center: Vec2::new(0_00, 0_00),
+            half_size: Vec2::new(1_00, 1_00),
+            _secret: PhantomData,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
@@ -172,5 +183,17 @@ impl<T> GenericHitbox<T> {
         graphics::draw(ctx, &rect, DrawParam::default())?;
 
         Ok(())
+    }
+}
+
+mod inspect {
+    use super::Hitbox;
+    use crate::game_object::constructors::Inspect;
+    use imgui::*;
+
+    impl Inspect for Hitbox {
+        fn inspect_mut(&mut self, ui: &Ui<'_>) {
+            Hitbox::draw_ui(ui, self);
+        }
     }
 }

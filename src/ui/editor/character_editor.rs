@@ -288,21 +288,37 @@ impl AppState for CharacterEditor {
                     .size([300.0, 526.0], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        for key in self.resource.borrow().graphics.keys() {
-                            ui.text(key);
-                            ui.same_line(0.0);
-                            if ui.small_button(&im_str!("Edit##{}", key)) {
-                                self.transition = Transition::Push(Box::new(
-                                    AnimationGroupEditor::new(
-                                        self.assets.clone(),
-                                        Box::new(GraphicResource {
-                                            data: self.resource.clone(),
-                                            graphic_id: key.clone(),
-                                        }),
-                                    )
-                                    .unwrap(),
-                                ));
+                        let mut to_edit = None;
+                        {
+                            let mut pc = self.resource.borrow_mut();
+                            let pc = std::ops::DerefMut::deref_mut(&mut pc);
+
+                            let character = pc.properties.character;
+
+                            pc.graphics.retain(|key, _| {
+                                character.graphic_name_iter().any(|item| &item == key)
+                            });
+
+                            for key in pc.properties.character.graphic_name_iter() {
+                                ui.text(&key);
+                                ui.same_line(0.0);
+                                if ui.small_button(&im_str!("Edit##{}", &key)) {
+                                    let _ = pc.graphics.entry(key.clone()).or_default();
+                                    to_edit = Some(key);
+                                }
                             }
+                        }
+                        if let Some(key) = to_edit {
+                            self.transition = Transition::Push(Box::new(
+                                AnimationGroupEditor::new(
+                                    self.assets.clone(),
+                                    Box::new(GraphicResource {
+                                        data: self.resource.clone(),
+                                        graphic_id: key,
+                                    }),
+                                )
+                                .unwrap(),
+                            ));
                         }
                     });
 

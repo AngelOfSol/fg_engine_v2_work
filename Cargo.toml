@@ -23,9 +23,11 @@ ggez = {path = "../ggez"}
 glob = "0.3.0"
 hecs = "0.3.1"
 image = "0.23.6"
-imgui = "0.4.0"
-imgui-gfx-renderer = "0.4.0"
-imgui-sys = "0.4.0"
+imgui = "0.6.1"
+imgui-gfx-renderer = "0.6.1"
+imgui-sys = "0.6.0"
+inspect_design = {path = "../inspect_design"}
+inventory = "0.1.10"
 ipconfig = "0.2.2"
 keyframe = "1.0.2"
 laminar = "0.3.2"
@@ -38,4 +40,3 @@ sdl2 = {version = "0.34.1", features = ["bundled", "static-link"]}
 serde = {version = "1.0.114", features = ["derive"]}
 serde_json = "1.0.55"
 strum = {version = "0.20", features = ["derive"]}
-inventory = "0.1.10"

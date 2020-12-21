@@ -132,12 +132,16 @@ impl AppState for AnimationGroupEditor {
                                 nfd::open_file_dialog(Some("json"), None)
                             {
                                 let assets = &mut self.assets.borrow_mut();
-                                // TODO: use this error
-                                if let Ok(state) =
-                                    AnimationGroup::load_from_json(ctx, assets, PathBuf::from(path))
-                                {
-                                    *self.resource.borrow_mut() = state;
+                                let animation_group = AnimationGroup::load_from_json(
+                                    ctx,
+                                    assets,
+                                    PathBuf::from(path),
+                                );
+                                if let Ok(animation_group) = animation_group {
+                                    *self.resource.borrow_mut() = animation_group;
                                     self.ui_data = AnimationsUi::new();
+                                } else if let Err(err) = animation_group {
+                                    dbg!(err);
                                 }
                             }
                         }

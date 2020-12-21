@@ -155,11 +155,14 @@ impl AppState for StateEditor {
 
                         ui.separator();
 
-                        imgui::Slider::new(im_str!("Collision"), 0.0..=1.0)
+                        imgui::Slider::new(im_str!("Collision"))
+                            .range(0.0..=1.0)
                             .build(ui, &mut self.draw_mode.collision_alpha);
-                        imgui::Slider::new(im_str!("Hurtbox"), 0.0..=1.0)
+                        imgui::Slider::new(im_str!("Hurtbox"))
+                            .range(0.0..=1.0)
                             .build(ui, &mut self.draw_mode.hurtbox_alpha);
-                        imgui::Slider::new(im_str!("Hitbox"), 0.0..=1.0)
+                        imgui::Slider::new(im_str!("Hitbox"))
+                            .range(0.0..=1.0)
                             .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
 

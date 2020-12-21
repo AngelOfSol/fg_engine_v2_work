@@ -162,7 +162,10 @@ impl Default for YuyukoSound {
 pub enum YuyukoGraphic {
     SuperJumpParticle,
     HitEffect,
-    ButterflyFlare,
+    Butterfly1,
+    Butterfly2,
+    Butterfly3,
+    Butterfly4,
 }
 impl Inspect for YuyukoGraphic {
     fn inspect_mut(&mut self, ui: &imgui::Ui<'_>) {
@@ -173,7 +176,7 @@ impl Inspect for YuyukoGraphic {
 
 impl Default for YuyukoGraphic {
     fn default() -> Self {
-        Self::ButterflyFlare
+        Self::Butterfly1
     }
 }
 

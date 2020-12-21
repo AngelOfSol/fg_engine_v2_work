@@ -219,10 +219,10 @@ impl EventHandler for AppStateRunner {
     }
 
     fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
-        self.app_ctx.imgui.update_mouse_down((
-            button != MouseButton::Left,
-            button != MouseButton::Right,
-            button != MouseButton::Middle,
+        self.app_ctx.imgui.update_mouse_up((
+            button == MouseButton::Left,
+            button == MouseButton::Right,
+            button == MouseButton::Middle,
         ));
     }
 

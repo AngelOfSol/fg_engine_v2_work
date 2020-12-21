@@ -165,13 +165,6 @@ impl ImGuiWrapper {
         imgui.io_mut().font_global_scale = 1.0;
         // Create new frame
 
-        /*let frame_size = FrameSize {
-            logical_size: (f64::from(w), f64::from(h)),
-            hidpi_factor: f64::from(graphics::hidpi_factor(ctx)),
-        };*/
-
-        let now = Instant::now();
-        imgui.io_mut().update_delta_time(now);
         // Create instace
         Self {
             imgui,
@@ -192,8 +185,9 @@ impl ImGuiWrapper {
         self.update_mouse();
         self.update_gamepad();
 
-        //let now = Instant::now();
-        self.last_frame = self.imgui.io_mut().update_delta_time(self.last_frame);
+        let now = Instant::now();
+        self.imgui.io_mut().update_delta_time(now - self.last_frame);
+        self.last_frame = now;
 
         ImguiFrameRunner::new(self)
     }
@@ -226,9 +220,26 @@ impl ImGuiWrapper {
     }
 
     pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool)) {
-        self.mouse_state.pressed = pressed;
-
-        if pressed.0 {}
+        if pressed.0 {
+            self.mouse_state.pressed.0 = true;
+        }
+        if pressed.1 {
+            self.mouse_state.pressed.1 = true;
+        }
+        if pressed.2 {
+            self.mouse_state.pressed.2 = true;
+        }
+    }
+    pub fn update_mouse_up(&mut self, pressed: (bool, bool, bool)) {
+        if pressed.0 {
+            self.mouse_state.pressed.0 = false;
+        }
+        if pressed.1 {
+            self.mouse_state.pressed.1 = false;
+        }
+        if pressed.2 {
+            self.mouse_state.pressed.2 = false;
+        }
     }
 
     pub fn handle_gamepad_input(&mut self, input: NavInput, value: f32) {

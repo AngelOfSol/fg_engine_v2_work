@@ -25,18 +25,10 @@ pub fn load(
     ctx: &mut Context,
     assets: &mut Assets,
     animation_group: &mut AnimationGroup,
-    mut path: PathBuf,
+    path: PathBuf,
 ) -> GameResult<()> {
     for animation in animation_group.animations.iter_mut() {
-        match Animation::load(ctx, assets, animation, path.clone()) {
-            Ok(_) => (),
-            Err(_) => {
-                let mut path = path.clone();
-                path.pop();
-                Animation::load(ctx, assets, animation, path)?
-            }
-        };
-        path.pop();
+        Animation::load(ctx, assets, animation, path.clone())?;
     }
 
     Ok(())

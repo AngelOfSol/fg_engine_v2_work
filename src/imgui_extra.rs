@@ -272,7 +272,9 @@ impl<'a> UiExtensions for Ui<'a> {
         let mut buffer = (*value)
             .try_into()
             .map_err(|_| "something happened".to_owned())?;
-        let changed = imgui::Slider::new(label, min..=max).build(self, &mut buffer);
+        let changed = imgui::Slider::new(label)
+            .range(min..=max)
+            .build(self, &mut buffer);
         //self.slider_int(label, &mut buffer, min, max).build();
         if changed {
             *value = I::try_from(buffer).map_err(|_| "something happened".to_owned())?;

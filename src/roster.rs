@@ -57,6 +57,11 @@ impl Character {
             Character::Yuyuko => YuyukoDataId::iter().map(|item| item.to_string()),
         }
     }
+    pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
+        match self {
+            Character::Yuyuko => YuyukoGraphic::iter().map(|item| item.file_name()),
+        }
+    }
 
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
         match self {
