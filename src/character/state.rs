@@ -40,19 +40,25 @@ pub struct SpawnerInfo {
 
 #[derive(Clone, Deserialize, Serialize, Inspect)]
 pub struct State<Id, AttackId, SoundType> {
+    #[tab = "Animation"]
     pub animations: Vec<Animation>,
+    #[tab = "Flags"]
     pub flags: Timeline<Flags>,
     #[serde(bound(
         serialize = "CancelSet<Id>: Serialize",
         deserialize = "CancelSet<Id>: Deserialize<'de>"
     ))]
     #[inspect_mut_bounds = "Id: Clone"]
+    #[tab = "Cancels"]
     pub cancels: Timeline<CancelSet<Id>>,
     #[inspect_mut_bounds = "AttackId: Clone"]
+    #[tab = "Hitboxes"]
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
     #[serde(default)]
+    #[tab = "Spawns"]
     pub spawns: Vec<SpawnerInfo>,
     #[serde(default)]
+    #[tab = "Spawns"]
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,

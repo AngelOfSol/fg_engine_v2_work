@@ -16,6 +16,7 @@ use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use inspect_design::traits::{Inspect, InspectMut};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -30,6 +31,7 @@ pub struct StateEditor {
     transition: Transition,
     ui_data: StateUi,
     draw_mode: DrawMode,
+    inspect_state: <EditorCharacterState as Inspect>::State,
 }
 struct DrawMode {
     collision_alpha: f32,
@@ -88,6 +90,15 @@ impl AppState for StateEditor {
         imgui
             .frame()
             .run(|ui| {
+                imgui::Window::new(im_str!("TEST"))
+                    .size([300.0, 140.0], Condition::Once)
+                    .position([0.0, 20.0], Condition::Once)
+                    .build(ui, || {
+                        self.resource
+                            .borrow_mut()
+                            .inspect_mut("test", &mut self.inspect_state, ui);
+                    });
+
                 imgui::Window::new(im_str!("Properties"))
                     .size([300.0, 140.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
@@ -437,6 +448,7 @@ impl StateEditor {
     ) -> Option<Self> {
         let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
         Some(Self {
+            inspect_state: Default::default(),
             character_data,
             assets,
             path,
