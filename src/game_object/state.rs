@@ -3,8 +3,6 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default, Inspect)]
 pub struct Position {
-    // TODO(NAL_UI)
-    #[skip]
     pub value: collision::Vec2,
 }
 

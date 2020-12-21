@@ -46,8 +46,6 @@ pub struct Flags {
     pub jump_start: bool,
     #[serde(default)]
     pub allow_reface: bool,
-    // TODO(NAL_UI)
-    #[skip]
     pub accel: Vec2,
     #[serde(default = "default_friction")]
     pub friction: Int,

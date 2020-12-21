@@ -14,13 +14,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect)]
 pub struct GenericHitbox<T> {
-    // TODO(NAL_UI)
-    #[skip]
     pub center: Vec2,
-    #[skip]
     pub half_size: Vec2,
     #[serde(skip)]
-    #[skip]
     _secret: std::marker::PhantomData<T>,
 }
 impl<T> Default for GenericHitbox<T> {

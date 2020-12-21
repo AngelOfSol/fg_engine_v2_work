@@ -317,18 +317,20 @@ pub mod inspect {
             .build();
     }
 
-    fn draw_frame_info<T>(surrounding: Surrounding<(usize, T)>, ui: &Ui<'_>) {
+    fn draw_frame_info<T>(selected: usize, surrounding: Surrounding<(usize, T)>, ui: &Ui<'_>) {
         match surrounding {
             Surrounding::None => {}
             Surrounding::End { start, duration } => ui.text(&im_str!(
-                "start: f{}, end: f{}, length: {}f",
+                "start: f{}, selected: f{}, end: f{}, length: {}f",
                 start.0,
+                selected,
                 start.0 + duration - 1,
                 duration
             )),
             Surrounding::Pair { start, end } => ui.text(&im_str!(
-                "start: f{}, end: f{}, length: {}f",
+                "start: f{}, selected: f{}, end: f{}, length: {}f",
                 start.0,
+                selected,
                 end.0 - 1,
                 end.0 - start.0
             )),
@@ -406,7 +408,11 @@ pub mod inspect {
             self.duration.inspect("duration", &mut state.duration, ui);
             ui.separator();
 
-            draw_frame_info(self.surrounding(state.selected_frame), ui);
+            draw_frame_info(
+                state.selected_frame,
+                self.surrounding(state.selected_frame),
+                ui,
+            );
 
             if let Some((frame, item)) = self.get(state.selected_frame) {
                 if T::FLATTEN {
@@ -414,7 +420,9 @@ pub mod inspect {
                 } else {
                     ui.text(&im_str!("selected: {"));
                     ui.indent();
-                    item.inspect(&format!("frame {}", frame), &mut state.selected_state, ui);
+                    ChildWindow::new(&im_str!("selected")).build(ui, || {
+                        item.inspect(&format!("frame {}", frame), &mut state.selected_state, ui);
+                    });
                     ui.unindent();
                     ui.text(&im_str!("}"));
                 }
@@ -527,7 +535,11 @@ pub mod inspect {
             }
             ui.separator();
 
-            draw_frame_info(self.surrounding(state.selected_frame), ui);
+            draw_frame_info(
+                state.selected_frame,
+                self.surrounding(state.selected_frame),
+                ui,
+            );
 
             if let Some((frame, item)) = self.get_mut(state.selected_frame) {
                 if T::FLATTEN {
@@ -650,10 +662,16 @@ pub mod inspect {
         }
         ui.separator();
 
-        draw_frame_info(data.surrounding(state.selected_frame), ui);
+        draw_frame_info(
+            state.selected_frame,
+            data.surrounding(state.selected_frame),
+            ui,
+        );
 
         if let Some((frame, item)) = data.get_mut(state.selected_frame) {
-            inspect(frame, item);
+            ChildWindow::new(&im_str!("selected")).build(ui, || {
+                inspect(frame, item);
+            });
         }
         id.pop(ui);
     }
