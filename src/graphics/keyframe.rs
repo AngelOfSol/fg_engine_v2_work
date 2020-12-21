@@ -1,14 +1,15 @@
 use crate::typedefs::graphics::{Matrix4, Vec3};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display, EnumIter)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display, EnumIter, Inspect)]
 pub enum Coordinates {
     Polar,
     Cartesian,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Inspect)]
 pub struct Modifiers {
     pub rotation: Keyframes,
     pub scale: [Keyframes; 2],
@@ -78,7 +79,7 @@ impl Modifiers {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Inspect)]
 pub struct Keyframes {
     pub frames: Vec<Keyframe>,
 }
@@ -99,7 +100,7 @@ impl Keyframes {
     }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Display, EnumIter)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Display, EnumIter, Inspect)]
 pub enum EaseType {
     Constant,
     Linear,
@@ -107,7 +108,7 @@ pub enum EaseType {
     EaseIn,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Inspect)]
 pub struct Keyframe {
     pub frame: usize,
     pub value: f32,

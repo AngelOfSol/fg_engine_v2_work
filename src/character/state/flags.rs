@@ -1,8 +1,9 @@
 use crate::game_match::FlashType;
 use crate::typedefs::collision::{Int, Vec2};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, Inspect)]
 pub enum Hittable {
     Invuln,
     Hit,
@@ -17,7 +18,7 @@ impl Hittable {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect)]
 pub struct Flags {
     pub melee: Hittable,
     pub bullet: Hittable,
@@ -45,6 +46,8 @@ pub struct Flags {
     pub jump_start: bool,
     #[serde(default)]
     pub allow_reface: bool,
+    // TODO(NAL_UI)
+    #[skip]
     pub accel: Vec2,
     #[serde(default = "default_friction")]
     pub friction: Int,

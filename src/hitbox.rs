@@ -9,13 +9,18 @@ use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
 use ggez::{Context, GameResult};
 use imgui::*;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect)]
 pub struct GenericHitbox<T> {
+    // TODO(NAL_UI)
+    #[skip]
     pub center: Vec2,
+    #[skip]
     pub half_size: Vec2,
     #[serde(skip)]
+    #[skip]
     _secret: std::marker::PhantomData<T>,
 }
 impl<T> Default for GenericHitbox<T> {
@@ -28,9 +33,9 @@ impl<T> Default for GenericHitbox<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
 pub struct Relative;
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
 pub struct Absolute;
 
 pub type Hitbox = GenericHitbox<Relative>;

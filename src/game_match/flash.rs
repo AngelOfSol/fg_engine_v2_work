@@ -1,4 +1,5 @@
 use ggez::graphics::Color;
+use inspect_design::Inspect;
 use keyframe::{
     functions::{EaseInQuint, EaseOutQuint},
     keyframes, AnimationSequence,
@@ -20,11 +21,17 @@ impl From<FlashType> for FlashOverlay {
         }
     }
 }
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, Display)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, Display, Inspect)]
 pub enum FlashType {
     Super,
     GuardCrush,
     PartialSuper,
+}
+
+impl Default for FlashType {
+    fn default() -> Self {
+        Self::Super
+    }
 }
 
 impl FlashOverlay {

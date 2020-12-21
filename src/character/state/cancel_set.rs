@@ -1,3 +1,4 @@
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt;
@@ -160,11 +161,13 @@ impl Display for MoveType {
         )
     }
 }
-
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Inspect)]
 pub struct CancelSet<Id> {
+    #[skip]
     pub always: HashSet<MoveType>,
+    #[skip]
     pub hit: HashSet<MoveType>,
+    #[skip]
     pub block: HashSet<MoveType>,
     #[serde(bound(
         serialize = "HashSet<Id>: Serialize",
@@ -172,6 +175,7 @@ pub struct CancelSet<Id> {
     ))]
     #[serde(default)]
     pub self_gatling: bool,
+    #[skip]
     pub disallow: HashSet<Id>,
 }
 

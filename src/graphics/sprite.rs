@@ -7,15 +7,17 @@ use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 pub type Sprite = SpriteV1;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default, Inspect)]
 pub struct SpriteV1 {
     #[serde(default)]
     #[serde(skip)]
+    #[skip]
     pub image: Option<Image>,
 
     pub modifiers: Modifiers,

@@ -1,7 +1,10 @@
-use super::{AnimationUi, CancelSetUi, FlagsUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
-use crate::character::state::{
-    components::{CancelSet, Flags, HitboxSet, MoveType, SoundPlayInfo},
-    SpawnerInfo,
+use super::{AnimationUi, CancelSetUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
+use crate::{
+    character::state::{
+        components::{CancelSet, Flags, HitboxSet, MoveType, SoundPlayInfo},
+        SpawnerInfo,
+    },
+    timeline,
 };
 
 use crate::assets::Assets;
@@ -11,8 +14,8 @@ use crate::imgui_extra::UiExtensions;
 use crate::timeline::Timeline;
 use ggez::Context;
 use imgui::*;
+use inspect_design::traits::{Inspect, InspectMut};
 use nfd::Response;
-use std::cmp;
 use std::path::PathBuf;
 
 pub struct StateUi {
@@ -25,6 +28,9 @@ pub struct StateUi {
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
     spawner_ui_data: SpawnerUi,
+    flags_state: <Timeline<Flags> as Inspect>::State,
+    cancels_state: <Timeline<CancelSet<String>> as Inspect>::State,
+    hitbox_state: <Timeline<HitboxSet<String>> as Inspect>::State,
 }
 
 impl StateUi {
@@ -39,6 +45,9 @@ impl StateUi {
             current_cancel_set_ui: None,
             current_spawner: None,
             spawner_ui_data: SpawnerUi::new(),
+            flags_state: Default::default(),
+            cancels_state: Default::default(),
+            hitbox_state: Default::default(),
         }
     }
 
@@ -172,35 +181,7 @@ impl StateUi {
     }
 
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
-        let id = ui.push_id("Flags");
-        let mut counter = 0;
-        // TODO(TL_UI)
-        // ui.rearrangable_list_box(
-        //     im_str!("List\n[Start, End]"),
-        //     &mut self.current_flags,
-        //     data,
-        //     |(_, duration)| {
-        //         let start = counter;
-        //         let end = counter + duration - 1;
-        //         counter += duration;
-        //         im_str!("[{}, {}]", start, end)
-        //     },
-        //     5,
-        // );
-
-        // if let Some(ref mut idx) = self.current_flags {
-        //     ui.timeline_modify(idx, data);
-
-        //     let (ref mut flags, ref mut duration) = &mut data[*idx];
-
-        //     let _ = ui.input_whole(im_str!("Duration"), duration);
-        //     *duration = cmp::max(*duration, 1);
-
-        //     ui.separator();
-        //     FlagsUi::draw_ui(ui, flags);
-        // }
-
-        id.pop(ui);
+        data.inspect_mut("flags", &mut self.flags_state, ui);
     }
     pub fn draw_cancels_editor(
         &mut self,
@@ -209,40 +190,28 @@ impl StateUi {
         data: &mut Timeline<CancelSet<String>>,
     ) {
         let id = ui.push_id("Cancels");
-        // TODO(TL_UI)
-        // let mut counter = 0;
-        // ui.rearrangable_list_box(
-        //     im_str!("List\n[Start, End]"),
-        //     &mut self.current_cancels,
-        //     data,
-        //     |(_, duration)| {
-        //         let start = counter;
-        //         let end = counter + duration - 1;
-        //         counter += duration;
-        //         im_str!("[{}, {}]", start, end)
-        //     },
-        //     5,
-        // );
+        let current_cancel_set_ui = &mut self.current_cancel_set_ui;
 
-        // if let Some(ref mut idx) = self.current_cancels {
-        //     if self.current_cancel_set_ui.is_none() {
-        //         self.current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
-        //     }
-        //     let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
-        //     ui.timeline_modify(idx, data);
+        timeline::inspect::inspect_mut_custom(
+            data,
+            "cancels",
+            &mut self.cancels_state,
+            ui,
+            |_, data| {
+                if current_cancel_set_ui.is_none() {
+                    *current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
+                }
+                let ui_data = current_cancel_set_ui.as_mut().unwrap();
 
-        //     let (ref mut cancels, ref mut duration) = &mut data[*idx];
+                ui.separator();
+                imgui::ChildWindow::new(im_str!("child frame"))
+                    .size([0.0, 0.0])
+                    .build(ui, || {
+                        ui_data.draw_ui(ui, state_list, data);
+                    });
+            },
+        );
 
-        //     let _ = ui.input_whole(im_str!("Duration"), duration);
-        //     *duration = cmp::max(*duration, 1);
-
-        //     ui.separator();
-        //     imgui::ChildWindow::new(im_str!("child frame"))
-        //         .size([0.0, 0.0])
-        //         .build(ui, || {
-        //             ui_data.draw_ui(ui, state_list, cancels);
-        //         });
-        // }
         id.pop(ui);
     }
 
@@ -254,38 +223,20 @@ impl StateUi {
     ) {
         let id = ui.push_id("Hitboxes");
 
-        // TODO(TL_UI)
+        let current_hitbox_ui = &mut self.current_hitbox_ui;
 
-        // let mut counter = 0;
-        // let format_entry = |(_, duration): &(_, usize)| {
-        //     let start = counter;
-        //     let end = counter + duration - 1;
-        //     counter += duration;
-        //     im_str!("[{}, {}]", start, end)
-        // };
-        // if ui.rearrangable_list_box(
-        //     im_str!("List\n[Start, End]"),
-        //     &mut self.current_hitboxes,
-        //     data,
-        //     format_entry,
-        //     5,
-        // ) {
-        //     self.current_hitbox_ui = None;
-        // }
+        timeline::inspect::inspect_mut_custom(
+            data,
+            "hitboxes",
+            &mut self.hitbox_state,
+            ui,
+            |_, data| {
+                let ui_data = current_hitbox_ui.get_or_insert_with(HitboxSetUi::new);
 
-        // if let Some(ref mut idx) = self.current_hitboxes {
-        //     let ui_data = self.current_hitbox_ui.get_or_insert_with(HitboxSetUi::new);
-
-        //     ui.timeline_modify(idx, data);
-
-        //     let (ref mut hitboxes, ref mut duration) = &mut data[*idx];
-
-        //     let _ = ui.input_whole(im_str!("Duration"), duration);
-        //     *duration = cmp::max(*duration, 1);
-
-        //     ui.separator();
-        //     ui_data.draw_ui(ui, hitboxes, attack_ids);
-        // }
+                ui.separator();
+                ui_data.draw_ui(ui, data, attack_ids);
+            },
+        );
 
         id.pop(ui);
     }

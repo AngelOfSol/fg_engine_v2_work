@@ -1,8 +1,9 @@
 use crate::hitbox::Hitbox;
 use crate::typedefs::collision::Vec2;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
 pub struct AttackData<AttackId> {
     pub id: usize,
     pub boxes: Vec<Hitbox>,
@@ -18,7 +19,7 @@ impl<AttackId> AttackData<AttackId> {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect)]
 pub struct HitboxSet<AttackId> {
     pub collision: Hitbox,
     pub hurtbox: Vec<Hitbox>,
