@@ -1,3 +1,5 @@
+use super::{AudioBuffer, GlobalSound, SoundPath, SoundState};
+use inspect_design::Inspect;
 use rodio::source::Source;
 use rodio::Device;
 use rodio::SpatialSink;
@@ -5,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::{Display, EnumIter};
 
-use super::{AudioBuffer, GlobalSound, SoundPath, SoundState};
-
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Display, EnumIter, Serialize, Deserialize)]
+#[derive(
+    PartialEq, Eq, Copy, Clone, Hash, Debug, Display, EnumIter, Serialize, Deserialize, Inspect,
+)]
 pub enum ChannelName {
     Hit,
     Announcer,
@@ -16,6 +18,12 @@ pub enum ChannelName {
     Movement,
     Voice,
     Projectile,
+}
+
+impl Default for ChannelName {
+    fn default() -> Self {
+        Self::Voice
+    }
 }
 
 pub struct Channel<LocalPath> {

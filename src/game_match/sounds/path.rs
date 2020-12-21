@@ -1,11 +1,23 @@
 use super::AudioBuffer;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use strum::{Display, EnumIter, EnumString};
 
 #[derive(
-    PartialEq, Eq, Copy, Clone, Hash, Display, EnumString, EnumIter, Debug, Serialize, Deserialize,
+    PartialEq,
+    Eq,
+    Copy,
+    Clone,
+    Hash,
+    Display,
+    EnumString,
+    EnumIter,
+    Debug,
+    Serialize,
+    Deserialize,
+    Inspect,
 )]
 pub enum GlobalSound {
     Block,
@@ -22,12 +34,24 @@ pub enum GlobalSound {
     RoundLast,
     RoundStart,
 }
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Serialize, Deserialize)]
+impl Default for GlobalSound {
+    fn default() -> Self {
+        Self::Block
+    }
+}
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug, Serialize, Deserialize, Inspect)]
 #[serde(untagged)]
 pub enum SoundPath<LocalPath> {
     Local(LocalPath),
     Global(GlobalSound),
 }
+
+impl<P> Default for SoundPath<P> {
+    fn default() -> Self {
+        Self::Global(Default::default())
+    }
+}
+
 impl<LocalPath: std::fmt::Display> std::fmt::Display for SoundPath<LocalPath> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

@@ -2,12 +2,12 @@ use enum_dispatch::*;
 use imgui::*;
 
 #[enum_dispatch]
-pub trait Inspect {
-    fn inspect_mut(&mut self, _ui: &Ui<'_>) {}
+pub trait InspectOld {
+    fn inspect_mut_old(&mut self, _ui: &Ui<'_>) {}
 }
 
-impl<T: Inspect + Default> Inspect for Vec<T> {
-    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+impl<T: InspectOld + Default> InspectOld for Vec<T> {
+    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
         ui.text(im_str!("Len: {}", self.len()));
         let mut to_delete = None;
         for (idx, item) in self.iter_mut().enumerate() {
@@ -17,7 +17,7 @@ impl<T: Inspect + Default> Inspect for Vec<T> {
             if ui.small_button(im_str!("Delete")) {
                 to_delete = Some(idx);
             }
-            item.inspect_mut(ui);
+            item.inspect_mut_old(ui);
             ui.separator();
             id.pop(ui);
         }

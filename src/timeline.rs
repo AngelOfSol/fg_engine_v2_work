@@ -337,7 +337,7 @@ pub mod inspect {
 
     impl<T> Inspect for Timeline<T>
     where
-        T: Clone + Inspect,
+        T: Inspect,
     {
         type State = TimelineState<T::State>;
         const FLATTEN: bool = false;

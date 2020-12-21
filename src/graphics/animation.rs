@@ -9,12 +9,13 @@ use crate::timeline::Timeline;
 use crate::typedefs::graphics::Matrix4;
 use ggez::graphics;
 use ggez::{Context, GameResult};
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 pub type Animation = AnimationV1;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default, Inspect)]
 pub struct AnimationV1 {
     pub name: String,
     pub frames: Timeline<Sprite>,

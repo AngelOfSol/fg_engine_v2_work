@@ -5,7 +5,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::hash::Hash;
 
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash, Inspect)]
 pub enum MoveType {
     Idle,
     Walk,
@@ -163,6 +163,7 @@ impl Display for MoveType {
 }
 #[derive(Clone, Deserialize, Serialize, Inspect)]
 pub struct CancelSet<Id> {
+    // TODO (HASHSET)
     #[skip]
     pub always: HashSet<MoveType>,
     #[skip]

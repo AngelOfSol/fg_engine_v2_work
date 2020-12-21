@@ -24,6 +24,7 @@ use cancel_set::{CancelSet, MoveType};
 use flags::Flags;
 use ggez::{Context, GameResult};
 use hitbox_set::HitboxSet;
+use inspect_design::Inspect;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sound_play_info::SoundPlayInfo;
@@ -31,13 +32,13 @@ use std::cmp;
 use std::hash::Hash;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq, Inspect)]
 pub struct SpawnerInfo {
     pub frame: usize,
     pub data: Vec<Constructor>,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Inspect)]
 pub struct State<Id, AttackId, SoundType> {
     pub animations: Vec<Animation>,
     pub flags: Timeline<Flags>,
@@ -45,11 +46,12 @@ pub struct State<Id, AttackId, SoundType> {
         serialize = "CancelSet<Id>: Serialize",
         deserialize = "CancelSet<Id>: Deserialize<'de>"
     ))]
+    #[inspect_mut_bounds = "Id: Clone"]
     pub cancels: Timeline<CancelSet<Id>>,
+    #[inspect_mut_bounds = "AttackId: Clone"]
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
     #[serde(default)]
     pub spawns: Vec<SpawnerInfo>,
-
     #[serde(default)]
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
     #[serde(default = "default_move_type")]

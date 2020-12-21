@@ -9,7 +9,8 @@ use crate::{
 use enum_dispatch::*;
 use hecs::EntityBuilder;
 use imgui::{im_str, Ui};
-pub use inspect::Inspect;
+pub use inspect::InspectOld;
+use inspect_design::Inspect;
 pub use position::*;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -33,7 +34,7 @@ pub trait Construct {
     ) -> Result<&'builder mut EntityBuilder, ConstructError>;
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Inspect)]
 pub struct ConstructDefault<T> {
     _marker: PhantomData<T>,
 }
@@ -49,9 +50,9 @@ impl<T: hecs::Component + Default> Construct for ConstructDefault<T> {
     }
 }
 
-impl<T> Inspect for ConstructDefault<T> {}
+impl<T> InspectOld for ConstructDefault<T> {}
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Inspect)]
 pub struct ConstructId<Id> {
     pub value: Id,
 }
@@ -67,8 +68,8 @@ impl<Id: hecs::Component + Clone> Construct for ConstructId<Id> {
     }
 }
 
-impl<Id: IntoEnumIterator + Clone + Display + Eq> Inspect for ConstructId<Id> {
-    fn inspect_mut(&mut self, ui: &Ui<'_>) {
+impl<Id: IntoEnumIterator + Clone + Display + Eq> InspectOld for ConstructId<Id> {
+    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
         ui.combo_items(
             im_str!("Value"),
             &mut self.value,
@@ -137,44 +138,44 @@ where
     }
 }
 
-impl<T, U> Inspect for (T, U)
+impl<T, U> InspectOld for (T, U)
 where
-    T: Inspect,
-    U: Inspect,
+    T: InspectOld,
+    U: InspectOld,
 {
-    fn inspect_mut(&mut self, ui: &Ui<'_>) {
-        self.0.inspect_mut(ui);
-        self.1.inspect_mut(ui);
+    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut_old(ui);
+        self.1.inspect_mut_old(ui);
     }
 }
-impl<T, U, V> Inspect for (T, U, V)
+impl<T, U, V> InspectOld for (T, U, V)
 where
-    T: Inspect,
-    U: Inspect,
-    V: Inspect,
+    T: InspectOld,
+    U: InspectOld,
+    V: InspectOld,
 {
-    fn inspect_mut(&mut self, ui: &Ui<'_>) {
-        self.0.inspect_mut(ui);
-        self.1.inspect_mut(ui);
-        self.2.inspect_mut(ui);
+    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut_old(ui);
+        self.1.inspect_mut_old(ui);
+        self.2.inspect_mut_old(ui);
     }
 }
-impl<T, U, V, W> Inspect for (T, U, V, W)
+impl<T, U, V, W> InspectOld for (T, U, V, W)
 where
-    T: Inspect,
-    U: Inspect,
-    V: Inspect,
-    W: Inspect,
+    T: InspectOld,
+    U: InspectOld,
+    V: InspectOld,
+    W: InspectOld,
 {
-    fn inspect_mut(&mut self, ui: &Ui<'_>) {
-        self.0.inspect_mut(ui);
-        self.1.inspect_mut(ui);
-        self.2.inspect_mut(ui);
-        self.3.inspect_mut(ui);
+    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
+        self.0.inspect_mut_old(ui);
+        self.1.inspect_mut_old(ui);
+        self.2.inspect_mut_old(ui);
+        self.3.inspect_mut_old(ui);
     }
 }
 
-impl Inspect for () {}
+impl InspectOld for () {}
 impl Construct for () {
     type Context = ();
     fn construct_on_to<'constructor, 'builder>(
@@ -188,11 +189,16 @@ impl Construct for () {
 }
 
 /// Each variant represents what context needs to be provided to the constructor.
-#[enum_dispatch(Inspect)]
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[enum_dispatch(InspectOld)]
+#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Inspect)]
 pub enum Constructor {
     Contextless(ContextlessConstructor),
     Position(PositionConstructor),
+}
+impl Default for Constructor {
+    fn default() -> Self {
+        Self::Contextless(Default::default())
+    }
 }
 
 impl TryAsRef<ContextlessConstructor> for Constructor {
@@ -259,8 +265,8 @@ pub trait TryAsMut<T> {
 
 macro_rules! construct_enum_impl {
     (Construct<Context = $context:ty> for enum $name:ident { $($variant_name:ident($variant_type:ty),)+ }) => {
-        #[enum_dispatch(Inspect)]
-        #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq)]
+        #[enum_dispatch(InspectOld)]
+        #[derive(Serialize, Deserialize, Clone, EnumIter, Display, Eq, PartialEq, Inspect)]
         pub enum $name {
             $($variant_name($variant_type)),+
         }
@@ -328,9 +334,22 @@ construct_enum_impl!(
 
     }
 );
+
+impl Default for ContextlessConstructor {
+    fn default() -> Self {
+        Self::GlobalParticle(Default::default())
+    }
+}
+
 construct_enum_impl!(
     Construct<Context = collision::Vec2> for
     enum PositionConstructor {
         Position(Position),
     }
 );
+
+impl Default for PositionConstructor {
+    fn default() -> Self {
+        Self::Position(Default::default())
+    }
+}

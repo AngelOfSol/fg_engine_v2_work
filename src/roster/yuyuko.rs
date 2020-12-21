@@ -25,7 +25,7 @@ use crate::{
 };
 use crate::{
     character::state::components::{Flags, GlobalGraphic, MoveType},
-    game_object::constructors::Inspect,
+    game_object::constructors::InspectOld,
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{command_list::CommandList, game_object::state::Timer};

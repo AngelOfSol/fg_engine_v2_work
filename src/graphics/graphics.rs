@@ -1,7 +1,8 @@
 use ggez::graphics;
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, Inspect)]
 pub enum BlendMode {
     Alpha,
     Add,
