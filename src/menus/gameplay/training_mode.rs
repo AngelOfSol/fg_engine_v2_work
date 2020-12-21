@@ -157,26 +157,26 @@ impl AppState for TrainingMode {
 
             self.dirty = false;
 
-            // let inspect_state = &mut self.inspect_state;
-            // match self.game_state.players.p1_mut() {
-            //     crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
-            //         //
-            //         imgui
-            //             .frame()
-            //             .run(|ui| {
-            //                 imgui::Window::new(&imgui::im_str!("Window"))
-            //                     .no_nav()
-            //                     .build(ui, || {
-            //                         std::rc::Rc::make_mut(&mut value.data).inspect_mut(
-            //                             "yuyu",
-            //                             inspect_state,
-            //                             ui,
-            //                         );
-            //                     });
-            //             })
-            //             .render(ctx);
-            //     }
-            // }
+            let inspect_state = &mut self.inspect_state;
+            match self.game_state.players.p1_mut() {
+                crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
+                    //
+                    imgui
+                        .frame()
+                        .run(|ui| {
+                            imgui::Window::new(&imgui::im_str!("Window"))
+                                .no_nav()
+                                .build(ui, || {
+                                    std::rc::Rc::make_mut(&mut value.data).inspect_mut(
+                                        "yuyu",
+                                        inspect_state,
+                                        ui,
+                                    );
+                                });
+                        })
+                        .render(ctx);
+                }
+            }
 
             graphics::present(ctx)?;
         }

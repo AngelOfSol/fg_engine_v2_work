@@ -124,13 +124,13 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((remaining, image)) = self.frames.get(time) {
+        if let Some((_, image)) = self.frames.get(time) {
             let transform = self.modifiers.matrix_at_time(time);
             image.draw(
                 ctx,
                 assets,
                 world * transform,
-                remaining,
+                time,
                 ValueAlpha {
                     value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
                     alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
@@ -156,13 +156,13 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((remaining, image)) = self.frames.get(time) {
+        if let Some((_, image)) = self.frames.get(time) {
             let transform = self.modifiers.matrix_at_time(time);
             image.draw_debug(
                 ctx,
                 assets,
                 world * transform,
-                remaining,
+                time,
                 ValueAlpha {
                     value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
                     alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
