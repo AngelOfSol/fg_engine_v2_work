@@ -32,7 +32,7 @@ pub fn load(
         .enumerate()
         .map(|(idx, _)| animation.get_path_to_image(idx))
         .collect();
-    for (file_name, (sprite, _)) in paths.iter().zip(animation.frames.iter_mut()) {
+    for (file_name, sprite) in paths.iter().zip(animation.frames.frames_mut()) {
         path.push(file_name);
         Sprite::load(ctx, assets, sprite, path.clone())?;
         path.pop();
@@ -53,7 +53,7 @@ pub fn save(
     path.pop();
     path.push(&animation.name);
     std::fs::create_dir_all(&path)?;
-    for (idx, (sprite, _)) in animation.frames.iter().enumerate() {
+    for (idx, sprite) in animation.frames.frames().enumerate() {
         path.push(animation.get_path_to_image(idx));
         Sprite::save(ctx, assets, sprite, path.clone())?;
         path.pop();

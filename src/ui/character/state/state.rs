@@ -174,30 +174,31 @@ impl StateUi {
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
         let id = ui.push_id("Flags");
         let mut counter = 0;
-        ui.rearrangable_list_box(
-            im_str!("List\n[Start, End]"),
-            &mut self.current_flags,
-            data,
-            |(_, duration)| {
-                let start = counter;
-                let end = counter + duration - 1;
-                counter += duration;
-                im_str!("[{}, {}]", start, end)
-            },
-            5,
-        );
+        // TODO(TL_UI)
+        // ui.rearrangable_list_box(
+        //     im_str!("List\n[Start, End]"),
+        //     &mut self.current_flags,
+        //     data,
+        //     |(_, duration)| {
+        //         let start = counter;
+        //         let end = counter + duration - 1;
+        //         counter += duration;
+        //         im_str!("[{}, {}]", start, end)
+        //     },
+        //     5,
+        // );
 
-        if let Some(ref mut idx) = self.current_flags {
-            ui.timeline_modify(idx, data);
+        // if let Some(ref mut idx) = self.current_flags {
+        //     ui.timeline_modify(idx, data);
 
-            let (ref mut flags, ref mut duration) = &mut data[*idx];
+        //     let (ref mut flags, ref mut duration) = &mut data[*idx];
 
-            let _ = ui.input_whole(im_str!("Duration"), duration);
-            *duration = cmp::max(*duration, 1);
+        //     let _ = ui.input_whole(im_str!("Duration"), duration);
+        //     *duration = cmp::max(*duration, 1);
 
-            ui.separator();
-            FlagsUi::draw_ui(ui, flags);
-        }
+        //     ui.separator();
+        //     FlagsUi::draw_ui(ui, flags);
+        // }
 
         id.pop(ui);
     }
@@ -208,39 +209,40 @@ impl StateUi {
         data: &mut Timeline<CancelSet<String>>,
     ) {
         let id = ui.push_id("Cancels");
-        let mut counter = 0;
-        ui.rearrangable_list_box(
-            im_str!("List\n[Start, End]"),
-            &mut self.current_cancels,
-            data,
-            |(_, duration)| {
-                let start = counter;
-                let end = counter + duration - 1;
-                counter += duration;
-                im_str!("[{}, {}]", start, end)
-            },
-            5,
-        );
+        // TODO(TL_UI)
+        // let mut counter = 0;
+        // ui.rearrangable_list_box(
+        //     im_str!("List\n[Start, End]"),
+        //     &mut self.current_cancels,
+        //     data,
+        //     |(_, duration)| {
+        //         let start = counter;
+        //         let end = counter + duration - 1;
+        //         counter += duration;
+        //         im_str!("[{}, {}]", start, end)
+        //     },
+        //     5,
+        // );
 
-        if let Some(ref mut idx) = self.current_cancels {
-            if self.current_cancel_set_ui.is_none() {
-                self.current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
-            }
-            let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
-            ui.timeline_modify(idx, data);
+        // if let Some(ref mut idx) = self.current_cancels {
+        //     if self.current_cancel_set_ui.is_none() {
+        //         self.current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
+        //     }
+        //     let ui_data = self.current_cancel_set_ui.as_mut().unwrap();
+        //     ui.timeline_modify(idx, data);
 
-            let (ref mut cancels, ref mut duration) = &mut data[*idx];
+        //     let (ref mut cancels, ref mut duration) = &mut data[*idx];
 
-            let _ = ui.input_whole(im_str!("Duration"), duration);
-            *duration = cmp::max(*duration, 1);
+        //     let _ = ui.input_whole(im_str!("Duration"), duration);
+        //     *duration = cmp::max(*duration, 1);
 
-            ui.separator();
-            imgui::ChildWindow::new(im_str!("child frame"))
-                .size([0.0, 0.0])
-                .build(ui, || {
-                    ui_data.draw_ui(ui, state_list, cancels);
-                });
-        }
+        //     ui.separator();
+        //     imgui::ChildWindow::new(im_str!("child frame"))
+        //         .size([0.0, 0.0])
+        //         .build(ui, || {
+        //             ui_data.draw_ui(ui, state_list, cancels);
+        //         });
+        // }
         id.pop(ui);
     }
 
@@ -251,36 +253,39 @@ impl StateUi {
         attack_ids: &[String],
     ) {
         let id = ui.push_id("Hitboxes");
-        let mut counter = 0;
-        let format_entry = |(_, duration): &(_, usize)| {
-            let start = counter;
-            let end = counter + duration - 1;
-            counter += duration;
-            im_str!("[{}, {}]", start, end)
-        };
-        if ui.rearrangable_list_box(
-            im_str!("List\n[Start, End]"),
-            &mut self.current_hitboxes,
-            data,
-            format_entry,
-            5,
-        ) {
-            self.current_hitbox_ui = None;
-        }
 
-        if let Some(ref mut idx) = self.current_hitboxes {
-            let ui_data = self.current_hitbox_ui.get_or_insert_with(HitboxSetUi::new);
+        // TODO(TL_UI)
 
-            ui.timeline_modify(idx, data);
+        // let mut counter = 0;
+        // let format_entry = |(_, duration): &(_, usize)| {
+        //     let start = counter;
+        //     let end = counter + duration - 1;
+        //     counter += duration;
+        //     im_str!("[{}, {}]", start, end)
+        // };
+        // if ui.rearrangable_list_box(
+        //     im_str!("List\n[Start, End]"),
+        //     &mut self.current_hitboxes,
+        //     data,
+        //     format_entry,
+        //     5,
+        // ) {
+        //     self.current_hitbox_ui = None;
+        // }
 
-            let (ref mut hitboxes, ref mut duration) = &mut data[*idx];
+        // if let Some(ref mut idx) = self.current_hitboxes {
+        //     let ui_data = self.current_hitbox_ui.get_or_insert_with(HitboxSetUi::new);
 
-            let _ = ui.input_whole(im_str!("Duration"), duration);
-            *duration = cmp::max(*duration, 1);
+        //     ui.timeline_modify(idx, data);
 
-            ui.separator();
-            ui_data.draw_ui(ui, hitboxes, attack_ids);
-        }
+        //     let (ref mut hitboxes, ref mut duration) = &mut data[*idx];
+
+        //     let _ = ui.input_whole(im_str!("Duration"), duration);
+        //     *duration = cmp::max(*duration, 1);
+
+        //     ui.separator();
+        //     ui_data.draw_ui(ui, hitboxes, attack_ids);
+        // }
 
         id.pop(ui);
     }

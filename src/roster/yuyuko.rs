@@ -335,7 +335,7 @@ impl YuyukoPlayer {
     }
     fn current_flags(&self) -> &Flags {
         let (frame, move_id) = self.state.current_state;
-        self.data.states[&move_id].flags.at_time(frame)
+        &self.data.states[&move_id].flags[frame]
     }
     fn handle_rebeat_data(&mut self) {
         let (_, move_id) = self.state.current_state;
@@ -364,7 +364,7 @@ impl YuyukoPlayer {
     }
     fn handle_hitstun(&mut self) {
         let (frame, move_id) = self.state.current_state;
-        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let flags = &self.data.states[&move_id].flags[frame];
         let state_type = self.data.states[&move_id].state_type;
 
         if state_type.is_stun() {
@@ -392,8 +392,8 @@ impl YuyukoPlayer {
     }
     fn handle_input(&mut self, input: &[InputState]) {
         let (frame, move_id) = self.state.current_state;
-        let cancels = self.data.states[&move_id].cancels.at_time(frame);
-        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let cancels = &self.data.states[&move_id].cancels[frame];
+        let flags = &self.data.states[&move_id].flags[frame];
         let state_type = self.data.states[&move_id].state_type;
 
         self.state.current_state = {
@@ -474,7 +474,7 @@ impl YuyukoPlayer {
     fn update_spirit(&mut self) {
         let (ref mut frame, ref mut move_id) = &mut self.state.current_state;
         let move_data = &self.data.states[move_id];
-        let flags = move_data.flags.at_time(*frame);
+        let flags = &move_data.flags[*frame];
 
         if move_data.state_type == MoveType::Fly && *move_id != MoveId::FlyEnd {
             self.state.spirit_gauge -= 5; // TODO, move this spirit cost to an editor value
@@ -510,7 +510,7 @@ impl YuyukoPlayer {
     }
     fn update_velocity(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.state.current_state;
-        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let flags = &self.data.states[&move_id].flags[frame];
 
         let base_velocity = if flags.reset_velocity {
             collision::Vec2::zeros()
@@ -553,8 +553,8 @@ impl YuyukoPlayer {
     fn update_position(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.state.current_state;
         let state = &self.data.states[&move_id];
-        let flags = state.flags.at_time(frame);
-        let hitboxes = state.hitboxes.at_time(frame);
+        let flags = &state.flags[frame];
+        let hitboxes = &state.hitboxes[frame];
         let collision = &hitboxes.collision;
 
         self.state.position += self.state.velocity;
@@ -712,8 +712,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn validate_position(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.state.current_state;
         let state = &self.data.states[&move_id];
-        let flags = state.flags.at_time(frame);
-        let hitboxes = state.hitboxes.at_time(frame);
+        let flags = &state.flags[frame];
+        let hitboxes = &state.hitboxes[frame];
         let collision = &hitboxes.collision;
         // handle stage sides
         if i32::abs(self.state.position.x) > play_area.width / 2 - collision.half_size.x {
@@ -1100,7 +1100,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn handle_refacing(&mut self, other_player: collision::Int) {
         let (frame, move_id) = self.state.current_state;
-        let flags = self.data.states[&move_id].flags.at_time(frame);
+        let flags = &self.data.states[&move_id].flags[frame];
         crate::roster::generic_character::impls::handle_refacing(
             &mut self.state.facing,
             flags,
@@ -1168,7 +1168,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()> {
         let (frame, move_id) = self.state.current_state;
 
-        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
+        let collision = &self.data.states[&move_id].hitboxes[frame].collision;
 
         self.data.states[&move_id].draw_at_time(
             ctx,
@@ -1232,7 +1232,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     ) -> GameResult<()> {
         let (frame, move_id) = self.state.current_state;
 
-        let collision = &self.data.states[&move_id].hitboxes.at_time(frame).collision;
+        let collision = &self.data.states[&move_id].hitboxes[frame].collision;
 
         self.data.states[&move_id].draw_shadow_at_time(
             ctx,
@@ -1262,17 +1262,13 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
     fn collision(&self) -> PositionedHitbox {
         let (frame, move_id) = &self.state.current_state;
-        self.data.states[move_id]
-            .hitboxes
-            .at_time(*frame)
+        self.data.states[move_id].hitboxes[*frame]
             .collision
             .with_collision_position(self.state.position)
     }
     fn hitboxes(&self) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.state.current_state;
-        self.data.states[move_id]
-            .hitboxes
-            .at_time(*frame)
+        self.data.states[move_id].hitboxes[*frame]
             .hitbox
             .iter()
             .map(|data| {
@@ -1288,9 +1284,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
     fn hurtboxes(&self) -> Vec<PositionedHitbox> {
         let (frame, move_id) = &self.state.current_state;
-        self.data.states[move_id]
-            .hitboxes
-            .at_time(*frame)
+        self.data.states[move_id].hitboxes[*frame]
             .hurtbox
             .iter()
             .map(|item| item.with_position_and_facing(self.state.position, self.state.facing))
@@ -1299,9 +1293,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn get_attack_data(&self) -> Option<HitAction> {
         let (frame, move_id) = &self.state.current_state;
 
-        self.data.states[move_id]
-            .hitboxes
-            .at_time(*frame)
+        self.data.states[move_id].hitboxes[*frame]
             .hitbox
             .as_ref()
             .and_then(|item| {
@@ -1379,8 +1371,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         let (current_frame, move_id) = self.state.current_state;
         self.data.states[&move_id]
             .flags
-            .try_time(current_frame + 1)
-            .map(|item| item.cutscene)
+            .get(current_frame + 1)
+            .map(|item| item.1.cutscene)
             .unwrap_or(false)
     }
 

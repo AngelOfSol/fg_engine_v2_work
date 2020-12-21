@@ -107,7 +107,6 @@ impl AppState for StateEditor {
                             ui,
                             &mut self.resource.borrow_mut().animations,
                         );
-                        self.resource.borrow_mut().fix_duration();
                         if let Some(name) = result {
                             self.transition = Transition::Push(Box::new(
                                 AnimationEditor::new(
@@ -224,13 +223,13 @@ impl AppState for StateEditor {
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
                         let resource = self.resource.borrow();
-                        if let Some(data) = resource.flags.try_time(self.frame) {
+                        if let Some((_, data)) = resource.flags.get(self.frame) {
                             let move_data = {
                                 let mut move_data = MovementData::new();
 
                                 for frame in 0..self.frame {
-                                    let flags = resource.flags.try_time(frame);
-                                    if let Some(flags) = flags {
+                                    let flags = resource.flags.get(frame);
+                                    if let Some((_, flags)) = flags {
                                         move_data = flags.apply_movement(move_data);
                                     } else {
                                         move_data.vel += move_data.accel;
@@ -246,7 +245,7 @@ impl AppState for StateEditor {
                     .size([300.0, 263.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        if let Some(data) = self.resource.borrow().cancels.try_time(self.frame) {
+                        if let Some((_, data)) = self.resource.borrow().cancels.get(self.frame) {
                             CancelSetUi::draw_display_ui(ui, data);
                         }
                     });
@@ -322,7 +321,7 @@ impl AppState for StateEditor {
         let offset = {
             let mut offset = Vec3::zeros();
 
-            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
+            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
                 let recenter = boxes.collision.collision_graphic_recenter();
                 offset.x -= recenter.x;
                 offset.y -= recenter.y;
@@ -345,7 +344,7 @@ impl AppState for StateEditor {
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
+            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
                 offset.x -= boxes.collision.center.x.into_graphical();
                 offset.y -= boxes.collision.half_size.y.into_graphical()
                     - boxes.collision.center.y.into_graphical();
@@ -354,7 +353,7 @@ impl AppState for StateEditor {
             offset
         };
         let offset = animation_window_center * Matrix4::new_translation(&offset);
-        if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
+        if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
             boxes.collision.draw(
                 ctx,
                 offset,
@@ -364,7 +363,7 @@ impl AppState for StateEditor {
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
+            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
                 offset.y -= boxes.collision.half_size.y.into_graphical();
             }
 
@@ -408,7 +407,7 @@ impl AppState for StateEditor {
             draw_cross(ctx, offset)?;
         }
 
-        if let Some(boxes) = resource.hitboxes.try_time(self.frame) {
+        if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
             for hurtbox in boxes.hurtbox.iter() {
                 hurtbox.draw(
                     ctx,

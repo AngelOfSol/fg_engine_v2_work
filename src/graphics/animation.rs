@@ -36,7 +36,7 @@ impl Animation {
     pub fn new<S: Into<String>>(name: S) -> Self {
         Self {
             name: name.into(),
-            frames: Timeline::new(),
+            frames: Timeline::new(1),
             blend_mode: BlendMode::Alpha,
             modifiers: Modifiers::new(),
             delay: 0,
@@ -66,7 +66,7 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         let data = self.frames.get(index);
-        if let Some((ref sprite, _)) = data {
+        if let Some((_, sprite)) = data {
             graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 
             sprite.draw(
@@ -91,7 +91,7 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        for sprite in self.frames.iter().map(|(ref sprite, _)| sprite) {
+        for sprite in self.frames.iter() {
             sprite.draw_debug(
                 ctx,
                 assets,
@@ -123,7 +123,7 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
+        if let Some((remaining, image)) = self.frames.get(time) {
             let transform = self.modifiers.matrix_at_time(time);
             image.draw(
                 ctx,
@@ -155,7 +155,7 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((image, remaining)) = self.frames.try_time_with_remaining(time) {
+        if let Some((remaining, image)) = self.frames.get(time) {
             let transform = self.modifiers.matrix_at_time(time);
             image.draw_debug(
                 ctx,

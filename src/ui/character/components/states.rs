@@ -92,7 +92,7 @@ impl StatesUi {
                 if fix_state.on_expire_state == old {
                     fix_state.on_expire_state = new.clone();
                 }
-                for (ref mut cancel_set, _) in fix_state.cancels.iter_mut() {
+                for cancel_set in fix_state.cancels.frames_mut() {
                     if cancel_set.disallow.remove(&old) {
                         cancel_set.disallow.insert(new.clone());
                     }

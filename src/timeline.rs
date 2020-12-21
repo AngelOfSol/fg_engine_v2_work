@@ -1,7 +1,8 @@
-pub type Timeline<T> = Vec<(T, usize)>;
+pub type Timeline<T> = new::Timeline<T>;
+pub type TimelineOld<T> = Vec<(T, usize)>;
 
 pub mod new {
-    use serde::{Deserialize, Serialize};
+    use serde::{Deserialize, Deserializer, Serialize};
 
     #[derive(Debug, Eq, PartialEq)]
     pub enum TimelineInsertError {
@@ -10,10 +11,40 @@ pub mod new {
         NoStartFrame,
     }
 
-    #[derive(Debug, Eq, PartialEq, Serialize, Deserialize)]
+    #[derive(Debug, Eq, PartialEq, Serialize, Clone)]
     pub struct Timeline<T> {
         data: Vec<(usize, T)>,
         duration: usize,
+    }
+
+    impl<'de, T: Deserialize<'de>> Deserialize<'de> for Timeline<T> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let data = super::TimelineOld::deserialize(deserializer)?;
+            Ok(Self::from(data))
+        }
+    }
+
+    impl<T> From<super::TimelineOld<T>> for Timeline<T> {
+        fn from(value: super::TimelineOld<T>) -> Self {
+            use super::AtTime;
+            let mut frame = 0;
+            let duration = value.duration();
+            Self::with_data(
+                value
+                    .into_iter()
+                    .map(|(content, duration)| {
+                        let mapped = (frame, content);
+                        frame += duration;
+                        mapped
+                    })
+                    .collect(),
+                duration,
+            )
+            .unwrap()
+        }
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -221,6 +252,12 @@ pub mod new {
                 data: self,
             }
         }
+        pub fn frames(&self) -> impl Iterator<Item = &T> {
+            self.data.iter().map(|(_, data)| data)
+        }
+        pub fn frames_mut(&mut self) -> impl Iterator<Item = &mut T> {
+            self.data.iter_mut().map(|(_, data)| data)
+        }
     }
 
     mod inspect {
@@ -240,7 +277,6 @@ pub mod new {
         struct UiRect {
             top_left: [f32; 2],
             bottom_right: [f32; 2],
-            size: [f32; 2],
         }
         struct SelectionFlags {
             is_hovered: bool,
@@ -346,10 +382,8 @@ pub mod new {
                             UiRect {
                                 top_left: ui.item_rect_min(),
                                 bottom_right: ui.item_rect_max(),
-                                size: ui.item_rect_size(),
                             },
                             SelectionFlags {
-                                //
                                 is_hovered,
                                 in_selected_range: surrounding.is_between(state.selected_frame),
                                 in_hovered_range: state
@@ -441,10 +475,8 @@ pub mod new {
                             UiRect {
                                 top_left: ui.item_rect_min(),
                                 bottom_right: ui.item_rect_max(),
-                                size: ui.item_rect_size(),
                             },
                             SelectionFlags {
-                                //
                                 is_hovered,
                                 in_selected_range: surrounding.is_between(state.selected_frame),
                                 in_hovered_range: state
@@ -736,7 +768,7 @@ pub trait AtTime<T> {
     fn duration(&self) -> usize;
 }
 
-impl<T> AtTime<T> for Timeline<T> {
+impl<T> AtTime<T> for TimelineOld<T> {
     fn at_time(&self, time: usize) -> &T {
         self.try_time(time).expect("Time out of bounds.")
     }

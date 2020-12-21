@@ -43,62 +43,68 @@ impl AnimationUi {
         ui.separator();
 
         let mut counter = 0;
-        ui.rearrangable_list_box(
-            im_str!("Frame List"),
-            &mut self.current_sprite,
-            &mut animation.frames,
-            |_| {
-                let ret = counter;
-                counter += 1;
-                im_str!("Frame {}", ret)
-            },
-            5,
-        );
+        // TODO(TL_UI)
+        // ui.rearrangable_list_box(
+        //     im_str!("Frame List"),
+        //     &mut self.current_sprite,
+        //     &mut animation.frames,
+        //     |_| {
+        //         let ret = counter;
+        //         counter += 1;
+        //         im_str!("Frame {}", ret)
+        //     },
+        //     5,
+        // );
         if ui.small_button(im_str!("From Files")) {
             let result = nfd::open_file_multiple_dialog(Some("png"), None);
             if let Ok(response) = result {
                 match response {
                     Response::Cancel => (),
                     Response::Okay(path) => {
-                        animation
-                            .frames
-                            .push((Sprite::load_new(ctx, assets, path)?, 1));
+                        animation.frames.insert_force(
+                            animation.frames.duration(),
+                            Sprite::load_new(ctx, assets, path)?,
+                        );
                     }
                     Response::OkayMultiple(paths) => {
                         for path in paths {
-                            animation
-                                .frames
-                                .push((Sprite::load_new(ctx, assets, path)?, 1));
+                            animation.frames.insert_force(
+                                animation.frames.duration(),
+                                Sprite::load_new(ctx, assets, path)?,
+                            );
                         }
                     }
                 }
             }
         }
         if let Some(current_sprite) = self.current_sprite {
-            ui.same_line(0.0);
-            if ui.small_button(im_str!("Delete")) {
-                animation.frames.remove(current_sprite);
-                if animation.frames.is_empty() {
-                    self.current_sprite = None;
-                } else {
-                    self.current_sprite =
-                        Some(std::cmp::min(animation.frames.len() - 1, current_sprite));
-                }
-            }
+            // TODO(TL_UI)
+            // ui.same_line(0.0);
+            // if ui.small_button(im_str!("Delete")) {
+            //     animation.frames.remove_frame(current_sprite);
+            //     if animation.frames.is_empty() {
+            //         self.current_sprite = None;
+            //     } else {
+            //         self.current_sprite =
+            //             Some(std::cmp::min(animation.frames.len() - 1, current_sprite));
+            //     }
+            // }
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("Delete All")) {
-            animation.frames.clear();
+            // TODO(TL_UI)
+            //animation.frames.clear();
             self.current_sprite = None;
         }
 
         if let Some(current_sprite) = self.current_sprite {
-            let (ref mut sprite, ref mut duration) = animation.frames[current_sprite];
-            let _ = ui.input_whole(im_str!("Duration"), duration);
-            *duration = std::cmp::max(1, *duration);
-            ui.separator();
+            // TODO(TL_UI)
+            // let (ref mut sprite, ref mut duration) = animation.frames[current_sprite];
+            // let _ = ui.input_whole(im_str!("Duration"), duration);
+            // *duration = std::cmp::max(1, *duration);
+            // ui.separator();
 
-            SpriteUi::draw_ui(ctx, assets, ui, sprite)?;
+            // SpriteUi::draw_ui(ctx, assets, ui, sprite)?;
         }
 
         Ok(())

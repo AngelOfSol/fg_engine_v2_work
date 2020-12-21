@@ -1,20 +1,15 @@
+use crate::app_state::{AppContext, AppState, Transition};
 use crate::assets::Assets;
 use crate::character::PlayerCharacter;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::ui::editor::character_editor::StandaloneAnimationGroupResource;
 use crate::ui::editor::{AnimationGroupEditor, CharacterEditor};
-use crate::{
-    app_state::{AppContext, AppState, Transition},
-    timeline::new::Timeline,
-};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
-use inspect_design::traits::{Inspect, InspectMut};
-use inspect_design::Inspect;
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::{cell::RefCell, collections::HashMap};
 
 pub struct EditorMenu {
     next: Transition,

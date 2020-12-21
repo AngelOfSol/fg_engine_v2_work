@@ -148,14 +148,6 @@ impl<
             .fold(0, cmp::max)
     }
 
-    pub fn fix_duration(&mut self) {
-        if self.duration() > 0 {
-            self.flags.fix_duration(self.duration());
-            self.cancels.fix_duration(self.duration());
-            self.hitboxes.fix_duration(self.duration());
-        }
-    }
-
     pub fn draw_at_time(
         &self,
         ctx: &mut Context,
@@ -235,9 +227,9 @@ impl EditorCharacterState {
     pub fn new() -> Self {
         Self {
             animations: vec![],
-            flags: vec![(Flags::new(), 1)],
-            cancels: vec![(CancelSet::new(), 1)],
-            hitboxes: vec![(HitboxSet::new(), 1)],
+            flags: Timeline::with_data(vec![(0, Flags::new())], 1).unwrap(),
+            cancels: Timeline::with_data(vec![(0, CancelSet::new())], 1).unwrap(),
+            hitboxes: Timeline::with_data(vec![(0, HitboxSet::new())], 1).unwrap(),
             state_type: default_move_type(),
             on_expire_state: "".to_owned(),
             minimum_spirit_required: 0,

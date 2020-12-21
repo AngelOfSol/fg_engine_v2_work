@@ -76,8 +76,6 @@ pub trait UiExtensions {
     ) -> Result<bool, String>;
     fn input_string(&self, label: &ImStr, value: &mut String) -> bool;
 
-    fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>);
-
     fn combo_items<T: PartialEq + Clone, L>(
         &self,
         label: &ImStr,
@@ -168,30 +166,6 @@ impl<'a> UiExtensions for Ui<'a> {
             } else {
                 data.remove(item);
             }
-        }
-    }
-    fn timeline_modify<T: Clone>(&self, idx: &mut usize, values: &mut Timeline<T>) {
-        if self.small_button(im_str!("Split")) {
-            let new_duration = values[*idx].1 / 2;
-            values[*idx].1 -= new_duration;
-            let temp = values[*idx].0.clone();
-            values.insert(*idx, (temp, new_duration));
-        }
-
-        if *idx != 0 && {
-            self.same_line(0.0);
-            self.small_button(im_str!("Collapse Previous"))
-        } {
-            values[*idx - 1].1 += values[*idx].1;
-            values.remove(*idx);
-            *idx -= 1;
-        }
-        if *idx != values.len() - 1 && {
-            self.same_line(0.0);
-            self.small_button(im_str!("Collapse Next"))
-        } {
-            values[*idx + 1].1 += values[*idx].1;
-            values.remove(*idx);
         }
     }
     fn rearrangable_list_box<T, F: FnMut(&T) -> ImString>(

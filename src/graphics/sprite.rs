@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 pub type Sprite = SpriteV1;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct SpriteV1 {
     #[serde(default)]
     #[serde(skip)]
