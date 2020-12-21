@@ -15,7 +15,6 @@ use crate::roster::generic_character::hit_info::{
 };
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
-use crate::timeline::AtTime;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
 use crate::{assets::Assets, game_object::constructors::Construct};

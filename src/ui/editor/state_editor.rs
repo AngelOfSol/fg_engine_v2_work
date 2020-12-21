@@ -3,7 +3,6 @@ use crate::character::state::components::MovementData;
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
-use crate::timeline::AtTime;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::state::{CancelSetUi, FlagsUi, StateUi};

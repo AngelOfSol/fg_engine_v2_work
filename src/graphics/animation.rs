@@ -5,7 +5,7 @@ use super::keyframe::Modifiers;
 use super::sprite::Sprite;
 use super::BlendMode;
 use crate::assets::{Assets, ValueAlpha};
-use crate::timeline::{AtTime, Timeline};
+use crate::timeline::Timeline;
 use crate::typedefs::graphics::Matrix4;
 use ggez::graphics;
 use ggez::{Context, GameResult};

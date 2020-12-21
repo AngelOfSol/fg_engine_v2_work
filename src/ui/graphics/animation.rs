@@ -2,7 +2,6 @@ use super::sprite::SpriteUi;
 use crate::assets::Assets;
 use crate::graphics::{Animation, BlendMode, Sprite};
 use crate::imgui_extra::UiExtensions;
-use crate::timeline::AtTime;
 use ggez::{Context, GameResult};
 use imgui::im_str;
 use nfd::Response;
