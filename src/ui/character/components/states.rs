@@ -89,8 +89,8 @@ impl StatesUi {
             let state = data.rest.remove(&old).unwrap();
 
             for fix_state in data.rest.values_mut() {
-                if fix_state.on_expire_state == old {
-                    fix_state.on_expire_state = new.clone();
+                if fix_state.on_expire.state_id == old {
+                    fix_state.on_expire.state_id = new.clone();
                 }
                 for cancel_set in fix_state.cancels.frames_mut() {
                     if cancel_set.disallow.remove(&old) {

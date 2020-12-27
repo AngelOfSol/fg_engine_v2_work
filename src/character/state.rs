@@ -28,9 +28,12 @@ use inspect_design::Inspect;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sound_play_info::SoundPlayInfo;
-use std::cmp;
 use std::hash::Hash;
 use std::path::PathBuf;
+use std::{
+    cmp,
+    fmt::{Display, Formatter},
+};
 
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq, Inspect)]
 pub struct SpawnerInfo {
@@ -54,20 +57,37 @@ pub struct State<Id, AttackId, SoundType> {
     #[inspect_mut_bounds = "AttackId: Clone"]
     #[tab = "Hitboxes"]
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
-    #[serde(default)]
     #[tab = "Spawns"]
     pub spawns: Vec<SpawnerInfo>,
-    #[serde(default)]
     #[tab = "Spawns"]
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
     #[serde(default = "default_move_type")]
     pub state_type: MoveType,
-    #[serde(default)]
-    pub on_expire_state: Id,
-    #[serde(default)]
+    #[serde(alias = "on_expire_state")]
+    pub on_expire: OnExpire<Id>,
     pub minimum_spirit_required: i32,
-    #[serde(default)]
     pub minimum_meter_required: i32,
+}
+
+#[derive(Clone, Deserialize, Serialize, Inspect, Default, PartialEq, Eq, Debug)]
+pub struct OnExpire<Id> {
+    pub state_id: Id,
+    pub frame: usize,
+}
+
+impl<Id: Display> Display for OnExpire<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.frame, self.state_id)
+    }
+}
+
+impl<Id> From<Id> for OnExpire<Id> {
+    fn from(value: Id) -> Self {
+        Self {
+            state_id: value,
+            frame: 0,
+        }
+    }
 }
 
 impl<Id, AttackId, SoundType> PartialEq for State<Id, AttackId, SoundType>
@@ -82,7 +102,7 @@ where
             && self.cancels.eq(&rhs.cancels)
             && self.hitboxes.eq(&rhs.hitboxes)
             && self.state_type.eq(&rhs.state_type)
-            && self.on_expire_state.eq(&rhs.on_expire_state)
+            && self.on_expire.eq(&rhs.on_expire)
             && self
                 .minimum_spirit_required
                 .eq(&rhs.minimum_spirit_required)
@@ -108,7 +128,7 @@ where
         let _ = builder.field("cancels", &self.cancels);
         let _ = builder.field("hitboxes", &self.hitboxes);
         let _ = builder.field("state_type", &self.state_type);
-        let _ = builder.field("on_expire_state", &self.on_expire_state);
+        let _ = builder.field("on_expire_state", &self.on_expire);
         let _ = builder.field("minimum_spirit_required", &self.minimum_spirit_required);
         builder.finish()
     }
@@ -239,7 +259,7 @@ impl EditorCharacterState {
             cancels: Timeline::with_data(vec![(0, CancelSet::new())], 1).unwrap(),
             hitboxes: Timeline::with_data(vec![(0, HitboxSet::new())], 1).unwrap(),
             state_type: default_move_type(),
-            on_expire_state: "".to_owned(),
+            on_expire: OnExpire::default(),
             minimum_spirit_required: 0,
             minimum_meter_required: 0,
             spawns: Vec::new(),

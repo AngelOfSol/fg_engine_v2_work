@@ -64,10 +64,13 @@ impl StateUi {
 
         ui.combo_items(
             im_str!("On Expire"),
-            &mut data.on_expire_state,
+            &mut data.on_expire.state_id,
             &state_list,
             &|item| im_str!("{}", item).into(),
         );
+
+        ui.same_line(0.0);
+        let _ = ui.input_whole(im_str!("Frame"), &mut data.on_expire.frame);
 
         ui.separator();
         ui.text(im_str!("Cancel Requirements"));

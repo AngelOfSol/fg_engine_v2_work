@@ -358,7 +358,8 @@ impl YuyukoPlayer {
             if move_id == MoveId::HitGround && self.state.dead {
                 (0, MoveId::Dead)
             } else {
-                (0, self.data.states[&move_id].on_expire_state)
+                let on_expire = &self.data.states[&move_id].on_expire;
+                (on_expire.frame, on_expire.state_id)
             }
         } else {
             (frame + 1, move_id)
