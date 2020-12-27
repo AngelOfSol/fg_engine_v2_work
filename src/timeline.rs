@@ -1,5 +1,4 @@
-type TimelineOld<T> = Vec<(T, usize)>;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum TimelineInsertError {
@@ -8,39 +7,10 @@ pub enum TimelineInsertError {
     NoStartFrame,
 }
 
-#[derive(Debug, Eq, PartialEq, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Serialize, Clone, Deserialize)]
 pub struct Timeline<T> {
     data: Vec<(usize, T)>,
     duration: usize,
-}
-
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Timeline<T> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let data = TimelineOld::deserialize(deserializer)?;
-        Ok(Self::from(data))
-    }
-}
-
-impl<T> From<TimelineOld<T>> for Timeline<T> {
-    fn from(value: TimelineOld<T>) -> Self {
-        let mut frame = 0;
-        let duration = value.iter().map(|(_, duration)| duration).sum();
-        Self::with_data(
-            value
-                .into_iter()
-                .map(|(content, duration)| {
-                    let mapped = (frame, content);
-                    frame += duration;
-                    mapped
-                })
-                .collect(),
-            duration,
-        )
-        .unwrap()
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

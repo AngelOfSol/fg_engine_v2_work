@@ -1,13 +1,13 @@
-use super::modifiers::ModifiersUi;
-use crate::assets::Assets;
 use crate::graphics::Sprite;
+use crate::{assets::Assets, graphics::keyframe::Modifiers};
 use ggez::{Context, GameResult};
 use imgui::*;
+use inspect_design::traits::{Inspect, InspectMut};
 use nfd::Response;
 
 #[derive(Default)]
 pub struct SpriteUi {
-    state: ModifiersUi,
+    state: <Modifiers as Inspect>::State,
 }
 
 impl SpriteUi {
@@ -18,7 +18,9 @@ impl SpriteUi {
         ui: &Ui<'_>,
         sprite: &mut Sprite,
     ) -> GameResult<()> {
-        self.state.draw_ui(ui, &mut sprite.modifiers);
+        sprite
+            .modifiers
+            .inspect_mut("modifiers", &mut self.state, ui);
 
         if ui.small_button(im_str!("Load New Image")) {
             let result = nfd::open_file_dialog(Some("png"), None);

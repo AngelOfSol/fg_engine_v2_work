@@ -1,12 +1,11 @@
-use crate::graphics::Animation;
+use crate::graphics::{keyframe::Modifiers, Animation};
 use crate::imgui_extra::UiExtensions;
-
-use crate::ui::graphics::modifiers::ModifiersUi;
 use imgui::*;
+use inspect_design::traits::*;
 
 #[derive(Default)]
 pub struct AnimationUi {
-    modifiers_state: ModifiersUi,
+    modifiers_state: <Modifiers as Inspect>::State,
 }
 
 impl AnimationUi {
@@ -14,6 +13,7 @@ impl AnimationUi {
         ui.label_text(im_str!("Name"), &im_str!("{}", data.name));
         let _ = ui.input_whole(im_str!("Delay"), &mut data.delay);
 
-        self.modifiers_state.draw_ui(ui, &mut data.modifiers);
+        data.modifiers
+            .inspect_mut("modifiers", &mut self.modifiers_state, ui);
     }
 }

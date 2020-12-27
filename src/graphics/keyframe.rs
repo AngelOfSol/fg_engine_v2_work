@@ -6,8 +6,6 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
-pub type Modifiers = ModifiersOld;
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Display, EnumIter, Inspect)]
 pub enum Coordinates {
     Polar,
@@ -15,28 +13,33 @@ pub enum Coordinates {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Inspect)]
-pub struct ModifiersOld {
-    #[serde(deserialize_with = "new_serde::deserialize")]
-    pub rotation: Keyframes,
-    pub scale: [OldKeyframes; 2],
-    pub coords: [OldKeyframes; 2],
+pub struct Modifiers {
     pub coord_type: Coordinates,
-    pub alpha: OldKeyframes,
-    pub value: OldKeyframes,
+    pub rotation: Keyframes,
+    pub scale: [Keyframes; 2],
+    pub coords: [Keyframes; 2],
+    pub alpha: Keyframes,
+    pub value: Keyframes,
 }
 
-impl Default for ModifiersOld {
+impl Default for Modifiers {
     fn default() -> Self {
-        let default = OldKeyframes::new(Default::default());
-        let percentage_default = OldKeyframes::new(OldKeyframe {
-            value: 1.0,
-            ..Default::default()
-        });
+        let percentage_default = Keyframes::with_data(
+            vec![(
+                0,
+                Keyframe {
+                    value: 1.0,
+                    ..Default::default()
+                },
+            )],
+            1,
+        )
+        .unwrap();
         Self {
             coord_type: Coordinates::Cartesian,
-            coords: [default.clone(), default],
-            scale: [percentage_default.clone(), percentage_default.clone()],
+            coords: Default::default(),
             rotation: Default::default(),
+            scale: [percentage_default.clone(), percentage_default.clone()],
             alpha: percentage_default.clone(),
             value: percentage_default,
         }
@@ -78,7 +81,7 @@ impl KeyframeExt for Keyframes {
     }
 }
 
-impl ModifiersOld {
+impl Modifiers {
     pub fn new() -> Self {
         Self::default()
     }
@@ -93,7 +96,7 @@ impl ModifiersOld {
         let mut coords = self
             .coords
             .iter()
-            .map(|coord| coord.at_time(time).unwrap_or(0.0));
+            .map(|coord| coord.get_eased(time).unwrap_or(0.0));
 
         let (x, y) = match self.coord_type {
             Coordinates::Cartesian => (coords.next().unwrap(), coords.next().unwrap()),
@@ -110,7 +113,7 @@ impl ModifiersOld {
         let mut scale = self
             .scale
             .iter()
-            .map(|scale| scale.at_time(time).unwrap_or(0.0));
+            .map(|scale| scale.get_eased(time).unwrap_or(0.0));
 
         let (x, y) = (scale.next().unwrap(), scale.next().unwrap());
 
@@ -121,55 +124,6 @@ impl ModifiersOld {
 }
 
 pub type Keyframes = Timeline<Keyframe>;
-
-mod new_serde {
-    use serde::{Deserialize, Deserializer};
-
-    use super::{Keyframe, Keyframes, OldKeyframes};
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Keyframes, D::Error> {
-        let value = OldKeyframes::deserialize(deserializer)?;
-        let mut duration = 0;
-        Ok(Keyframes::with_data(
-            value
-                .frames
-                .into_iter()
-                .map(|item| {
-                    let value = Keyframe {
-                        value: item.value,
-                        function: item.function,
-                    };
-                    duration = item.frame;
-
-                    (item.frame, value)
-                })
-                .collect(),
-            duration,
-        )
-        .unwrap())
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Inspect)]
-pub struct OldKeyframes {
-    pub frames: Vec<OldKeyframe>,
-}
-
-impl OldKeyframes {
-    pub fn new(frame: OldKeyframe) -> Self {
-        Self {
-            frames: vec![frame],
-        }
-    }
-
-    pub fn at_time(&self, time: usize) -> Option<f32> {
-        self.frames
-            .windows(2)
-            .find(|items| items[0].frame <= time && items[1].frame > time)
-            .map(|items| items[0].ease(time, &items[1]))
-            .or_else(|| self.frames.last().map(|item| item.value))
-    }
-}
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Display, EnumIter, Inspect)]
 pub enum EaseType {
@@ -189,42 +143,4 @@ impl Default for EaseType {
 pub struct Keyframe {
     pub value: f32,
     pub function: EaseType,
-}
-
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Inspect)]
-pub struct OldKeyframe {
-    pub frame: usize,
-    pub value: f32,
-    pub function: EaseType,
-}
-
-impl OldKeyframe {
-    fn ease(&self, time: usize, end: &OldKeyframe) -> f32 {
-        let duration = end.frame - self.frame;
-        let initial = time - self.frame;
-        let value = if duration == 0 {
-            1.0
-        } else {
-            initial as f32 / duration as f32
-        };
-
-        let value = match self.function {
-            EaseType::Constant => 0.0,
-            EaseType::Linear => value,
-            EaseType::EaseIn => value.powf(2.0),
-            EaseType::EaseOut => (2.0 - value) * value,
-        };
-
-        self.value * (1.0 - value) + end.value * value
-    }
-}
-
-impl Default for OldKeyframe {
-    fn default() -> Self {
-        Self {
-            frame: 0,
-            value: 0.0,
-            function: EaseType::Constant,
-        }
-    }
 }

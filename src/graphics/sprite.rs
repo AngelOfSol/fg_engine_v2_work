@@ -1,7 +1,7 @@
 mod file;
 pub mod version;
 
-use super::keyframe::Modifiers;
+use super::keyframe::{KeyframeExt, Modifiers};
 use crate::assets::{Assets, ValueAlpha};
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use ggez::graphics;
@@ -67,8 +67,8 @@ impl Sprite {
         assets.shader.send(
             ctx,
             ValueAlpha {
-                value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
-                alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+                value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
+                alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
             },
         )?;
 

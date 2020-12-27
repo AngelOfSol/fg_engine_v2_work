@@ -9,6 +9,8 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use super::keyframe::KeyframeExt;
+
 pub type AnimationGroup = AnimationGroupV1;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default, Inspect)]
@@ -62,8 +64,8 @@ impl AnimationGroup {
                 time,
                 world,
                 ValueAlpha {
-                    value: self.modifiers.value.at_time(time).unwrap_or(1.0),
-                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0),
+                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0),
+                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0),
                 },
             )?
         }
@@ -88,8 +90,8 @@ impl AnimationGroup {
                 time,
                 world,
                 ValueAlpha {
-                    value: self.modifiers.value.at_time(time).unwrap_or(1.0) * constants.value,
-                    alpha: self.modifiers.alpha.at_time(time).unwrap_or(1.0) * constants.value,
+                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
+                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
                 },
             )?
         }

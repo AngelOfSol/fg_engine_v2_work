@@ -1,17 +1,20 @@
 use super::character_editor::{AnimationGroupResource, ItemResource};
-use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::animation_group::AnimationGroup;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::editor::AnimationEditor;
-use crate::ui::graphics::modifiers::ModifiersUi;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     ui::graphics::animations::AnimationsUi,
+};
+use crate::{
+    assets::{Assets, ValueAlpha},
+    graphics::keyframe::Modifiers,
 };
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
+use inspect_design::traits::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -30,7 +33,7 @@ pub struct AnimationGroupEditor {
     done: Status,
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
-    modifiers_state: ModifiersUi,
+    modifiers_state: <Modifiers as Inspect>::State,
 }
 
 impl AppState for AnimationGroupEditor {
@@ -94,8 +97,11 @@ impl AppState for AnimationGroupEditor {
                     .size([300.0, editor_height], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        self.modifiers_state
-                            .draw_ui(ui, &mut self.resource.borrow_mut().modifiers);
+                        self.resource.borrow_mut().modifiers.inspect_mut(
+                            "modifiers",
+                            &mut self.modifiers_state,
+                            ui,
+                        );
                     });
 
                 imgui::Window::new(im_str!("Animation"))
