@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::{Axis, Facing};
 use crate::character::components::Guard;
 use inspect_design::Inspect;
@@ -151,6 +153,25 @@ impl From<Axis> for DirectedAxis {
             Axis::UpLeft => DirectedAxis::UpBackward,
             Axis::DownRight => DirectedAxis::DownForward,
             Axis::DownLeft => DirectedAxis::DownBackward,
+        }
+    }
+}
+
+impl FromStr for DirectedAxis {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "8" => Ok(Self::Up),
+            "2" => Ok(Self::Down),
+            "6" => Ok(Self::Forward),
+            "4" => Ok(Self::Backward),
+            "5" => Ok(Self::Neutral),
+            "9" => Ok(Self::UpForward),
+            "7" => Ok(Self::UpBackward),
+            "3" => Ok(Self::DownForward),
+            "1" => Ok(Self::DownBackward),
+            _ => Err("Not a single digit between 1 and 9."),
         }
     }
 }

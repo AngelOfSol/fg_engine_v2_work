@@ -3,6 +3,7 @@ use super::button::{Button, ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
 use super::{InputState, MOTION_DIRECTION_SIZE};
 use inspect_design::Inspect;
+use pest::Parser;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Inspect)]
 pub enum Input {
@@ -12,6 +13,172 @@ pub enum Input {
     DragonPunch(Direction, ButtonSet),
     DoubleTap(DirectedAxis),
     SuperJump(DirectedAxis),
+}
+
+pub mod parse {
+    use pest_derive::Parser;
+    #[derive(Parser)]
+    #[grammar = "input/motion.pest"]
+    pub struct InputParser;
+}
+
+impl FromStr for Input {
+    type Err = pest::error::Error<parse::Rule>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use parse::*;
+        let input = InputParser::parse(Rule::input, s)?
+            .next()
+            .unwrap()
+            .into_inner()
+            .next()
+            .unwrap();
+
+        match input.as_rule() {
+            Rule::super_jump => Ok(Self::SuperJump(
+                DirectedAxis::from_str(input.into_inner().as_str()).unwrap(),
+            )),
+            Rule::double_tap => Ok(Self::DoubleTap(
+                DirectedAxis::from_str(input.as_str()).unwrap(),
+            )),
+            Rule::dp => Ok(Self::DragonPunch(Direction::Forward, {
+                let input = input.into_inner().next().unwrap();
+                match input.as_rule() {
+                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
+                    _ => panic!("other button press types are not supported at this time"),
+                }
+            })),
+            Rule::rdp => Ok(Self::DragonPunch(Direction::Backward, {
+                let input = input.into_inner().next().unwrap();
+                match input.as_rule() {
+                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
+                    _ => panic!("other button press types are not supported at this time"),
+                }
+            })),
+            Rule::qcf => Ok(Self::QuarterCircle(Direction::Forward, {
+                let input = input.into_inner().next().unwrap();
+                match input.as_rule() {
+                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
+                    _ => panic!("other button press types are not supported at this time"),
+                }
+            })),
+            Rule::qcb => Ok(Self::QuarterCircle(Direction::Backward, {
+                let input = input.into_inner().next().unwrap();
+                match input.as_rule() {
+                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
+                    _ => panic!("other button press types are not supported at this time"),
+                }
+            })),
+            Rule::axis => Ok(Self::Idle(DirectedAxis::from_str(input.as_str()).unwrap())),
+            Rule::button_press => {
+                let mut pairs = input.into_inner();
+                let axis = FromStr::from_str(pairs.next().unwrap().as_str()).unwrap();
+                let buttons = FromStr::from_str(pairs.next().unwrap().as_str()).unwrap();
+
+                Ok(Self::PressButton(axis, buttons))
+            }
+
+            _ => unreachable!(),
+        }
+    }
+}
+#[cfg(test)]
+mod test {
+    use super::Input;
+    use crate::input::{
+        button::{Button, ButtonSet},
+        DirectedAxis, Direction,
+    };
+    use std::str::FromStr;
+
+    #[test]
+    fn test_super_jump() {
+        assert_eq!(
+            Input::from_str("hj7"),
+            Ok(Input::SuperJump(DirectedAxis::UpBackward))
+        );
+        assert_eq!(
+            Input::from_str("hj8"),
+            Ok(Input::SuperJump(DirectedAxis::Up))
+        );
+        assert_eq!(
+            Input::from_str("29"),
+            Ok(Input::SuperJump(DirectedAxis::UpForward))
+        );
+    }
+    #[test]
+    fn double_tap() {
+        assert_eq!(
+            Input::from_str("66"),
+            Ok(Input::DoubleTap(DirectedAxis::Forward))
+        );
+        assert_eq!(
+            Input::from_str("44"),
+            Ok(Input::DoubleTap(DirectedAxis::Backward))
+        );
+        assert_eq!(
+            Input::from_str("22"),
+            Ok(Input::DoubleTap(DirectedAxis::Down))
+        );
+    }
+    #[test]
+    fn dragon_punch() {
+        assert_eq!(
+            Input::from_str("623a"),
+            Ok(Input::DragonPunch(
+                Direction::Forward,
+                ButtonSet::from(Button::A)
+            ))
+        );
+        assert_eq!(
+            Input::from_str("421a"),
+            Ok(Input::DragonPunch(
+                Direction::Backward,
+                ButtonSet::from(Button::A)
+            ))
+        );
+    }
+    #[test]
+    fn quarter_circle() {
+        assert_eq!(
+            Input::from_str("236a"),
+            Ok(Input::QuarterCircle(
+                Direction::Forward,
+                ButtonSet::from(Button::A)
+            ))
+        );
+        assert_eq!(
+            Input::from_str("214a"),
+            Ok(Input::QuarterCircle(
+                Direction::Backward,
+                ButtonSet::from(Button::A)
+            ))
+        );
+    }
+    #[test]
+    fn axis() {
+        assert_eq!(Input::from_str("6"), Ok(Input::Idle(DirectedAxis::Forward)));
+        assert_eq!(
+            Input::from_str("1"),
+            Ok(Input::Idle(DirectedAxis::DownBackward))
+        );
+    }
+    #[test]
+    fn press_button() {
+        assert_eq!(
+            Input::from_str("6d"),
+            Ok(Input::PressButton(
+                DirectedAxis::Forward,
+                ButtonSet::from(Button::D)
+            ))
+        );
+        assert_eq!(
+            Input::from_str("5a"),
+            Ok(Input::PressButton(
+                DirectedAxis::Neutral,
+                ButtonSet::from(Button::A)
+            ))
+        );
+    }
 }
 
 impl Default for Input {
@@ -163,7 +330,7 @@ fn read_recent_button_set<'a>(
         })
 }
 
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 #[derive(Clone, Debug)]
 enum ReadInput {
     Optional(HashSet<Axis>, usize),

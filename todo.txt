@@ -243,7 +243,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
     [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
-    [] remove dependency on keyframe
+    [x] remove dependency on keyframe
     [] rework command system
         [] state.on_expire: MoveId -> { frame: usize, move_id: MoveId }
         [] command_list: MoveId -> CommandId
@@ -296,7 +296,7 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
-    [] add box<character> to gameplay
+    [x] add box<character> to gameplay
         [x] done with enum dispatch
     [] expose each character to the training_mode so it can reset its hp
         [] expose training mode options via additional methods on game_match?
@@ -318,11 +318,11 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] alpha
         [x] sprite gets the value of both fields to send to the shader 
         [x] Modifiers struct has parameters for these fields which default to Constant(time=0.0, value=1.0)
-    [] remove depedency "keyframe" and use own impl
     [] use left stick/right stick for directional input too
     [] make goldensun style particle effects
-    [] move editor to a special version of training mode
+    [x] move editor to a special version of training mode
     [] consider adding ]E[ input to cancel to fly_end to remove fly special handling
+        [] create parser for input notation
     [] move all weird constants into either Rust constants or loaded from a file
     [x] add compression for sameinputs in replay to reduce replay file size
     [] upgrade rusttype for ggez?
