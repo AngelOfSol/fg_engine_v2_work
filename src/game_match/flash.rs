@@ -1,16 +1,15 @@
 use ggez::graphics::Color;
 use inspect_design::Inspect;
-use keyframe::{
-    functions::{EaseInQuint, EaseOutQuint},
-    keyframes, AnimationSequence,
-};
+
 use serde::{Deserialize, Serialize};
 use strum::Display;
+
+use crate::graphics::keyframe::{EaseType, Keyframe, KeyframeExt, Keyframes};
 
 #[derive(Debug, Clone, Copy)]
 pub struct FlashOverlay {
     flash_type: FlashType,
-    current_time: i32,
+    current_time: usize,
 }
 
 impl From<FlashType> for FlashOverlay {
@@ -36,21 +35,43 @@ impl Default for FlashType {
 
 impl FlashOverlay {
     pub fn color(&self) -> Color {
-        let mut alpha = keyframes! {
-            (0.0, 0.0, EaseOutQuint),
-            (1.0, 4.0, EaseInQuint),
-            (0.0, self.duration() as f64)
-        };
-        alpha.advance_to(self.current_time as f64);
+        let alpha = Keyframes::with_data(
+            vec![
+                (
+                    0,
+                    Keyframe {
+                        value: 0.0,
+                        function: EaseType::EaseOut,
+                    },
+                ),
+                (
+                    4,
+                    Keyframe {
+                        value: 1.0,
+                        function: EaseType::EaseIn,
+                    },
+                ),
+                (
+                    self.duration() - 1,
+                    Keyframe {
+                        value: 0.0,
+                        function: EaseType::Constant,
+                    },
+                ),
+            ],
+            self.duration(),
+        )
+        .unwrap();
+        let alpha = alpha.get_eased(self.current_time).unwrap_or(0.0);
 
         match self.flash_type {
-            FlashType::GuardCrush => Color::new(0.7, 0.0, 0.1, 0.7 * alpha.now()),
-            FlashType::Super => Color::new(0.0, 0.0, 0.0, 0.85 * alpha.now()),
-            FlashType::PartialSuper => Color::new(0.00, 0.0, 0.0, 0.4 * alpha.now()),
+            FlashType::GuardCrush => Color::new(0.7, 0.0, 0.1, 0.7 * alpha),
+            FlashType::Super => Color::new(0.0, 0.0, 0.0, 0.85 * alpha),
+            FlashType::PartialSuper => Color::new(0.00, 0.0, 0.0, 0.4 * alpha),
         }
     }
 
-    pub fn duration(&self) -> i32 {
+    pub fn duration(&self) -> usize {
         match self.flash_type {
             FlashType::GuardCrush => 40,
             FlashType::Super => 20,

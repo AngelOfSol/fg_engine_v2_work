@@ -704,7 +704,6 @@ dependencies = [
  "inspect_design",
  "inventory",
  "ipconfig",
- "keyframe",
  "laminar",
  "maplit",
  "nalgebra 0.21.1",
@@ -1285,16 +1284,6 @@ checksum = "5b47b4c4e017b01abdc5bcc126d2d1002e5a75bbe3ce73f9f4f311a916363704"
 dependencies = [
  "byteorder",
  "rayon",
-]
-
-[[package]]
-name = "keyframe"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e0ebf8fc4e5d2ba9a57b3fb860e96b87fd69eae9ce6d14e8ff8f9b4c230cbbb"
-dependencies = [
- "mint",
- "num-traits 0.2.12",
 ]
 
 [[package]]
