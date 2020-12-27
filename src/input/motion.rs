@@ -1,9 +1,13 @@
 use super::axis::{Axis, DirectedAxis, Direction, Facing};
-use super::button::{Button, ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
+use super::{
+    button::{Button, ButtonSet, ButtonState},
+    parsing::parse_input,
+};
 use super::{InputState, MOTION_DIRECTION_SIZE};
 use inspect_design::Inspect;
-use pest::Parser;
+use nom::Finish;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Inspect)]
 pub enum Input {
@@ -15,72 +19,71 @@ pub enum Input {
     SuperJump(DirectedAxis),
 }
 
-pub mod parse {
-    use pest_derive::Parser;
-    #[derive(Parser)]
-    #[grammar = "input/motion.pest"]
-    pub struct InputParser;
+impl Serialize for Input {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let value = format!("{}", self);
+        value.serialize(serializer)
+    }
 }
 
-impl FromStr for Input {
-    type Err = pest::error::Error<parse::Rule>;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use parse::*;
-        let input = InputParser::parse(Rule::input, s)?
-            .next()
-            .unwrap()
-            .into_inner()
-            .next()
-            .unwrap();
+impl<'de> Deserialize<'de> for Input {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = <&str>::deserialize(deserializer)?;
+        value
+            .parse()
+            .map_err(|err| serde::de::Error::custom(format!("{:?}", err)))
+    }
+}
 
-        match input.as_rule() {
-            Rule::super_jump => Ok(Self::SuperJump(
-                DirectedAxis::from_str(input.into_inner().as_str()).unwrap(),
-            )),
-            Rule::double_tap => Ok(Self::DoubleTap(
-                DirectedAxis::from_str(input.as_str()).unwrap(),
-            )),
-            Rule::dp => Ok(Self::DragonPunch(Direction::Forward, {
-                let input = input.into_inner().next().unwrap();
-                match input.as_rule() {
-                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
-                    _ => panic!("other button press types are not supported at this time"),
-                }
-            })),
-            Rule::rdp => Ok(Self::DragonPunch(Direction::Backward, {
-                let input = input.into_inner().next().unwrap();
-                match input.as_rule() {
-                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
-                    _ => panic!("other button press types are not supported at this time"),
-                }
-            })),
-            Rule::qcf => Ok(Self::QuarterCircle(Direction::Forward, {
-                let input = input.into_inner().next().unwrap();
-                match input.as_rule() {
-                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
-                    _ => panic!("other button press types are not supported at this time"),
-                }
-            })),
-            Rule::qcb => Ok(Self::QuarterCircle(Direction::Backward, {
-                let input = input.into_inner().next().unwrap();
-                match input.as_rule() {
-                    Rule::press => FromStr::from_str(input.as_str()).unwrap(),
-                    _ => panic!("other button press types are not supported at this time"),
-                }
-            })),
-            Rule::axis => Ok(Self::Idle(DirectedAxis::from_str(input.as_str()).unwrap())),
-            Rule::button_press => {
-                let mut pairs = input.into_inner();
-                let axis = FromStr::from_str(pairs.next().unwrap().as_str()).unwrap();
-                let buttons = FromStr::from_str(pairs.next().unwrap().as_str()).unwrap();
-
-                Ok(Self::PressButton(axis, buttons))
+impl Display for Input {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Idle(inner) => write!(f, "{}", inner),
+            Self::DoubleTap(inner) => write!(f, "{0}{0}", inner),
+            Self::SuperJump(inner) => write!(f, "hj{}", inner),
+            Self::DragonPunch(dir, button) => {
+                write!(
+                    f,
+                    "{}{}",
+                    match dir {
+                        Direction::Forward => "623",
+                        Direction::Backward => "421",
+                    },
+                    button
+                )
             }
-
-            _ => unreachable!(),
+            Self::QuarterCircle(dir, button) => {
+                write!(
+                    f,
+                    "{}{}",
+                    match dir {
+                        Direction::Forward => "236",
+                        Direction::Backward => "214",
+                    },
+                    button
+                )
+            }
+            Self::PressButton(dir, button) => write!(f, "{}{}", dir, button),
         }
     }
 }
+
+impl FromStr for Input {
+    type Err = nom::error::ErrorKind;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_input(s)
+            .finish()
+            .map_err(|err| err.code)
+            .map(|(_, item)| item)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::Input;
@@ -104,6 +107,15 @@ mod test {
             Input::from_str("29"),
             Ok(Input::SuperJump(DirectedAxis::UpForward))
         );
+
+        let value = Input::SuperJump(DirectedAxis::UpForward);
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
+        );
     }
     #[test]
     fn double_tap() {
@@ -118,6 +130,14 @@ mod test {
         assert_eq!(
             Input::from_str("22"),
             Ok(Input::DoubleTap(DirectedAxis::Down))
+        );
+        let value = Input::DoubleTap(DirectedAxis::Down);
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
         );
     }
     #[test]
@@ -136,6 +156,14 @@ mod test {
                 ButtonSet::from(Button::A)
             ))
         );
+        let value = Input::DragonPunch(Direction::Backward, ButtonSet::from(Button::A));
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
+        );
     }
     #[test]
     fn quarter_circle() {
@@ -153,6 +181,14 @@ mod test {
                 ButtonSet::from(Button::A)
             ))
         );
+        let value = Input::QuarterCircle(Direction::Backward, ButtonSet::from(Button::A));
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
+        );
     }
     #[test]
     fn axis() {
@@ -160,6 +196,14 @@ mod test {
         assert_eq!(
             Input::from_str("1"),
             Ok(Input::Idle(DirectedAxis::DownBackward))
+        );
+        let value = Input::Idle(DirectedAxis::DownBackward);
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
         );
     }
     #[test]
@@ -177,6 +221,15 @@ mod test {
                 DirectedAxis::Neutral,
                 ButtonSet::from(Button::A)
             ))
+        );
+
+        let value = Input::PressButton(DirectedAxis::Neutral, ButtonSet::from(Button::A));
+        // round trip
+        assert_eq!(
+            value,
+            serde_json::to_string(&value)
+                .and_then(|value| serde_json::from_str(&value))
+                .unwrap()
         );
     }
 }
@@ -330,7 +383,11 @@ fn read_recent_button_set<'a>(
         })
 }
 
-use std::{collections::HashSet, str::FromStr};
+use std::{
+    collections::HashSet,
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 #[derive(Clone, Debug)]
 enum ReadInput {
     Optional(HashSet<Axis>, usize),

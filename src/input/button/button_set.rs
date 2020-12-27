@@ -1,58 +1,58 @@
+use crate::input::parsing::parse_button_set;
+
 use super::Button;
 use inspect_design::Inspect;
+use nom::Finish;
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt::{Display, Formatter},
     ops::{BitOr, BitOrAssign},
     str::FromStr,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Inspect, Default)]
-pub struct ButtonSet(u8);
+pub struct ButtonSet(pub u8);
+
+impl ButtonSet {
+    pub fn has(&self, button: Button) -> bool {
+        self.0 & button as u8 == button as u8
+    }
+}
 
 impl From<Button> for ButtonSet {
     fn from(value: Button) -> ButtonSet {
         ButtonSet(value as u8)
     }
 }
-pub mod parse {
-    use pest_derive::Parser;
-    #[derive(Parser)]
-    #[grammar_inline = r#"
-        a = { "a" }
-        b = { "b" }
-        c = { "c" }
-        d = { "d" }
-        e = { "e" }
-        valid = { a? ~ b? ~ c? ~ d? ~ e? ~ EOI}
-    "#]
-    pub struct ButtonSetParser;
-}
-
-use parse::*;
-use pest::Parser;
 
 impl FromStr for ButtonSet {
-    type Err = pest::error::Error<parse::Rule>;
+    type Err = nom::error::ErrorKind;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pairs = parse::ButtonSetParser::parse(Rule::valid, s)?
-            .next()
-            .unwrap()
-            .into_inner();
-        let mut buttons = Self(0);
+        parse_button_set(s)
+            .finish()
+            .map_err(|err| err.code)
+            .map(|(_, item)| item)
+    }
+}
 
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::a => buttons |= Button::A,
-                Rule::b => buttons |= Button::B,
-                Rule::c => buttons |= Button::C,
-                Rule::d => buttons |= Button::D,
-                Rule::e => buttons |= Button::E,
-                Rule::valid => unreachable!(),
-                Rule::EOI => (),
-            }
+impl Display for ButtonSet {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.has(Button::A) {
+            write!(f, "a")?
         }
-
-        Ok(buttons)
+        if self.has(Button::B) {
+            write!(f, "b")?
+        }
+        if self.has(Button::C) {
+            write!(f, "c")?
+        }
+        if self.has(Button::D) {
+            write!(f, "d")?
+        }
+        if self.has(Button::E) {
+            write!(f, "e")?
+        }
+        Ok(())
     }
 }
 

@@ -2,6 +2,7 @@ pub mod button;
 pub mod control_scheme;
 mod input_state;
 pub mod pads_context;
+pub mod parsing;
 
 mod input_coalesce;
 #[macro_use]
