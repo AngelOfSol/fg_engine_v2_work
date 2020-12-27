@@ -1,12 +1,18 @@
-use crate::graphics::keyframe::{Coordinates, EaseType, Keyframe, Keyframes, Modifiers};
+use crate::graphics::keyframe::{
+    Coordinates, EaseType, Keyframes, Modifiers, OldKeyframe, OldKeyframes,
+};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
+use inspect_design::traits::{Inspect, InspectMut};
 use strum::IntoEnumIterator;
 
-pub struct ModifiersUi;
+#[derive(Default)]
+pub struct ModifiersUi {
+    state: <Keyframes as Inspect>::State,
+}
 
 impl ModifiersUi {
-    pub fn draw_ui(ui: &Ui<'_>, mods: &mut Modifiers) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, mods: &mut Modifiers) {
         ui.combo_items(
             im_str!("System"),
             &mut mods.coord_type,
@@ -17,9 +23,7 @@ impl ModifiersUi {
             .default_open(false)
             .build(ui)
         {
-            let id = ui.push_id("Rotation");
-            draw_ui_keyframes(ui, &mut mods.rotation);
-            id.pop(ui);
+            mods.rotation.inspect_mut("rotation", &mut self.state, ui);
         }
         if imgui::CollapsingHeader::new(im_str!("Scale"))
             .default_open(false)
@@ -101,7 +105,7 @@ impl ModifiersUi {
         }
     }
 }
-fn draw_ui_keyframes(ui: &Ui<'_>, frames: &mut Keyframes) {
+fn draw_ui_keyframes(ui: &Ui<'_>, frames: &mut OldKeyframes) {
     let mut resort = false;
 
     let element_count = frames.frames.len();
@@ -126,11 +130,11 @@ fn draw_ui_keyframes(ui: &Ui<'_>, frames: &mut Keyframes) {
     }
 
     if ui.small_button(im_str!("New Keyframe")) {
-        frames.frames.insert(0, Keyframe::default());
+        frames.frames.insert(0, OldKeyframe::default());
     }
 }
 
-fn draw_ui_keyframe(ui: &Ui<'_>, frame: &mut Keyframe) -> bool {
+fn draw_ui_keyframe(ui: &Ui<'_>, frame: &mut OldKeyframe) -> bool {
     ui.input_whole(im_str!("Frame"), &mut frame.frame).unwrap();
     let ret = ui.is_item_deactivated_after_edit();
     ui.input_float(im_str!("Value"), &mut frame.value).build();

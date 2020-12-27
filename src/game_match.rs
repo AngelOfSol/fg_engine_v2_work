@@ -3,11 +3,6 @@ mod match_settings;
 mod noop_writer;
 pub mod sounds;
 
-pub use flash::FlashType;
-pub use match_settings::{
-    load_global_graphics, FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData,
-};
-
 use crate::assets::ValueAlpha;
 use crate::character::state::components::GlobalGraphic;
 use crate::graphics::animation_group::AnimationGroup;
@@ -24,9 +19,13 @@ use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use flash::FlashOverlay;
+pub use flash::FlashType;
 use ggez::graphics::Image;
 use ggez::graphics::{self, Rect};
 use ggez::{Context, GameResult};
+pub use match_settings::{
+    load_global_graphics, FromMatchSettings, MatchSettings, MatchSettingsError, RuntimeData,
+};
 use noop_writer::NoopWriter;
 use sounds::{GlobalSound, SoundList};
 use std::io::Write;
@@ -768,25 +767,31 @@ impl<Writer: Write> Match<Writer> {
         match &self.game_state.mode {
             UpdateMode::FadeOut { duration } => {
                 use crate::graphics::keyframe::*;
-                let alpha_keyframes = Keyframes {
-                    frames: vec![
-                        Keyframe {
-                            frame: 0,
-                            value: 1.0,
-                            function: EaseType::EaseIn,
-                        },
-                        Keyframe {
-                            frame: 30,
-                            value: 0.0,
-                            function: EaseType::Constant,
-                        },
+                let alpha_keyframes = Keyframes::with_data(
+                    vec![
+                        (
+                            0,
+                            Keyframe {
+                                value: 1.0,
+                                function: EaseType::EaseIn,
+                            },
+                        ),
+                        (
+                            30,
+                            Keyframe {
+                                value: 0.0,
+                                function: EaseType::Constant,
+                            },
+                        ),
                     ],
-                };
+                    60,
+                )
+                .unwrap();
                 assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
-                        alpha: alpha_keyframes.at_time(*duration as usize).unwrap_or(1.0),
+                        alpha: alpha_keyframes.get_eased(*duration as usize).unwrap_or(1.0),
                     },
                 )?;
 
@@ -800,25 +805,31 @@ impl<Writer: Write> Match<Writer> {
             }
             UpdateMode::FadeIn { duration } => {
                 use crate::graphics::keyframe::*;
-                let alpha_keyframes = Keyframes {
-                    frames: vec![
-                        Keyframe {
-                            frame: 0,
-                            value: 0.0,
-                            function: EaseType::EaseOut,
-                        },
-                        Keyframe {
-                            frame: 30,
-                            value: 1.0,
-                            function: EaseType::Constant,
-                        },
+                let alpha_keyframes = Keyframes::with_data(
+                    vec![
+                        (
+                            0,
+                            Keyframe {
+                                value: 0.0,
+                                function: EaseType::EaseOut,
+                            },
+                        ),
+                        (
+                            30,
+                            Keyframe {
+                                value: 1.0,
+                                function: EaseType::Constant,
+                            },
+                        ),
                     ],
-                };
+                    60,
+                )
+                .unwrap();
                 assets.shader.send(
                     ctx,
                     ValueAlpha {
                         value: 1.0,
-                        alpha: alpha_keyframes.at_time(*duration as usize).unwrap_or(0.0),
+                        alpha: alpha_keyframes.get_eased(*duration as usize).unwrap_or(0.0),
                     },
                 )?;
 

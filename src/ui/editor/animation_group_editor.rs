@@ -30,6 +30,7 @@ pub struct AnimationGroupEditor {
     done: Status,
     transition: Transition,
     assets: Rc<RefCell<Assets>>,
+    modifiers_state: ModifiersUi,
 }
 
 impl AppState for AnimationGroupEditor {
@@ -93,7 +94,8 @@ impl AppState for AnimationGroupEditor {
                     .size([300.0, editor_height], Condition::Once)
                     .position([600.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        ModifiersUi::draw_ui(ui, &mut self.resource.borrow_mut().modifiers);
+                        self.modifiers_state
+                            .draw_ui(ui, &mut self.resource.borrow_mut().modifiers);
                     });
 
                 imgui::Window::new(im_str!("Animation"))
@@ -230,6 +232,7 @@ impl AnimationGroupEditor {
             ui_data: AnimationsUi::new(),
             done: Status::NotDone,
             transition: Transition::None,
+            modifiers_state: Default::default(),
         })
     }
 }

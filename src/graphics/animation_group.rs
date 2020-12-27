@@ -53,7 +53,7 @@ impl AnimationGroup {
         time: usize,
         world: Matrix4,
     ) -> GameResult<()> {
-        let transform = self.modifiers.matrix_at_time(time);
+        let transform = self.modifiers.get_matrix(time);
         let world = world * transform;
         for animation in self.animations.iter() {
             animation.draw_at_time(
@@ -79,7 +79,7 @@ impl AnimationGroup {
         world: Matrix4,
         constants: ValueAlpha,
     ) -> GameResult<()> {
-        let transform = self.modifiers.matrix_at_time(time);
+        let transform = self.modifiers.get_matrix(time);
         let world = world * transform;
         for animation in self.animations.iter() {
             animation.draw_at_time_debug(

@@ -5,6 +5,7 @@ use crate::roster::combo_state::ComboState;
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum HitSource {
     Character,
+    #[allow(dead_code)]
     Object,
 }
 

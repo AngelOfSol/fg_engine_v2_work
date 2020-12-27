@@ -12,13 +12,15 @@ use nfd::Response;
 
 pub struct AnimationUi {
     pub current_sprite: Option<usize>,
-    inspect_state: <Timeline<Sprite> as Inspect>::State,
+    sprite_inspect_state: <Timeline<Sprite> as Inspect>::State,
+    inside_state: SpriteUi,
 }
 impl AnimationUi {
     pub fn new() -> Self {
         Self {
             current_sprite: None,
-            inspect_state: Default::default(),
+            sprite_inspect_state: Default::default(),
+            inside_state: Default::default(),
         }
     }
 
@@ -72,15 +74,16 @@ impl AnimationUi {
         let mut result = Ok(());
 
         let current_sprite = &mut self.current_sprite;
+        let inside_state = &mut self.inside_state;
 
         timeline::inspect::inspect_mut_custom(
             &mut animation.frames,
             "frames",
-            &mut self.inspect_state,
+            &mut self.sprite_inspect_state,
             ui,
             |frame, data| {
                 *current_sprite = Some(frame);
-                result = SpriteUi::draw_ui(ctx, assets, ui, data);
+                result = inside_state.draw_ui(ctx, assets, ui, data);
             },
         );
 

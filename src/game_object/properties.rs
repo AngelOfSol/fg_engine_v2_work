@@ -5,7 +5,6 @@ use crate::{
     game_object::constructors::{TryAsMut, TryAsRef},
     roster::YuyukoGraphic,
 };
-use imgui::*;
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 

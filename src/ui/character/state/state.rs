@@ -20,27 +20,22 @@ use std::path::PathBuf;
 
 pub struct StateUi {
     current_animation: Option<usize>,
-    current_flags: Option<usize>,
-    current_cancels: Option<usize>,
     current_sound: Option<usize>,
     current_spawner: Option<usize>,
-    current_hitboxes: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
     current_cancel_set_ui: Option<CancelSetUi>,
     spawner_ui_data: SpawnerUi,
     flags_state: <Timeline<Flags> as Inspect>::State,
     cancels_state: <Timeline<CancelSet<String>> as Inspect>::State,
     hitbox_state: <Timeline<HitboxSet<String>> as Inspect>::State,
+    animation_state: AnimationUi,
 }
 
 impl StateUi {
     pub fn new() -> Self {
         Self {
             current_animation: None,
-            current_flags: None,
-            current_cancels: None,
             current_sound: None,
-            current_hitboxes: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
             current_spawner: None,
@@ -48,6 +43,7 @@ impl StateUi {
             flags_state: Default::default(),
             cancels_state: Default::default(),
             hitbox_state: Default::default(),
+            animation_state: Default::default(),
         }
     }
 
@@ -133,7 +129,7 @@ impl StateUi {
             }
             if let Some(animation) = data.get_mut(animation) {
                 ui.separator();
-                AnimationUi::draw_ui(ui, animation);
+                self.animation_state.draw_ui(ui, animation);
             }
         }
         id.pop(ui);

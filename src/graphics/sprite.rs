@@ -60,7 +60,7 @@ impl Sprite {
             0.0,
         ));
 
-        let sprite_transform = self.modifiers.matrix_at_time(time);
+        let sprite_transform = self.modifiers.get_matrix(time);
 
         let transform = world * sprite_transform * image_offset;
 

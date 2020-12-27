@@ -2,6 +2,7 @@ mod attacks;
 mod command_list;
 mod moves;
 
+use crate::character::state::components::{Flags, GlobalGraphic, MoveType};
 use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
@@ -22,10 +23,6 @@ use crate::{character::components::Properties, game_object::constructors::Constr
 use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
-};
-use crate::{
-    character::state::components::{Flags, GlobalGraphic, MoveType},
-    game_object::constructors::InspectOld,
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{command_list::CommandList, game_object::state::Timer};

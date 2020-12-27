@@ -127,6 +127,7 @@ impl<T> Timeline<T> {
         self.duration = new_duration;
     }
 
+    #[allow(dead_code)]
     pub fn clean(&mut self) {
         let duration = self.duration;
         self.data.retain(|item| item.0 < duration);

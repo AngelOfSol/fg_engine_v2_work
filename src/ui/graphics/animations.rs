@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 pub struct AnimationsUi {
     current_animation: Option<usize>,
+    animation_state: AnimationUi,
 }
 
 impl AnimationsUi {
@@ -59,7 +60,7 @@ impl AnimationsUi {
             }
             if let Some(animation) = data.get_mut(animation) {
                 ui.separator();
-                AnimationUi::draw_ui(ui, animation);
+                self.animation_state.draw_ui(ui, animation);
             }
         }
         id.pop(ui);
@@ -70,6 +71,7 @@ impl AnimationsUi {
     pub fn new() -> Self {
         Self {
             current_animation: None,
+            animation_state: Default::default(),
         }
     }
 }

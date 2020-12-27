@@ -5,16 +5,20 @@ use ggez::{Context, GameResult};
 use imgui::*;
 use nfd::Response;
 
-pub struct SpriteUi;
+#[derive(Default)]
+pub struct SpriteUi {
+    state: ModifiersUi,
+}
 
 impl SpriteUi {
     pub fn draw_ui(
+        &mut self,
         ctx: &mut Context,
         assets: &mut Assets,
         ui: &Ui<'_>,
         sprite: &mut Sprite,
     ) -> GameResult<()> {
-        ModifiersUi::draw_ui(ui, &mut sprite.modifiers);
+        self.state.draw_ui(ui, &mut sprite.modifiers);
 
         if ui.small_button(im_str!("Load New Image")) {
             let result = nfd::open_file_dialog(Some("png"), None);

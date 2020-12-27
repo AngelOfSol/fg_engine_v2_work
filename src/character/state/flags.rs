@@ -70,20 +70,11 @@ fn default_friction() -> Int {
     0_50
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct MovementData {
     pub accel: Vec2,
     pub vel: Vec2,
     pub pos: Vec2,
-}
-impl MovementData {
-    pub fn new() -> Self {
-        Self {
-            accel: Vec2::zeros(),
-            vel: Vec2::zeros(),
-            pos: Vec2::zeros(),
-        }
-    }
 }
 
 impl Flags {
@@ -110,14 +101,5 @@ impl Flags {
             lockout_timer: 0,
             reset_lockout_timer: false,
         }
-    }
-
-    pub fn apply_movement(&self, mut value: MovementData) -> MovementData {
-        if self.reset_velocity {
-            value.vel = Vec2::zeros();
-        }
-        value.vel += self.accel;
-        value.pos += value.vel;
-        value
     }
 }

@@ -125,7 +125,7 @@ impl Animation {
         };
 
         if let Some((_, image)) = self.frames.get(time) {
-            let transform = self.modifiers.matrix_at_time(time);
+            let transform = self.modifiers.get_matrix(time);
             image.draw(
                 ctx,
                 assets,
@@ -157,7 +157,7 @@ impl Animation {
         };
 
         if let Some((_, image)) = self.frames.get(time) {
-            let transform = self.modifiers.matrix_at_time(time);
+            let transform = self.modifiers.get_matrix(time);
             image.draw_debug(
                 ctx,
                 assets,

@@ -1,11 +1,10 @@
 use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
-use crate::character::state::components::MovementData;
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
-use crate::ui::character::state::{CancelSetUi, FlagsUi, StateUi};
+use crate::ui::character::state::{CancelSetUi, StateUi};
 use crate::ui::editor::AnimationEditor;
 use crate::{
     app_state::{AppContext, AppState, Transition},
@@ -228,29 +227,7 @@ impl AppState for StateEditor {
                     .movable(false)
                     .collapsible(false)
                     .build(ui, || {});
-                imgui::Window::new(im_str!("Current Flags"))
-                    .size([300.0, 263.0], Condition::Once)
-                    .position([600.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        let resource = self.resource.borrow();
-                        if let Some((_, data)) = resource.flags.get(self.frame) {
-                            let move_data = {
-                                let mut move_data = MovementData::new();
 
-                                for frame in 0..self.frame {
-                                    let flags = resource.flags.get(frame);
-                                    if let Some((_, flags)) = flags {
-                                        move_data = flags.apply_movement(move_data);
-                                    } else {
-                                        move_data.vel += move_data.accel;
-                                        move_data.pos += move_data.vel;
-                                    }
-                                }
-                                move_data
-                            };
-                            FlagsUi::draw_display_ui(ui, data, &move_data);
-                        }
-                    });
                 imgui::Window::new(im_str!("Current Cancels"))
                     .size([300.0, 263.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
