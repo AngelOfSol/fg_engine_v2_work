@@ -1,5 +1,4 @@
 mod file;
-pub mod version;
 use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::animation::Animation;
 use crate::graphics::keyframe::Modifiers;

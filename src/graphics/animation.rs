@@ -1,5 +1,4 @@
 mod file;
-pub mod version;
 
 use super::keyframe::{KeyframeExt, Modifiers};
 use super::sprite::Sprite;
