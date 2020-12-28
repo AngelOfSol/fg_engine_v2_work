@@ -11,7 +11,7 @@ use crate::{
     roster::moves::MoveId,
 };
 use crate::{
-    character::{command::Requirement, state::components::MoveType, PlayerCharacter},
+    character::{command::Requirement, state::components::CommandType, PlayerCharacter},
     roster::moves::CommandId,
 };
 use ggez::graphics;
@@ -258,13 +258,13 @@ impl AppState for CharacterEditor {
                     .hit
                     .iter()
                     .filter_map(|item| match item {
-                        MoveType::AirDash => Some(MoveType::Dash),
-                        MoveType::AirMelee => Some(MoveType::Melee),
-                        MoveType::AirMagic => Some(MoveType::Magic),
-                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
-                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
-                        MoveType::AirSuper => Some(MoveType::Super),
-                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        CommandType::AirDash => Some(CommandType::Dash),
+                        CommandType::AirMelee => Some(CommandType::Melee),
+                        CommandType::AirMagic => Some(CommandType::Magic),
+                        CommandType::AirMeleeSpecial => Some(CommandType::MeleeSpecial),
+                        CommandType::AirMagicSpecial => Some(CommandType::MagicSpecial),
+                        CommandType::AirSuper => Some(CommandType::Super),
+                        CommandType::AirFollowup => Some(CommandType::Followup),
                         _ => None,
                     })
                     .collect();
@@ -273,13 +273,13 @@ impl AppState for CharacterEditor {
                     .always
                     .iter()
                     .filter_map(|item| match item {
-                        MoveType::AirDash => Some(MoveType::Dash),
-                        MoveType::AirMelee => Some(MoveType::Melee),
-                        MoveType::AirMagic => Some(MoveType::Magic),
-                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
-                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
-                        MoveType::AirSuper => Some(MoveType::Super),
-                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        CommandType::AirDash => Some(CommandType::Dash),
+                        CommandType::AirMelee => Some(CommandType::Melee),
+                        CommandType::AirMagic => Some(CommandType::Magic),
+                        CommandType::AirMeleeSpecial => Some(CommandType::MeleeSpecial),
+                        CommandType::AirMagicSpecial => Some(CommandType::MagicSpecial),
+                        CommandType::AirSuper => Some(CommandType::Super),
+                        CommandType::AirFollowup => Some(CommandType::Followup),
                         _ => None,
                     })
                     .collect();
@@ -288,13 +288,13 @@ impl AppState for CharacterEditor {
                     .block
                     .iter()
                     .filter_map(|item| match item {
-                        MoveType::AirDash => Some(MoveType::Dash),
-                        MoveType::AirMelee => Some(MoveType::Melee),
-                        MoveType::AirMagic => Some(MoveType::Magic),
-                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
-                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
-                        MoveType::AirSuper => Some(MoveType::Super),
-                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        CommandType::AirDash => Some(CommandType::Dash),
+                        CommandType::AirMelee => Some(CommandType::Melee),
+                        CommandType::AirMagic => Some(CommandType::Magic),
+                        CommandType::AirMeleeSpecial => Some(CommandType::MeleeSpecial),
+                        CommandType::AirMagicSpecial => Some(CommandType::MagicSpecial),
+                        CommandType::AirSuper => Some(CommandType::Super),
+                        CommandType::AirFollowup => Some(CommandType::Followup),
                         _ => None,
                     })
                     .collect();
@@ -389,56 +389,62 @@ impl AppState for CharacterEditor {
                     }
 
                     match move_type {
-                        x @ MoveType::Idle
-                        | x @ MoveType::Walk
-                        | x @ MoveType::Jump
-                        | x @ MoveType::HiJump
-                        | x @ MoveType::Dash
-                        | x @ MoveType::Melee
-                        | x @ MoveType::Magic
-                        | x @ MoveType::MeleeSpecial
-                        | x @ MoveType::MagicSpecial
-                        | x @ MoveType::Super
-                        | x @ MoveType::Followup => {
+                        x @ CommandType::Idle
+                        | x @ CommandType::Walk
+                        | x @ CommandType::Jump
+                        | x @ CommandType::HiJump
+                        | x @ CommandType::Dash
+                        | x @ CommandType::Melee
+                        | x @ CommandType::Magic
+                        | x @ CommandType::MeleeSpecial
+                        | x @ CommandType::MagicSpecial
+                        | x @ CommandType::Super
+                        | x @ CommandType::Followup => {
                             command.reqs.push(Requirement::CanCancel(x));
                             command.reqs.push(Requirement::Grounded)
                         }
-                        x @ MoveType::Fly => {
+                        x @ CommandType::Fly => {
                             command.reqs.push(Requirement::CanCancel(x));
                             command.reqs.push(Requirement::Airborne)
                         }
-                        MoveType::AirMelee => {
-                            command.reqs.push(Requirement::CanCancel(MoveType::Melee));
-                            command.reqs.push(Requirement::Airborne);
-                        }
-                        MoveType::AirDash => {
-                            command.reqs.push(Requirement::CanCancel(MoveType::Dash));
-                            command.reqs.push(Requirement::Airborne);
-                        }
-                        MoveType::AirMagic => {
-                            command.reqs.push(Requirement::CanCancel(MoveType::Magic));
-                            command.reqs.push(Requirement::Airborne);
-                        }
-                        MoveType::AirMeleeSpecial => {
+                        CommandType::AirMelee => {
                             command
                                 .reqs
-                                .push(Requirement::CanCancel(MoveType::MeleeSpecial));
+                                .push(Requirement::CanCancel(CommandType::Melee));
                             command.reqs.push(Requirement::Airborne);
                         }
-                        MoveType::AirMagicSpecial => {
+                        CommandType::AirDash => {
+                            command.reqs.push(Requirement::CanCancel(CommandType::Dash));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        CommandType::AirMagic => {
                             command
                                 .reqs
-                                .push(Requirement::CanCancel(MoveType::MagicSpecial));
+                                .push(Requirement::CanCancel(CommandType::Magic));
                             command.reqs.push(Requirement::Airborne);
                         }
-                        MoveType::AirSuper => {
-                            command.reqs.push(Requirement::CanCancel(MoveType::Super));
-                            command.reqs.push(Requirement::Airborne);
-                        }
-                        MoveType::AirFollowup => {
+                        CommandType::AirMeleeSpecial => {
                             command
                                 .reqs
-                                .push(Requirement::CanCancel(MoveType::Followup));
+                                .push(Requirement::CanCancel(CommandType::MeleeSpecial));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        CommandType::AirMagicSpecial => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(CommandType::MagicSpecial));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        CommandType::AirSuper => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(CommandType::Super));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        CommandType::AirFollowup => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(CommandType::Followup));
                             command.reqs.push(Requirement::Airborne);
                         }
                         _ => {}

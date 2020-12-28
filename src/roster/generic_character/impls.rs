@@ -2,7 +2,7 @@ use crate::input::Facing;
 use crate::roster::generic_character::combo_state::ComboState;
 use crate::typedefs::collision;
 use crate::{
-    character::state::components::{Flags, MoveType},
+    character::state::components::{CommandType, Flags},
     input::DirectedAxis,
 };
 
@@ -25,7 +25,7 @@ pub fn handle_refacing(
 pub fn handle_combo_state(
     current_combo: &mut Option<ComboState>,
     last_combo_state: &mut Option<(ComboState, usize)>,
-    current_state_type: MoveType,
+    current_state_type: CommandType,
 ) {
     if !current_state_type.is_stun() {
         *current_combo = None;

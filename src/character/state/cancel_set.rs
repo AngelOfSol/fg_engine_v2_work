@@ -6,7 +6,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash, Inspect)]
-pub enum MoveType {
+pub enum CommandType {
     Idle,
     Walk,
     Jump,
@@ -31,38 +31,38 @@ pub enum MoveType {
     WrongBlockstun,
 }
 
-impl Default for MoveType {
+impl Default for CommandType {
     fn default() -> Self {
         Self::Idle
     }
 }
 
-const ALL_MOVE_TYPES: [MoveType; 22] = [
-    MoveType::Idle,
-    MoveType::Walk,
-    MoveType::Jump,
-    MoveType::HiJump,
-    MoveType::Dash,
-    MoveType::Melee,
-    MoveType::Magic,
-    MoveType::MeleeSpecial,
-    MoveType::MagicSpecial,
-    MoveType::Super,
-    MoveType::Followup,
-    MoveType::Fly,
-    MoveType::AirDash,
-    MoveType::AirMelee,
-    MoveType::AirMagic,
-    MoveType::AirMeleeSpecial,
-    MoveType::AirMagicSpecial,
-    MoveType::AirSuper,
-    MoveType::AirFollowup,
-    MoveType::Hitstun,
-    MoveType::Blockstun,
-    MoveType::WrongBlockstun,
+const ALL_MOVE_TYPES: [CommandType; 22] = [
+    CommandType::Idle,
+    CommandType::Walk,
+    CommandType::Jump,
+    CommandType::HiJump,
+    CommandType::Dash,
+    CommandType::Melee,
+    CommandType::Magic,
+    CommandType::MeleeSpecial,
+    CommandType::MagicSpecial,
+    CommandType::Super,
+    CommandType::Followup,
+    CommandType::Fly,
+    CommandType::AirDash,
+    CommandType::AirMelee,
+    CommandType::AirMagic,
+    CommandType::AirMeleeSpecial,
+    CommandType::AirMagicSpecial,
+    CommandType::AirSuper,
+    CommandType::AirFollowup,
+    CommandType::Hitstun,
+    CommandType::Blockstun,
+    CommandType::WrongBlockstun,
 ];
-impl MoveType {
-    pub fn all() -> &'static [MoveType; 22] {
+impl CommandType {
+    pub fn all() -> &'static [CommandType; 22] {
         &ALL_MOVE_TYPES
     }
 
@@ -76,94 +76,94 @@ impl MoveType {
 
     pub fn is_attack(self) -> bool {
         match self {
-            MoveType::Melee
-            | MoveType::Magic
-            | MoveType::MeleeSpecial
-            | MoveType::MagicSpecial
-            | MoveType::Super
-            | MoveType::Followup
-            | MoveType::AirMelee
-            | MoveType::AirMagic
-            | MoveType::AirMeleeSpecial
-            | MoveType::AirMagicSpecial
-            | MoveType::AirSuper
-            | MoveType::AirFollowup => true,
-            MoveType::Hitstun
-            | MoveType::Blockstun
-            | MoveType::WrongBlockstun
-            | MoveType::Idle
-            | MoveType::Walk
-            | MoveType::Jump
-            | MoveType::HiJump
-            | MoveType::Dash
-            | MoveType::Fly
-            | MoveType::AirDash => false,
+            CommandType::Melee
+            | CommandType::Magic
+            | CommandType::MeleeSpecial
+            | CommandType::MagicSpecial
+            | CommandType::Super
+            | CommandType::Followup
+            | CommandType::AirMelee
+            | CommandType::AirMagic
+            | CommandType::AirMeleeSpecial
+            | CommandType::AirMagicSpecial
+            | CommandType::AirSuper
+            | CommandType::AirFollowup => true,
+            CommandType::Hitstun
+            | CommandType::Blockstun
+            | CommandType::WrongBlockstun
+            | CommandType::Idle
+            | CommandType::Walk
+            | CommandType::Jump
+            | CommandType::HiJump
+            | CommandType::Dash
+            | CommandType::Fly
+            | CommandType::AirDash => false,
         }
     }
     pub fn is_movement(self) -> bool {
         match self {
-            MoveType::Walk
-            | MoveType::Jump
-            | MoveType::HiJump
-            | MoveType::Dash
-            | MoveType::Fly
-            | MoveType::AirDash => true,
-            MoveType::Hitstun
-            | MoveType::Melee
-            | MoveType::Magic
-            | MoveType::MeleeSpecial
-            | MoveType::MagicSpecial
-            | MoveType::Super
-            | MoveType::Followup
-            | MoveType::AirMelee
-            | MoveType::AirMagic
-            | MoveType::AirMeleeSpecial
-            | MoveType::AirMagicSpecial
-            | MoveType::AirSuper
-            | MoveType::AirFollowup
-            | MoveType::Blockstun
-            | MoveType::WrongBlockstun
-            | MoveType::Idle => false,
+            CommandType::Walk
+            | CommandType::Jump
+            | CommandType::HiJump
+            | CommandType::Dash
+            | CommandType::Fly
+            | CommandType::AirDash => true,
+            CommandType::Hitstun
+            | CommandType::Melee
+            | CommandType::Magic
+            | CommandType::MeleeSpecial
+            | CommandType::MagicSpecial
+            | CommandType::Super
+            | CommandType::Followup
+            | CommandType::AirMelee
+            | CommandType::AirMagic
+            | CommandType::AirMeleeSpecial
+            | CommandType::AirMagicSpecial
+            | CommandType::AirSuper
+            | CommandType::AirFollowup
+            | CommandType::Blockstun
+            | CommandType::WrongBlockstun
+            | CommandType::Idle => false,
         }
     }
     pub fn is_stun(self) -> bool {
         matches!(
             self,
-            MoveType::Hitstun | MoveType::Blockstun | MoveType::WrongBlockstun
+            CommandType::Hitstun | CommandType::Blockstun | CommandType::WrongBlockstun
         )
     }
     pub fn is_blockstun(self) -> bool {
-        matches!(self, MoveType::Blockstun | MoveType::WrongBlockstun)
+        matches!(self, CommandType::Blockstun | CommandType::WrongBlockstun)
     }
 }
-impl Display for MoveType {
+impl Display for CommandType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                MoveType::Idle => "Idle",
-                MoveType::Walk => "Walk",
-                MoveType::Jump => "Jump",
-                MoveType::HiJump => "High Jump",
-                MoveType::Dash => "Dash",
-                MoveType::Fly => "Fly",
-                MoveType::Melee => "Melee",
-                MoveType::Magic => "Magic",
-                MoveType::MeleeSpecial => "Melee Special",
-                MoveType::MagicSpecial => "Magic Special",
-                MoveType::Super => "Super",
-                MoveType::Followup => "Follow Up",
-                MoveType::AirDash => "Air Dash",
-                MoveType::AirMelee => "Air Melee",
-                MoveType::AirMagic => "Air Magic",
-                MoveType::AirMeleeSpecial => "Air Melee Special",
-                MoveType::AirMagicSpecial => "Air Magic Special",
-                MoveType::AirSuper => "Air Super",
-                MoveType::AirFollowup => "Air Followup",
-                MoveType::Hitstun => "Hitstun",
-                MoveType::Blockstun => "Blockstun",
-                MoveType::WrongBlockstun => "Wrong Blockstun",
+                CommandType::Idle => "Idle",
+                CommandType::Walk => "Walk",
+                CommandType::Jump => "Jump",
+                CommandType::HiJump => "High Jump",
+                CommandType::Dash => "Dash",
+                CommandType::Fly => "Fly",
+                CommandType::Melee => "Melee",
+                CommandType::Magic => "Magic",
+                CommandType::MeleeSpecial => "Melee Special",
+                CommandType::MagicSpecial => "Magic Special",
+                CommandType::Super => "Super",
+                CommandType::Followup => "Follow Up",
+                CommandType::AirDash => "Air Dash",
+                CommandType::AirMelee => "Air Melee",
+                CommandType::AirMagic => "Air Magic",
+                CommandType::AirMeleeSpecial => "Air Melee Special",
+                CommandType::AirMagicSpecial => "Air Magic Special",
+                CommandType::AirSuper => "Air Super",
+                CommandType::AirFollowup => "Air Followup",
+                CommandType::Hitstun => "Hitstun",
+                CommandType::Blockstun => "Blockstun",
+                CommandType::WrongBlockstun => "Wrong Blockstun",
             }
         )
     }
@@ -172,11 +172,11 @@ impl Display for MoveType {
 pub struct CancelSet<Id> {
     // TODO (HASHSET)
     #[skip]
-    pub always: HashSet<MoveType>,
+    pub always: HashSet<CommandType>,
     #[skip]
-    pub hit: HashSet<MoveType>,
+    pub hit: HashSet<CommandType>,
     #[skip]
-    pub block: HashSet<MoveType>,
+    pub block: HashSet<CommandType>,
     #[serde(bound(
         serialize = "HashSet<Id>: Serialize",
         deserialize = "HashSet<Id>: Deserialize<'de>"

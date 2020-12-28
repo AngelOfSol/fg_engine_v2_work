@@ -257,8 +257,16 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         
         [x] HashMap<Input, Vec<CommandId>>
         [x] HashMap<CommandId, Command>
+        [x] review rebeat/self-gatling checks to see if theres a better approach
+            [x] rebeat
+            [x] self-gatling
+        [] remove old state_data (state_type/req meter)
+        [] remove migration code
+        [] remove old command_list code (macros and all)
     
     [] rework chaining description
+        [] remove disallow/allow
+        [] rename command_types to more accurate names
         [] hit
             [] allow based on command type
             [] allow based on specific command
@@ -283,8 +291,6 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] forward/neutral/back jump/superjump/border-escape
         [] 1/2/3/4/6/7/8/9 fly
         [] ExtraData::Hitstun -> hitstun: Option<usize>
-    [] your bullets go away on getting hit
-        [] maybe attacker gets extra meter for destroying bullets this way
     [] controller support update
         [] add ltrigger/rtrigger
         [] add left/right stick support
@@ -292,12 +298,15 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] add untech
         [] when you enter untech without limit bounce tech
         [] untech is basically just airhitstun
+    [] your bullets go away on getting hit
+        [] maybe attacker gets extra meter for destroying bullets this way
     [] move to u32 for current_frame
     [] implement SMP
         [] more like same move limit
         [] figure out how to deal with bullets
         [] the first move in a combo is NOT recorded
         [] smp_list = Vec<(move_id, absolute_frame_move_started_on)>
+        [] smp_lsit = Vec<CommandId>
     [] add hardlimits on velocity due to gravity
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly

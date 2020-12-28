@@ -1,4 +1,4 @@
-use crate::character::state::components::{CancelSet, MoveType};
+use crate::character::state::components::{CancelSet, CommandType};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
@@ -19,7 +19,7 @@ impl CancelSetUi {
         }
     }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, state_list: &[String], data: &mut CancelSet<String>) {
-        for move_type in MoveType::all() {
+        for move_type in CommandType::all() {
             ui.text(&im_str!("{}:", move_type));
             let id = ui.push_id(&format!("{}", move_type));
             let token = ui.push_style_color(StyleColor::Text, GREEN);

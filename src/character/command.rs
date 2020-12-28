@@ -1,4 +1,4 @@
-use super::state::components::MoveType;
+use super::state::components::CommandType;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +16,7 @@ pub enum Requirement<Id> {
     Grounded,
     Airborne,
     NotLockedOut,
-    CanCancel(MoveType),
+    CanCancel(CommandType),
     #[serde(alias = "CanCancelFrom")]
     CancelFrom(Id),
     NoCancelFrom(Id),
@@ -39,6 +39,6 @@ impl Default for Effect {
 }
 impl<Id> Default for Requirement<Id> {
     fn default() -> Self {
-        Self::CanCancel(MoveType::default())
+        Self::CanCancel(CommandType::default())
     }
 }

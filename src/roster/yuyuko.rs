@@ -30,7 +30,7 @@ use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{
     character::{
         command::Command,
-        state::components::{Flags, GlobalGraphic, MoveType},
+        state::components::{CommandType, Flags, GlobalGraphic},
     },
     input::Input,
 };
@@ -441,7 +441,7 @@ impl YuyukoPlayer {
                     .find(|(command_id, item)| {
                         item.reqs.iter().all(|requirement| match requirement {
                             Requirement::HasAirActions => state.air_actions > 0,
-                            Requirement::InBlockstun => state_type == MoveType::Blockstun,
+                            Requirement::InBlockstun => state_type == CommandType::Blockstun,
                             Requirement::NotLockedOut => state.lockout == 0,
                             Requirement::CanCancel(new_state_type) => {
                                 let is_self = item.state_id == move_id;
@@ -530,7 +530,7 @@ impl YuyukoPlayer {
         let move_data = &self.data.states[move_id];
         let flags = &move_data.flags[*frame];
 
-        if move_data.state_type == MoveType::Fly && *move_id != MoveId::FlyEnd {
+        if move_data.state_type == CommandType::Fly && *move_id != MoveId::FlyEnd {
             self.state.spirit_gauge -= 5; // TODO, move this spirit cost to an editor value
             if self.state.spirit_gauge <= 0 {
                 *move_id = MoveId::FlyEnd;
@@ -617,7 +617,7 @@ impl YuyukoPlayer {
         if flags.airborne && self.state.position.y - collision.half_size.y <= -4 {
             let mut reset_hitstun = true;
             let mut reset_velocity = true;
-            self.state.current_state = if state.state_type == MoveType::Hitstun {
+            self.state.current_state = if state.state_type == CommandType::Hitstun {
                 let combo = self.state.current_combo.as_mut().unwrap();
                 match combo.ground_action {
                     GroundAction::Knockdown => (0, MoveId::HitGround),
@@ -732,7 +732,7 @@ impl YuyukoPlayer {
 
         let dir = (opponent_position - self.state.position).x.signum();
         let facing_opponent = dir == self.state.facing.collision_multiplier().x;
-        if (move_type.is_movement() && facing_opponent) || move_type == MoveType::Fly {
+        if (move_type.is_movement() && facing_opponent) || move_type == CommandType::Fly {
             // only apply bonus/penalty if we're facing the opponent
             // fly is the exception to this because it reorients our facing direction
             // TODO stop having fly reorient facing direction
@@ -1476,7 +1476,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn draw_order_priority(&self) -> i32 {
         match self.data.states[&self.state.current_state.1].state_type {
-            MoveType::Blockstun | MoveType::WrongBlockstun | MoveType::Hitstun => -1,
+            CommandType::Blockstun | CommandType::WrongBlockstun | CommandType::Hitstun => -1,
             _ => 0,
         }
     }
