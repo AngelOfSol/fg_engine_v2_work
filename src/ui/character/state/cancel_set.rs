@@ -2,23 +2,17 @@ use crate::character::state::components::{CancelSet, CommandType};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
-pub struct CancelSetUi {
-    //state_list: Vec<String>,
-    new_disallow: String,
-}
+pub struct CancelSetUi {}
 
 const GREEN: [f32; 4] = [0.2, 1.0, 0.2, 1.0];
 const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 
 impl CancelSetUi {
-    pub fn new(default_disallow: String) -> CancelSetUi {
-        CancelSetUi {
-            new_disallow: default_disallow,
-            //state_list,
-        }
+    pub fn new() -> CancelSetUi {
+        CancelSetUi {}
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, state_list: &[String], data: &mut CancelSet<String>) {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet) {
         for move_type in CommandType::all() {
             ui.text(&im_str!("{}:", move_type));
             let id = ui.push_id(&format!("{}", move_type));
@@ -38,38 +32,8 @@ impl CancelSetUi {
         ui.separator();
 
         ui.checkbox(im_str!("Self Gatling"), &mut data.self_gatling);
-        ui.separator();
-
-        ui.text(im_str!("Disallowed"));
-        let mut to_delete = None;
-        for item in data.disallow.iter() {
-            let id = ui.push_id(item);
-            {
-                let token = ui.push_style_color(StyleColor::Text, RED);
-                ui.text(im_str!("{}", item));
-                token.pop(ui);
-            }
-            ui.same_line(0.0);
-            if ui.small_button(im_str!("Delete")) {
-                to_delete = Some(item.clone());
-            }
-            id.pop(ui);
-        }
-        if let Some(item) = to_delete {
-            data.disallow.remove(&item);
-        }
-        ui.combo_items(
-            im_str!("##Combo"),
-            &mut self.new_disallow,
-            &state_list,
-            &|item| im_str!("{}", item).into(),
-        );
-
-        if ui.small_button(im_str!("Add")) && self.new_disallow.is_empty() {
-            data.disallow.insert(self.new_disallow.clone());
-        }
     }
-    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet<String>) {
+    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet) {
         ui.text(im_str!("Always"));
         let token = ui.push_style_color(StyleColor::Text, GREEN);
         for move_type in data.always.iter() {
@@ -92,15 +56,5 @@ impl CancelSetUi {
             ui.text(im_str!("{}", move_type));
         }
         token.pop(ui);
-
-        if !data.disallow.is_empty() {
-            ui.separator();
-            ui.text(im_str!("Disallowed"));
-            let token = ui.push_style_color(StyleColor::Text, RED);
-            for item in data.disallow.iter() {
-                ui.text(im_str!("{}", item));
-            }
-            token.pop(ui);
-        }
     }
 }

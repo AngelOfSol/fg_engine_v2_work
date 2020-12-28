@@ -165,7 +165,7 @@ impl Display for CommandType {
     }
 }
 #[derive(Clone, Deserialize, Serialize, Inspect, Default)]
-pub struct CancelSet<Id> {
+pub struct CancelSet {
     // TODO (HASHSET)
     #[skip]
     pub always: HashSet<CommandType>,
@@ -173,51 +173,36 @@ pub struct CancelSet<Id> {
     pub hit: HashSet<CommandType>,
     #[skip]
     pub block: HashSet<CommandType>,
-    #[serde(bound(
-        serialize = "HashSet<Id>: Serialize",
-        deserialize = "HashSet<Id>: Deserialize<'de>"
-    ))]
     #[serde(default)]
     pub self_gatling: bool,
-    #[skip]
-    pub disallow: HashSet<Id>,
 }
 
-impl<Id> PartialEq for CancelSet<Id>
-where
-    HashSet<Id>: PartialEq,
-{
+impl PartialEq for CancelSet {
     fn eq(&self, rhs: &Self) -> bool {
         self.always.eq(&rhs.always)
             && self.hit.eq(&rhs.hit)
             && self.block.eq(&rhs.block)
-            && self.disallow.eq(&rhs.disallow)
             && self.self_gatling == rhs.self_gatling
     }
 }
-impl<Id> Eq for CancelSet<Id> where HashSet<Id>: PartialEq {}
+impl Eq for CancelSet {}
 
-impl<Id> std::fmt::Debug for CancelSet<Id>
-where
-    HashSet<Id>: std::fmt::Debug,
-{
+impl std::fmt::Debug for CancelSet {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut builder = fmt.debug_struct("CancelSet");
         let _ = builder.field("always", &self.always);
         let _ = builder.field("hit", &self.hit);
         let _ = builder.field("block", &self.block);
-        let _ = builder.field("disallow", &self.disallow);
         builder.finish()
     }
 }
 
-impl<Id: Eq + Hash> CancelSet<Id> {
+impl CancelSet {
     pub fn new() -> Self {
         Self {
             always: HashSet::new(),
             hit: HashSet::new(),
             block: HashSet::new(),
-            disallow: HashSet::new(),
             self_gatling: false,
         }
     }

@@ -260,9 +260,9 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] review rebeat/self-gatling checks to see if theres a better approach
             [x] rebeat
             [x] self-gatling
-        [] remove old state_data (state_type/req meter)
-        [] remove migration code
-        [] remove old command_list code (macros and all)
+        [x] remove old state_data (state_type/req meter)
+        [x] remove migration code
+        [x] remove old command_list code (macros and all)
     
     [] rework chaining description
         [] remove disallow/allow

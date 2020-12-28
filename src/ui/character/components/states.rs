@@ -92,11 +92,6 @@ impl StatesUi {
                 if fix_state.on_expire.state_id == old {
                     fix_state.on_expire.state_id = new.clone();
                 }
-                for cancel_set in fix_state.cancels.frames_mut() {
-                    if cancel_set.disallow.remove(&old) {
-                        cancel_set.disallow.insert(new.clone());
-                    }
-                }
             }
 
             let new = data.guarentee_unique_key(new);

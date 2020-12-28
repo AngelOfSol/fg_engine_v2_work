@@ -26,7 +26,7 @@ pub struct StateUi {
     current_cancel_set_ui: Option<CancelSetUi>,
     spawner_ui_data: SpawnerUi,
     flags_state: <Timeline<Flags> as Inspect>::State,
-    cancels_state: <Timeline<CancelSet<String>> as Inspect>::State,
+    cancels_state: <Timeline<CancelSet> as Inspect>::State,
     hitbox_state: <Timeline<HitboxSet<String>> as Inspect>::State,
     animation_state: AnimationUi,
 }
@@ -173,7 +173,7 @@ impl StateUi {
         &mut self,
         ui: &Ui<'_>,
         state_list: &[String],
-        data: &mut Timeline<CancelSet<String>>,
+        data: &mut Timeline<CancelSet>,
     ) {
         let id = ui.push_id("Cancels");
         let current_cancel_set_ui = &mut self.current_cancel_set_ui;
@@ -185,7 +185,7 @@ impl StateUi {
             ui,
             |_, data| {
                 if current_cancel_set_ui.is_none() {
-                    *current_cancel_set_ui = Some(CancelSetUi::new(state_list[0].clone()));
+                    *current_cancel_set_ui = Some(CancelSetUi::new());
                 }
                 let ui_data = current_cancel_set_ui.as_mut().unwrap();
 
@@ -193,7 +193,7 @@ impl StateUi {
                 imgui::ChildWindow::new(im_str!("child frame"))
                     .size([0.0, 0.0])
                     .build(ui, || {
-                        ui_data.draw_ui(ui, state_list, data);
+                        ui_data.draw_ui(ui, data);
                     });
             },
         );

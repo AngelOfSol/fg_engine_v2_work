@@ -47,13 +47,8 @@ pub struct State<Id, AttackId, SoundType> {
     pub animations: Vec<Animation>,
     #[tab = "Flags"]
     pub flags: Timeline<Flags>,
-    #[serde(bound(
-        serialize = "CancelSet<Id>: Serialize",
-        deserialize = "CancelSet<Id>: Deserialize<'de>"
-    ))]
-    #[inspect_mut_bounds = "Id: Clone"]
     #[tab = "Cancels"]
-    pub cancels: Timeline<CancelSet<Id>>,
+    pub cancels: Timeline<CancelSet>,
     #[inspect_mut_bounds = "AttackId: Clone"]
     #[tab = "Hitboxes"]
     pub hitboxes: Timeline<HitboxSet<AttackId>>,
@@ -63,6 +58,7 @@ pub struct State<Id, AttackId, SoundType> {
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
     #[serde(default)]
     pub state_type: StateType,
+    #[inspect_mut_bounds = "Id: Clone"]
     #[serde(alias = "on_expire_state")]
     pub on_expire: OnExpire<Id>,
 }
@@ -92,7 +88,6 @@ impl<Id, AttackId, SoundType> PartialEq for State<Id, AttackId, SoundType>
 where
     Id: PartialEq,
     AttackId: PartialEq,
-    CancelSet<Id>: PartialEq,
 {
     fn eq(&self, rhs: &Self) -> bool {
         self.animations.eq(&rhs.animations)
@@ -107,7 +102,6 @@ impl<Id, AttackId, SoundType> Eq for State<Id, AttackId, SoundType>
 where
     Id: PartialEq,
     AttackId: PartialEq,
-    CancelSet<Id>: PartialEq,
 {
 }
 
@@ -115,7 +109,6 @@ impl<Id, AttackId, SoundType> std::fmt::Debug for State<Id, AttackId, SoundType>
 where
     Id: std::fmt::Debug,
     AttackId: std::fmt::Debug,
-    CancelSet<Id>: std::fmt::Debug,
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut builder = fmt.debug_struct("State");
