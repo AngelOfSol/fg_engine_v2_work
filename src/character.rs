@@ -34,7 +34,10 @@ pub struct PlayerCharacter {
     pub instance: EditorInstanceData,
 
     #[serde(default)]
-    pub commands: HashMap<Input, Vec<Command<String>>>,
+    pub input_map: HashMap<Input, Vec<String>>,
+
+    #[serde(default)]
+    pub command_map: HashMap<String, Command<String>>,
 }
 
 impl PlayerCharacter {
@@ -46,7 +49,8 @@ impl PlayerCharacter {
             sounds: HashSet::new(),
             graphics: HashMap::new(),
             instance: EditorInstanceData::new(),
-            commands: Default::default(),
+            command_map: Default::default(),
+            input_map: Default::default(),
         }
     }
 

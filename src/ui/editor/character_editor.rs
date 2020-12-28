@@ -1,4 +1,3 @@
-use crate::character::{command::Requirement, state::components::MoveType, PlayerCharacter};
 use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{AnimationGroupEditor, AttackInfoEditor, StateEditor};
 use crate::{
@@ -10,6 +9,10 @@ use crate::{character::components::AttackInfo, roster::command_list::generate_co
 use crate::{
     character::{command::Effect, state::EditorCharacterState},
     roster::moves::MoveId,
+};
+use crate::{
+    character::{command::Requirement, state::components::MoveType, PlayerCharacter},
+    roster::moves::CommandId,
 };
 use ggez::graphics;
 use ggez::{Context, GameResult};
@@ -237,7 +240,8 @@ pub struct CharacterEditor {
     transition: Transition,
     states_ui_data: StatesUi,
     attacks_ui_data: AttacksUi,
-    commands_state: <HashMap<Input, Vec<Command<String>>> as Inspect>::State,
+    command_map_state: <HashMap<String, Command<String>> as Inspect>::State,
+    input_map_state: <HashMap<Input, Vec<String>> as Inspect>::State,
 }
 
 impl AppState for CharacterEditor {
@@ -298,147 +302,163 @@ impl AppState for CharacterEditor {
             }
         }
 
-        pc.commands.clear();
-
         let old_cl = generate_command_list();
         for (input, moves) in old_cl.commands {
-            for move_id in moves {
-                let state = &pc.states.rest[&move_id.file_name()];
-                let move_type = state.state_type;
-                let mut command = Command {
-                    effects: vec![],
-                    reqs: vec![],
-                    state_id: move_id.file_name(),
-                    frame: 0,
-                };
+            let imap = pc.input_map.entry(input).or_default();
 
-                match move_id {
-                    MoveId::BorderEscapeJump | MoveId::MeleeRestitution => {
-                        command.effects.push(Effect::RefillSpirit);
-                        command.reqs.push(Requirement::Grounded);
-                        command.reqs.push(Requirement::InBlockstun);
-                        command.reqs.push(Requirement::NotLockedOut);
-                    }
-                    MoveId::FlyStart => {
-                        command.effects.push(Effect::UseAirAction);
-                        command.reqs.push(Requirement::HasAirActions);
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveId::ForwardDashEnd => command
-                        .reqs
-                        .push(Requirement::CancelFrom(MoveId::ForwardDash.file_name())),
-                    MoveId::ToCrouch => command
-                        .reqs
-                        .push(Requirement::CancelFrom(MoveId::Stand.file_name())),
-                    MoveId::ToStand => command
-                        .reqs
-                        .push(Requirement::CancelFrom(MoveId::Crouch.file_name())),
+            let new_command_ids: Vec<_> = moves
+                .iter()
+                .map(|item| item.into_command().to_string())
+                .filter(|item| !imap.contains(item))
+                .collect();
 
-                    MoveId::Crouch => command
-                        .reqs
-                        .push(Requirement::NoCancelFrom(MoveId::ToCrouch.file_name())),
-                    MoveId::Stand => {
-                        command
-                            .reqs
-                            .push(Requirement::NoCancelFrom(MoveId::ToStand.file_name()));
-                        command
-                            .reqs
-                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
-                        command.reqs.push(Requirement::NoCancelFrom(
-                            MoveId::ForwardDashEnd.file_name(),
-                        ))
-                    }
-                    MoveId::WalkForward => {
-                        command
-                            .reqs
-                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
-                        command.reqs.push(Requirement::NoCancelFrom(
-                            MoveId::ForwardDashStart.file_name(),
-                        ));
-                        command.reqs.push(Requirement::NoCancelFrom(
-                            MoveId::ForwardDashEnd.file_name(),
-                        ))
-                    }
-                    MoveId::ForwardDashStart => {
-                        command
-                            .reqs
-                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
-                        command.reqs.push(Requirement::NoCancelFrom(
-                            MoveId::ForwardDashEnd.file_name(),
-                        ));
-                    }
-                    _ => {}
-                }
+            imap.extend(new_command_ids.into_iter());
 
-                match move_type {
-                    x @ MoveType::Idle
-                    | x @ MoveType::Walk
-                    | x @ MoveType::Jump
-                    | x @ MoveType::HiJump
-                    | x @ MoveType::Dash
-                    | x @ MoveType::Melee
-                    | x @ MoveType::Magic
-                    | x @ MoveType::MeleeSpecial
-                    | x @ MoveType::MagicSpecial
-                    | x @ MoveType::Super
-                    | x @ MoveType::Followup => {
-                        command.reqs.push(Requirement::CanCancel(x));
-                        command.reqs.push(Requirement::Grounded)
-                    }
-                    x @ MoveType::Fly => {
-                        command.reqs.push(Requirement::CanCancel(x));
-                        command.reqs.push(Requirement::Airborne)
-                    }
-                    MoveType::AirMelee => {
-                        command.reqs.push(Requirement::CanCancel(MoveType::Melee));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirDash => {
-                        command.reqs.push(Requirement::CanCancel(MoveType::Dash));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirMagic => {
-                        command.reqs.push(Requirement::CanCancel(MoveType::Magic));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirMeleeSpecial => {
-                        command
-                            .reqs
-                            .push(Requirement::CanCancel(MoveType::MeleeSpecial));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirMagicSpecial => {
-                        command
-                            .reqs
-                            .push(Requirement::CanCancel(MoveType::MagicSpecial));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirSuper => {
-                        command.reqs.push(Requirement::CanCancel(MoveType::Super));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    MoveType::AirFollowup => {
-                        command
-                            .reqs
-                            .push(Requirement::CanCancel(MoveType::Followup));
-                        command.reqs.push(Requirement::Airborne);
-                    }
-                    _ => {}
-                }
+            let new_cmds: Vec<_> = moves
+                .into_iter()
+                .filter(|item| {
+                    !pc.command_map
+                        .contains_key(&item.into_command().to_string())
+                })
+                .map(|move_id| {
+                    let state = &pc.states.rest[&move_id.file_name()];
+                    let move_type = state.state_type;
+                    let mut command = Command {
+                        effects: vec![],
+                        reqs: vec![],
+                        state_id: move_id.file_name(),
+                        frame: 0,
+                    };
 
-                if state.minimum_meter_required > 0 {
-                    command
-                        .reqs
-                        .push(Requirement::Meter(state.minimum_meter_required));
-                }
-                if state.minimum_spirit_required > 0 {
-                    command
-                        .reqs
-                        .push(Requirement::Spirit(state.minimum_spirit_required))
-                }
+                    match move_id {
+                        MoveId::BorderEscapeJump | MoveId::MeleeRestitution => {
+                            command.effects.push(Effect::RefillSpirit);
+                            command.reqs.push(Requirement::Grounded);
+                            command.reqs.push(Requirement::InBlockstun);
+                            command.reqs.push(Requirement::NotLockedOut);
+                        }
+                        MoveId::FlyStart => {
+                            command.effects.push(Effect::UseAirAction);
+                            command.reqs.push(Requirement::HasAirActions);
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveId::ForwardDashEnd => command
+                            .reqs
+                            .push(Requirement::CancelFrom(MoveId::ForwardDash.file_name())),
+                        MoveId::ToCrouch => command
+                            .reqs
+                            .push(Requirement::CancelFrom(MoveId::Stand.file_name())),
+                        MoveId::ToStand => command
+                            .reqs
+                            .push(Requirement::CancelFrom(MoveId::Crouch.file_name())),
 
-                pc.commands.entry(input).or_default().push(command);
-            }
+                        MoveId::Crouch => command
+                            .reqs
+                            .push(Requirement::NoCancelFrom(MoveId::ToCrouch.file_name())),
+                        MoveId::Stand => {
+                            command
+                                .reqs
+                                .push(Requirement::NoCancelFrom(MoveId::ToStand.file_name()));
+                            command
+                                .reqs
+                                .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                            command.reqs.push(Requirement::NoCancelFrom(
+                                MoveId::ForwardDashEnd.file_name(),
+                            ))
+                        }
+                        MoveId::WalkForward => {
+                            command
+                                .reqs
+                                .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                            command.reqs.push(Requirement::NoCancelFrom(
+                                MoveId::ForwardDashStart.file_name(),
+                            ));
+                            command.reqs.push(Requirement::NoCancelFrom(
+                                MoveId::ForwardDashEnd.file_name(),
+                            ))
+                        }
+                        MoveId::ForwardDashStart => {
+                            command
+                                .reqs
+                                .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                            command.reqs.push(Requirement::NoCancelFrom(
+                                MoveId::ForwardDashEnd.file_name(),
+                            ));
+                        }
+                        _ => {}
+                    }
+
+                    match move_type {
+                        x @ MoveType::Idle
+                        | x @ MoveType::Walk
+                        | x @ MoveType::Jump
+                        | x @ MoveType::HiJump
+                        | x @ MoveType::Dash
+                        | x @ MoveType::Melee
+                        | x @ MoveType::Magic
+                        | x @ MoveType::MeleeSpecial
+                        | x @ MoveType::MagicSpecial
+                        | x @ MoveType::Super
+                        | x @ MoveType::Followup => {
+                            command.reqs.push(Requirement::CanCancel(x));
+                            command.reqs.push(Requirement::Grounded)
+                        }
+                        x @ MoveType::Fly => {
+                            command.reqs.push(Requirement::CanCancel(x));
+                            command.reqs.push(Requirement::Airborne)
+                        }
+                        MoveType::AirMelee => {
+                            command.reqs.push(Requirement::CanCancel(MoveType::Melee));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirDash => {
+                            command.reqs.push(Requirement::CanCancel(MoveType::Dash));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirMagic => {
+                            command.reqs.push(Requirement::CanCancel(MoveType::Magic));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirMeleeSpecial => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(MoveType::MeleeSpecial));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirMagicSpecial => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(MoveType::MagicSpecial));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirSuper => {
+                            command.reqs.push(Requirement::CanCancel(MoveType::Super));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        MoveType::AirFollowup => {
+                            command
+                                .reqs
+                                .push(Requirement::CanCancel(MoveType::Followup));
+                            command.reqs.push(Requirement::Airborne);
+                        }
+                        _ => {}
+                    }
+
+                    if state.minimum_meter_required > 0 {
+                        command
+                            .reqs
+                            .push(Requirement::Meter(state.minimum_meter_required));
+                    }
+                    if state.minimum_spirit_required > 0 {
+                        command
+                            .reqs
+                            .push(Requirement::Spirit(state.minimum_spirit_required))
+                    }
+                    (move_id.into_command().to_string(), command)
+                })
+                .collect();
+
+            pc.command_map.extend(new_cmds.into_iter());
         }
 
         Ok(())
@@ -567,9 +587,17 @@ impl AppState for CharacterEditor {
                             });
 
                             TabItem::new(im_str!("Command List")).build(ui, || {
-                                self.resource.borrow_mut().commands.inspect_mut(
+                                self.resource.borrow_mut().command_map.inspect_mut(
                                     "",
-                                    &mut self.commands_state,
+                                    &mut self.command_map_state,
+                                    ui,
+                                )
+                            });
+
+                            TabItem::new(im_str!("Input Map")).build(ui, || {
+                                self.resource.borrow_mut().input_map.inspect_mut(
+                                    "",
+                                    &mut self.input_map_state,
                                     ui,
                                 )
                             })
@@ -639,7 +667,8 @@ impl CharacterEditor {
             states_ui_data,
             attacks_ui_data,
             transition: Transition::None,
-            commands_state: Default::default(),
+            input_map_state: Default::default(),
+            command_map_state: Default::default(),
         }
     }
 }

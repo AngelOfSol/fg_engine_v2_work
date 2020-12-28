@@ -40,7 +40,7 @@ use attacks::AttackId;
 use ggez::{Context, GameResult};
 use hecs::{EntityBuilder, World};
 use inspect_design::Inspect;
-use moves::MoveId;
+use moves::{CommandId, MoveId};
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
@@ -68,8 +68,10 @@ pub struct Yuyuko {
     pub sounds: SoundList<YuyukoSound>,
     #[tab = "Graphics"]
     pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
+    #[tab = "Inputs"]
+    pub input_map: HashMap<Input, Vec<CommandId>>,
     #[tab = "Commands"]
-    pub commands: HashMap<Input, Vec<Command<MoveId>>>,
+    pub command_map: HashMap<CommandId, Command<MoveId>>,
 }
 
 impl std::fmt::Debug for Yuyuko {
@@ -95,7 +97,8 @@ impl Yuyuko {
             command_list: command_list::generate_command_list(),
             sounds: data.sounds,
             graphics: data.graphics,
-            commands: data.commands,
+            command_map: data.command_map,
+            input_map: data.input_map,
         })
     }
 }
@@ -109,7 +112,8 @@ pub struct YuyukoData {
     #[serde(default = "SoundList::new")]
     sounds: SoundList<YuyukoSound>,
     graphics: HashMap<YuyukoGraphic, AnimationGroup>,
-    commands: HashMap<Input, Vec<Command<MoveId>>>,
+    input_map: HashMap<Input, Vec<CommandId>>,
+    command_map: HashMap<CommandId, Command<MoveId>>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -431,8 +435,9 @@ impl YuyukoPlayer {
                 let data = self.data.as_ref();
                 let possible_new_move = inputs
                     .iter()
-                    .flat_map(|item| data.commands.get(item).into_iter())
+                    .flat_map(|item| data.input_map.get(item))
                     .flat_map(|item| item.iter())
+                    .map(|item| &data.command_map[item])
                     .find(|item| {
                         item.reqs.iter().all(|requirement| match requirement {
                             Requirement::HasAirActions => state.air_actions > 0,
