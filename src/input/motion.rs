@@ -5,11 +5,11 @@ use super::{
     parsing::parse_input,
 };
 use super::{InputState, MOTION_DIRECTION_SIZE};
-use inspect_design::Inspect;
+use inspect_design::traits::*;
 use nom::Finish;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Inspect)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Input {
     Idle(DirectedAxis),
     PressButton(DirectedAxis, ButtonSet),
@@ -19,6 +19,36 @@ pub enum Input {
     SuperJump(DirectedAxis),
 }
 
+impl Inspect for Input {
+    const FLATTEN: bool = true;
+    type State = Option<String>;
+    fn inspect(&self, label: &str, _: &mut Self::State, ui: &imgui::Ui<'_>) {
+        ui.text(imgui::im_str!("{}: {}", label, self))
+    }
+}
+
+impl InspectMut for Input {
+    fn inspect_mut(&mut self, label: &str, state: &mut Self::State, ui: &imgui::Ui<'_>) {
+        let text = state.get_or_insert_with(|| format!("{}", self));
+
+        let color_token = if text.parse::<Input>().is_err() {
+            ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0])
+        } else {
+            ui.push_style_color(
+                imgui::StyleColor::Text,
+                ui.style_color(imgui::StyleColor::Text),
+            )
+        };
+
+        text.inspect_mut(label, &mut (), ui);
+
+        if let Ok(input) = text.parse() {
+            *self = input;
+        }
+
+        color_token.pop(ui);
+    }
+}
 impl Serialize for Input {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -34,10 +64,16 @@ impl<'de> Deserialize<'de> for Input {
     where
         D: Deserializer<'de>,
     {
-        let value = <&str>::deserialize(deserializer)?;
+        let value = String::deserialize(deserializer)?;
         value
             .parse()
             .map_err(|err| serde::de::Error::custom(format!("{:?}", err)))
+    }
+}
+
+impl Debug for Input {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 
@@ -385,7 +421,7 @@ fn read_recent_button_set<'a>(
 
 use std::{
     collections::HashSet,
-    fmt::{Display, Formatter},
+    fmt::{Debug, Display, Formatter},
     str::FromStr,
 };
 #[derive(Clone, Debug)]

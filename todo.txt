@@ -245,13 +245,16 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
     [x] remove dependency on keyframe
     [] rework command system
-        [] state.on_expire: MoveId -> { frame: usize, move_id: MoveId }
-        [] command_list: MoveId -> CommandId
-        [] Command [indexed by CommandId] {
-            type: CommandType,
+        [x] state.on_expire: MoveId -> { frame: usize, move_id: MoveId }
+        [x] command_list: Input -> Command
+        [x] Command  {
             reqs: Vec<Requirements>,
             effects: Vec<Effects>,
         }
+        [] implement new command system
+            [] requirements
+            [] Effects
+    
     [] rework chaining description
         [] hit
             [] allow based on command type

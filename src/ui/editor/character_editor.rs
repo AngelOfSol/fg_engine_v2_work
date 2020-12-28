@@ -1,19 +1,26 @@
-use crate::assets::Assets;
-use crate::character::components::AttackInfo;
-use crate::character::state::EditorCharacterState;
-use crate::character::PlayerCharacter;
+use crate::character::{command::Requirement, state::components::MoveType, PlayerCharacter};
 use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{AnimationGroupEditor, AttackInfoEditor, StateEditor};
 use crate::{
     app_state::{AppContext, AppState, Transition},
     graphics::animation_group::AnimationGroup,
 };
+use crate::{assets::Assets, character::command::Command, input::Input};
+use crate::{character::components::AttackInfo, roster::command_list::generate_command_list};
+use crate::{
+    character::{command::Effect, state::EditorCharacterState},
+    roster::moves::MoveId,
+};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
-use std::cell::{Ref, RefCell, RefMut};
+use inspect_design::traits::{Inspect, InspectMut};
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    collections::HashMap,
+};
 
 use super::instance_data_editor::InstanceDataEditor;
 
@@ -230,6 +237,7 @@ pub struct CharacterEditor {
     transition: Transition,
     states_ui_data: StatesUi,
     attacks_ui_data: AttacksUi,
+    commands_state: <HashMap<Input, Vec<Command<String>>> as Inspect>::State,
 }
 
 impl AppState for CharacterEditor {
@@ -238,6 +246,104 @@ impl AppState for CharacterEditor {
     }
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+        let mut pc = self.resource.borrow_mut();
+        pc.commands.clear();
+
+        let old_cl = generate_command_list();
+        for (input, moves) in old_cl.commands {
+            for move_id in moves {
+                let state = &pc.states.rest[&move_id.file_name()];
+                let move_type = state.state_type;
+                let mut command = Command {
+                    effects: vec![],
+                    reqs: vec![],
+                    state_id: move_id.file_name(),
+                    frame: 0,
+                };
+
+                match move_id {
+                    MoveId::BorderEscapeJump | MoveId::MeleeRestitution => {
+                        command.effects.push(Effect::RefillSpirit);
+                        command.reqs.push(Requirement::Grounded);
+                        command.reqs.push(Requirement::InBlockstun);
+                        command.reqs.push(Requirement::NotLockedOut);
+                    }
+                    MoveId::FlyStart => {
+                        command.effects.push(Effect::UseAirAction);
+                        command.reqs.push(Requirement::HasAirActions);
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    _ => {}
+                }
+
+                match move_type {
+                    x @ MoveType::Idle
+                    | x @ MoveType::Walk
+                    | x @ MoveType::Jump
+                    | x @ MoveType::HiJump
+                    | x @ MoveType::Dash
+                    | x @ MoveType::Melee
+                    | x @ MoveType::Magic
+                    | x @ MoveType::MeleeSpecial
+                    | x @ MoveType::MagicSpecial
+                    | x @ MoveType::Super
+                    | x @ MoveType::Followup
+                    | x @ MoveType::Fly => {
+                        command.reqs.push(Requirement::CanCancel(x));
+                        command.reqs.push(Requirement::Grounded)
+                    }
+                    MoveType::AirMelee => {
+                        command.reqs.push(Requirement::CanCancel(MoveType::Melee));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirDash => {
+                        command.reqs.push(Requirement::CanCancel(MoveType::Dash));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirMagic => {
+                        command.reqs.push(Requirement::CanCancel(MoveType::Magic));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirMeleeSpecial => {
+                        command
+                            .reqs
+                            .push(Requirement::CanCancel(MoveType::MeleeSpecial));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirMagicSpecial => {
+                        command
+                            .reqs
+                            .push(Requirement::CanCancel(MoveType::MagicSpecial));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirSuper => {
+                        command.reqs.push(Requirement::CanCancel(MoveType::Super));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    MoveType::AirFollowup => {
+                        command
+                            .reqs
+                            .push(Requirement::CanCancel(MoveType::Followup));
+                        command.reqs.push(Requirement::Airborne);
+                    }
+                    _ => {}
+                }
+
+                if state.minimum_meter_required > 0 {
+                    command
+                        .reqs
+                        .push(Requirement::Meter(state.minimum_meter_required));
+                }
+                if state.minimum_spirit_required > 0 {
+                    command
+                        .reqs
+                        .push(Requirement::Spirit(state.minimum_spirit_required))
+                }
+
+                pc.commands.entry(input).or_default().push(command);
+            }
+        }
+
         Ok(())
     }
     fn draw(
@@ -344,22 +450,35 @@ impl AppState for CharacterEditor {
                         }
                     });
                 imgui::Window::new(im_str!("Attacks"))
-                    .size([300.0, 526.0], Condition::Once)
+                    .size([600.0, 526.0], Condition::Once)
                     .position([1200.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let edit_change = self
-                            .attacks_ui_data
-                            .draw_ui(ui, &mut self.resource.borrow_mut().attacks);
-                        if let Some(attack) = edit_change {
-                            self.transition = Transition::Push(Box::new(
-                                AttackInfoEditor::new(AttackResource {
-                                    data: self.resource.clone(),
-                                    attack,
-                                })
-                                .unwrap(),
-                            ));
-                        }
+                        TabBar::new(im_str!("attack tabs")).build(ui, || {
+                            TabItem::new(im_str!("Attacks")).build(ui, || {
+                                let edit_change = self
+                                    .attacks_ui_data
+                                    .draw_ui(ui, &mut self.resource.borrow_mut().attacks);
+                                if let Some(attack) = edit_change {
+                                    self.transition = Transition::Push(Box::new(
+                                        AttackInfoEditor::new(AttackResource {
+                                            data: self.resource.clone(),
+                                            attack,
+                                        })
+                                        .unwrap(),
+                                    ));
+                                }
+                            });
+
+                            TabItem::new(im_str!("Command List")).build(ui, || {
+                                self.resource.borrow_mut().commands.inspect_mut(
+                                    "",
+                                    &mut self.commands_state,
+                                    ui,
+                                )
+                            })
+                        });
                     });
+
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Player Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
@@ -423,6 +542,7 @@ impl CharacterEditor {
             states_ui_data,
             attacks_ui_data,
             transition: Transition::None,
+            commands_state: Default::default(),
         }
     }
 }

@@ -1,8 +1,10 @@
+pub mod command;
 pub mod components;
 pub mod state;
 
-use crate::graphics::animation_group::AnimationGroup;
 use crate::{assets::Assets, game_object::properties::InstanceData};
+use crate::{graphics::animation_group::AnimationGroup, input::Input};
+use command::Command;
 use components::{Attacks, EditorStates, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
@@ -30,6 +32,10 @@ pub struct PlayerCharacter {
 
     #[serde(default)]
     pub instance: EditorInstanceData,
+
+    #[serde(default)]
+    #[serde(rename = "command_list")]
+    pub commands: HashMap<Input, Vec<Command<String>>>,
 }
 
 impl PlayerCharacter {
@@ -41,6 +47,7 @@ impl PlayerCharacter {
             sounds: HashSet::new(),
             graphics: HashMap::new(),
             instance: EditorInstanceData::new(),
+            commands: Default::default(),
         }
     }
 

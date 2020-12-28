@@ -1,9 +1,7 @@
-mod attacks;
-mod command_list;
-mod moves;
+pub mod attacks;
+pub mod command_list;
+pub mod moves;
 
-use crate::character::state::components::{Flags, GlobalGraphic, MoveType};
-use crate::game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
@@ -19,12 +17,23 @@ use crate::roster::generic_character::OpaqueStateData;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
 use crate::{assets::Assets, game_object::constructors::Construct};
+use crate::{
+    character::command::Requirement,
+    game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer},
+};
 use crate::{character::components::Properties, game_object::constructors::Constructor};
 use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
+use crate::{
+    character::{
+        command::Command,
+        state::components::{Flags, GlobalGraphic, MoveType},
+    },
+    input::Input,
+};
 use crate::{command_list::CommandList, game_object::state::Timer};
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
 use attacks::AttackId;
@@ -59,6 +68,8 @@ pub struct Yuyuko {
     pub sounds: SoundList<YuyukoSound>,
     #[tab = "Graphics"]
     pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
+    #[tab = "Commands"]
+    pub commands: HashMap<Input, Command<MoveId>>,
 }
 
 impl std::fmt::Debug for Yuyuko {
@@ -84,6 +95,7 @@ impl Yuyuko {
             command_list: command_list::generate_command_list(),
             sounds: data.sounds,
             graphics: data.graphics,
+            commands: data.commands,
         })
     }
 }
@@ -97,6 +109,7 @@ pub struct YuyukoData {
     #[serde(default = "SoundList::new")]
     sounds: SoundList<YuyukoSound>,
     graphics: HashMap<YuyukoGraphic, AnimationGroup>,
+    commands: HashMap<Input, Command<MoveId>>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -405,6 +418,8 @@ impl YuyukoPlayer {
                 self.state.facing,
                 state_type.buffer_window(),
             );
+            // TODO move to better handling for this
+            // inputs should be able to detect releases
             if move_id == MoveId::Fly {
                 if input.last().unwrap()[Button::E].is_pressed() {
                     (frame, move_id)
@@ -412,6 +427,43 @@ impl YuyukoPlayer {
                     (0, MoveId::FlyEnd)
                 }
             } else {
+                let possible_new_move =
+                    inputs
+                        .iter()
+                        .map(|item| &self.data.commands[item])
+                        .find(|item| {
+                            item.reqs.iter().all(|requirement| match requirement {
+                                Requirement::HasAirActions => self.state.air_actions > 0,
+                                Requirement::InBlockstun => state_type == MoveType::Blockstun,
+                                Requirement::NotLockedOut => self.state.lockout == 0,
+                                Requirement::CanCancel(new_state_type) => {
+                                    let is_self = item.state_id == move_id;
+                                    let is_allowed_cancel = match self.state.allowed_cancels {
+                                        AllowedCancel::Hit => cancels.hit.contains(new_state_type),
+                                        AllowedCancel::Block => {
+                                            cancels.block.contains(new_state_type)
+                                        }
+                                        AllowedCancel::Always => false,
+                                    } || cancels
+                                        .always
+                                        .contains(new_state_type);
+
+                                    let can_rebeat =
+                                        !self.state.rebeat_chain.contains(&item.state_id);
+
+                                    ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
+                                        && is_allowed_cancel
+                                }
+                                Requirement::Meter(value) => self.state.meter >= *value,
+                                Requirement::Spirit(value) => self.state.spirit_gauge >= *value,
+                                Requirement::Airborne => flags.airborne,
+                                Requirement::Grounded => !flags.airborne,
+                                Requirement::CanCancelFrom(previous_state) => {
+                                    previous_state == &move_id
+                                }
+                            })
+                        });
+
                 let possible_new_move = self
                     .data
                     .command_list
