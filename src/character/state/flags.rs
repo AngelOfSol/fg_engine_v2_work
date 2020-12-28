@@ -28,6 +28,10 @@ impl Hittable {
 pub struct Flags {
     pub melee: Hittable,
     pub bullet: Hittable,
+    #[serde(default)]
+    pub air: Hittable,
+    #[serde(default)]
+    pub foot: Hittable,
     pub can_block: bool,
     #[serde(default)]
     pub grazing: bool,
@@ -82,6 +86,8 @@ impl Flags {
         Self {
             melee: Hittable::Hit,
             bullet: Hittable::Hit,
+            air: Hittable::Hit,
+            foot: Hittable::Hit,
             spirit_cost: 0,
             meter_cost: 0,
             spirit_delay: 0,

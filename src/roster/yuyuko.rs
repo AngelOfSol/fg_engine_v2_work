@@ -783,6 +783,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                 Some(
                     if attack_info.magic && flags.bullet.is_invuln()
                         || attack_info.melee && flags.melee.is_invuln()
+                        || attack_info.air && flags.air.is_invuln()
+                        || attack_info.foot && flags.foot.is_invuln()
                         || self
                             .state
                             .current_combo
