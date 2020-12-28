@@ -71,19 +71,6 @@ impl StateUi {
 
         ui.same_line(0.0);
         let _ = ui.input_whole(im_str!("Frame"), &mut data.on_expire.frame);
-
-        ui.separator();
-        ui.text(im_str!("Cancel Requirements"));
-        ui.input_whole(
-            im_str!("Minmum Spirit Requried"),
-            &mut data.minimum_spirit_required,
-        )
-        .unwrap();
-        ui.input_whole(
-            im_str!("Minmum Meter Requried"),
-            &mut data.minimum_meter_required,
-        )
-        .unwrap();
     }
     pub fn draw_animation_editor(
         &mut self,

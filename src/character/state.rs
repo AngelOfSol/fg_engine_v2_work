@@ -65,8 +65,6 @@ pub struct State<Id, AttackId, SoundType> {
     pub state_type: CommandType,
     #[serde(alias = "on_expire_state")]
     pub on_expire: OnExpire<Id>,
-    pub minimum_spirit_required: i32,
-    pub minimum_meter_required: i32,
 }
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default, PartialEq, Eq, Debug)]
@@ -103,9 +101,6 @@ where
             && self.hitboxes.eq(&rhs.hitboxes)
             && self.state_type.eq(&rhs.state_type)
             && self.on_expire.eq(&rhs.on_expire)
-            && self
-                .minimum_spirit_required
-                .eq(&rhs.minimum_spirit_required)
     }
 }
 impl<Id, AttackId, SoundType> Eq for State<Id, AttackId, SoundType>
@@ -129,7 +124,6 @@ where
         let _ = builder.field("hitboxes", &self.hitboxes);
         let _ = builder.field("state_type", &self.state_type);
         let _ = builder.field("on_expire_state", &self.on_expire);
-        let _ = builder.field("minimum_spirit_required", &self.minimum_spirit_required);
         builder.finish()
     }
 }
@@ -260,8 +254,6 @@ impl EditorCharacterState {
             hitboxes: Timeline::with_data(vec![(0, HitboxSet::new())], 1).unwrap(),
             state_type: default_move_type(),
             on_expire: OnExpire::default(),
-            minimum_spirit_required: 0,
-            minimum_meter_required: 0,
             spawns: Vec::new(),
             sounds: Vec::new(),
         }
