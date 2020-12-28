@@ -7,7 +7,7 @@ use crate::player_list::PlayerList;
 use crate::roster::YuyukoUiState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
-use inspect_design::traits::InspectMut;
+use inspect_design::traits::*;
 
 type TrainingMatch = Match<crate::replay::ReplayWriterFile>;
 
@@ -22,6 +22,7 @@ pub struct TrainingMode {
     game_state: TrainingMatch,
     dirty: bool,
     inspect_state: YuyukoUiState,
+    fps: u32,
 }
 
 impl FromMatchSettings for TrainingMode {
@@ -51,6 +52,7 @@ impl TrainingMode {
             )?,
             dirty: true,
             inspect_state: Default::default(),
+            fps: 60,
         })
     }
 }
@@ -97,7 +99,7 @@ impl AppState for TrainingMode {
         }
 
         let mut count = 0;
-        while ggez::timer::check_update_time(ctx, 60) {
+        while ggez::timer::check_update_time(ctx, self.fps) {
             count += 1;
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
@@ -158,6 +160,7 @@ impl AppState for TrainingMode {
             self.dirty = false;
 
             let inspect_state = &mut self.inspect_state;
+            let fps = &mut self.fps;
             match self.game_state.players.p1_mut() {
                 crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
                     //
@@ -167,9 +170,15 @@ impl AppState for TrainingMode {
                             imgui::Window::new(&imgui::im_str!("Window"))
                                 .no_nav()
                                 .build(ui, || {
-                                    std::rc::Rc::make_mut(&mut value.data).inspect_mut(
-                                        "yuyu",
-                                        inspect_state,
+                                    // std::rc::Rc::make_mut(&mut value.data).inspect_mut(
+                                    //     "yuyu",
+                                    //     inspect_state,
+                                    //     ui,
+                                    // );
+                                    fps.inspect_mut("fps", &mut (), ui);
+                                    value.state.current_state.inspect(
+                                        "state",
+                                        &mut Default::default(),
                                         ui,
                                     );
                                 });

@@ -34,7 +34,6 @@ pub struct PlayerCharacter {
     pub instance: EditorInstanceData,
 
     #[serde(default)]
-    #[serde(rename = "command_list")]
     pub commands: HashMap<Input, Vec<Command<String>>>,
 }
 

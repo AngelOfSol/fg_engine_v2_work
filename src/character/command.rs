@@ -17,7 +17,9 @@ pub enum Requirement<Id> {
     Airborne,
     NotLockedOut,
     CanCancel(MoveType),
-    CanCancelFrom(Id),
+    #[serde(alias = "CanCancelFrom")]
+    CancelFrom(Id),
+    NoCancelFrom(Id),
     Meter(i32),
     Spirit(i32),
 }

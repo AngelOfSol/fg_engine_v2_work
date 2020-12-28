@@ -247,6 +247,57 @@ impl AppState for CharacterEditor {
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
         let mut pc = self.resource.borrow_mut();
+
+        for state in pc.states.rest.values_mut() {
+            for frame in state.cancels.frames_mut() {
+                let add: Vec<_> = frame
+                    .hit
+                    .iter()
+                    .filter_map(|item| match item {
+                        MoveType::AirDash => Some(MoveType::Dash),
+                        MoveType::AirMelee => Some(MoveType::Melee),
+                        MoveType::AirMagic => Some(MoveType::Magic),
+                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
+                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
+                        MoveType::AirSuper => Some(MoveType::Super),
+                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        _ => None,
+                    })
+                    .collect();
+                frame.hit.extend(add.into_iter());
+                let add: Vec<_> = frame
+                    .always
+                    .iter()
+                    .filter_map(|item| match item {
+                        MoveType::AirDash => Some(MoveType::Dash),
+                        MoveType::AirMelee => Some(MoveType::Melee),
+                        MoveType::AirMagic => Some(MoveType::Magic),
+                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
+                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
+                        MoveType::AirSuper => Some(MoveType::Super),
+                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        _ => None,
+                    })
+                    .collect();
+                frame.always.extend(add.into_iter());
+                let add: Vec<_> = frame
+                    .block
+                    .iter()
+                    .filter_map(|item| match item {
+                        MoveType::AirDash => Some(MoveType::Dash),
+                        MoveType::AirMelee => Some(MoveType::Melee),
+                        MoveType::AirMagic => Some(MoveType::Magic),
+                        MoveType::AirMeleeSpecial => Some(MoveType::MeleeSpecial),
+                        MoveType::AirMagicSpecial => Some(MoveType::MagicSpecial),
+                        MoveType::AirSuper => Some(MoveType::Super),
+                        MoveType::AirFollowup => Some(MoveType::Followup),
+                        _ => None,
+                    })
+                    .collect();
+                frame.block.extend(add.into_iter());
+            }
+        }
+
         pc.commands.clear();
 
         let old_cl = generate_command_list();
@@ -273,6 +324,49 @@ impl AppState for CharacterEditor {
                         command.reqs.push(Requirement::HasAirActions);
                         command.reqs.push(Requirement::Airborne);
                     }
+                    MoveId::ForwardDashEnd => command
+                        .reqs
+                        .push(Requirement::CancelFrom(MoveId::ForwardDash.file_name())),
+                    MoveId::ToCrouch => command
+                        .reqs
+                        .push(Requirement::CancelFrom(MoveId::Stand.file_name())),
+                    MoveId::ToStand => command
+                        .reqs
+                        .push(Requirement::CancelFrom(MoveId::Crouch.file_name())),
+
+                    MoveId::Crouch => command
+                        .reqs
+                        .push(Requirement::NoCancelFrom(MoveId::ToCrouch.file_name())),
+                    MoveId::Stand => {
+                        command
+                            .reqs
+                            .push(Requirement::NoCancelFrom(MoveId::ToStand.file_name()));
+                        command
+                            .reqs
+                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                        command.reqs.push(Requirement::NoCancelFrom(
+                            MoveId::ForwardDashEnd.file_name(),
+                        ))
+                    }
+                    MoveId::WalkForward => {
+                        command
+                            .reqs
+                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                        command.reqs.push(Requirement::NoCancelFrom(
+                            MoveId::ForwardDashStart.file_name(),
+                        ));
+                        command.reqs.push(Requirement::NoCancelFrom(
+                            MoveId::ForwardDashEnd.file_name(),
+                        ))
+                    }
+                    MoveId::ForwardDashStart => {
+                        command
+                            .reqs
+                            .push(Requirement::NoCancelFrom(MoveId::ForwardDash.file_name()));
+                        command.reqs.push(Requirement::NoCancelFrom(
+                            MoveId::ForwardDashEnd.file_name(),
+                        ));
+                    }
                     _ => {}
                 }
 
@@ -287,10 +381,13 @@ impl AppState for CharacterEditor {
                     | x @ MoveType::MeleeSpecial
                     | x @ MoveType::MagicSpecial
                     | x @ MoveType::Super
-                    | x @ MoveType::Followup
-                    | x @ MoveType::Fly => {
+                    | x @ MoveType::Followup => {
                         command.reqs.push(Requirement::CanCancel(x));
                         command.reqs.push(Requirement::Grounded)
+                    }
+                    x @ MoveType::Fly => {
+                        command.reqs.push(Requirement::CanCancel(x));
+                        command.reqs.push(Requirement::Airborne)
                     }
                     MoveType::AirMelee => {
                         command.reqs.push(Requirement::CanCancel(MoveType::Melee));

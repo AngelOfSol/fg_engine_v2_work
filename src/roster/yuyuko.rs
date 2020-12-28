@@ -69,7 +69,7 @@ pub struct Yuyuko {
     #[tab = "Graphics"]
     pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
     #[tab = "Commands"]
-    pub commands: HashMap<Input, Command<MoveId>>,
+    pub commands: HashMap<Input, Vec<Command<MoveId>>>,
 }
 
 impl std::fmt::Debug for Yuyuko {
@@ -109,7 +109,7 @@ pub struct YuyukoData {
     #[serde(default = "SoundList::new")]
     sounds: SoundList<YuyukoSound>,
     graphics: HashMap<YuyukoGraphic, AnimationGroup>,
-    commands: HashMap<Input, Command<MoveId>>,
+    commands: HashMap<Input, Vec<Command<MoveId>>>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -427,101 +427,97 @@ impl YuyukoPlayer {
                     (0, MoveId::FlyEnd)
                 }
             } else {
-                let possible_new_move =
-                    inputs
-                        .iter()
-                        .map(|item| &self.data.commands[item])
-                        .find(|item| {
-                            item.reqs.iter().all(|requirement| match requirement {
-                                Requirement::HasAirActions => self.state.air_actions > 0,
-                                Requirement::InBlockstun => state_type == MoveType::Blockstun,
-                                Requirement::NotLockedOut => self.state.lockout == 0,
-                                Requirement::CanCancel(new_state_type) => {
-                                    let is_self = item.state_id == move_id;
-                                    let is_allowed_cancel = match self.state.allowed_cancels {
-                                        AllowedCancel::Hit => cancels.hit.contains(new_state_type),
-                                        AllowedCancel::Block => {
-                                            cancels.block.contains(new_state_type)
-                                        }
-                                        AllowedCancel::Always => false,
-                                    } || cancels
-                                        .always
-                                        .contains(new_state_type);
+                let state = &mut self.state;
+                let data = self.data.as_ref();
+                let possible_new_move = inputs
+                    .iter()
+                    .flat_map(|item| data.commands.get(item).into_iter())
+                    .flat_map(|item| item.iter())
+                    .find(|item| {
+                        item.reqs.iter().all(|requirement| match requirement {
+                            Requirement::HasAirActions => state.air_actions > 0,
+                            Requirement::InBlockstun => state_type == MoveType::Blockstun,
+                            Requirement::NotLockedOut => state.lockout == 0,
+                            Requirement::CanCancel(new_state_type) => {
+                                let is_self = item.state_id == move_id;
+                                let is_allowed_cancel = match state.allowed_cancels {
+                                    AllowedCancel::Hit => cancels.hit.contains(new_state_type),
+                                    AllowedCancel::Block => cancels.block.contains(new_state_type),
+                                    AllowedCancel::Always => false,
+                                } || cancels
+                                    .always
+                                    .contains(new_state_type);
 
-                                    let can_rebeat =
-                                        !self.state.rebeat_chain.contains(&item.state_id);
+                                let can_rebeat = !state.rebeat_chain.contains(&item.state_id);
 
-                                    ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
-                                        && is_allowed_cancel
-                                }
-                                Requirement::Meter(value) => self.state.meter >= *value,
-                                Requirement::Spirit(value) => self.state.spirit_gauge >= *value,
-                                Requirement::Airborne => flags.airborne,
-                                Requirement::Grounded => !flags.airborne,
-                                Requirement::CanCancelFrom(previous_state) => {
-                                    previous_state == &move_id
-                                }
-                            })
-                        });
-
-                let possible_new_move = self
-                    .data
-                    .command_list
-                    .get_commands(&inputs)
-                    .into_iter()
-                    .copied()
-                    .filter(|new_move_id| {
-                        let new_state_type = &self.data.states[&new_move_id].state_type;
-
-                        let is_self = *new_move_id == move_id;
-
-                        let is_allowed_cancel = match self.state.allowed_cancels {
-                            AllowedCancel::Hit => cancels.hit.contains(new_state_type),
-                            AllowedCancel::Block => cancels.block.contains(new_state_type),
-                            AllowedCancel::Always => false,
-                        } || cancels.always.contains(new_state_type)
-                            && !cancels.disallow.contains(&new_move_id);
-
-                        let can_rebeat = !self.state.rebeat_chain.contains(&new_move_id);
-
-                        let has_air_actions = self.state.air_actions != 0;
-
-                        let has_required_spirit = self.state.spirit_gauge
-                            >= self.data.states[&new_move_id].minimum_spirit_required;
-
-                        let has_required_meter = self.state.meter
-                            >= self.data.states[&new_move_id].minimum_meter_required;
-
-                        let in_blockstun = state_type == MoveType::Blockstun;
-
-                        let locked_out = self.state.lockout > 0;
-
-                        let grounded = !flags.airborne;
-
-                        match *new_move_id {
-                            MoveId::BorderEscapeJump => {
-                                in_blockstun && grounded && has_required_meter && !locked_out
-                            }
-                            MoveId::MeleeRestitution => {
-                                in_blockstun && grounded && has_required_meter && !locked_out
-                            }
-                            MoveId::FlyStart => !is_self && is_allowed_cancel && has_air_actions,
-                            _ => {
                                 ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
                                     && is_allowed_cancel
-                                    && has_required_spirit
-                                    && has_required_meter
+                            }
+                            Requirement::Meter(value) => state.meter >= *value,
+                            Requirement::Spirit(value) => state.spirit_gauge >= *value,
+                            Requirement::Airborne => flags.airborne,
+                            Requirement::Grounded => !flags.airborne,
+                            Requirement::CancelFrom(previous_state) => previous_state == &move_id,
+                            Requirement::NoCancelFrom(previous_state) => previous_state != &move_id,
+                        })
+                    });
+
+                let ret = possible_new_move
+                    .map(|command| (command.frame, command.state_id))
+                    .unwrap_or((frame, move_id));
+
+                if let Some(command) = possible_new_move {
+                    let state_id = command.state_id;
+
+                    for effect in command.effects.iter() {
+                        match effect {
+                            crate::character::command::Effect::UseAirAction => {
+                                state.air_actions = state.air_actions.saturating_sub(1)
+                            }
+                            crate::character::command::Effect::UseMeter(meter) => {
+                                state.meter -= meter
+                            }
+                            crate::character::command::Effect::RefillSpirit => {
+                                state.spirit_gauge = self.data.properties.max_spirit_gauge
                             }
                         }
-                    })
-                    .fold(None, |acc, item| acc.or(Some(item)))
-                    .map(|new_move| (0, new_move));
+                    }
+                    state.allowed_cancels = AllowedCancel::Always;
+                    state.last_hit_using = None;
+                    state.rebeat_chain.insert(state_id);
 
-                if let Some((_, new_move)) = &possible_new_move {
-                    self.on_enter_move(input, *new_move);
+                    match state_id {
+                        MoveId::BorderEscapeJump => {
+                            state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                                input.last().unwrap().axis,
+                                state.facing,
+                            ));
+                        }
+                        MoveId::Jump | MoveId::SuperJump => {
+                            state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
+                                input.last().unwrap().axis,
+                                state.facing,
+                            ));
+                        }
+                        MoveId::FlyStart => {
+                            let mut dir =
+                                DirectedAxis::from_facing(input.last().unwrap().axis, state.facing);
+                            if dir.is_backward() {
+                                state.facing = state.facing.invert();
+                                dir = dir.invert();
+                            }
+                            state.extra_data =
+                                ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
+                                    DirectedAxis::Forward
+                                } else {
+                                    dir
+                                });
+                        }
+                        _ => (),
+                    }
                 }
 
-                possible_new_move.unwrap_or((frame, move_id))
+                ret
             }
         };
     }

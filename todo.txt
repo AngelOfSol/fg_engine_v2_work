@@ -251,9 +251,12 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             reqs: Vec<Requirements>,
             effects: Vec<Effects>,
         }
-        [] implement new command system
-            [] requirements
-            [] Effects
+        [x] implement new command system
+            [x] requirements
+            [x] Effects
+        
+        [] HashMap<Input, Vec<CommandId>>
+        [] HashMap<CommandId, Command>
     
     [] rework chaining description
         [] hit

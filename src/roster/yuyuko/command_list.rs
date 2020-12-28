@@ -47,11 +47,11 @@ pub fn generate_command_list() -> CommandList<MoveId> {
         numpad!(6) => MoveId::WalkForward,
         numpad!(4) => MoveId::WalkBackward,
 
-        numpad!(1), numpad!(2), numpad!(3) => MoveId::Crouch,
         numpad!(1), numpad!(2), numpad!(3) => MoveId::ToCrouch,
+        numpad!(1), numpad!(2), numpad!(3) => MoveId::Crouch,
 
-        numpad!(5) => MoveId::Stand,
         numpad!(5) => MoveId::ToStand,
+        numpad!(5) => MoveId::Stand,
         numpad!(5) => MoveId::ForwardDashEnd
     }
 }
