@@ -1,3 +1,6 @@
+use crate::character::components::AttackInfo;
+use crate::character::state::EditorCharacterState;
+use crate::character::PlayerCharacter;
 use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
 use crate::ui::editor::{AnimationGroupEditor, AttackInfoEditor, StateEditor};
 use crate::{
@@ -5,15 +8,6 @@ use crate::{
     graphics::animation_group::AnimationGroup,
 };
 use crate::{assets::Assets, character::command::Command, input::Input};
-use crate::{character::components::AttackInfo, roster::command_list::generate_command_list};
-use crate::{
-    character::{command::Effect, state::EditorCharacterState},
-    roster::moves::MoveId,
-};
-use crate::{
-    character::{command::Requirement, state::components::CommandType, PlayerCharacter},
-    roster::moves::CommandId,
-};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;

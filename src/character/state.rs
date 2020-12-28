@@ -20,7 +20,7 @@ use crate::{
     assets::{Assets, ValueAlpha},
     game_object::constructors::Constructor,
 };
-use cancel_set::{CancelSet, CommandType};
+use cancel_set::{CancelSet, StateType};
 use flags::Flags;
 use ggez::{Context, GameResult};
 use hitbox_set::HitboxSet;
@@ -61,8 +61,8 @@ pub struct State<Id, AttackId, SoundType> {
     pub spawns: Vec<SpawnerInfo>,
     #[tab = "Spawns"]
     pub sounds: Vec<SoundPlayInfo<SoundType>>,
-    #[serde(default = "default_move_type")]
-    pub state_type: CommandType,
+    #[serde(default)]
+    pub state_type: StateType,
     #[serde(alias = "on_expire_state")]
     pub on_expire: OnExpire<Id>,
 }
@@ -129,8 +129,8 @@ where
 }
 
 pub type EditorCharacterState = State<String, String, String>;
-fn default_move_type() -> CommandType {
-    CommandType::Idle
+fn default_move_type() -> StateType {
+    StateType::Idle
 }
 impl<
         Id: Serialize + DeserializeOwned + Eq + Hash + Default,

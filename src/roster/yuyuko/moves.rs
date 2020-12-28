@@ -87,40 +87,6 @@ impl MoveId {
             .trim_matches('\"')
             .to_owned()
     }
-
-    pub fn into_command(self) -> CommandId {
-        match self {
-            MoveId::Attack5A => CommandId::Attack5A,
-            MoveId::Attack2A => CommandId::Attack2A,
-            MoveId::Attack5B => CommandId::Attack5B,
-            MoveId::Attack3B => CommandId::Attack3B,
-            MoveId::Attack2B => CommandId::Attack2B,
-            MoveId::Attack6B => CommandId::Attack6B,
-            MoveId::Attack5C => CommandId::Attack5C,
-            MoveId::Attack2C => CommandId::Attack2C,
-            MoveId::Air5A => CommandId::Air5A,
-            MoveId::Air8A => CommandId::Air8A,
-            MoveId::Air5B => CommandId::Air5B,
-            MoveId::Air2B => CommandId::Air2B,
-            MoveId::Air5C => CommandId::Air5C,
-            MoveId::Air2C => CommandId::Air2C,
-            MoveId::Stand => CommandId::Stand,
-            MoveId::ToStand => CommandId::StandUp,
-            MoveId::Crouch => CommandId::Crouch,
-            MoveId::ToCrouch => CommandId::CrouchDown,
-            MoveId::WalkBackward => CommandId::WalkBackward,
-            MoveId::WalkForward => CommandId::WalkForward,
-            MoveId::ForwardDashStart => CommandId::ForwardDash,
-            MoveId::ForwardDashEnd => CommandId::DashSkid,
-            MoveId::BackDash => CommandId::BackDash,
-            MoveId::Jump => CommandId::Jump,
-            MoveId::SuperJump => CommandId::SuperJump,
-            MoveId::FlyStart => CommandId::Fly,
-            MoveId::BorderEscapeJump => CommandId::BorderEscapeJump,
-            MoveId::MeleeRestitution => CommandId::MeleeRestitution,
-            x => panic!("found {}, expected valid commandId", x),
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Display, Inspect)]

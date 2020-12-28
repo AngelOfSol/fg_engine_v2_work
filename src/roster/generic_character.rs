@@ -20,7 +20,6 @@ use crate::{
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{HitAction, HitEffect, HitResult};
-use inspect_design::Inspect;
 use rodio::Device;
 use std::collections::{HashMap, HashSet};
 

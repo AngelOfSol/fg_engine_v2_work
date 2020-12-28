@@ -1,7 +1,7 @@
 use super::{AnimationUi, CancelSetUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
 use crate::{
     character::state::{
-        components::{CancelSet, CommandType, Flags, HitboxSet, SoundPlayInfo},
+        components::{CancelSet, Flags, HitboxSet, SoundPlayInfo, StateType},
         SpawnerInfo,
     },
     timeline,
@@ -58,7 +58,7 @@ impl StateUi {
         ui.combo_items(
             im_str!("State Type"),
             &mut data.state_type,
-            CommandType::all(),
+            StateType::all(),
             &|item| im_str!("{}", item).into(),
         );
 

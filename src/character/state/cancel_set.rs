@@ -6,6 +6,72 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash, Inspect)]
+pub enum StateType {
+    Idle,
+
+    #[serde(alias = "Walk")]
+    #[serde(alias = "Jump")]
+    #[serde(alias = "HiJump")]
+    #[serde(alias = "Dash")]
+    #[serde(alias = "Fly")]
+    Movement,
+
+    #[serde(alias = "Melee")]
+    #[serde(alias = "Magic")]
+    #[serde(alias = "MeleeSpecial")]
+    #[serde(alias = "MagicSpecial")]
+    #[serde(alias = "Super")]
+    #[serde(alias = "Followup")]
+    Attack,
+
+    Hitstun,
+
+    #[serde(alias = "WrongBlockstun")]
+    Blockstun,
+}
+
+const ALL_STATE_TYPES: [StateType; 5] = [
+    StateType::Idle,
+    StateType::Movement,
+    StateType::Attack,
+    StateType::Hitstun,
+    StateType::Blockstun,
+];
+
+impl Display for StateType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                StateType::Idle => "Idle",
+                StateType::Movement => "Movement",
+                StateType::Attack => "Attack",
+                StateType::Hitstun => "Hitstun",
+                StateType::Blockstun => "Blockstun",
+            }
+        )
+    }
+}
+impl StateType {
+    pub fn buffer_window(self) -> usize {
+        if matches!(self, Self::Attack) {
+            16
+        } else {
+            8
+        }
+    }
+    pub fn all() -> &'static [StateType; 5] {
+        &ALL_STATE_TYPES
+    }
+}
+
+impl Default for StateType {
+    fn default() -> Self {
+        Self::Idle
+    }
+}
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq, Serialize, Hash, Inspect)]
 pub enum CommandType {
     Idle,
     Walk,
@@ -64,76 +130,6 @@ const ALL_MOVE_TYPES: [CommandType; 22] = [
 impl CommandType {
     pub fn all() -> &'static [CommandType; 22] {
         &ALL_MOVE_TYPES
-    }
-
-    pub fn buffer_window(self) -> usize {
-        if self.is_attack() {
-            16
-        } else {
-            8
-        }
-    }
-
-    pub fn is_attack(self) -> bool {
-        match self {
-            CommandType::Melee
-            | CommandType::Magic
-            | CommandType::MeleeSpecial
-            | CommandType::MagicSpecial
-            | CommandType::Super
-            | CommandType::Followup
-            | CommandType::AirMelee
-            | CommandType::AirMagic
-            | CommandType::AirMeleeSpecial
-            | CommandType::AirMagicSpecial
-            | CommandType::AirSuper
-            | CommandType::AirFollowup => true,
-            CommandType::Hitstun
-            | CommandType::Blockstun
-            | CommandType::WrongBlockstun
-            | CommandType::Idle
-            | CommandType::Walk
-            | CommandType::Jump
-            | CommandType::HiJump
-            | CommandType::Dash
-            | CommandType::Fly
-            | CommandType::AirDash => false,
-        }
-    }
-    pub fn is_movement(self) -> bool {
-        match self {
-            CommandType::Walk
-            | CommandType::Jump
-            | CommandType::HiJump
-            | CommandType::Dash
-            | CommandType::Fly
-            | CommandType::AirDash => true,
-            CommandType::Hitstun
-            | CommandType::Melee
-            | CommandType::Magic
-            | CommandType::MeleeSpecial
-            | CommandType::MagicSpecial
-            | CommandType::Super
-            | CommandType::Followup
-            | CommandType::AirMelee
-            | CommandType::AirMagic
-            | CommandType::AirMeleeSpecial
-            | CommandType::AirMagicSpecial
-            | CommandType::AirSuper
-            | CommandType::AirFollowup
-            | CommandType::Blockstun
-            | CommandType::WrongBlockstun
-            | CommandType::Idle => false,
-        }
-    }
-    pub fn is_stun(self) -> bool {
-        matches!(
-            self,
-            CommandType::Hitstun | CommandType::Blockstun | CommandType::WrongBlockstun
-        )
-    }
-    pub fn is_blockstun(self) -> bool {
-        matches!(self, CommandType::Blockstun | CommandType::WrongBlockstun)
     }
 }
 impl Display for CommandType {

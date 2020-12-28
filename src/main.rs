@@ -9,8 +9,6 @@ use std::path;
 #[macro_use]
 mod imgui_extra;
 #[macro_use]
-mod command_list;
-#[macro_use]
 mod input_macros;
 
 mod app_state;

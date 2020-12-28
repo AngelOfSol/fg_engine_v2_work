@@ -1,8 +1,7 @@
 pub mod attacks;
-pub mod command_list;
 pub mod moves;
 
-use crate::game_match::{FlashType, PlayArea, UiElements};
+use crate::game_object::state::Timer;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
@@ -26,15 +25,18 @@ use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
 };
+use crate::{
+    character::state::components::StateType,
+    game_match::{FlashType, PlayArea, UiElements},
+};
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{
     character::{
         command::Command,
-        state::components::{CommandType, Flags, GlobalGraphic},
+        state::components::{Flags, GlobalGraphic},
     },
     input::Input,
 };
-use crate::{command_list::CommandList, game_object::state::Timer};
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
 use attacks::AttackId;
 use ggez::{Context, GameResult};
@@ -62,8 +64,6 @@ pub struct Yuyuko {
     pub attacks: AttackList,
     #[tab = "Properties"]
     pub properties: Properties,
-    #[tab = "Commands"]
-    pub command_list: CommandList<MoveId>,
     #[skip]
     pub sounds: SoundList<YuyukoSound>,
     #[tab = "Graphics"]
@@ -94,7 +94,6 @@ impl Yuyuko {
             states: data.states,
             properties: data.properties,
             attacks: data.attacks,
-            command_list: command_list::generate_command_list(),
             sounds: data.sounds,
             graphics: data.graphics,
             command_map: data.command_map,
@@ -313,41 +312,6 @@ impl YuyukoPlayer {
             collision::Vec2::zeros()
         }
     }
-    fn on_enter_move(&mut self, input: &[InputState], move_id: MoveId) {
-        self.state.allowed_cancels = AllowedCancel::Always;
-        self.state.last_hit_using = None;
-        //self.state.rebeat_chain.insert(move_id);
-
-        match move_id {
-            MoveId::BorderEscapeJump => {
-                self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                    input.last().unwrap().axis,
-                    self.state.facing,
-                ));
-            }
-            MoveId::Jump | MoveId::SuperJump => {
-                self.state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                    input.last().unwrap().axis,
-                    self.state.facing,
-                ));
-            }
-            MoveId::FlyStart => {
-                self.state.air_actions -= 1;
-                let mut dir =
-                    DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
-                if dir.is_backward() {
-                    self.state.facing = self.state.facing.invert();
-                    dir = dir.invert();
-                }
-                self.state.extra_data = ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
-                    DirectedAxis::Forward
-                } else {
-                    dir
-                });
-            }
-            _ => (),
-        }
-    }
     fn in_corner(&self, play_area: &PlayArea) -> bool {
         let collision = self.collision();
         i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
@@ -359,7 +323,7 @@ impl YuyukoPlayer {
     fn handle_rebeat_data(&mut self) {
         let (_, move_id) = self.state.current_state;
 
-        if !self.data.states[&move_id].state_type.is_attack() {
+        if !matches!(self.data.states[&move_id].state_type, StateType::Attack) {
             self.state.rebeat_chain.clear();
         }
     }
@@ -387,7 +351,7 @@ impl YuyukoPlayer {
         let flags = &self.data.states[&move_id].flags[frame];
         let state_type = self.data.states[&move_id].state_type;
 
-        if state_type.is_stun() {
+        if matches!(state_type, StateType::Blockstun | StateType::Hitstun) {
             let hitstun = self.state.extra_data.unwrap_stun_mut();
             *hitstun -= 1;
             if *hitstun == 0 {
@@ -401,7 +365,7 @@ impl YuyukoPlayer {
                         },
                     );
                 } else {
-                    self.state.current_state = if state_type.is_blockstun() {
+                    self.state.current_state = if matches!(state_type, StateType::Blockstun) {
                         (0, MoveId::AirIdle)
                     } else {
                         (frame, move_id)
@@ -441,7 +405,7 @@ impl YuyukoPlayer {
                     .find(|(command_id, item)| {
                         item.reqs.iter().all(|requirement| match requirement {
                             Requirement::HasAirActions => state.air_actions > 0,
-                            Requirement::InBlockstun => state_type == CommandType::Blockstun,
+                            Requirement::InBlockstun => state_type == StateType::Blockstun,
                             Requirement::NotLockedOut => state.lockout == 0,
                             Requirement::CanCancel(new_state_type) => {
                                 let is_self = item.state_id == move_id;
@@ -530,7 +494,7 @@ impl YuyukoPlayer {
         let move_data = &self.data.states[move_id];
         let flags = &move_data.flags[*frame];
 
-        if move_data.state_type == CommandType::Fly && *move_id != MoveId::FlyEnd {
+        if *move_id == MoveId::Fly {
             self.state.spirit_gauge -= 5; // TODO, move this spirit cost to an editor value
             if self.state.spirit_gauge <= 0 {
                 *move_id = MoveId::FlyEnd;
@@ -617,7 +581,7 @@ impl YuyukoPlayer {
         if flags.airborne && self.state.position.y - collision.half_size.y <= -4 {
             let mut reset_hitstun = true;
             let mut reset_velocity = true;
-            self.state.current_state = if state.state_type == CommandType::Hitstun {
+            self.state.current_state = if state.state_type == StateType::Hitstun {
                 let combo = self.state.current_combo.as_mut().unwrap();
                 match combo.ground_action {
                     GroundAction::Knockdown => (0, MoveId::HitGround),
@@ -732,7 +696,7 @@ impl YuyukoPlayer {
 
         let dir = (opponent_position - self.state.position).x.signum();
         let facing_opponent = dir == self.state.facing.collision_multiplier().x;
-        if (move_type.is_movement() && facing_opponent) || move_type == CommandType::Fly {
+        if matches!(move_type, StateType::Movement) && facing_opponent {
             // only apply bonus/penalty if we're facing the opponent
             // fly is the exception to this because it reorients our facing direction
             // TODO stop having fly reorient facing direction
@@ -828,7 +792,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                         None
                     } else if attack_info.grazeable && flags.grazing {
                         Some(HitEffectType::Graze)
-                    } else if (state_type.is_blockstun()
+                    } else if ( matches!(state_type, StateType::Blockstun)
                         || (flags.can_block
                             // this is crossup protection
                             // if the attack is facing the same direction you're facing
@@ -1304,7 +1268,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         let (_, move_id) = &self.state.current_state;
         let state = &self.data.states[&move_id];
 
-        if state.state_type.is_stun()
+        if matches!(state.state_type, StateType::Hitstun | StateType::Blockstun)
             && self.in_corner(play_area)
             && self.state.hitstop == 0
             && self.state.should_pushback
@@ -1475,9 +1439,13 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
 
     fn draw_order_priority(&self) -> i32 {
-        match self.data.states[&self.state.current_state.1].state_type {
-            CommandType::Blockstun | CommandType::WrongBlockstun | CommandType::Hitstun => -1,
-            _ => 0,
+        if matches!(
+            self.data.states[&self.state.current_state.1].state_type,
+            StateType::Hitstun | StateType::Blockstun
+        ) {
+            -1
+        } else {
+            0
         }
     }
 
