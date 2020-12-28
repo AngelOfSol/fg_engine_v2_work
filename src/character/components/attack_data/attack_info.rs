@@ -3,20 +3,14 @@ use crate::typedefs::collision::{Int, Vec2};
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-pub mod version;
-
-pub type AttackInfo = AttackInfoV1;
-
-impl AttackInfoV1 {
-    pub fn into_modern(self) -> AttackInfoV1 {
-        self
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone, Inspect)]
-pub struct AttackInfoV1 {
+pub struct AttackInfo {
     pub melee: bool,
     pub magic: bool,
+    #[serde(default)]
+    pub air: bool,
+    #[serde(default)]
+    pub foot: bool,
     pub guard: Guard,
     pub air_unblockable: bool,
     pub can_counter_hit: bool,
@@ -36,11 +30,13 @@ pub struct AttackInfoV1 {
     pub on_wrongblock: WrongBlockInfo,
 }
 
-impl Default for AttackInfoV1 {
+impl Default for AttackInfo {
     fn default() -> Self {
         Self {
             melee: true,
             magic: false,
+            air: false,
+            foot: false,
             guard: Guard::Mid,
             air_unblockable: false,
             can_counter_hit: false,
@@ -342,8 +338,4 @@ fn default_air_force() -> Vec2 {
 
 fn default_ground_pushback() -> Int {
     10_00
-}
-
-fn default_hitstop() -> i32 {
-    10
 }
