@@ -69,7 +69,6 @@ impl StateUi {
             &|item| im_str!("{}", item).into(),
         );
 
-        ui.same_line(0.0);
         let _ = ui.input_whole(im_str!("Frame"), &mut data.on_expire.frame);
     }
     pub fn draw_animation_editor(

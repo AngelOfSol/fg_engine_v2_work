@@ -22,6 +22,12 @@ pub enum StateType {
     #[serde(alias = "MagicSpecial")]
     #[serde(alias = "Super")]
     #[serde(alias = "Followup")]
+    #[serde(alias = "AirMelee")]
+    #[serde(alias = "AirMagic")]
+    #[serde(alias = "AirMeleeSpecial")]
+    #[serde(alias = "AirMagicSpecial")]
+    #[serde(alias = "AirSuper")]
+    #[serde(alias = "AirFollowup")]
     Attack,
 
     Hitstun,
