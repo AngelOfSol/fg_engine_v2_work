@@ -255,8 +255,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [x] requirements
             [x] Effects
         
-        [] HashMap<Input, Vec<CommandId>>
-        [] HashMap<CommandId, Command>
+        [x] HashMap<Input, Vec<CommandId>>
+        [x] HashMap<CommandId, Command>
     
     [] rework chaining description
         [] hit

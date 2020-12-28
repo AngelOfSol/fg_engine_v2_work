@@ -25,7 +25,7 @@ use rodio::Device;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
-pub struct PlayerState<MoveId, SoundId> {
+pub struct PlayerState<MoveId, SoundId, CommandId> {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
@@ -39,7 +39,7 @@ pub struct PlayerState<MoveId, SoundId> {
     pub current_combo: Option<ComboState>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
-    pub rebeat_chain: HashSet<MoveId>,
+    pub rebeat_chain: HashSet<CommandId>,
     pub should_pushback: bool,
     pub sound_state: PlayerSoundState<SoundPath<SoundId>>,
     pub meter: i32,

@@ -229,7 +229,7 @@ pub struct YuyukoPlayer {
 
 use std::cell::RefCell;
 
-pub type YuyukoState = PlayerState<MoveId, YuyukoSound>;
+pub type YuyukoState = PlayerState<MoveId, YuyukoSound, CommandId>;
 
 impl YuyukoState {
     fn new(data: &Yuyuko) -> Self {
@@ -316,7 +316,7 @@ impl YuyukoPlayer {
     fn on_enter_move(&mut self, input: &[InputState], move_id: MoveId) {
         self.state.allowed_cancels = AllowedCancel::Always;
         self.state.last_hit_using = None;
-        self.state.rebeat_chain.insert(move_id);
+        //self.state.rebeat_chain.insert(move_id);
 
         match move_id {
             MoveId::BorderEscapeJump => {
@@ -437,8 +437,8 @@ impl YuyukoPlayer {
                     .iter()
                     .flat_map(|item| data.input_map.get(item))
                     .flat_map(|item| item.iter())
-                    .map(|item| &data.command_map[item])
-                    .find(|item| {
+                    .map(|item| (*item, &data.command_map[item]))
+                    .find(|(command_id, item)| {
                         item.reqs.iter().all(|requirement| match requirement {
                             Requirement::HasAirActions => state.air_actions > 0,
                             Requirement::InBlockstun => state_type == MoveType::Blockstun,
@@ -453,7 +453,7 @@ impl YuyukoPlayer {
                                     .always
                                     .contains(new_state_type);
 
-                                let can_rebeat = !state.rebeat_chain.contains(&item.state_id);
+                                let can_rebeat = !state.rebeat_chain.contains(&command_id);
 
                                 ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
                                     && is_allowed_cancel
@@ -468,12 +468,10 @@ impl YuyukoPlayer {
                     });
 
                 let ret = possible_new_move
-                    .map(|command| (command.frame, command.state_id))
+                    .map(|(_, command)| (command.frame, command.state_id))
                     .unwrap_or((frame, move_id));
 
-                if let Some(command) = possible_new_move {
-                    let state_id = command.state_id;
-
+                if let Some((command_id, command)) = possible_new_move {
                     for effect in command.effects.iter() {
                         match effect {
                             crate::character::command::Effect::UseAirAction => {
@@ -489,22 +487,22 @@ impl YuyukoPlayer {
                     }
                     state.allowed_cancels = AllowedCancel::Always;
                     state.last_hit_using = None;
-                    state.rebeat_chain.insert(state_id);
+                    state.rebeat_chain.insert(command_id);
 
-                    match state_id {
-                        MoveId::BorderEscapeJump => {
+                    match command_id {
+                        CommandId::BorderEscapeJump => {
                             state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                                 input.last().unwrap().axis,
                                 state.facing,
                             ));
                         }
-                        MoveId::Jump | MoveId::SuperJump => {
+                        CommandId::Jump | CommandId::SuperJump => {
                             state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
                                 input.last().unwrap().axis,
                                 state.facing,
                             ));
                         }
-                        MoveId::FlyStart => {
+                        CommandId::Fly => {
                             let mut dir =
                                 DirectedAxis::from_facing(input.last().unwrap().axis, state.facing);
                             if dir.is_backward() {
