@@ -18,10 +18,7 @@ TODO (2/15/2020):
             [] https://docs.rs/imgui/0.3.0/imgui/struct.Ui.html#method.is_window_focused
         [] use the following to stop names from actively being resorted on text_edit
             [] https://docs.rs/imgui/0.3.0/imgui/struct.Ui.html#method.is_item_active
-
 [x] remove dead code
-[] rework configuration into self stored config file, rather than ggez stored config file  
-    [] move back to official ggez versioning
 [x] make button check associated with a controller
 [x] controller select
     [x] selectable_players (p1 | p2)
@@ -35,7 +32,6 @@ TODO (2/15/2020):
         [x] if a gamepad press '->' || <B> || <Circle>
             [x] if p1 is selected and the gamepad is p1
                 [x] remove it from p1
-
     [x] if p2 is selectable
         [x] if a gamepad press '<-'
             [x] if p2 isn't selected
@@ -43,7 +39,6 @@ TODO (2/15/2020):
         [x] if a gamepad press '->' || <B> || <Circle>
             [x] if p2 is selected and the gamepad is p2
                 [x] remove it from p2
-
     [x] if (a gamepad press 'A' || 'start') && gamepad_id is assigned to p1 or p2 && all selectable players are selected
         [x] proceed to following screen
             [x] uses closure to create next state
@@ -60,23 +55,19 @@ TODO (2/15/2020):
                 [x] deselect p1 and return control
     [x] TBD: Handle Network selection
         [x] 
-
-[] hookup training mode
-    [x] create training mode appstate
-    [x] have it read the input for p1 to an input buffer
-    [x] have it read null input for p2
-    [x] pass those to the match
-    [x] RENDER
-    [x] move to standard array iteration for input buffer
-    [x] increase buffer window on input buffer
-        [x] for each button press start in the last X frames
-            [x] collate what button presses happened before it within Y frames, and pair them
-            [x] check if from that point onward, the motion is valid
-                [x] if so emit the input
-
+    [x] hookup training mode
+        [x] create training mode appstate
+        [x] have it read the input for p1 to an input buffer
+        [x] have it read null input for p2
+        [x] pass those to the match
+        [x] RENDER
+        [x] move to standard array iteration for input buffer
+        [x] increase buffer window on input buffer
+            [x] for each button press start in the last X frames
+                [x] collate what button presses happened before it within Y frames, and pair them
+                [x] check if from that point onward, the motion is valid
+                    [x] if so emit the input
     [x] ASK TWITTER ABOUT SINGLE vs 2/3 ROUNDS
-
-
     [x] add replay support
         [x] logger to file
             [x] training_mode
@@ -88,8 +79,6 @@ TODO (2/15/2020):
         [x] save inputs to same file
         [x] compression 
         [x] add versioning to it
-
-
     [x] rework for dynamic characters
         [x] move to enum basis for everything
         [x] rework macro impls to CharacterTrait with enum_dispatch
@@ -100,9 +89,7 @@ TODO (2/15/2020):
         [x] each hit creates an action
         [x] combine all the actions into one effect
         [x] for guard crush, we can choose what thing causes the guard crush and ignore the rest of the 
-https://www.gresearch.co.uk/article/defunctionalisation/
-
-    [] add sound support
+    [x] add sound support
         [x] support hit sound slot
         [x] support hit sound
         [x] support block sound
@@ -131,12 +118,12 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] implement guard crush flash
         [x] implement new VFX system ecsk dee
             [x] add global particle list
-        [] implement partial super flash
-        [] implement super flash sound
+        [x] implement partial super flash
+        [x] implement super flash sound
             [x] add global sounds to editor for character states
-    [] add desync checking via hashing gamestate
+    [x] add desync checking via hashing gamestate
         [x] FIX DESYNCS by fixing saving loading data
-    [] add meter
+    [x] add meter
         [x] remove orb crushing
         [x] add meter that slowly generates to 100 out of 200
         [x] render it
@@ -165,7 +152,6 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] have moving forward give meter
         [x] have backdashing and moving backward lose meter
         [x] add meter to editor 
-        
         [x] add defensive lock debuff
             [x] flag
                 [x] Modifier
@@ -178,23 +164,10 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] add combo ui
     [x] add self chaining for 2a/5a
     [x] ground bounce loses energy
-    [] create settings object
-        [] holds all settings
-            [] window properties
-            [] controls
-            [] sound settings
-    [] add palletes
-    [] add timeskipping functionality to watch replay
-        [] play/pause
-        [] rewind 5 seconds/fast forward 5seconds
-        [] play backwards
-        [] play forwards at 2x,4x,8x speed
-    
     [x] add rounds
         [x] first 5 seconds have a countdown
             [x] roudn start animation
             [x] text/graphic showing count down
-
         [x] FIX WATCH REPLAYS BUGS
         [x] hitting 0 and being hit by a lethal attack ends the game
         [x] up to 3 rounds
@@ -218,17 +191,67 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] combo ui
         [x] add graphic install so that the player who gets hit gets moved to the background
         [x] move round start graphics to particles as an easy way to render
+        [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
+    [x] remove dependency on keyframe
+    [x] rework command system
+        [x] state.on_expire: MoveId -> { frame: usize, move_id: MoveId }
+        [x] command_list: Input -> Command
+        [x] Command  {
+            reqs: Vec<Requirements>,
+            effects: Vec<Effects>,
+        }
+        [x] implement new command system
+            [x] requirements
+            [x] Effects
+        [x] HashMap<Input, Vec<CommandId>>
+        [x] HashMap<CommandId, Command>
+        [x] review rebeat/self-gatling checks to see if theres a better approach
+            [x] rebeat
+            [x] self-gatling
+        [x] remove old state_data (state_type/req meter)
+        [x] remove migration code
+        [x] remove old command_list code (macros and all)
+    [x] rework chaining description
+        [x] remove disallow/allow
+        [x] rename command_types to more accurate names
+        [-] hit
+            [-] allow based on command type
+            [-] allow based on specific command
+    [x] update attack AttackInfo
+        [x] add head/foot (+ invuln on the states)
+        [x] remove attack levels, change to manual hitstun/blockstun selection
+            [x] hit
+            [x] airhit
+            [x] counterhit
+            [x] block
+            [x] wrongblock
+            [x] airblock
+    [x] move to E button[x] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
+        [x] add two things to shader as a uniform (mimic u_Rate)
+            [x] value
+            [x] alpha
+        [x] sprite gets the value of both fields to send to the shader 
+        [x] Modifiers struct has parameters for these fields which default to Constant(time=0.0, value=1.0)
+    [x] have replays handle multiple rounds
+    [x] 4ab to 6ab 
+    [x] add box<character> to gameplay
+        [x] done with enum dispatch
+    [x] move editor to a special version of training mode
+    [x] add compression for sameinputs in replay to reduce replay file size
+    [x] superjump macro is 1/2/3AB in neutral
+        [x] remove this
+    [x] rollback netcode
+    [x] fix copy paste 
     [] button check at character select 
         [] on press start
-    [x] move to E button
     [] create object system
         [x] spawner type
             [x] defines parameters it needs to spawn
             [x] add position indicator to editor ui
                 [x] this is a special case for position the position constructor
-        [] actually use the constructors to spawn bullets
-            [] render basic box
-            [] spawn at position
+        [x] actually use the constructors to spawn bullets
+            [-] render basic box
+            [x] spawn at position
         [x] add graphic_id
             [x] render graphic from hashmap<GraphicId, Particle[rename this]>
         [x] add global_graphics_id
@@ -242,45 +265,8 @@ https://www.gresearch.co.uk/article/defunctionalisation/
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [x] make sound loading look for soundfiles that appear in the global directory, but not necessarily in any particular folder
-    [x] remove dependency on keyframe
-    [] rework command system
-        [x] state.on_expire: MoveId -> { frame: usize, move_id: MoveId }
-        [x] command_list: Input -> Command
-        [x] Command  {
-            reqs: Vec<Requirements>,
-            effects: Vec<Effects>,
-        }
-        [x] implement new command system
-            [x] requirements
-            [x] Effects
-        
-        [x] HashMap<Input, Vec<CommandId>>
-        [x] HashMap<CommandId, Command>
-        [x] review rebeat/self-gatling checks to see if theres a better approach
-            [x] rebeat
-            [x] self-gatling
-        [x] remove old state_data (state_type/req meter)
-        [x] remove migration code
-        [x] remove old command_list code (macros and all)
-    
-    [x] rework chaining description
-        [x] remove disallow/allow
-        [x] rename command_types to more accurate names
-        [-] hit
-            [-] allow based on command type
-            [-] allow based on specific command
-    [] update attack AttackInfo
-        [] add head/foot (+ invuln on the states)
-        [x] remove attack levels, change to manual hitstun/blockstun selection
-            [x] hit
-            [x] airhit
-            [x] counterhit
-            [x] block
-            [x] wrongblock
-            [x] airblock
     [] move graphics out of state
-        [] create GraphicsIds for each state
+        [x] create GraphicsIds for each state
         [] copy current graphics data from state to graphics HashMap
         [] add duration field to state
         [] render graphics data from graphics HashMap
@@ -311,8 +297,17 @@ https://www.gresearch.co.uk/article/defunctionalisation/
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] create an actual basic UI that's mirrored properly
     [] add pause menu
-    [x] add box<character> to gameplay
-        [x] done with enum dispatch
+    [] create settings object
+        [] holds all settings
+            [] window properties
+            [] controls
+            [] sound settings
+    [] add palletes
+    [] add timeskipping functionality to watch replay
+        [] play/pause
+        [] rewind 5 seconds/fast forward 5seconds
+        [] play backwards
+        [] play forwards at 2x,4x,8x speed
     [] expose each character to the training_mode so it can reset its hp
         [] expose training mode options via additional methods on game_match?
         [] expose it via character behavior, and just expose the characters instead?
@@ -322,30 +317,18 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [] right now if you are standing and hit limit, you expire to standing idle rather than a KD
     [] treat triggers as buttons for the purpose of this game
         [] treating left stick as a dpad for the purpose of the game
-    [x] have replays handle multiple rounds
-    [x] 4ab to 6ab 
+    
     [] add better knockdowns
         [] fast forward/back/neutral for bounce tech (combo that KDs without using all limit)
         [] slow back/neutral tech for HKD (combo that KDs and has used all available limit)
-    [x] add value scaler, so that things in the 'Add' blend mode can fade to invisible 
-        [x] add two things to shader as a uniform (mimic u_Rate)
-            [x] value
-            [x] alpha
-        [x] sprite gets the value of both fields to send to the shader 
-        [x] Modifiers struct has parameters for these fields which default to Constant(time=0.0, value=1.0)
+    [] rework configuration into self stored config file, rather than ggez stored config file  
+        [] move back to official ggez versioning
     [] use left stick/right stick for directional input too
     [] make goldensun style particle effects
-    [x] move editor to a special version of training mode
     [] consider adding ]E[ input to cancel to fly_end to remove fly special handling
         [] create parser for input notation
     [] move all weird constants into either Rust constants or loaded from a file
-    [x] add compression for sameinputs in replay to reduce replay file size
     [] upgrade rusttype for ggez?
     [] play a small animation at the end of the game for the winner
-    [x] superjump macro is 1/2/3AB in neutral
-        [x] remove this
-    [x] rollback netcode
-    [x] fix copy paste 
 
-random key: 4D 6D 9C 6C 2B
 
