@@ -204,11 +204,8 @@ impl AppState for StateEditor {
                     .size([300.0, 420.0], Condition::Once)
                     .position([900.0, 283.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data.draw_cancels_editor(
-                            ui,
-                            &state_list,
-                            &mut self.resource.borrow_mut().cancels,
-                        );
+                        self.ui_data
+                            .draw_cancels_editor(ui, &mut self.resource.borrow_mut().cancels);
                     });
                 imgui::Window::new(im_str!("Hitboxes"))
                     .size([300.0, 700.0], Condition::Once)

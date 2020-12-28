@@ -77,24 +77,21 @@ pub enum CommandType {
     Walk,
     Jump,
     HiJump,
+    #[serde(alias = "AirDash")]
     Dash,
+    #[serde(alias = "AirMelee")]
     Melee,
+    #[serde(alias = "AirMagic")]
     Magic,
+    #[serde(alias = "AirMeleeSpecial")]
     MeleeSpecial,
+    #[serde(alias = "AirMagicSpecial")]
     MagicSpecial,
+    #[serde(alias = "AirSuper")]
     Super,
+    #[serde(alias = "AirFollowup")]
     Followup,
     Fly,
-    AirDash,
-    AirMelee,
-    AirMagic,
-    AirMeleeSpecial,
-    AirMagicSpecial,
-    AirSuper,
-    AirFollowup,
-    Hitstun,
-    Blockstun,
-    WrongBlockstun,
 }
 
 impl Default for CommandType {
@@ -103,7 +100,7 @@ impl Default for CommandType {
     }
 }
 
-const ALL_MOVE_TYPES: [CommandType; 22] = [
+const ALL_MOVE_TYPES: [CommandType; 12] = [
     CommandType::Idle,
     CommandType::Walk,
     CommandType::Jump,
@@ -116,19 +113,9 @@ const ALL_MOVE_TYPES: [CommandType; 22] = [
     CommandType::Super,
     CommandType::Followup,
     CommandType::Fly,
-    CommandType::AirDash,
-    CommandType::AirMelee,
-    CommandType::AirMagic,
-    CommandType::AirMeleeSpecial,
-    CommandType::AirMagicSpecial,
-    CommandType::AirSuper,
-    CommandType::AirFollowup,
-    CommandType::Hitstun,
-    CommandType::Blockstun,
-    CommandType::WrongBlockstun,
 ];
 impl CommandType {
-    pub fn all() -> &'static [CommandType; 22] {
+    pub fn all() -> &'static [CommandType; 12] {
         &ALL_MOVE_TYPES
     }
 }
@@ -150,16 +137,6 @@ impl Display for CommandType {
                 CommandType::MagicSpecial => "Magic Special",
                 CommandType::Super => "Super",
                 CommandType::Followup => "Follow Up",
-                CommandType::AirDash => "Air Dash",
-                CommandType::AirMelee => "Air Melee",
-                CommandType::AirMagic => "Air Magic",
-                CommandType::AirMeleeSpecial => "Air Melee Special",
-                CommandType::AirMagicSpecial => "Air Magic Special",
-                CommandType::AirSuper => "Air Super",
-                CommandType::AirFollowup => "Air Followup",
-                CommandType::Hitstun => "Hitstun",
-                CommandType::Blockstun => "Blockstun",
-                CommandType::WrongBlockstun => "Wrong Blockstun",
             }
         )
     }

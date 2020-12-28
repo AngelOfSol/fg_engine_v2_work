@@ -265,11 +265,11 @@ https://www.gresearch.co.uk/article/defunctionalisation/
         [x] remove old command_list code (macros and all)
     
     [] rework chaining description
-        [] remove disallow/allow
+        [x] remove disallow/allow
         [] rename command_types to more accurate names
-        [] hit
-            [] allow based on command type
-            [] allow based on specific command
+        [-] hit
+            [-] allow based on command type
+            [-] allow based on specific command
     [] update attack AttackInfo
         [] add head/foot (+ invuln on the states)
         [x] remove attack levels, change to manual hitstun/blockstun selection

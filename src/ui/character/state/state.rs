@@ -169,12 +169,7 @@ impl StateUi {
     pub fn draw_flags_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<Flags>) {
         data.inspect_mut("flags", &mut self.flags_state, ui);
     }
-    pub fn draw_cancels_editor(
-        &mut self,
-        ui: &Ui<'_>,
-        state_list: &[String],
-        data: &mut Timeline<CancelSet>,
-    ) {
+    pub fn draw_cancels_editor(&mut self, ui: &Ui<'_>, data: &mut Timeline<CancelSet>) {
         let id = ui.push_id("Cancels");
         let current_cancel_set_ui = &mut self.current_cancel_set_ui;
 
