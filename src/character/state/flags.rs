@@ -68,8 +68,13 @@ pub struct Flags {
     pub lockout_timer: i32,
     #[serde(default)]
     pub reset_lockout_timer: bool,
+    #[serde(default = "default_gravity")]
+    pub gravity: bool,
 }
 
+fn default_gravity() -> bool {
+    true
+}
 fn default_friction() -> Int {
     0_50
 }
@@ -106,6 +111,7 @@ impl Flags {
             flash: None,
             lockout_timer: 0,
             reset_lockout_timer: false,
+            gravity: true,
         }
     }
 }

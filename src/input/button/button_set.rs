@@ -10,7 +10,20 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Inspect, Default)]
+#[derive(
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Hash,
+    PartialEq,
+    Eq,
+    Inspect,
+    Default,
+    PartialOrd,
+    Ord,
+)]
 pub struct ButtonSet(pub u8);
 
 impl ButtonSet {

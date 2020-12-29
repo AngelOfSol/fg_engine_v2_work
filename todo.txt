@@ -265,7 +265,7 @@ TODO (2/15/2020):
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [] move graphics out of state
+    [x] move graphics out of state
         [x] create GraphicsIds for each state
         [x] copy current graphics data from state to graphics HashMap
         [-] add duration field to state
@@ -303,6 +303,7 @@ TODO (2/15/2020):
             [] controls
             [] sound settings
     [] add palletes
+    [] add loading screen
     [] add timeskipping functionality to watch replay
         [] play/pause
         [] rewind 5 seconds/fast forward 5seconds

@@ -4,17 +4,19 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Inspect)]
+#[derive(
+    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Inspect, PartialOrd, Ord,
+)]
 pub enum DirectedAxis {
-    Up,
+    DownBackward,
     Down,
-    Forward,
+    DownForward,
     Backward,
     Neutral,
-    UpForward,
+    Forward,
     UpBackward,
-    DownForward,
-    DownBackward,
+    Up,
+    UpForward,
 }
 
 impl Display for DirectedAxis {

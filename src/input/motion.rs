@@ -9,7 +9,7 @@ use inspect_design::traits::*;
 use nom::Finish;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Input {
     Idle(DirectedAxis),
     PressButton(DirectedAxis, ButtonSet),

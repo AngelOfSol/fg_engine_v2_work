@@ -179,7 +179,19 @@ impl Default for YuyukoSound {
 }
 
 #[derive(
-    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
+    Debug,
+    Copy,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    EnumIter,
+    Display,
+    Inspect,
+    PartialOrd,
+    Ord,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum YuyukoGraphic {
@@ -589,11 +601,7 @@ impl YuyukoPlayer {
         };
 
         // we only run gravity if the move doesn't want to reset velocity, because that [resetting velocity] means the move has a trajectory in mind
-        let gravity = if !flags.reset_velocity
-            && flags.airborne
-            && move_id != MoveId::FlyStart
-            && move_id != MoveId::Fly
-        {
+        let gravity = if flags.gravity && flags.airborne {
             collision::Vec2::new(0_00, -0_20)
         } else {
             collision::Vec2::zeros()

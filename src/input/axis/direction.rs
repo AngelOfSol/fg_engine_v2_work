@@ -1,5 +1,5 @@
 use inspect_design::Inspect;
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Inspect)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Inspect, PartialOrd, Ord)]
 pub enum Direction {
     Forward,
     Backward,
