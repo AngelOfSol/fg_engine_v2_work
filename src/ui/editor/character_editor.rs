@@ -1,3 +1,4 @@
+use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
 use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
@@ -7,7 +8,6 @@ use crate::{
     graphics::animation_group::AnimationGroup,
 };
 use crate::{assets::Assets, character::command::Command, input::Input};
-use crate::{character::components::AttackInfo, roster::moves::MoveId};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -191,43 +191,6 @@ impl ItemResource for StandaloneAnimationGroupResource {
     }
 }
 
-pub struct StateAnimationResource {
-    pub data: Rc<RefCell<EditorCharacterState>>,
-    pub name: String,
-}
-
-impl ItemResource for StateAnimationResource {
-    type Output = crate::graphics::Animation;
-    fn get_from(&self) -> Option<Ref<Self::Output>> {
-        let state = self.data.borrow();
-        if state.animations.iter().any(|item| item.name == self.name) {
-            Some(Ref::map(state, |state| {
-                state
-                    .animations
-                    .iter()
-                    .find(|item| item.name == self.name)
-                    .unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-    fn get_from_mut(&self) -> Option<RefMut<Self::Output>> {
-        let state = self.data.borrow_mut();
-        if state.animations.iter().any(|item| item.name == self.name) {
-            Some(RefMut::map(state, |state| {
-                state
-                    .animations
-                    .iter_mut()
-                    .find(|item| item.name == self.name)
-                    .unwrap()
-            }))
-        } else {
-            None
-        }
-    }
-}
-
 pub struct CharacterEditor {
     resource: Rc<RefCell<PlayerCharacter>>,
     assets: Rc<RefCell<Assets>>,
@@ -244,24 +207,6 @@ impl AppState for CharacterEditor {
     }
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
-        let mut pc = self.resource.borrow_mut();
-        use std::ops::DerefMut;
-        let pc: &mut PlayerCharacter = pc.deref_mut();
-
-        for (state_id, state) in pc.states.rest.iter_mut() {
-            let key: MoveId = serde_json::from_str(&format!(r#""{}""#, state_id)).unwrap();
-            let graphic_key = key.into_graphic_id();
-            pc.state_graphics_map
-                .insert(key.file_name(), graphic_key.file_name());
-            let mut group = AnimationGroup::default();
-            for animation in state.animations.iter() {
-                group.animations.push(animation.clone());
-            }
-            group.fix_durations();
-            state.set_duration(group.duration());
-
-            pc.graphics.entry(graphic_key.file_name()).or_insert(group);
-        }
         Ok(())
     }
     fn draw(
@@ -290,12 +235,9 @@ impl AppState for CharacterEditor {
                         }
                         ui.separator();
 
-                        let edit_result = self.states_ui_data.draw_ui(
-                            ctx,
-                            &mut self.assets.borrow_mut(),
-                            ui,
-                            &mut self.resource.borrow_mut().states,
-                        );
+                        let edit_result = self
+                            .states_ui_data
+                            .draw_ui(ui, &mut self.resource.borrow_mut().states);
                         if let Ok(Some(state)) = &edit_result {
                             let state = state.clone();
                             self.transition = Transition::Push(Box::new(

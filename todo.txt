@@ -269,10 +269,10 @@ TODO (2/15/2020):
         [x] create GraphicsIds for each state
         [x] copy current graphics data from state to graphics HashMap
         [-] add duration field to state
-        [] render graphics data from graphics HashMap
+        [x] render graphics data from graphics HashMap
             [x] editor
-            [] in-game
-        [] remove old graphics data
+            [x] in-game
+        [x] remove old graphics data
     [] remove extra-data concept, creating a new state for each variant
         [] forward/neutral/back jump/superjump/border-escape
         [] 1/2/3/4/6/7/8/9 fly

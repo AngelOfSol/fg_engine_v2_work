@@ -13,27 +13,18 @@ pub mod components {
     pub use super::hitbox_set::*;
     pub use super::sound_play_info::*;
 }
-use crate::graphics::Animation;
+use crate::game_object::constructors::Constructor;
 use crate::timeline::Timeline;
-use crate::typedefs::graphics::Matrix4;
-use crate::{
-    assets::{Assets, ValueAlpha},
-    game_object::constructors::Constructor,
-};
 use cancel_set::{CancelSet, StateType};
 use flags::Flags;
-use ggez::{Context, GameResult};
 use hitbox_set::HitboxSet;
 use inspect_design::Inspect;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sound_play_info::SoundPlayInfo;
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::path::PathBuf;
-use std::{
-    cmp,
-    fmt::{Display, Formatter},
-};
 
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq, Inspect)]
 pub struct SpawnerInfo {
@@ -43,8 +34,6 @@ pub struct SpawnerInfo {
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default)]
 pub struct State<Id, AttackId, SoundType> {
-    #[tab = "Animation"]
-    pub animations: Vec<Animation>,
     #[tab = "Flags"]
     pub flags: Timeline<Flags>,
     #[tab = "Cancels"]
@@ -90,8 +79,7 @@ where
     AttackId: PartialEq,
 {
     fn eq(&self, rhs: &Self) -> bool {
-        self.animations.eq(&rhs.animations)
-            && self.flags.eq(&rhs.flags)
+        self.flags.eq(&rhs.flags)
             && self.cancels.eq(&rhs.cancels)
             && self.hitboxes.eq(&rhs.hitboxes)
             && self.state_type.eq(&rhs.state_type)
@@ -131,103 +119,12 @@ impl<
         SoundType: Serialize + DeserializeOwned + Default,
     > State<Id, AttackId, SoundType>
 {
-    pub fn load_from_json(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        path: PathBuf,
-    ) -> GameResult<Self> {
-        file::load_from_json(ctx, assets, path)
-    }
-    pub fn load(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        state: &mut Self,
-        name: &str,
-        path: PathBuf,
-    ) -> GameResult<()> {
-        file::load(ctx, assets, state, name, path)
-    }
-    pub fn save(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        state: &Self,
-        path: PathBuf,
-    ) -> GameResult<()> {
-        file::save(ctx, assets, state, path)
+    pub fn load_from_json(path: PathBuf) -> Self {
+        file::load_from_json(path)
     }
 
-    fn draw_at_time(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        time: usize,
-        world: Matrix4,
-    ) -> GameResult<()> {
-        if time < 1 {
-            for animation in self.animations.iter() {
-                animation.draw_at_time(
-                    ctx,
-                    assets,
-                    time,
-                    world,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?
-            }
-        }
-        Ok(())
-    }
-    fn draw_shadow_at_time(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        time: usize,
-        world: Matrix4,
-    ) -> GameResult<()> {
-        if time < 1 {
-            for animation in self
-                .animations
-                .iter()
-                .filter(|item| item.blend_mode == crate::graphics::BlendMode::Alpha)
-            {
-                animation.draw_at_time(
-                    ctx,
-                    assets,
-                    time,
-                    world,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?
-            }
-        }
-        Ok(())
-    }
-    fn draw_at_time_debug(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        time: usize,
-        world: Matrix4,
-    ) -> GameResult<()> {
-        if time < 1 {
-            for animation in self.animations.iter() {
-                animation.draw_at_time_debug(
-                    ctx,
-                    assets,
-                    time,
-                    world,
-                    ValueAlpha {
-                        value: 1.0,
-                        alpha: 1.0,
-                    },
-                )?
-            }
-        }
-        Ok(())
+    pub fn save(state: &Self, path: PathBuf) {
+        file::save(state, path)
     }
 
     pub fn set_duration(&mut self, duration: usize) {
@@ -243,7 +140,6 @@ impl<
 impl EditorCharacterState {
     pub fn new() -> Self {
         Self {
-            animations: vec![],
             flags: Timeline::with_data(vec![(0, Flags::new())], 1).unwrap(),
             cancels: Timeline::with_data(vec![(0, CancelSet::new())], 1).unwrap(),
             hitboxes: Timeline::with_data(vec![(0, HitboxSet::new())], 1).unwrap(),

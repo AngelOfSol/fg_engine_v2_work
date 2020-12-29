@@ -9,7 +9,6 @@ use components::{Attacks, EditorStates, Properties, States};
 use ggez::GameError;
 use ggez::{Context, GameResult};
 use serde::{Deserialize, Serialize};
-use state::State;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::BufReader;
@@ -92,12 +91,6 @@ impl PlayerCharacter {
         mut path: PathBuf,
     ) -> GameResult<()> {
         path.push(&character_file_name);
-        path.push("states");
-
-        for (name, state) in player_character.states.rest.iter_mut() {
-            State::load(ctx, assets, state, name, path.clone())?;
-        }
-        path.pop();
 
         path.push("graphics");
         for (key, animation_group) in player_character.graphics.iter_mut() {
@@ -121,19 +114,6 @@ impl PlayerCharacter {
 
         path.pop();
         path.push(&character_file_name);
-        path.push("states");
-
-        if path.exists() {
-            std::fs::remove_dir_all(&path)?;
-        }
-        std::fs::create_dir_all(&path)?;
-
-        for (state_name, state) in player_character.states.rest.iter() {
-            path.push(format!("{}.json", state_name));
-            State::save(ctx, assets, state, path.clone())?;
-            path.pop();
-        }
-        path.pop();
 
         path.push("graphics");
         if path.exists() {

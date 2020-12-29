@@ -130,11 +130,6 @@ impl YuyukoData {
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
         path.push(&name);
-        path.push("states");
-        for (name, state) in character.states.iter_mut() {
-            State::load(ctx, assets, state, &name.file_name(), path.clone())?;
-        }
-        path.pop();
 
         path.push("sounds");
         for sound in YuyukoSound::iter() {

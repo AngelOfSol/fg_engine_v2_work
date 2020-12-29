@@ -1,4 +1,4 @@
-use super::{AnimationUi, CancelSetUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
+use super::{CancelSetUi, HitboxSetUi, SoundPlayInfoUi, SpawnerUi};
 use crate::{
     character::state::{
         components::{CancelSet, Flags, HitboxSet, SoundPlayInfo, StateType},
@@ -7,19 +7,13 @@ use crate::{
     timeline,
 };
 
-use crate::assets::Assets;
 use crate::character::state::EditorCharacterState;
-use crate::graphics::Animation;
 use crate::imgui_extra::UiExtensions;
 use crate::timeline::Timeline;
-use ggez::Context;
 use imgui::*;
 use inspect_design::traits::{Inspect, InspectMut};
-use nfd::Response;
-use std::path::PathBuf;
 
 pub struct StateUi {
-    current_animation: Option<usize>,
     current_sound: Option<usize>,
     current_spawner: Option<usize>,
     current_hitbox_ui: Option<HitboxSetUi>,
@@ -28,13 +22,11 @@ pub struct StateUi {
     flags_state: <Timeline<Flags> as Inspect>::State,
     cancels_state: <Timeline<CancelSet> as Inspect>::State,
     hitbox_state: <Timeline<HitboxSet<String>> as Inspect>::State,
-    animation_state: AnimationUi,
 }
 
 impl StateUi {
     pub fn new() -> Self {
         Self {
-            current_animation: None,
             current_sound: None,
             current_hitbox_ui: None,
             current_cancel_set_ui: None,
@@ -43,7 +35,6 @@ impl StateUi {
             flags_state: Default::default(),
             cancels_state: Default::default(),
             hitbox_state: Default::default(),
-            animation_state: Default::default(),
         }
     }
 
@@ -68,60 +59,6 @@ impl StateUi {
         );
 
         let _ = ui.input_whole(im_str!("Frame"), &mut data.on_expire.frame);
-    }
-    pub fn draw_animation_editor(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        ui: &Ui<'_>,
-        data: &mut Vec<Animation>,
-    ) -> Option<String> {
-        let mut ret = None;
-
-        let id = ui.push_id("Animations");
-        ui.rearrangable_list_box(
-            im_str!("List"),
-            &mut self.current_animation,
-            data,
-            |item| im_str!("{}", item.name.to_owned()),
-            5,
-        );
-        if ui.small_button(im_str!("Load")) {
-            let paths = match nfd::open_file_multiple_dialog(Some("json"), None) {
-                Ok(Response::Okay(path)) => vec![path],
-                Ok(Response::OkayMultiple(paths)) => paths,
-                _ => vec![],
-            };
-            for path in paths {
-                data.push(Animation::load_from_json(ctx, assets, PathBuf::from(path)).unwrap());
-            }
-        }
-
-        ui.same_line(0.0);
-        if ui.small_button(im_str!("New")) {
-            // TODO add popup?
-            data.push(Animation::new("new"));
-        }
-
-        if let Some(animation) = self.current_animation {
-            if let Some(animation) = data.get_mut(animation) {
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("Edit")) {
-                    ret = Some(animation.name.clone());
-                }
-            }
-            ui.same_line(0.0);
-            if ui.small_button(im_str!("Delete")) {
-                data.remove(animation);
-            }
-            if let Some(animation) = data.get_mut(animation) {
-                ui.separator();
-                self.animation_state.draw_ui(ui, animation);
-            }
-        }
-        id.pop(ui);
-
-        ret
     }
 
     pub fn draw_spawner_editor(&mut self, ui: &Ui<'_>, data: &mut Vec<SpawnerInfo>) {

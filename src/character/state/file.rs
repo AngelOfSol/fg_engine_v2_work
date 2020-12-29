@@ -1,8 +1,4 @@
 use super::State;
-use crate::assets::Assets;
-use crate::graphics::Animation;
-use ggez::GameError;
-use ggez::{Context, GameResult};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::File;
@@ -15,50 +11,16 @@ pub fn load_from_json<
     AttackId: DeserializeOwned + Serialize + Default,
     SoundType: DeserializeOwned + Serialize + Default,
 >(
-    ctx: &mut Context,
-    assets: &mut Assets,
-    mut path: PathBuf,
-) -> GameResult<State<Id, AttackId, SoundType>> {
+    path: PathBuf,
+) -> State<Id, AttackId, SoundType> {
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    let mut state = serde_json::from_reader::<_, State<_, _, _>>(buf_read).unwrap();
-    let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-    path.pop();
-    State::load(ctx, assets, &mut state, &name, path)?;
-    Ok(state)
-}
-pub fn load<Id, AttackId, SoundType>(
-    ctx: &mut Context,
-    assets: &mut Assets,
-    state: &mut State<Id, AttackId, SoundType>,
-    name: &str,
-    mut path: PathBuf,
-) -> GameResult<()> {
-    path.push(name);
-    for animation in state.animations.iter_mut() {
-        Animation::load(ctx, assets, animation, path.clone())?;
-    }
-    Ok(())
+    serde_json::from_reader::<_, State<_, _, _>>(buf_read).unwrap()
 }
 pub fn save<Id: Serialize + Eq + Hash, AttackId: Serialize, SoundType: Serialize>(
-    ctx: &mut Context,
-    assets: &mut Assets,
     state: &State<Id, AttackId, SoundType>,
-    mut path: PathBuf,
-) -> GameResult<()> {
-    let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-
-    let mut json = File::create(&path)?;
-    serde_json::to_writer(&mut json, &state)
-        .map_err(|err| GameError::FilesystemError(format!("{}", err)))?;
-
-    path.pop();
-    path.push(&name);
-    std::fs::create_dir_all(&path)?;
-    for animation in &state.animations {
-        path.push(&format!("{}.json", &animation.name));
-        Animation::save(ctx, assets, &animation, path.clone())?;
-        path.pop();
-    }
-    Ok(())
+    path: PathBuf,
+) {
+    let mut json = File::create(&path).unwrap();
+    serde_json::to_writer(&mut json, &state).unwrap();
 }

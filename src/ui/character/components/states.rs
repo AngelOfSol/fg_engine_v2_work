@@ -1,7 +1,6 @@
-use crate::assets::Assets;
 use crate::character::state::State;
 use crate::imgui_extra::UiExtensions;
-use ggez::{Context, GameResult};
+use ggez::GameResult;
 use imgui::*;
 use std::path::PathBuf;
 
@@ -17,13 +16,7 @@ impl StatesUi {
         state_name_keys.sort();
         StatesUi { state_name_keys }
     }
-    pub fn draw_ui(
-        &mut self,
-        ctx: &mut Context,
-        assets: &mut Assets,
-        ui: &Ui<'_>,
-        data: &mut EditorStates,
-    ) -> GameResult<Option<String>> {
+    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut EditorStates) -> GameResult<Option<String>> {
         let mut ret = None;
         ui.text(im_str!("States:"));
         ui.same_line(0.0);
@@ -32,8 +25,7 @@ impl StatesUi {
                 let path = PathBuf::from(path);
                 let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
                 let name = data.guarentee_unique_key(name);
-                data.rest
-                    .insert(name, State::load_from_json(ctx, assets, path)?);
+                data.rest.insert(name, State::load_from_json(path));
             }
         }
         ui.same_line(0.0);
@@ -67,7 +59,7 @@ impl StatesUi {
             ui.same_line(0.0);
             if ui.small_button(im_str!("Load")) {
                 if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
-                    *value = State::load_from_json(ctx, assets, PathBuf::from(path))?;
+                    *value = State::load_from_json(PathBuf::from(path));
                 }
             }
             ui.same_line(0.0);

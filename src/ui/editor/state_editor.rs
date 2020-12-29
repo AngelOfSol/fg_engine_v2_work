@@ -1,11 +1,10 @@
-use super::character_editor::{ItemResource, StateAnimationResource, StateResource};
+use super::character_editor::{ItemResource, StateResource};
 use crate::character::state::{EditorCharacterState, State};
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::state::{CancelSetUi, StateUi};
-use crate::ui::editor::AnimationEditor;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     game_object::state::Position,
@@ -63,7 +62,6 @@ impl AppState for StateEditor {
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-        let mut editor_result = Ok(());
         let (state_list, attack_ids, sounds_list) = {
             let character_data = self.character_data.borrow();
 
@@ -120,30 +118,7 @@ impl AppState for StateEditor {
 
                         self.ui_data.draw_header(ui, &state_list, &mut res);
                     });
-                imgui::Window::new(im_str!("Animations"))
-                    .size([300.0, 345.0], Condition::Once)
-                    .position([0.0, 160.0], Condition::Once)
-                    .build(ui, || {
-                        let assets = &mut self.assets.borrow_mut();
-                        let result = self.ui_data.draw_animation_editor(
-                            ctx,
-                            assets,
-                            ui,
-                            &mut self.resource.borrow_mut().animations,
-                        );
-                        if let Some(name) = result {
-                            self.transition = Transition::Push(Box::new(
-                                AnimationEditor::new(
-                                    self.assets.clone(),
-                                    Box::new(StateAnimationResource {
-                                        data: self.resource.clone(),
-                                        name,
-                                    }),
-                                )
-                                .unwrap(),
-                            ))
-                        }
-                    });
+
                 imgui::Window::new(im_str!("Playback"))
                     .size([300.0, 215.0], Condition::Once)
                     .position([0.0, 505.0], Condition::Once)
@@ -260,23 +235,16 @@ impl AppState for StateEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                let assets = &mut self.assets.borrow_mut();
-                                editor_result =
-                                    State::save(ctx, assets, &self.resource.borrow(), path);
+                                State::save(&self.resource.borrow(), path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
                                 nfd::open_file_dialog(Some("json"), None)
                             {
-                                let assets = &mut self.assets.borrow_mut();
-                                match State::load_from_json(ctx, assets, PathBuf::from(path)) {
-                                    Ok(state) => {
-                                        *self.resource.borrow_mut() = state;
-                                        self.ui_data = StateUi::new();
-                                    }
-                                    Err(err) => editor_result = Err(err),
-                                }
+                                let state = State::load_from_json(PathBuf::from(path));
+                                *self.resource.borrow_mut() = state;
+                                self.ui_data = StateUi::new();
                             }
                         }
                         ui.separator();
@@ -294,7 +262,6 @@ impl AppState for StateEditor {
                 });
             })
             .render(ctx);
-        editor_result?;
         let animation_window_center = Matrix4::new_translation(&Vec3::new(450.0, 270.0, 0.0));
         if self.draw_mode.show_axes {
             graphics::set_transform(ctx, animation_window_center);
