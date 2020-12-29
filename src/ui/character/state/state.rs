@@ -53,8 +53,6 @@ impl StateUi {
         state_list: &[String],
         data: &mut EditorCharacterState,
     ) {
-        ui.label_text(im_str!("Duration"), &im_str!("{}", data.duration()));
-
         ui.combo_items(
             im_str!("State Type"),
             &mut data.state_type,

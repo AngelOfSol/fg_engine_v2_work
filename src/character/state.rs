@@ -156,13 +156,6 @@ impl<
         file::save(ctx, assets, state, path)
     }
 
-    pub fn duration(&self) -> usize {
-        self.animations
-            .iter()
-            .map(|item| item.delay + item.duration())
-            .fold(0, cmp::max)
-    }
-
     pub fn draw_at_time(
         &self,
         ctx: &mut Context,
@@ -170,7 +163,7 @@ impl<
         time: usize,
         world: Matrix4,
     ) -> GameResult<()> {
-        if time < self.duration() {
+        if time < 1 {
             for animation in self.animations.iter() {
                 animation.draw_at_time(
                     ctx,
@@ -193,7 +186,7 @@ impl<
         time: usize,
         world: Matrix4,
     ) -> GameResult<()> {
-        if time < self.duration() {
+        if time < 1 {
             for animation in self
                 .animations
                 .iter()
@@ -220,7 +213,7 @@ impl<
         time: usize,
         world: Matrix4,
     ) -> GameResult<()> {
-        if time < self.duration() {
+        if time < 1 {
             for animation in self.animations.iter() {
                 animation.draw_at_time_debug(
                     ctx,
@@ -235,6 +228,15 @@ impl<
             }
         }
         Ok(())
+    }
+
+    pub fn set_duration(&mut self, duration: usize) {
+        self.cancels.set_duration(duration);
+        self.hitboxes.set_duration(duration);
+        self.flags.set_duration(duration);
+    }
+    pub fn duration(&self) -> usize {
+        self.flags.duration()
     }
 }
 

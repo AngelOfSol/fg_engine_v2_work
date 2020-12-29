@@ -267,7 +267,7 @@ TODO (2/15/2020):
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
     [] move graphics out of state
         [x] create GraphicsIds for each state
-        [] copy current graphics data from state to graphics HashMap
+        [x] copy current graphics data from state to graphics HashMap
         [] add duration field to state
         [] render graphics data from graphics HashMap
             [] editor
@@ -330,5 +330,8 @@ TODO (2/15/2020):
     [] move all weird constants into either Rust constants or loaded from a file
     [] upgrade rusttype for ggez?
     [] play a small animation at the end of the game for the winner
+    [] move to a new graphics api
+        [] luminance-rs
+        [] mini/macroquad
 
 

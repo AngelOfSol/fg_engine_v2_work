@@ -46,11 +46,8 @@ impl AppState for StateEditor {
             if self.is_playing {
                 self.frame = self.frame.wrapping_add(1);
                 let resource = self.resource.borrow();
-                if resource.duration() > 0 {
-                    self.frame %= resource.duration();
-                } else {
-                    self.frame = 0;
-                }
+
+                self.frame %= resource.duration();
             }
         }
 
@@ -102,8 +99,26 @@ impl AppState for StateEditor {
                     .size([300.0, 140.0], Condition::Once)
                     .position([0.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        self.ui_data
-                            .draw_header(ui, &state_list, &mut self.resource.borrow_mut());
+                        let mut res = self.resource.borrow_mut();
+                        {
+                            let mut cd = self.character_data.borrow_mut();
+
+                            let mut graphic_list: Vec<_> = cd.graphics.keys().cloned().collect();
+                            graphic_list.sort();
+                            let graphic_list = graphic_list;
+
+                            let entry = cd.state_graphics_map.get_mut(&self.path.state).unwrap();
+
+                            ui.combo_items(im_str!("Graphic"), entry, &graphic_list, &|item| {
+                                im_str!("{}", item).into()
+                            });
+                        }
+
+                        let cd = self.character_data.borrow();
+                        let entry = cd.state_graphics_map.get(&self.path.state).unwrap();
+                        res.set_duration(cd.graphics[entry].duration());
+
+                        self.ui_data.draw_header(ui, &state_list, &mut res);
                     });
                 imgui::Window::new(im_str!("Animations"))
                     .size([300.0, 345.0], Condition::Once)
@@ -320,9 +335,18 @@ impl AppState for StateEditor {
             let _lock = graphics::use_shader(ctx, &assets.shader);
 
             if self.draw_mode.debug_animation {
-                resource.draw_at_time_debug(ctx, assets, self.frame, offset)?;
+                let pc = self.character_data.borrow();
+                pc.graphics[&pc.state_graphics_map[&self.path.state]].draw_at_time_debug(
+                    ctx,
+                    assets,
+                    self.frame,
+                    offset,
+                    Default::default(),
+                )?;
             } else {
-                resource.draw_at_time(ctx, assets, self.frame, offset)?;
+                let pc = self.character_data.borrow();
+                pc.graphics[&pc.state_graphics_map[&self.path.state]]
+                    .draw_at_time(ctx, assets, self.frame, offset)?;
             }
         }
 

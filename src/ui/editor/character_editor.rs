@@ -1,4 +1,3 @@
-use crate::character::components::AttackInfo;
 use crate::character::state::EditorCharacterState;
 use crate::character::PlayerCharacter;
 use crate::ui::character::components::{AttacksUi, PropertiesUi, StatesUi};
@@ -8,6 +7,7 @@ use crate::{
     graphics::animation_group::AnimationGroup,
 };
 use crate::{assets::Assets, character::command::Command, input::Input};
+use crate::{character::components::AttackInfo, roster::moves::MoveId};
 use ggez::graphics;
 use ggez::{Context, GameResult};
 use imgui::*;
@@ -244,6 +244,24 @@ impl AppState for CharacterEditor {
     }
 
     fn on_enter(&mut self, _: &mut Context, _: &mut AppContext) -> GameResult<()> {
+        let mut pc = self.resource.borrow_mut();
+        use std::ops::DerefMut;
+        let pc: &mut PlayerCharacter = pc.deref_mut();
+
+        for (state_id, state) in pc.states.rest.iter_mut() {
+            let key: MoveId = serde_json::from_str(&format!(r#""{}""#, state_id)).unwrap();
+            let graphic_key = key.into_graphic_id();
+            pc.state_graphics_map
+                .insert(key.file_name(), graphic_key.file_name());
+            let mut group = AnimationGroup::default();
+            for animation in state.animations.iter() {
+                group.animations.push(animation.clone());
+            }
+            group.fix_durations();
+            state.set_duration(group.duration());
+
+            pc.graphics.entry(graphic_key.file_name()).or_insert(group);
+        }
         Ok(())
     }
     fn draw(

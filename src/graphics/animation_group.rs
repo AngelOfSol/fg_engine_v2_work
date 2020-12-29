@@ -32,6 +32,12 @@ impl AnimationGroup {
             .map(|item| item.delay + item.duration())
             .fold(0, std::cmp::max)
     }
+
+    pub fn fix_durations(&mut self) {
+        let duration = self.duration();
+        self.modifiers.set_duration(duration);
+    }
+
     #[allow(dead_code)]
     pub fn draw_frame(
         &self,

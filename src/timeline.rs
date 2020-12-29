@@ -90,11 +90,11 @@ impl<T> Timeline<T> {
         self.duration
     }
     /// Removes every frame outside of the new duration.
-    pub fn set_duration(&mut self, new_duration: usize) {
-        if new_duration == 0 {
+    pub fn set_duration(&mut self, duration: usize) {
+        if duration == 0 {
             panic!("Can't have a 0 duration timeline.");
         }
-        self.duration = new_duration;
+        self.duration = duration;
     }
 
     #[allow(dead_code)]

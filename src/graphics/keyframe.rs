@@ -86,6 +86,19 @@ impl Modifiers {
         Self::default()
     }
 
+    pub fn set_duration(&mut self, duration: usize) {
+        self.rotation.set_duration(duration);
+        self.alpha.set_duration(duration);
+        self.value.set_duration(duration);
+
+        for scale in self.scale.iter_mut() {
+            scale.set_duration(duration);
+        }
+        for coords in self.coords.iter_mut() {
+            coords.set_duration(duration);
+        }
+    }
+
     pub fn get_matrix(&self, time: usize) -> Matrix4 {
         let rotation = Matrix4::new_rotation(Vec3::new(
             0.0,

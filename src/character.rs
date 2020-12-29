@@ -38,6 +38,9 @@ pub struct PlayerCharacter {
 
     #[serde(default)]
     pub command_map: HashMap<String, Command<String>>,
+
+    #[serde(default)]
+    pub state_graphics_map: HashMap<String, String>,
 }
 
 impl PlayerCharacter {
@@ -51,6 +54,7 @@ impl PlayerCharacter {
             instance: EditorInstanceData::new(),
             command_map: Default::default(),
             input_map: Default::default(),
+            state_graphics_map: Default::default(),
         }
     }
 

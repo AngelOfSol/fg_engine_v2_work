@@ -6,6 +6,15 @@ gfx_defines! { constant UiProgress { rate: f32 = "u_Rate", value: f32 = "u_Value
 gfx_defines! { constant ValueAlpha { value: f32 = "u_Value", alpha: f32 = "u_Alpha", } }
 gfx_defines! { constant Shadow { rate: f32 = "u_Rate",  } }
 
+impl Default for ValueAlpha {
+    fn default() -> Self {
+        Self {
+            value: 1.0,
+            alpha: 1.0,
+        }
+    }
+}
+
 pub type GameShader = graphics::Shader<ValueAlpha>;
 pub type ShadowShader = graphics::Shader<Shadow>;
 pub type UiShader = graphics::Shader<UiProgress>;

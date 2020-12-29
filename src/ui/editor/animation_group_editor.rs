@@ -40,11 +40,13 @@ impl AppState for AnimationGroupEditor {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
+            self.resource.borrow_mut().fix_durations();
         }
 
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
+                self.resource.borrow_mut().fix_durations();
                 let mut overwrite_target = self.path.get_from_mut().unwrap();
                 *overwrite_target =
                     std::mem::replace(&mut self.resource.borrow_mut(), AnimationGroup::new());

@@ -51,7 +51,7 @@ impl StatesUi {
         for (idx, name) in self.state_name_keys.iter().enumerate() {
             let value = data.rest.get_mut(name).unwrap();
 
-            let id = ui.push_id(&format!("Rest {} {}", idx, value.duration()));
+            let id = ui.push_id(&format!("Rest {} {:?}", idx, value.on_expire));
             let mut buffer = name.clone();
             if ui.input_string(im_str!("Name"), &mut buffer) {
                 to_change = Some((name.clone(), buffer));
