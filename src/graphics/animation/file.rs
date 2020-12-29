@@ -28,7 +28,7 @@ pub fn load(
     path.push(&animation.name);
     let paths: Vec<_> = animation
         .frames
-        .iter()
+        .frames()
         .enumerate()
         .map(|(idx, _)| animation.get_path_to_image(idx))
         .collect();

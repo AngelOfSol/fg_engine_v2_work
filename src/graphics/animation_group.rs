@@ -78,6 +78,35 @@ impl AnimationGroup {
         Ok(())
     }
 
+    pub fn draw_shadow_at_time(
+        &self,
+        ctx: &mut Context,
+        assets: &Assets,
+        time: usize,
+        world: Matrix4,
+    ) -> GameResult<()> {
+        let transform = self.modifiers.get_matrix(time);
+        let world = world * transform;
+        for animation in self
+            .animations
+            .iter()
+            .filter(|item| item.blend_mode == crate::graphics::BlendMode::Alpha)
+        {
+            animation.draw_at_time(
+                ctx,
+                assets,
+                time,
+                world,
+                ValueAlpha {
+                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0),
+                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0),
+                },
+            )?
+        }
+
+        Ok(())
+    }
+
     pub fn draw_at_time_debug(
         &self,
         ctx: &mut Context,

@@ -268,9 +268,9 @@ TODO (2/15/2020):
     [] move graphics out of state
         [x] create GraphicsIds for each state
         [x] copy current graphics data from state to graphics HashMap
-        [] add duration field to state
+        [-] add duration field to state
         [] render graphics data from graphics HashMap
-            [] editor
+            [x] editor
             [] in-game
         [] remove old graphics data
     [] remove extra-data concept, creating a new state for each variant

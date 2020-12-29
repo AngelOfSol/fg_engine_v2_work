@@ -285,6 +285,11 @@ impl AppState for CharacterEditor {
                     .size([300.0, 526.0], Condition::Once)
                     .position([300.0, 20.0], Condition::Once)
                     .build(ui, || {
+                        if ui.small_button(im_str!("Enforce Invariants")) {
+                            self.resource.borrow_mut().enforce_invariants();
+                        }
+                        ui.separator();
+
                         let edit_result = self.states_ui_data.draw_ui(
                             ctx,
                             &mut self.assets.borrow_mut(),

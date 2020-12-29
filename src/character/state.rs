@@ -156,7 +156,7 @@ impl<
         file::save(ctx, assets, state, path)
     }
 
-    pub fn draw_at_time(
+    fn draw_at_time(
         &self,
         ctx: &mut Context,
         assets: &Assets,
@@ -179,7 +179,7 @@ impl<
         }
         Ok(())
     }
-    pub fn draw_shadow_at_time(
+    fn draw_shadow_at_time(
         &self,
         ctx: &mut Context,
         assets: &Assets,
@@ -206,7 +206,7 @@ impl<
         }
         Ok(())
     }
-    pub fn draw_at_time_debug(
+    fn draw_at_time_debug(
         &self,
         ctx: &mut Context,
         assets: &Assets,

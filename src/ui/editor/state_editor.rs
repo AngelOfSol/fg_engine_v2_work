@@ -244,9 +244,9 @@ impl AppState for StateEditor {
                     .size([300.0, 263.0], Condition::Once)
                     .position([900.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        if let Some((_, data)) = self.resource.borrow().cancels.get(self.frame) {
-                            CancelSetUi::draw_display_ui(ui, data);
-                        }
+                        let res = self.resource.borrow();
+                        let (_, data) = res.cancels.get(self.frame);
+                        CancelSetUi::draw_display_ui(ui, data);
                     });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor"), true, || {
@@ -320,11 +320,11 @@ impl AppState for StateEditor {
         let offset = {
             let mut offset = Vec3::zeros();
 
-            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
-                let recenter = boxes.collision.collision_graphic_recenter();
-                offset.x -= recenter.x;
-                offset.y -= recenter.y;
-            }
+            let (_, boxes) = resource.hitboxes.get(self.frame);
+            let recenter = boxes.collision.collision_graphic_recenter();
+            offset.x -= recenter.x;
+            offset.y -= recenter.y;
+
             offset
         };
 
@@ -352,28 +352,25 @@ impl AppState for StateEditor {
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
-                offset.x -= boxes.collision.center.x.into_graphical();
-                offset.y -= boxes.collision.half_size.y.into_graphical()
-                    - boxes.collision.center.y.into_graphical();
-            }
+            let (_, boxes) = resource.hitboxes.get(self.frame);
+            offset.x -= boxes.collision.center.x.into_graphical();
+            offset.y -= boxes.collision.half_size.y.into_graphical()
+                - boxes.collision.center.y.into_graphical();
 
             offset
         };
         let offset = animation_window_center * Matrix4::new_translation(&offset);
-        if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
-            boxes.collision.draw(
-                ctx,
-                offset,
-                Color::new(1.0, 1.0, 1.0, self.draw_mode.collision_alpha),
-            )?;
-        }
+        let (_, boxes) = resource.hitboxes.get(self.frame);
+        boxes.collision.draw(
+            ctx,
+            offset,
+            Color::new(1.0, 1.0, 1.0, self.draw_mode.collision_alpha),
+        )?;
 
         let offset = {
             let mut offset = Vec3::zeros();
-            if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
-                offset.y -= boxes.collision.half_size.y.into_graphical();
-            }
+            let (_, boxes) = resource.hitboxes.get(self.frame);
+            offset.y -= boxes.collision.half_size.y.into_graphical();
 
             offset
         };
@@ -415,22 +412,21 @@ impl AppState for StateEditor {
             draw_cross(ctx, offset)?;
         }
 
-        if let Some((_, boxes)) = resource.hitboxes.get(self.frame) {
-            for hurtbox in boxes.hurtbox.iter() {
-                hurtbox.draw(
+        let (_, boxes) = resource.hitboxes.get(self.frame);
+        for hurtbox in boxes.hurtbox.iter() {
+            hurtbox.draw(
+                ctx,
+                offset,
+                Color::new(0.0, 1.0, 0.0, self.draw_mode.hurtbox_alpha),
+            )?;
+        }
+        if let Some(attack_data) = &boxes.hitbox {
+            for hitbox in attack_data.boxes.iter() {
+                hitbox.draw(
                     ctx,
                     offset,
-                    Color::new(0.0, 1.0, 0.0, self.draw_mode.hurtbox_alpha),
+                    Color::new(1.0, 0.0, 0.0, self.draw_mode.hitbox_alpha),
                 )?;
-            }
-            if let Some(attack_data) = &boxes.hitbox {
-                for hitbox in attack_data.boxes.iter() {
-                    hitbox.draw(
-                        ctx,
-                        offset,
-                        Color::new(1.0, 0.0, 0.0, self.draw_mode.hitbox_alpha),
-                    )?;
-                }
             }
         }
 

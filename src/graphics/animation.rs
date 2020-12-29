@@ -66,22 +66,19 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         let data = self.frames.get(index);
-        if let Some((_, sprite)) = data {
-            graphics::set_blend_mode(ctx, self.blend_mode.into())?;
+        let (_, sprite) = data;
+        graphics::set_blend_mode(ctx, self.blend_mode.into())?;
 
-            sprite.draw(
-                ctx,
-                assets,
-                world,
-                0,
-                ValueAlpha {
-                    value: 1.0,
-                    alpha: 1.0,
-                },
-            )
-        } else {
-            Ok(())
-        }
+        sprite.draw(
+            ctx,
+            assets,
+            world,
+            0,
+            ValueAlpha {
+                value: 1.0,
+                alpha: 1.0,
+            },
+        )
     }
 
     pub fn draw_every_frame(
@@ -91,7 +88,7 @@ impl Animation {
         world: Matrix4,
     ) -> GameResult<()> {
         graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        for sprite in self.frames.iter() {
+        for sprite in self.frames.frames() {
             sprite.draw_debug(
                 ctx,
                 assets,
@@ -123,22 +120,19 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((frame, image)) = self.frames.get(time) {
-            let transform = self.modifiers.get_matrix(time);
-            let time = time - frame;
-            image.draw(
-                ctx,
-                assets,
-                world * transform,
-                time,
-                ValueAlpha {
-                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
-                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
-                },
-            )
-        } else {
-            Ok(())
-        }
+        let (frame, image) = self.frames.get(time);
+        let transform = self.modifiers.get_matrix(time);
+        let time = time - frame;
+        image.draw(
+            ctx,
+            assets,
+            world * transform,
+            time,
+            ValueAlpha {
+                value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
+                alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
+            },
+        )
     }
     pub fn draw_at_time_debug(
         &self,
@@ -156,22 +150,19 @@ impl Animation {
             return Ok(());
         };
 
-        if let Some((frame, image)) = self.frames.get(time) {
-            let transform = self.modifiers.get_matrix(time);
-            let time = time - frame;
-            image.draw_debug(
-                ctx,
-                assets,
-                world * transform,
-                time,
-                ValueAlpha {
-                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
-                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
-                },
-            )
-        } else {
-            Ok(())
-        }
+        let (frame, image) = self.frames.get(time);
+        let transform = self.modifiers.get_matrix(time);
+        let time = time - frame;
+        image.draw_debug(
+            ctx,
+            assets,
+            world * transform,
+            time,
+            ValueAlpha {
+                value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
+                alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
+            },
+        )
     }
 
     pub fn load(

@@ -72,6 +72,8 @@ pub struct Yuyuko {
     pub input_map: HashMap<Input, Vec<CommandId>>,
     #[tab = "Commands"]
     pub command_map: HashMap<CommandId, Command<MoveId>>,
+    #[tab = "State to Graphics"]
+    pub state_graphics_map: HashMap<MoveId, YuyukoGraphic>,
 }
 
 impl std::fmt::Debug for Yuyuko {
@@ -98,6 +100,7 @@ impl Yuyuko {
             graphics: data.graphics,
             command_map: data.command_map,
             input_map: data.input_map,
+            state_graphics_map: data.state_graphics_map,
         })
     }
 }
@@ -113,6 +116,7 @@ pub struct YuyukoData {
     graphics: HashMap<YuyukoGraphic, AnimationGroup>,
     input_map: HashMap<Input, Vec<CommandId>>,
     command_map: HashMap<CommandId, Command<MoveId>>,
+    state_graphics_map: HashMap<MoveId, YuyukoGraphic>,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -1243,7 +1247,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
         let collision = &self.data.states[&move_id].hitboxes[frame].collision;
 
-        self.data.states[&move_id].draw_at_time(
+        let graphic = self.data.state_graphics_map[&move_id];
+
+        self.data.graphics[&graphic].draw_at_time(
             ctx,
             assets,
             frame,
@@ -1307,7 +1313,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
         let collision = &self.data.states[&move_id].hitboxes[frame].collision;
 
-        self.data.states[&move_id].draw_shadow_at_time(
+        let graphic = self.data.state_graphics_map[&move_id];
+
+        self.data.graphics[&graphic].draw_shadow_at_time(
             ctx,
             assets,
             frame,
@@ -1442,11 +1450,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn in_cutscene(&self) -> bool {
         let (current_frame, move_id) = self.state.current_state;
-        self.data.states[&move_id]
-            .flags
-            .get(current_frame + 1)
-            .map(|item| item.1.cutscene)
-            .unwrap_or(false)
+        self.data.states[&move_id].flags[current_frame + 1].cutscene
     }
 
     fn get_flash(&self) -> Option<FlashType> {

@@ -65,26 +65,21 @@ impl<T> Timeline<T> {
         }
     }
 
-    pub fn get(&self, target_frame: usize) -> Option<(usize, &T)> {
-        if target_frame >= self.duration {
-            return None;
-        }
+    pub fn get(&self, target_frame: usize) -> (usize, &T) {
         self.data
             .iter()
             .rev()
             .find(|(frame, _)| target_frame >= *frame)
             .map(|(frame, data)| (*frame, data))
+            .unwrap()
     }
-    pub fn get_mut(&mut self, target_frame: usize) -> Option<(usize, &mut T)> {
-        if target_frame >= self.duration {
-            return None;
-        }
-
+    pub fn get_mut(&mut self, target_frame: usize) -> (usize, &mut T) {
         self.data
             .iter_mut()
             .rev()
             .find(|(frame, _)| target_frame >= *frame)
             .map(|(frame, data)| (*frame, data))
+            .unwrap()
     }
     pub fn duration(&self) -> usize {
         self.duration
@@ -207,13 +202,6 @@ impl<T> Timeline<T> {
         self.data.iter().any(|item| item.0 == frame)
     }
 
-    /// Iterates through every frame in 0..duration.
-    pub fn iter(&self) -> TimelineIter<T> {
-        TimelineIter {
-            frame: 0,
-            data: self,
-        }
-    }
     pub fn frames(&self) -> impl Iterator<Item = &T> {
         self.data.iter().map(|(_, data)| data)
     }
@@ -385,19 +373,19 @@ pub mod inspect {
                 ui,
             );
 
-            if let Some((frame, item)) = self.get(state.selected_frame) {
-                if T::FLATTEN {
-                    item.inspect("selected", &mut state.selected_state, ui);
-                } else {
-                    ui.text(&im_str!("selected: {"));
-                    ui.indent();
-                    ChildWindow::new(&im_str!("selected")).build(ui, || {
-                        item.inspect(&format!("frame {}", frame), &mut state.selected_state, ui);
-                    });
-                    ui.unindent();
-                    ui.text(&im_str!("}"));
-                }
+            let (frame, item) = self.get(state.selected_frame);
+            if T::FLATTEN {
+                item.inspect("selected", &mut state.selected_state, ui);
+            } else {
+                ui.text(&im_str!("selected: {"));
+                ui.indent();
+                ChildWindow::new(&im_str!("selected")).build(ui, || {
+                    item.inspect(&format!("frame {}", frame), &mut state.selected_state, ui);
+                });
+                ui.unindent();
+                ui.text(&im_str!("}"));
             }
+
             id.pop(ui);
         }
     }
@@ -512,17 +500,17 @@ pub mod inspect {
                 ui,
             );
 
-            if let Some((frame, item)) = self.get_mut(state.selected_frame) {
-                if T::FLATTEN {
-                    item.inspect_mut("selected", &mut state.selected_state, ui);
-                } else {
-                    ui.text(&im_str!("selected: {"));
-                    ui.indent();
-                    item.inspect_mut(&format!("frame {}", frame), &mut state.selected_state, ui);
-                    ui.unindent();
-                    ui.text(&im_str!("}"));
-                }
+            let (frame, item) = self.get_mut(state.selected_frame);
+            if T::FLATTEN {
+                item.inspect_mut("selected", &mut state.selected_state, ui);
+            } else {
+                ui.text(&im_str!("selected: {"));
+                ui.indent();
+                item.inspect_mut(&format!("frame {}", frame), &mut state.selected_state, ui);
+                ui.unindent();
+                ui.text(&im_str!("}"));
             }
+
             id.pop(ui);
         }
     }
@@ -639,34 +627,19 @@ pub mod inspect {
             ui,
         );
 
-        if let Some((frame, item)) = data.get_mut(state.selected_frame) {
-            ChildWindow::new(&im_str!("selected")).build(ui, || {
-                inspect(frame, item);
-            });
-        }
+        let (frame, item) = data.get_mut(state.selected_frame);
+        ChildWindow::new(&im_str!("selected")).build(ui, || {
+            inspect(frame, item);
+        });
+
         id.pop(ui);
-    }
-}
-
-pub struct TimelineIter<'a, T> {
-    frame: usize,
-    data: &'a Timeline<T>,
-}
-
-impl<'a, T> Iterator for TimelineIter<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let frame = self.frame;
-        self.frame += 1;
-        self.data.get(frame).map(|(_, item)| item)
     }
 }
 
 impl<T> std::ops::Index<usize> for Timeline<T> {
     type Output = T;
     fn index(&self, frame: usize) -> &Self::Output {
-        self.get(frame).map(|(_, item)| item).unwrap()
+        self.get(frame).1
     }
 }
 
@@ -820,32 +793,21 @@ mod test {
             }
         );
     }
-    #[test]
-    fn iter_test() {
-        let data = Timeline::with_data(vec![(0, 0), (2, 2), (4, 4)], 5).unwrap();
 
-        for (data, test) in data.iter().zip([0, 0, 2, 2, 4].iter()) {
-            assert_eq!(data, test);
-        }
-    }
     #[test]
     fn index_test() {
         let data = Timeline::with_data(vec![(0, 0), (2, 2), (4, 4)], 5).unwrap();
 
-        for (idx, test) in
-            (0..7).zip(vec![Some(0), Some(0), Some(2), Some(2), Some(4), None, None].into_iter())
-        {
-            assert_eq!(data.get(idx).map(|(_, item)| item).copied(), test);
+        for (idx, test) in (0..7).zip(vec![0, 0, 2, 2, 4, 4, 4].into_iter()) {
+            assert_eq!(*data.get(idx).1, test);
         }
     }
     #[test]
     fn index_mut_test() {
         let mut data = Timeline::with_data(vec![(0, 0), (2, 2), (4, 4)], 5).unwrap();
 
-        for (idx, test) in
-            (0..7).zip(vec![Some(0), Some(0), Some(2), Some(2), Some(4), None, None].into_iter())
-        {
-            assert_eq!(data.get_mut(idx).map(|(_, item)| *item), test);
+        for (idx, test) in (0..7).zip(vec![0, 0, 2, 2, 4, 4, 4].into_iter()) {
+            assert_eq!(*data.get_mut(idx).1, test);
         }
     }
 }

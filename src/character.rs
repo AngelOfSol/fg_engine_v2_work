@@ -58,6 +58,13 @@ impl PlayerCharacter {
         }
     }
 
+    pub fn enforce_invariants(&mut self) {
+        for (state_id, state) in self.states.rest.iter_mut() {
+            let graphic_id = &self.state_graphics_map[state_id];
+            state.set_duration(self.graphics[graphic_id].duration());
+        }
+    }
+
     pub fn load_from_json(
         ctx: &mut Context,
         assets: &mut Assets,
