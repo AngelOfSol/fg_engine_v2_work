@@ -335,9 +335,6 @@ impl YuyukoPlayer {
             world: World::new(),
         }
     }
-    fn handle_fly(move_id: MoveId, extra_data: &mut ExtraData) -> collision::Vec2 {
-        crate::roster::impls::handle_fly(move_id, MoveId::FlyStart, extra_data)
-    }
     fn handle_jump(
         flags: &Flags,
         data: &Properties,
@@ -511,6 +508,9 @@ impl YuyukoPlayer {
                             crate::character::command::Effect::RefillSpirit => {
                                 state.spirit_gauge = self.data.properties.max_spirit_gauge
                             }
+                            crate::character::command::Effect::FlipFacing => {
+                                state.facing = state.facing.invert();
+                            }
                         }
                     }
                     state.allowed_cancels = AllowedCancel::Always;
@@ -529,20 +529,6 @@ impl YuyukoPlayer {
                                 input.last().unwrap().axis,
                                 state.facing,
                             ));
-                        }
-                        CommandId::Fly => {
-                            let mut dir =
-                                DirectedAxis::from_facing(input.last().unwrap().axis, state.facing);
-                            if dir.is_backward() {
-                                state.facing = state.facing.invert();
-                                dir = dir.invert();
-                            }
-                            state.extra_data =
-                                ExtraData::FlyDirection(if dir == DirectedAxis::Neutral {
-                                    DirectedAxis::Forward
-                                } else {
-                                    dir
-                                });
                         }
                         _ => (),
                     }
@@ -616,10 +602,6 @@ impl YuyukoPlayer {
         };
 
         let accel = self.state.facing.fix_collision(flags.accel)
-            + self
-                .state
-                .facing
-                .fix_collision(Self::handle_fly(move_id, &mut self.state.extra_data))
             + self.state.facing.fix_collision(Self::handle_jump(
                 flags,
                 &self.data.properties,

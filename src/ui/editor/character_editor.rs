@@ -237,7 +237,7 @@ impl AppState for CharacterEditor {
 
                         let edit_result = self
                             .states_ui_data
-                            .draw_ui(ui, &mut self.resource.borrow_mut().states);
+                            .draw_ui(ui, &mut self.resource.borrow_mut());
                         if let Ok(Some(state)) = &edit_result {
                             let state = state.clone();
                             self.transition = Transition::Push(Box::new(

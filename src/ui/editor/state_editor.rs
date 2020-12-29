@@ -105,7 +105,10 @@ impl AppState for StateEditor {
                             graphic_list.sort();
                             let graphic_list = graphic_list;
 
-                            let entry = cd.state_graphics_map.get_mut(&self.path.state).unwrap();
+                            let entry = cd
+                                .state_graphics_map
+                                .entry(self.path.state.clone())
+                                .or_insert_with(|| graphic_list[0].clone());
 
                             ui.combo_items(im_str!("Graphic"), entry, &graphic_list, &|item| {
                                 im_str!("{}", item).into()

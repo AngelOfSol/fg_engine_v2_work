@@ -7,6 +7,7 @@ pub enum Effect {
     UseAirAction,
     UseMeter(i32),
     RefillSpirit,
+    FlipFacing,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Inspect)]

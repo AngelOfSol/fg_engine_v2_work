@@ -1,4 +1,4 @@
-use crate::character::state::State;
+use crate::character::{state::State, PlayerCharacter};
 use crate::imgui_extra::UiExtensions;
 use ggez::GameResult;
 use imgui::*;
@@ -16,7 +16,11 @@ impl StatesUi {
         state_name_keys.sort();
         StatesUi { state_name_keys }
     }
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut EditorStates) -> GameResult<Option<String>> {
+    pub fn draw_ui(
+        &mut self,
+        ui: &Ui<'_>,
+        data: &mut PlayerCharacter,
+    ) -> GameResult<Option<String>> {
         let mut ret = None;
         ui.text(im_str!("States:"));
         ui.same_line(0.0);
@@ -24,14 +28,16 @@ impl StatesUi {
             if let Ok(nfd::Response::Okay(path)) = nfd::open_file_dialog(Some("json"), None) {
                 let path = PathBuf::from(path);
                 let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-                let name = data.guarentee_unique_key(name);
-                data.rest.insert(name, State::load_from_json(path));
+                let name = data.states.guarentee_unique_key(name);
+                data.states.rest.insert(name, State::load_from_json(path));
             }
         }
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            let key = data.guarentee_unique_key("new state");
-            data.rest.insert(key.clone(), State::new());
+            let key = data.states.guarentee_unique_key("new state");
+            data.states.rest.insert(key.clone(), State::new());
+            data.state_graphics_map
+                .insert(key.clone(), data.graphics.keys().next().cloned().unwrap());
             self.state_name_keys.insert(0, key);
         }
         ui.separator();
@@ -41,7 +47,7 @@ impl StatesUi {
         let mut sort = false;
 
         for (idx, name) in self.state_name_keys.iter().enumerate() {
-            let value = data.rest.get_mut(name).unwrap();
+            let value = data.states.rest.get_mut(name).unwrap();
 
             let id = ui.push_id(&format!("Rest {} {:?}", idx, value.on_expire));
             let mut buffer = name.clone();
@@ -73,21 +79,25 @@ impl StatesUi {
         if let Some(key) = to_delete {
             if let Some(idx) = self.state_name_keys.iter().position(|item| item == &key) {
                 self.state_name_keys.remove(idx);
-                data.rest.remove(&key);
+                data.states.rest.remove(&key);
+                data.state_graphics_map.remove(&key);
                 // TODO have deleting a state delete all instances of it from the rest of hte state references
             }
         }
         if let Some((old, new)) = to_change {
-            let state = data.rest.remove(&old).unwrap();
+            let new = data.states.guarentee_unique_key(new);
+            let state = data.states.rest.remove(&old).unwrap();
 
-            for fix_state in data.rest.values_mut() {
+            for fix_state in data.states.rest.values_mut() {
                 if fix_state.on_expire.state_id == old {
                     fix_state.on_expire.state_id = new.clone();
                 }
             }
+            let graphics_key = data.state_graphics_map.remove(&old);
+            data.state_graphics_map
+                .insert(new.clone(), graphics_key.unwrap());
 
-            let new = data.guarentee_unique_key(new);
-            data.rest.insert(new.clone(), state);
+            data.states.rest.insert(new.clone(), state);
             if let Some(idx) = self.state_name_keys.iter().position(|item| item == &old) {
                 self.state_name_keys.remove(idx);
                 self.state_name_keys.insert(idx, new);
