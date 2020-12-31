@@ -1,6 +1,6 @@
+use crate::character::state::components::Flags;
 use crate::roster::generic_character::combo_state::ComboState;
 use crate::typedefs::collision;
-use crate::{character::state::components::Flags, input::DirectedAxis};
 use crate::{character::state::components::StateType, input::Facing};
 
 pub fn handle_refacing(

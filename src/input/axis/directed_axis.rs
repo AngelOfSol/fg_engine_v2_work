@@ -42,6 +42,7 @@ impl Default for DirectedAxis {
 }
 
 impl DirectedAxis {
+    #[allow(dead_code)]
     pub fn direction_multiplier(self, facing: bool) -> i32 {
         let facing = if facing { 1 } else { -1 };
         let self_value = match self {
@@ -133,13 +134,6 @@ impl DirectedAxis {
         } else {
             ret
         }
-    }
-
-    pub fn is_horizontal(self) -> bool {
-        !matches!(
-            self,
-            DirectedAxis::Up | DirectedAxis::Neutral | DirectedAxis::Down
-        )
     }
 
     pub fn is_guarding(self, guard: Guard) -> bool {

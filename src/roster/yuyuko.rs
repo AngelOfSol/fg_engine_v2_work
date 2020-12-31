@@ -7,7 +7,6 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
 use crate::input::{read_inputs, DirectedAxis, Facing, InputState};
 use crate::roster::generic_character::combo_state::{AllowedCancel, ComboState};
-use crate::roster::generic_character::extra_data::ExtraData;
 use crate::roster::generic_character::hit_info::{
     EffectData, Force, HitAction, HitEffect, HitEffectType, HitResult, HitSource,
 };
@@ -300,7 +299,7 @@ impl YuyukoState {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
             current_state: (0, MoveId::RoundStart),
-            extra_data: ExtraData::None,
+            stun: None,
             air_actions: data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -376,7 +375,7 @@ impl YuyukoPlayer {
         let state_type = self.data.states[&move_id].state_type;
 
         if matches!(state_type, StateType::Blockstun | StateType::Hitstun) {
-            let hitstun = self.state.extra_data.unwrap_stun_mut();
+            let hitstun = self.state.stun.as_mut().unwrap();
             *hitstun -= 1;
             if *hitstun == 0 {
                 if !flags.airborne {
@@ -479,22 +478,6 @@ impl YuyukoPlayer {
                     state.allowed_cancels = AllowedCancel::Always;
                     state.last_hit_using = None;
                     state.rebeat_chain.insert(command_id);
-
-                    match command_id {
-                        CommandId::BorderEscapeJump => {
-                            state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                                input.last().unwrap().axis,
-                                state.facing,
-                            ));
-                        }
-                        CommandId::Jump | CommandId::SuperJump => {
-                            state.extra_data = ExtraData::JumpDirection(DirectedAxis::from_facing(
-                                input.last().unwrap().axis,
-                                state.facing,
-                            ));
-                        }
-                        _ => (),
-                    }
                 }
 
                 ret
@@ -598,7 +581,7 @@ impl YuyukoPlayer {
                 (0, MoveId::Stand)
             };
             if reset_hitstun {
-                self.state.extra_data = ExtraData::None;
+                self.state.stun = None;
             }
             if reset_velocity {
                 self.state.velocity = collision::Vec2::zeros();
@@ -993,7 +976,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         match hit_type {
             HitEffectType::Graze => {}
             _ => {
-                self.state.extra_data = ExtraData::Stun(effect.set_stun);
+                self.state.stun = Some(effect.set_stun);
                 self.state.velocity = match effect.set_force {
                     Force::Airborne(value) | Force::Grounded(value) => value,
                 };
@@ -1460,7 +1443,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             position: collision::Vec2::new(position, 0),
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::Stand),
-            extra_data: ExtraData::None,
+            stun: None,
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,
@@ -1489,7 +1472,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             position: collision::Vec2::new(position, 0),
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::RoundStart),
-            extra_data: ExtraData::None,
+            stun: None,
             air_actions: self.data.properties.max_air_actions,
             spirit_gauge: 0,
             spirit_delay: 0,

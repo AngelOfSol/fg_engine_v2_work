@@ -1,5 +1,4 @@
 pub mod combo_state;
-pub mod extra_data;
 pub mod hit_info;
 pub mod move_id;
 
@@ -28,7 +27,7 @@ pub struct PlayerState<MoveId, SoundId, CommandId> {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
-    pub extra_data: ExtraData,
+    pub stun: Option<i32>,
     pub facing: Facing,
     pub air_actions: usize,
     pub spirit_gauge: i32,
@@ -153,10 +152,7 @@ pub trait GenericCharacterBehaviour {
     );
 }
 
-use self::{
-    combo_state::{AllowedCancel, ComboState},
-    extra_data::ExtraData,
-};
+use self::combo_state::{AllowedCancel, ComboState};
 
 use super::yuyuko::YuyukoState;
 
