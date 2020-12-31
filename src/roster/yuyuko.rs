@@ -335,44 +335,7 @@ impl YuyukoPlayer {
             world: World::new(),
         }
     }
-    fn handle_jump(
-        flags: &Flags,
-        data: &Properties,
-        move_id: MoveId,
-        extra_data: &mut ExtraData,
-    ) -> collision::Vec2 {
-        if flags.jump_start {
-            let axis = extra_data.unwrap_jump_direction();
-            *extra_data = ExtraData::None;
-            match move_id {
-                MoveId::Jump => {
-                    if !axis.is_horizontal() {
-                        data.neutral_jump_accel
-                    } else {
-                        data.directed_jump_accel
-                            .component_mul(&collision::Vec2::new(
-                                axis.direction_multiplier(true),
-                                1,
-                            ))
-                    }
-                }
-                MoveId::SuperJump | MoveId::BorderEscapeJump => {
-                    if !axis.is_horizontal() {
-                        data.neutral_super_jump_accel
-                    } else {
-                        data.directed_super_jump_accel
-                            .component_mul(&collision::Vec2::new(
-                                axis.direction_multiplier(true),
-                                1,
-                            ))
-                    }
-                }
-                _ => panic!("jump_start not allowed on non jump moves"),
-            }
-        } else {
-            collision::Vec2::zeros()
-        }
-    }
+
     fn in_corner(&self, play_area: &PlayArea) -> bool {
         let collision = self.collision();
         i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
@@ -601,13 +564,7 @@ impl YuyukoPlayer {
             collision::Vec2::zeros()
         };
 
-        let accel = self.state.facing.fix_collision(flags.accel)
-            + self.state.facing.fix_collision(Self::handle_jump(
-                flags,
-                &self.data.properties,
-                move_id,
-                &mut self.state.extra_data,
-            ));
+        let accel = self.state.facing.fix_collision(flags.accel);
         self.state.velocity = base_velocity + accel + friction + gravity;
     }
     fn update_position(&mut self, play_area: &PlayArea) {

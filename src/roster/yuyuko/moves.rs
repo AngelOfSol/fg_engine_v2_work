@@ -60,7 +60,6 @@ pub enum MoveId {
     SuperJump,
     AirIdle,
     Fly,
-    FlyStart,
     FlyEnd,
     FlyForward,
     FlyUp,
@@ -138,13 +137,10 @@ pub enum CommandId {
     BackDash,
     Jump,
     SuperJump,
-    Fly,
     Fly1,
     Fly2,
     Fly3,
-    #[serde(alias = "FlyBackward")]
     Fly4,
-    #[serde(alias = "FlyForward")]
     Fly6,
     Fly7,
     Fly8,

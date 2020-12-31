@@ -53,8 +53,6 @@ pub struct Flags {
     pub meter_cost: i32,
 
     #[serde(default)]
-    pub jump_start: bool,
-    #[serde(default)]
     pub allow_reface: bool,
     pub accel: Vec2,
     #[serde(default = "default_friction")]
@@ -100,7 +98,6 @@ impl Flags {
             can_block: false,
             grazing: false,
             airborne: false,
-            jump_start: false,
             reset_velocity: false,
             allow_reface: false,
             crouching: false,
