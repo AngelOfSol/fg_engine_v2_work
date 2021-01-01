@@ -4,7 +4,6 @@ pub mod move_id;
 
 pub mod impls;
 
-use crate::assets::Assets;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -12,18 +11,22 @@ use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
+use crate::{assets::Assets, character::components::AttackInfo};
 use crate::{
     character::state::components::GlobalGraphic,
     game_match::sounds::{PlayerSoundState, SoundPath},
 };
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hit_info::{HitAction, HitEffect, HitResult};
+use hit_info::{
+    new::{ComboEffect, OnHitEffect, Source},
+    HitAction, HitEffect, HitResult,
+};
 use rodio::Device;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
-pub struct PlayerState<MoveId, SoundId, CommandId> {
+pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
     pub velocity: collision::Vec2,
     pub position: collision::Vec2,
     pub current_state: (usize, MoveId),
@@ -34,7 +37,9 @@ pub struct PlayerState<MoveId, SoundId, CommandId> {
     pub spirit_delay: i32,
     pub hitstop: i32,
     pub last_hit_using: Option<u64>,
+    pub last_hit_using_new: Option<(AttackId, usize)>,
     pub current_combo: Option<ComboState>,
+    pub current_combo_new: Option<ComboEffect>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<CommandId>,
@@ -153,6 +158,20 @@ pub trait GenericCharacterBehaviour {
         position: collision::Int,
         facing: Facing,
     );
+
+    fn would_be_hit_new(
+        &self,
+        input: &[InputState],
+        attack_info: &AttackInfo,
+        source: &Source,
+        combo_effect: Option<&ComboEffect>,
+        old_effect: Option<OnHitEffect>,
+    ) -> Option<OnHitEffect>;
+
+    fn take_hit_new(&mut self, info: &OnHitEffect, play_area: &PlayArea);
+    fn deal_hit_new(&mut self, info: &OnHitEffect);
+
+    fn get_current_combo(&self) -> Option<&ComboEffect>;
 }
 
 use self::combo_state::{AllowedCancel, ComboState};

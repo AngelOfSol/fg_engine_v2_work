@@ -6,7 +6,7 @@ use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
 use crate::input::{read_inputs, DirectedAxis, Facing, InputState};
-use crate::roster::generic_character::combo_state::{AllowedCancel, ComboState};
+use crate::roster::generic_character::combo_state::AllowedCancel;
 use crate::roster::generic_character::hit_info::{
     EffectData, Force, HitAction, HitEffect, HitEffectType, HitResult, HitSource,
 };
@@ -282,14 +282,14 @@ pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
     pub world: World,
     pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
-    pub last_combo_state: Option<(ComboState, usize)>,
+    pub last_combo_state: Option<(ComboEffect, usize)>,
     pub state: YuyukoState,
     pub combo_text: RefCell<Option<ggez::graphics::Text>>,
 }
 
 use std::cell::RefCell;
 
-pub type YuyukoState = PlayerState<MoveId, YuyukoSound, CommandId>;
+pub type YuyukoState = PlayerState<MoveId, YuyukoSound, CommandId, AttackId>;
 
 impl YuyukoState {
     fn new(data: &Yuyuko) -> Self {
@@ -316,13 +316,20 @@ impl YuyukoState {
             smp_list: Default::default(),
             most_recent_command: (CommandId::Stand, 0),
             first_command: None,
+            last_hit_using_new: None,
+            current_combo_new: None,
         }
     }
 }
 
 use crate::game_match::sounds::PlayerSoundState;
 
-use super::PlayerState;
+use super::{
+    hit_info::new::{
+        block, counter_hit, graze, guard_crush, hit, wrong_block, ComboEffect, OnHitEffect, Source,
+    },
+    PlayerState,
+};
 
 impl YuyukoPlayer {
     pub fn new(data: Rc<Yuyuko>) -> Self {
@@ -663,7 +670,7 @@ impl YuyukoPlayer {
         let (_, move_id) = self.state.current_state;
         let current_state_type = self.data.states[&move_id].state_type;
         crate::roster::impls::handle_combo_state(
-            &mut self.state.current_combo,
+            &mut self.state.current_combo_new,
             &mut self.last_combo_state,
             current_state_type,
         );
@@ -737,6 +744,542 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         }
     }
     fn prune_bullets(&mut self, _play_area: &PlayArea) {}
+
+    fn would_be_hit_new(
+        &self,
+        input: &[InputState],
+        attack_info: &AttackInfo,
+        source: &Source,
+        combo_effect: Option<&ComboEffect>,
+        old_effect: Option<OnHitEffect>,
+    ) -> Option<OnHitEffect> {
+        let flags = self.current_flags();
+        let state_type = self.data.states[&self.state.current_state.1].state_type;
+        let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
+        match old_effect {
+            Some(effect) => match effect {
+                OnHitEffect::Hit(effect) => {
+                    if effect.combo.available_limit > 0 {
+                        Some(effect.append_hit(attack_info, source).into())
+                    } else {
+                        Some(effect.into())
+                    }
+                }
+                OnHitEffect::GuardCrush(effect) => {
+                    if effect.combo.available_limit > 0 {
+                        Some(effect.append_hit(attack_info).into())
+                    } else {
+                        Some(effect.into())
+                    }
+                }
+                OnHitEffect::CounterHit(effect) => {
+                    if effect.combo.available_limit > 0 {
+                        Some(effect.append_hit(attack_info).into())
+                    } else {
+                        Some(effect.into())
+                    }
+                }
+                OnHitEffect::Graze(effect) => {
+                    if attack_info.magic && flags.bullet.is_invuln()
+                        || attack_info.melee && flags.melee.is_invuln()
+                        || attack_info.air && flags.air.is_invuln()
+                        || attack_info.foot && flags.foot.is_invuln()
+                    {
+                        Some(effect.into())
+                    } else if attack_info.grazeable {
+                        Some(effect.append_graze(attack_info).into())
+                    } else if (flags.can_block
+                        && (axis.is_blocking(false)
+                            || axis.is_blocking(self.state.facing == source.facing)))
+                        && !(attack_info.air_unblockable && flags.airborne)
+                    {
+                        if flags.airborne || axis.is_guarding(attack_info.guard) {
+                            if block::Effect::would_crush(
+                                Some(effect.defender.take_spirit_gauge),
+                                attack_info,
+                                self.state.spirit_gauge,
+                            ) {
+                                Some(
+                                    effect
+                                        .append_guard_crush(attack_info, source, flags.airborne)
+                                        .into(),
+                                )
+                            } else {
+                                Some(
+                                    effect
+                                        .append_block(attack_info, source, flags.airborne)
+                                        .into(),
+                                )
+                            }
+                        } else if wrong_block::Effect::would_crush(
+                            Some(effect.defender.take_spirit_gauge),
+                            attack_info,
+                            self.state.spirit_gauge,
+                        ) {
+                            Some(
+                                effect
+                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .into(),
+                            )
+                        } else {
+                            Some(effect.append_wrongblock(attack_info, source).into())
+                        }
+                    } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
+                        Some(
+                            effect
+                                .append_counterhit(attack_info, source, flags.airborne)
+                                .into(),
+                        )
+                    } else {
+                        Some(
+                            effect
+                                .append_hit(attack_info, source, flags.airborne)
+                                .into(),
+                        )
+                    }
+                }
+                OnHitEffect::Block(effect) => {
+                    if !(attack_info.air_unblockable && flags.airborne) {
+                        if flags.airborne || axis.is_guarding(attack_info.guard) {
+                            if block::Effect::would_crush(
+                                Some(effect.defender.take_spirit_gauge),
+                                attack_info,
+                                self.state.spirit_gauge,
+                            ) {
+                                Some(
+                                    effect
+                                        .append_guard_crush(attack_info, source, flags.airborne)
+                                        .into(),
+                                )
+                            } else {
+                                Some(
+                                    effect
+                                        .append_block(attack_info, source, flags.airborne)
+                                        .into(),
+                                )
+                            }
+                        } else if wrong_block::Effect::would_crush(
+                            Some(effect.defender.take_spirit_gauge),
+                            attack_info,
+                            self.state.spirit_gauge,
+                        ) {
+                            Some(
+                                effect
+                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .into(),
+                            )
+                        } else {
+                            Some(effect.append_wrongblock(attack_info, source).into())
+                        }
+                    } else {
+                        Some(
+                            effect
+                                .append_hit(attack_info, source, flags.airborne)
+                                .into(),
+                        )
+                    }
+                }
+                OnHitEffect::WrongBlock(effect) => {
+                    if axis.is_guarding(attack_info.guard) {
+                        if block::Effect::would_crush(
+                            Some(effect.defender.take_spirit_gauge),
+                            attack_info,
+                            self.state.spirit_gauge,
+                        ) {
+                            Some(
+                                effect
+                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .into(),
+                            )
+                        } else {
+                            Some(effect.append_block(attack_info).into())
+                        }
+                    } else if wrong_block::Effect::would_crush(
+                        Some(effect.defender.take_spirit_gauge),
+                        attack_info,
+                        self.state.spirit_gauge,
+                    ) {
+                        Some(
+                            effect
+                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .into(),
+                        )
+                    } else {
+                        Some(effect.append_wrongblock(attack_info, source).into())
+                    }
+                }
+            },
+            None => {
+                if attack_info.magic && flags.bullet.is_invuln()
+                    || attack_info.melee && flags.melee.is_invuln()
+                    || attack_info.air && flags.air.is_invuln()
+                    || attack_info.foot && flags.foot.is_invuln()
+                    || self
+                        .state
+                        .current_combo
+                        .map(|item| item.available_limit <= 0)
+                        .unwrap_or(false)
+                {
+                    None
+                } else if attack_info.grazeable && flags.grazing {
+                    Some(graze::Effect::build(attack_info).into())
+                } else if (matches!(state_type, StateType::Blockstun)
+                    || (flags.can_block
+                    // this is crossup protection
+                    // if the attack is facing the same direction you're facing
+                    // then the attack should be able to be blocked by holding both back
+                    // and forward.
+                    && (axis.is_blocking(false) || axis.is_blocking(self.state.facing == source.facing))))
+                    && !(attack_info.air_unblockable && flags.airborne)
+                {
+                    if flags.airborne || axis.is_guarding(attack_info.guard) {
+                        if block::Effect::would_crush(None, attack_info, self.state.spirit_gauge) {
+                            Some(
+                                guard_crush::Effect::build(attack_info, source, flags.airborne)
+                                    .into(),
+                            )
+                        } else {
+                            Some(block::Effect::build(attack_info, source, flags.airborne).into())
+                        }
+                    } else if wrong_block::Effect::would_crush(
+                        None,
+                        attack_info,
+                        self.state.spirit_gauge,
+                    ) {
+                        Some(guard_crush::Effect::build(attack_info, source, flags.airborne).into())
+                    } else {
+                        Some(wrong_block::Effect::build(attack_info, source).into())
+                    }
+                } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
+                    Some(counter_hit::Effect::build(attack_info, source, flags.airborne).into())
+                } else {
+                    combo_effect
+                        .map(|combo| {
+                            if combo.available_limit > 0 {
+                                Some(
+                                    hit::Effect::build(
+                                        attack_info,
+                                        source,
+                                        flags.airborne,
+                                        combo.clone(),
+                                    )
+                                    .into(),
+                                )
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap_or_else(|| {
+                            Some(
+                                hit::Effect::build_starter(attack_info, source, flags.airborne)
+                                    .into(),
+                            )
+                        })
+                }
+            }
+        }
+    }
+
+    fn take_hit_new(&mut self, info: &OnHitEffect, play_area: &PlayArea) {
+        let airborne = match info {
+            OnHitEffect::Hit(hit::Effect {
+                defender:
+                    hit::DefenderEffect {
+                        take_damage,
+                        is_lethal,
+                        set_force,
+                        modify_meter,
+                        set_stun,
+                        set_stop,
+                        set_should_pushback,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::CounterHit(counter_hit::Effect {
+                defender:
+                    counter_hit::DefenderEffect {
+                        take_damage,
+                        is_lethal,
+                        set_force,
+                        modify_meter,
+                        set_stun,
+                        set_stop,
+                        set_should_pushback,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::GuardCrush(guard_crush::Effect {
+                defender:
+                    guard_crush::DefenderEffect {
+                        take_damage,
+                        is_lethal,
+                        set_force,
+                        modify_meter,
+                        set_stun,
+                        set_stop,
+                        set_should_pushback,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::Block(block::Effect {
+                defender:
+                    block::DefenderEffect {
+                        take_damage,
+                        is_lethal,
+                        set_force,
+                        modify_meter,
+                        set_stun,
+                        set_stop,
+                        set_should_pushback,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::WrongBlock(wrong_block::Effect {
+                defender:
+                    wrong_block::DefenderEffect {
+                        take_damage,
+                        is_lethal,
+                        set_force,
+                        modify_meter,
+                        set_stun,
+                        set_stop,
+                        set_should_pushback,
+                        ..
+                    },
+                ..
+            }) => {
+                self.state.health -= take_damage;
+
+                if self.state.health <= 0 && *is_lethal {
+                    self.state.dead = true;
+                }
+
+                let airborne = match set_force {
+                    Force::Airborne(_) => true,
+                    Force::Grounded(_) => false,
+                } || self.state.dead;
+
+                self.state.should_pushback = *set_should_pushback;
+                self.state.meter += modify_meter;
+
+                self.state.hitstop = *set_stop;
+
+                self.state.stun = Some(*set_stun);
+                self.state.velocity = match set_force {
+                    Force::Airborne(value) | Force::Grounded(value) => *value,
+                };
+
+                airborne
+            }
+
+            OnHitEffect::Graze(effect) => {
+                let effect = &effect.defender;
+
+                self.state.health -= effect.take_damage;
+
+                self.state.hitstop = effect.set_stop;
+                self.current_flags().airborne
+            }
+        };
+
+        match info {
+            OnHitEffect::Hit(hit::Effect {
+                defender:
+                    hit::DefenderEffect {
+                        take_spirit_gauge,
+                        reset_spirit_delay,
+                        add_spirit_delay,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::CounterHit(counter_hit::Effect {
+                defender:
+                    counter_hit::DefenderEffect {
+                        take_spirit_gauge,
+                        reset_spirit_delay,
+                        add_spirit_delay,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::Graze(graze::Effect {
+                defender:
+                    graze::DefenderEffect {
+                        take_spirit_gauge,
+                        reset_spirit_delay,
+                        add_spirit_delay,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::Block(block::Effect {
+                defender:
+                    block::DefenderEffect {
+                        take_spirit_gauge,
+                        reset_spirit_delay,
+                        add_spirit_delay,
+                        ..
+                    },
+                ..
+            })
+            | OnHitEffect::WrongBlock(wrong_block::Effect {
+                defender:
+                    wrong_block::DefenderEffect {
+                        take_spirit_gauge,
+                        reset_spirit_delay,
+                        add_spirit_delay,
+                        ..
+                    },
+                ..
+            }) => {
+                self.state.spirit_gauge -= *take_spirit_gauge;
+                self.state.spirit_delay = if *reset_spirit_delay {
+                    0
+                } else {
+                    self.state.spirit_delay
+                } + *add_spirit_delay;
+            }
+            OnHitEffect::GuardCrush(_) => {
+                self.state.spirit_gauge = self.data.properties.max_spirit_gauge;
+            }
+        }
+
+        match info {
+            OnHitEffect::GuardCrush(_) => {
+                if airborne {
+                    self.state.current_state = (0, MoveId::HitstunAirStart);
+                } else {
+                    self.state.current_state = (0, MoveId::GuardCrush);
+                }
+            }
+            OnHitEffect::Hit(_) | OnHitEffect::CounterHit(_) => {
+                if airborne {
+                    self.state.current_state = (0, MoveId::HitstunAirStart);
+                } else {
+                    self.state.current_state = (0, MoveId::HitstunStandStart);
+                }
+            }
+            OnHitEffect::Block(_) => {
+                if airborne {
+                    self.state.current_state = (0, MoveId::BlockstunAirStart);
+                } else if self.current_flags().crouching {
+                    self.state.current_state = (0, MoveId::BlockstunCrouchStart);
+                } else {
+                    self.state.current_state = (0, MoveId::BlockstunStandStart);
+                }
+            }
+            OnHitEffect::WrongBlock(_) => {
+                if self.current_flags().crouching {
+                    self.state.current_state = (0, MoveId::WrongblockStandStart);
+                } else {
+                    self.state.current_state = (0, MoveId::WrongblockCrouchStart);
+                }
+            }
+            OnHitEffect::Graze(_) => {}
+        }
+
+        self.validate_position(play_area);
+    }
+
+    fn deal_hit_new(&mut self, info: &OnHitEffect) {
+        match info {
+            OnHitEffect::Hit(_) => {
+                self.state
+                    .sound_state
+                    .play_sound(ChannelName::Hit, GlobalSound::Hit.into());
+            }
+            OnHitEffect::GuardCrush(_) => {
+                self.state
+                    .sound_state
+                    .play_sound(ChannelName::Hit, GlobalSound::GuardCrush.into());
+            }
+            OnHitEffect::CounterHit(_) => {
+                self.state
+                    .sound_state
+                    .play_sound(ChannelName::Hit, GlobalSound::CounterHit.into());
+            }
+            OnHitEffect::Block(_) => {
+                self.state
+                    .sound_state
+                    .play_sound(ChannelName::Hit, GlobalSound::Block.into());
+            }
+            OnHitEffect::WrongBlock(_) => {
+                self.state
+                    .sound_state
+                    .play_sound(ChannelName::Hit, GlobalSound::WrongBlock.into());
+            }
+            OnHitEffect::Graze(_) => {}
+        }
+        let (frame, move_id) = &self.state.current_state;
+        let hitbox = self.data.states[move_id].hitboxes[*frame]
+            .hitbox
+            .as_ref()
+            .unwrap();
+        let attack_info = &self.data.attacks[&hitbox.data_id];
+
+        self.state.meter += match info {
+            OnHitEffect::Hit(_) => attack_info.on_hit.attacker_meter,
+            OnHitEffect::GuardCrush(_) => attack_info.on_guard_crush.attacker_meter,
+            OnHitEffect::CounterHit(_) => attack_info.on_counter_hit.attacker_meter,
+            OnHitEffect::Graze(_) => attack_info.on_graze.attacker_meter,
+            OnHitEffect::Block(_) => attack_info.on_block.attacker_meter,
+            OnHitEffect::WrongBlock(_) => attack_info.on_wrongblock.attacker_meter,
+        };
+        self.state.hitstop = match info {
+            OnHitEffect::Hit(_) => attack_info.on_hit.attacker_stop,
+            OnHitEffect::GuardCrush(_) => attack_info.on_guard_crush.attacker_stop,
+            OnHitEffect::CounterHit(_) => attack_info.on_counter_hit.attacker_stop,
+            OnHitEffect::Graze(_) => 0,
+            OnHitEffect::Block(_) => attack_info.on_block.attacker_stop,
+            OnHitEffect::WrongBlock(_) => attack_info.on_wrongblock.attacker_stop,
+        };
+
+        self.state.last_hit_using_new = Some((hitbox.data_id, hitbox.id));
+
+        match info {
+            OnHitEffect::Hit(hit::Effect { combo, .. })
+            | OnHitEffect::GuardCrush(guard_crush::Effect { combo, .. })
+            | OnHitEffect::CounterHit(counter_hit::Effect { combo, .. }) => {
+                self.state.current_combo_new = Some(combo.clone());
+            }
+            _ => {}
+        }
+
+        let associated_command = self.state.most_recent_command;
+
+        if let Some(first_command) = self.state.first_command {
+            if associated_command != first_command
+                && associated_command.1 > first_command.1
+                && !self.state.smp_list.contains_key(&associated_command.0)
+            {
+                self.state
+                    .smp_list
+                    .insert(associated_command.0, associated_command.1);
+            }
+        } else {
+            self.state.first_command = Some(associated_command);
+        }
+
+        match info {
+            OnHitEffect::Hit(_) | OnHitEffect::GuardCrush(_) | OnHitEffect::CounterHit(_) => {
+                self.state.allowed_cancels = AllowedCancel::Hit;
+            }
+            OnHitEffect::Graze(_) => {}
+            OnHitEffect::Block(_) | OnHitEffect::WrongBlock(_) => {
+                self.state.allowed_cancels = AllowedCancel::Block;
+            }
+        }
+    }
+
+    fn get_current_combo(&self) -> Option<&ComboEffect> {
+        self.state.current_combo_new.as_ref()
+    }
+
     fn would_be_hit(
         &self,
         input: &[InputState],
@@ -841,7 +1384,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                                 .inherit_non_hit_data(&new_effect)
                                 .set_stop(new_effect.set_stop.max(old_effect.set_stop))
                                 .build(),
-                            old_hit_type,
+                            HitEffectType::Graze,
                         ),
                         HitEffectType::CounterHit | HitEffectType::Hit => (
                             new_effect
@@ -1495,6 +2038,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             smp_list: Default::default(),
             most_recent_command: (CommandId::Stand, 0),
             first_command: None,
+            last_hit_using_new: None,
+            current_combo_new: None,
         };
         self.validate_position(play_area);
     }
@@ -1527,6 +2072,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             smp_list: Default::default(),
             most_recent_command: (CommandId::Stand, 0),
             first_command: None,
+            last_hit_using_new: None,
+            current_combo_new: None,
         };
 
         self.validate_position(play_area);

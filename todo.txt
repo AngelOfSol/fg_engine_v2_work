@@ -285,6 +285,10 @@ TODO (2/15/2020):
     [] split combo_state
         [] for attacker
             [] add smp list
+        [] remove all passing of data out through hitAction
+            [] on deal_hit, the player should know that the current hit is the hit to register
+                [] if its an object dealing the hit, an entity_id should be passed instead
+                [] this lets the player access any info they need to set last_hit_by or return data
         [] for defender
     [] adjust attack info
         [] add hit_target

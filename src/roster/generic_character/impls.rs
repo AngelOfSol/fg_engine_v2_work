@@ -20,8 +20,8 @@ pub fn handle_refacing(
     }
 }
 pub fn handle_combo_state(
-    current_combo: &mut Option<ComboState>,
-    last_combo_state: &mut Option<(ComboState, usize)>,
+    current_combo: &mut Option<ComboEffect>,
+    last_combo_state: &mut Option<(ComboEffect, usize)>,
     current_state_type: StateType,
 ) {
     if !matches!(
@@ -58,7 +58,7 @@ pub fn draw_ui(
     flipped: bool,
     wins: usize,
     first_to: usize,
-    last_combo_state: &Option<(ComboState, usize)>,
+    last_combo_state: &Option<(ComboEffect, usize)>,
     combo_text: &mut Option<ggez::graphics::Text>,
     health: i32,
     spirit_gauge: i32,
@@ -282,6 +282,8 @@ pub fn draw_ui(
     Ok(())
 }
 use crate::typedefs::collision::IntoGraphical;
+
+use super::hit_info::new::ComboEffect;
 pub fn get_transform(
     world: graphics::Matrix4,
     offset: collision::Vec2,

@@ -7,7 +7,6 @@ use enum_dispatch::enum_dispatch;
 pub use generic_character::*;
 pub use yuyuko::*;
 
-use crate::assets::Assets;
 use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea, UiElements};
@@ -15,8 +14,12 @@ use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
+use crate::{assets::Assets, character::components::AttackInfo};
 use ggez::{Context, GameResult};
-use hit_info::{HitAction, HitEffect, HitResult};
+use hit_info::{
+    new::{ComboEffect, OnHitEffect, Source},
+    HitAction, HitEffect, HitResult,
+};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
