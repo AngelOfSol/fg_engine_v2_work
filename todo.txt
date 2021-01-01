@@ -251,6 +251,9 @@ TODO (2/15/2020):
             [x] in-game
         [x] remove old graphics data
     [x] create an actual basic UI that's mirrored properly
+    [x] add untech
+        [x] when you enter untech without limit bounce tech
+        [x] untech is basically just airhitstun
     [x] remove extra-data concept, creating a new state for each variant
         [x] forward/neutral/back jump/superjump/border-escape
         [x] 1/2/3/4/6/7/8/9 fly
@@ -276,9 +279,6 @@ TODO (2/15/2020):
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [x] add untech
-        [x] when you enter untech without limit bounce tech
-        [x] untech is basically just airhitstun
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
     [] move to u32 for current_frame
@@ -292,17 +292,28 @@ TODO (2/15/2020):
             [] airborne
             [] both (default)
         [] add unblockable
-    [] move graphics out of yuyu data, so that just game data can be loaded
     [] implement SMP
         [] more like same move limit
         [] figure out how to deal with bullets
         [] the first move in a combo is NOT recorded
-        [] smp_list = Vec<(move_id, absolute_frame_move_started_on)>
         [] smp_lsit = Vec<CommandId>
+            [] everytiem a command is entered
+                [] set most_recent_command
+            [] when checking attack_data
+                [] if smp_list.get(associated_command.id) exists and smp_time < associated_command.time
+                    [] the move qualifies for SMP
+                [] else
+                    [] no SMP
+            [] when a hitbox connects
+                [] if first_command is none 
+                    [] set it to Some(most_recent_command || associated_command) (this is for bullets)
+                [] if first_command is Some(first_command) then
+                    [] if associated_command != first_command && associated_command.time > first_command.time && smp_list does not contain associated_command.id
+                        [] add associated_command to smp_list
+                    [] when spawning a projectile, and smp is enabled, add the (command, time) to the projectile, so it can check smp in the  same process above
     [] add hardlimits on velocity due to gravity
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] add pause menu
-    [] add air untech
     [] create settings object
         [] holds all settings
             [] window properties
@@ -336,6 +347,7 @@ TODO (2/15/2020):
     [] move all weird constants into either Rust constants or loaded from a file
     [] upgrade rusttype for ggez?
     [] play a small animation at the end of the game for the winner
+    [] move graphics out of yuyu data, so that just game data can be loaded
     [] move to a new graphics api
         [] luminance-rs
         [] mini/macroquad

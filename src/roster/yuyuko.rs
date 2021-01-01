@@ -313,6 +313,9 @@ impl YuyukoState {
             meter: 0,
             lockout: 0,
             dead: false,
+            smp_list: Default::default(),
+            most_recent_command: (CommandId::Stand, 0),
+            first_command: None,
         }
     }
 }
@@ -481,6 +484,10 @@ impl YuyukoPlayer {
                     state.allowed_cancels = AllowedCancel::Always;
                     state.last_hit_using = None;
                     state.rebeat_chain.insert(command_id);
+                    state.most_recent_command = (
+                        command_id,
+                        state.most_recent_command.1.checked_add(1).unwrap(),
+                    );
                 }
 
                 ret
@@ -1083,6 +1090,21 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             self.state.last_hit_using = Some(info.action.hash);
         }
 
+        let associated_command = self.state.most_recent_command;
+
+        if let Some(command) = self.state.first_command {
+            if associated_command != command
+                && associated_command.1 > command.1
+                && !self.state.smp_list.contains_key(&associated_command.0)
+            {
+                self.state
+                    .smp_list
+                    .insert(associated_command.0, associated_command.1);
+            }
+        } else {
+            self.state.first_command = Some(associated_command);
+        }
+
         match info.hit_type {
             HitEffectType::Hit
             | HitEffectType::CounterHit
@@ -1321,11 +1343,18 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             .map(|item| {
                 let mut hasher = DefaultHasher::new();
                 (move_id, item.id).hash(&mut hasher);
+
                 HitAction {
                     facing: self.state.facing,
                     attack_info: self.data.attacks[&item.data_id].clone(),
                     hash: hasher.finish(),
                     source: HitSource::Character,
+                    smp: self
+                        .state
+                        .smp_list
+                        .get(&self.state.most_recent_command.0)
+                        .map(|old_time| self.state.most_recent_command.1 > *old_time)
+                        .unwrap_or(false),
                 }
             })
     }
@@ -1463,6 +1492,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             meter: 0,
             lockout: 0,
             dead: false,
+            smp_list: Default::default(),
+            most_recent_command: (CommandId::Stand, 0),
+            first_command: None,
         };
         self.validate_position(play_area);
     }
@@ -1492,6 +1524,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             meter: 0,
             lockout: 0,
             dead: false,
+            smp_list: Default::default(),
+            most_recent_command: (CommandId::Stand, 0),
+            first_command: None,
         };
 
         self.validate_position(play_area);

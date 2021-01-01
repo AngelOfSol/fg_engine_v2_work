@@ -357,6 +357,7 @@ pub struct HitAction {
     pub hash: u64,
     pub attack_info: AttackInfo,
     pub facing: Facing,
+    pub smp: bool,
 }
 
 #[derive(Debug, Clone)]
