@@ -251,6 +251,10 @@ TODO (2/15/2020):
             [x] in-game
         [x] remove old graphics data
     [x] create an actual basic UI that's mirrored properly
+    [x] remove extra-data concept, creating a new state for each variant
+        [x] forward/neutral/back jump/superjump/border-escape
+        [x] 1/2/3/4/6/7/8/9 fly
+        [x] ExtraData::Hitstun -> hitstun: Option<usize>
     [] create object system
         [x] spawner type
             [x] defines parameters it needs to spawn
@@ -272,22 +276,16 @@ TODO (2/15/2020):
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [] button check at character select 
-        [] on press start
-    [] remove extra-data concept, creating a new state for each variant
-        [] forward/neutral/back jump/superjump/border-escape
-        [x] 1/2/3/4/6/7/8/9 fly
-        [] ExtraData::Hitstun -> hitstun: Option<usize>
-    [] controller support update
-        [] add ltrigger/rtrigger
-        [] add left/right stick support
-        [] keyboard support
-    [] add untech
-        [] when you enter untech without limit bounce tech
-        [] untech is basically just airhitstun
+    [x] add untech
+        [x] when you enter untech without limit bounce tech
+        [x] untech is basically just airhitstun
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
     [] move to u32 for current_frame
+    [] split combo_state
+        [] for attacker
+            [] add smp list
+        [] for defender
     [] adjust attack info
         [] add hit_target
             [] grounded
@@ -341,5 +339,11 @@ TODO (2/15/2020):
     [] move to a new graphics api
         [] luminance-rs
         [] mini/macroquad
+    [] button check at character select 
+        [] on press start
+    [] controller support update
+        [] add ltrigger/rtrigger
+        [] add left/right stick support
+        [] keyboard support
 
 

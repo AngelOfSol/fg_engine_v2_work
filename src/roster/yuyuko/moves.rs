@@ -88,6 +88,7 @@ pub enum MoveId {
     WrongblockStandLoop,
     HitGround,
     GetUp,
+    Untech,
     BorderEscape,
     BorderEscapeForward,
     BorderEscapeBackward,

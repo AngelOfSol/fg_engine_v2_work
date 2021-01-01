@@ -372,10 +372,15 @@ impl YuyukoPlayer {
         let flags = &self.data.states[&move_id].flags[frame];
         let state_type = self.data.states[&move_id].state_type;
 
-        if matches!(state_type, StateType::Blockstun | StateType::Hitstun) {
-            let hitstun = self.state.stun.as_mut().unwrap();
-            *hitstun -= 1;
-            if *hitstun == 0 {
+        if let Some(ref mut stun) = self.state.stun {
+            assert!(matches!(
+                state_type,
+                StateType::Blockstun | StateType::Hitstun
+            ));
+            *stun -= 1;
+            if *stun == 0 {
+                self.state.stun = None;
+
                 if !flags.airborne {
                     self.state.current_state = (
                         0,
@@ -389,7 +394,7 @@ impl YuyukoPlayer {
                     self.state.current_state = if matches!(state_type, StateType::Blockstun) {
                         (0, MoveId::AirIdle)
                     } else {
-                        (frame, move_id)
+                        (0, MoveId::Untech)
                     };
                 }
             }
@@ -1162,6 +1167,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             self.state.meter,
             self.state.lockout,
             &self.data.properties,
+            matches!(self.state.current_state.1, MoveId::Untech),
         )
     }
 
