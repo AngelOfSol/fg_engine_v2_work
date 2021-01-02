@@ -71,7 +71,7 @@ use strum::{Display, EnumIter};
 
 const MAX_FALLING_VELOCITY: collision::Int = -8_00;
 
-#[derive(Clone, Inspect)]
+#[derive(Clone, Inspect, Deserialize)]
 pub struct Yuyuko {
     #[tab = "States"]
     pub states: StateDataMap,
@@ -80,6 +80,8 @@ pub struct Yuyuko {
     #[tab = "Properties"]
     pub properties: Properties,
     #[skip]
+    #[serde(skip)]
+    #[serde(default = "SoundList::new")]
     pub sounds: SoundList,
     #[tab = "Graphics"]
     pub graphics: GraphicMap,
@@ -105,44 +107,11 @@ impl Yuyuko {
     pub fn new_with_path(
         ctx: &mut Context,
         assets: &mut Assets,
-        path: PathBuf,
-    ) -> GameResult<Yuyuko> {
-        let data = YuyukoData::load_from_json(ctx, assets, path)?;
-        Ok(Yuyuko {
-            states: data.states,
-            properties: data.properties,
-            attacks: data.attacks,
-            sounds: data.sounds,
-            graphics: data.graphics,
-            command_map: data.command_map,
-            input_map: data.input_map,
-            state_graphics_map: data.state_graphics_map,
-        })
-    }
-}
-
-#[derive(Deserialize)]
-pub struct YuyukoData {
-    states: StateDataMap,
-    properties: Properties,
-    attacks: AttackDataMap,
-    #[serde(skip)]
-    #[serde(default = "SoundList::new")]
-    sounds: SoundList,
-    graphics: GraphicMap,
-    input_map: InputMap,
-    command_map: CommandMap,
-    state_graphics_map: StateGraphicMap,
-}
-impl YuyukoData {
-    fn load_from_json(
-        ctx: &mut Context,
-        assets: &mut Assets,
         mut path: PathBuf,
-    ) -> GameResult<YuyukoData> {
+    ) -> GameResult<Self> {
         let file = File::open(&path).unwrap();
         let buf_read = BufReader::new(file);
-        let mut character = serde_json::from_reader::<_, YuyukoData>(buf_read).unwrap();
+        let mut character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
         let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
         path.pop();
         path.push(&name);
