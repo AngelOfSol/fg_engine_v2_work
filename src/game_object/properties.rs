@@ -227,23 +227,20 @@ fn test_instance_data() {
     use crate::roster::yuyuko::graphic::GraphicId;
 
     let mut props = InstanceData::new();
-    props.insert(0, YuyukoGraphic::HitEffect);
+    props.insert(0, GraphicId::HitEffect);
     props.insert(1, GlobalGraphic::SuperJump);
-    props.insert_any(2, YuyukoGraphic::SuperJumpParticle.into());
+    props.insert_any(2, GraphicId::SuperJumpParticle.into());
     props.insert(2, GlobalGraphic::SuperJump);
 
     let string_variant = serde_json::to_string(&props);
     let round_trip: InstanceData<i32> = serde_json::from_str(&string_variant.unwrap()).unwrap();
     assert_eq!(props, round_trip);
 
+    assert_eq!(round_trip.get::<GraphicId>(0), Some(&GraphicId::HitEffect));
+    assert_eq!(round_trip.get(1), None::<&GraphicId>);
     assert_eq!(
-        round_trip.get::<YuyukoGraphic>(0),
-        Some(&YuyukoGraphic::HitEffect)
-    );
-    assert_eq!(round_trip.get(1), None::<&YuyukoGraphic>);
-    assert_eq!(
-        round_trip.get::<YuyukoGraphic>(2),
-        Some(&YuyukoGraphic::SuperJumpParticle)
+        round_trip.get::<GraphicId>(2),
+        Some(&GraphicId::SuperJumpParticle)
     );
 
     assert_eq!(round_trip.get(0), None::<&GlobalGraphic>);
@@ -256,9 +253,9 @@ fn test_instance_data() {
         Some(&GlobalGraphic::SuperJump)
     );
 
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(0), true);
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(1), false);
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(2), true);
+    assert_eq!(round_trip.exists::<GraphicId>(0), true);
+    assert_eq!(round_trip.exists::<GraphicId>(1), false);
+    assert_eq!(round_trip.exists::<GraphicId>(2), true);
 
     assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(1), true);
@@ -269,11 +266,11 @@ fn test_instance_data() {
     round_trip.remove::<GlobalGraphic>(1);
     round_trip.remove_any(
         2,
-        PropertyType::from(YuyukoGraphic::SuperJumpParticle).inner_type_id(),
+        PropertyType::from(GraphicId::SuperJumpParticle).inner_type_id(),
     );
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(0), true);
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(1), false);
-    assert_eq!(round_trip.exists::<YuyukoGraphic>(2), false);
+    assert_eq!(round_trip.exists::<GraphicId>(0), true);
+    assert_eq!(round_trip.exists::<GraphicId>(1), false);
+    assert_eq!(round_trip.exists::<GraphicId>(2), false);
 
     assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(1), false);
