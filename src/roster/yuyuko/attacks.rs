@@ -1,5 +1,9 @@
+use crate::character::components::AttackInfo;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+pub type AttackDataMap = HashMap<AttackId, AttackInfo>;
 
 #[derive(
     Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Inspect, PartialOrd, Ord,

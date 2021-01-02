@@ -1,6 +1,7 @@
 pub mod attacks;
 pub mod moves;
 pub mod sounds;
+pub mod state;
 
 use super::{
     hit_info::{
@@ -9,6 +10,7 @@ use super::{
     },
     OpponentState, PlayerState,
 };
+use crate::game_match::sounds::PlayerSoundState;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
@@ -34,7 +36,6 @@ use crate::{
     game_match::{FlashType, PlayArea, UiElements},
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
-use crate::{character::state::StateInstant, game_match::sounds::PlayerSoundState};
 use crate::{
     character::{command::Command, state::components::GlobalGraphic},
     input::Input,
@@ -42,7 +43,7 @@ use crate::{
 use crate::{game_match::sounds::GlobalSoundList, game_object::state::Timer};
 
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
-use attacks::AttackId;
+use attacks::{AttackDataMap, AttackId};
 use ggez::{Context, GameResult};
 use hecs::{EntityBuilder, World};
 use inspect_design::Inspect;
@@ -51,6 +52,7 @@ use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
 use sounds::{SoundList, YuyukoSound};
+use state::{StateDataMap, StateInstant};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufReader;
@@ -68,9 +70,9 @@ const MAX_FALLING_VELOCITY: collision::Int = -8_00;
 #[derive(Clone, Inspect)]
 pub struct Yuyuko {
     #[tab = "States"]
-    pub states: StateList,
+    pub states: StateDataMap,
     #[tab = "Attacks"]
-    pub attacks: AttackList,
+    pub attacks: AttackDataMap,
     #[tab = "Properties"]
     pub properties: Properties,
     #[skip]
@@ -91,14 +93,8 @@ impl std::fmt::Debug for Yuyuko {
     }
 }
 
-type StateList = HashMap<MoveId, State<MoveId, AttackId, YuyukoSound>>;
-pub type AttackList = HashMap<AttackId, AttackInfo>;
-
 impl Yuyuko {
-    pub fn get(
-        &self,
-        current_state: (usize, MoveId),
-    ) -> StateInstant<'_, MoveId, AttackId, YuyukoSound> {
+    pub fn get(&self, current_state: (usize, MoveId)) -> StateInstant<'_> {
         self.states[&current_state.1].get(current_state.0)
     }
 
@@ -123,9 +119,9 @@ impl Yuyuko {
 
 #[derive(Deserialize)]
 pub struct YuyukoData {
-    states: StateList,
+    states: StateDataMap,
     properties: Properties,
-    attacks: AttackList,
+    attacks: AttackDataMap,
     #[serde(skip)]
     #[serde(default = "SoundList::new")]
     sounds: SoundList,
