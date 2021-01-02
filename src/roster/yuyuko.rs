@@ -1,5 +1,7 @@
 pub mod attacks;
+pub mod commands;
 pub mod graphic;
+pub mod inputs;
 pub mod moves;
 pub mod sounds;
 pub mod state;
@@ -9,8 +11,9 @@ use super::{
         block, counter_hit, graze, guard_crush, hit, wrong_block, ComboEffect, HitEffect,
         HitResult, HitType, Source,
     },
-    OpponentState, PlayerState,
+    OpponentState,
 };
+use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::PlayerSoundState;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
@@ -37,24 +40,22 @@ use crate::{
     character::state::components::StateType,
     game_match::{FlashType, PlayArea, UiElements},
 };
-use crate::{
-    character::{command::Command, state::components::GlobalGraphic},
-    input::Input,
-};
 use crate::{game_match::sounds::GlobalSoundList, game_object::state::Timer};
 
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
-use attacks::{AttackDataMap, AttackId};
+use attacks::AttackDataMap;
+use commands::{CommandId, CommandMap};
 use ggez::{Context, GameResult};
 use graphic::{GraphicMap, StateGraphicMap, YuyukoGraphic};
 use hecs::{EntityBuilder, World};
+use inputs::InputMap;
 use inspect_design::Inspect;
-use moves::{CommandId, MoveId};
+use moves::MoveId;
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
-use sounds::{SoundList, YuyukoSound};
-use state::{StateDataMap, StateInstant};
+use sounds::{SoundId, SoundList};
+use state::{PlayerState, StateDataMap, StateInstant};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufReader;
@@ -82,9 +83,9 @@ pub struct Yuyuko {
     #[tab = "Graphics"]
     pub graphics: GraphicMap,
     #[tab = "Inputs"]
-    pub input_map: HashMap<Input, Vec<CommandId>>,
+    pub input_map: InputMap,
     #[tab = "Commands"]
-    pub command_map: HashMap<CommandId, Command<MoveId>>,
+    pub command_map: CommandMap,
     #[tab = "State to Graphics"]
     pub state_graphics_map: StateGraphicMap,
 }
@@ -128,8 +129,8 @@ pub struct YuyukoData {
     #[serde(default = "SoundList::new")]
     sounds: SoundList,
     graphics: GraphicMap,
-    input_map: HashMap<Input, Vec<CommandId>>,
-    command_map: HashMap<CommandId, Command<MoveId>>,
+    input_map: InputMap,
+    command_map: CommandMap,
     state_graphics_map: StateGraphicMap,
 }
 impl YuyukoData {
@@ -146,7 +147,7 @@ impl YuyukoData {
         path.push(&name);
 
         path.push("sounds");
-        for sound in YuyukoSound::iter() {
+        for sound in SoundId::iter() {
             path.push(format!("{}.mp3", sound));
             use rodio::source::Source;
             let source =
@@ -187,17 +188,15 @@ impl Default for YuyukoDataId {
 pub struct YuyukoPlayer {
     pub data: Rc<Yuyuko>,
     pub world: World,
-    pub sound_renderer: SoundRenderer<SoundPath<YuyukoSound>>,
+    pub sound_renderer: SoundRenderer<SoundPath<SoundId>>,
     pub last_combo_state: Option<(ComboEffect, usize)>,
-    pub state: YuyukoState,
+    pub state: PlayerState,
     pub combo_text: RefCell<Option<ggez::graphics::Text>>,
 }
 
 use std::cell::RefCell;
 
-pub type YuyukoState = PlayerState<MoveId, YuyukoSound, CommandId, AttackId>;
-
-impl YuyukoState {
+impl PlayerState {
     fn new(data: &Yuyuko) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
@@ -229,7 +228,7 @@ impl YuyukoState {
 impl YuyukoPlayer {
     pub fn new(data: Rc<Yuyuko>) -> Self {
         Self {
-            state: YuyukoState::new(&data),
+            state: PlayerState::new(&data),
             data,
             last_combo_state: None,
             sound_renderer: SoundRenderer::new(),
@@ -1523,7 +1522,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         position: collision::Int,
         facing: Facing,
     ) {
-        self.state = YuyukoState {
+        self.state = PlayerState {
             position: collision::Vec2::new(position, 0),
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::Stand),
@@ -1555,7 +1554,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         position: collision::Int,
         facing: Facing,
     ) {
-        self.state = YuyukoState {
+        self.state = PlayerState {
             position: collision::Vec2::new(position, 0),
             velocity: collision::Vec2::zeros(),
             current_state: (0, MoveId::RoundStart),

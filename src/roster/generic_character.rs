@@ -171,9 +171,8 @@ pub trait GenericCharacterBehaviour {
     fn in_hitstun(&self) -> bool;
 }
 
+use super::yuyuko::state::PlayerState as YuyukoState;
 use std::borrow::Cow;
-
-use super::yuyuko::YuyukoState;
 
 #[derive(Clone)]
 #[non_exhaustive]

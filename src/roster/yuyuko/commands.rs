@@ -1,0 +1,71 @@
+use super::moves::MoveId;
+use crate::character::command::Command;
+use inspect_design::Inspect;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use strum::Display;
+
+pub type CommandMap = HashMap<CommandId, Command<MoveId>>;
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    Hash,
+    PartialEq,
+    Eq,
+    Display,
+    Inspect,
+    PartialOrd,
+    Ord,
+)]
+pub enum CommandId {
+    Attack5A,
+    Attack2A,
+    Attack5B,
+    Attack3B,
+    Attack2B,
+    Attack6B,
+    Attack5C,
+    Attack2C,
+    Air5A,
+    Air8A,
+    Air5B,
+    Air2B,
+    Air5C,
+    Air2C,
+    Stand,
+    StandUp,
+    Crouch,
+    CrouchDown,
+    WalkBackward,
+    WalkForward,
+    ForwardDash,
+    DashSkid,
+    BackDash,
+    Jump,
+    JumpForward,
+    JumpBackward,
+    SuperJump,
+    SuperJumpForward,
+    SuperJumpBackward,
+    Fly1,
+    Fly2,
+    Fly3,
+    Fly4,
+    Fly6,
+    Fly7,
+    Fly8,
+    Fly9,
+    BorderEscape,
+    BorderEscapeForward,
+    BorderEscapeBackward,
+    MeleeRestitution,
+}
+impl Default for CommandId {
+    fn default() -> Self {
+        CommandId::Stand
+    }
+}

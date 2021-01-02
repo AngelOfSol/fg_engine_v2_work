@@ -3,22 +3,22 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
-pub type SoundList = SL<YuyukoSound>;
+pub type SoundList = SL<SoundId>;
 
 #[derive(
     Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
 )]
-pub enum YuyukoSound {
+pub enum SoundId {
     Grunt,
 }
 
-impl Into<SoundPath<YuyukoSound>> for YuyukoSound {
-    fn into(self) -> SoundPath<YuyukoSound> {
+impl Into<SoundPath<SoundId>> for SoundId {
+    fn into(self) -> SoundPath<SoundId> {
         SoundPath::Local(self)
     }
 }
 
-impl Default for YuyukoSound {
+impl Default for SoundId {
     fn default() -> Self {
         Self::Grunt
     }

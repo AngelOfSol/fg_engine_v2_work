@@ -18,7 +18,7 @@ use ggez::{Context, GameResult};
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
-use sounds::YuyukoSound;
+use sounds::SoundId;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -51,7 +51,7 @@ impl Default for Character {
 impl Character {
     pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => YuyukoSound::iter().map(|item| item.to_string()),
+            Character::Yuyuko => SoundId::iter().map(|item| item.to_string()),
         }
     }
     pub fn data_id_iter(self) -> impl Iterator<Item = String> {
