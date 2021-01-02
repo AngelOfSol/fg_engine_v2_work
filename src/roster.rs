@@ -4,9 +4,6 @@ mod yuyuko;
 
 use enum_dispatch::enum_dispatch;
 
-pub use generic_character::*;
-pub use yuyuko::*;
-
 use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea, UiElements};
@@ -15,16 +12,19 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
+pub use generic_character::*;
 use ggez::{Context, GameResult};
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
+use sounds::YuyukoSound;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter};
+pub use yuyuko::*;
 
 #[enum_dispatch]
 pub enum CharacterBehavior {

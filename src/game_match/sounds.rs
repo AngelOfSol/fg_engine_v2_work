@@ -9,13 +9,13 @@ pub use renderer::SoundRenderer;
 pub use sound_state::PlayerSoundState;
 
 use channel::Channel;
-use sound_state::SoundState;
-
 use rodio::buffer::SamplesBuffer;
 use rodio::source::Buffered;
+use sound_state::SoundState;
 use std::collections::HashMap;
 
 pub type AudioBuffer = Buffered<SamplesBuffer<f32>>;
+pub type GlobalSoundList = SoundList<GlobalSound>;
 
 #[derive(Clone)]
 pub struct SoundList<T> {

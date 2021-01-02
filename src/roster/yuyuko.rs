@@ -1,5 +1,6 @@
 pub mod attacks;
 pub mod moves;
+pub mod sounds;
 
 use super::{
     hit_info::{
@@ -8,7 +9,6 @@ use super::{
     },
     OpponentState, PlayerState,
 };
-use crate::game_object::state::Timer;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
@@ -22,7 +22,7 @@ use crate::typedefs::graphics;
 use crate::{assets::Assets, game_object::constructors::Construct};
 use crate::{
     character::command::Requirement,
-    game_match::sounds::{ChannelName, GlobalSound, SoundList, SoundRenderer},
+    game_match::sounds::{ChannelName, GlobalSound, SoundRenderer},
 };
 use crate::{character::components::Properties, game_object::constructors::Constructor};
 use crate::{
@@ -39,6 +39,7 @@ use crate::{
     character::{command::Command, state::components::GlobalGraphic},
     input::Input,
 };
+use crate::{game_match::sounds::GlobalSoundList, game_object::state::Timer};
 
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
 use attacks::AttackId;
@@ -49,6 +50,7 @@ use moves::{CommandId, MoveId};
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
+use sounds::{SoundList, YuyukoSound};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufReader;
@@ -72,7 +74,7 @@ pub struct Yuyuko {
     #[tab = "Properties"]
     pub properties: Properties,
     #[skip]
-    pub sounds: SoundList<YuyukoSound>,
+    pub sounds: SoundList,
     #[tab = "Graphics"]
     pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
     #[tab = "Inputs"]
@@ -126,7 +128,7 @@ pub struct YuyukoData {
     attacks: AttackList,
     #[serde(skip)]
     #[serde(default = "SoundList::new")]
-    sounds: SoundList<YuyukoSound>,
+    sounds: SoundList,
     graphics: HashMap<YuyukoGraphic, AnimationGroup>,
     input_map: HashMap<Input, Vec<CommandId>>,
     command_map: HashMap<CommandId, Command<MoveId>>,
@@ -171,24 +173,6 @@ impl YuyukoData {
             path.pop();
         }
         Ok(character)
-    }
-}
-#[derive(
-    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
-)]
-pub enum YuyukoSound {
-    Grunt,
-}
-
-impl Into<SoundPath<YuyukoSound>> for YuyukoSound {
-    fn into(self) -> SoundPath<YuyukoSound> {
-        SoundPath::Local(self)
-    }
-}
-
-impl Default for YuyukoSound {
-    fn default() -> Self {
-        Self::Grunt
     }
 }
 
@@ -1536,12 +1520,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn facing(&self) -> Facing {
         self.state.facing
     }
-    fn render_sound(
-        &mut self,
-        audio_device: &Device,
-        sound_list: &SoundList<GlobalSound>,
-        fps: u32,
-    ) {
+    fn render_sound(&mut self, audio_device: &Device, sound_list: &GlobalSoundList, fps: u32) {
         self.sound_renderer.render_frame(
             &audio_device,
             &self.data.sounds.data,
