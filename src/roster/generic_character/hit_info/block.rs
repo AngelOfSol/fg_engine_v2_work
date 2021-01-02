@@ -4,7 +4,7 @@ use crate::{
     typedefs::collision,
 };
 
-use super::{guard_crush, hit, wrong_block, OnHitType, Source};
+use super::{guard_crush, hit, wrong_block, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
 }
@@ -30,7 +30,7 @@ impl Effect {
         previous.unwrap_or(0) + attack_info.on_block.spirit_cost >= remaining_spirit
     }
 
-    pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> (Effect, OnHitType) {
+    pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> (Effect, HitType) {
         let block_info = &attack_info.on_block;
         (
             Effect {
@@ -60,7 +60,7 @@ impl Effect {
                     },
                 },
             },
-            OnHitType::Block,
+            HitType::Block,
         )
     }
 
@@ -69,7 +69,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (Self, OnHitType) {
+    ) -> (Self, HitType) {
         let block_info = &attack_info.on_block;
 
         self.defender.add_spirit_delay += block_info.spirit_delay;
@@ -97,13 +97,13 @@ impl Effect {
             self.defender.set_should_pushback = source.source_type == HitSource::Character;
         }
 
-        (self, OnHitType::Block)
+        (self, HitType::Block)
     }
     pub fn append_wrongblock(
         self,
         attack_info: &AttackInfo,
         source: &Source,
-    ) -> (wrong_block::Effect, OnHitType) {
+    ) -> (wrong_block::Effect, HitType) {
         let mut effect = wrong_block::Effect::build(attack_info, source);
         {
             let effect = &mut effect.0;
@@ -122,7 +122,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (hit::Effect, OnHitType) {
+    ) -> (hit::Effect, HitType) {
         let mut effect = hit::Effect::build_starter(attack_info, source, airborne);
         {
             let effect = &mut effect.0;
@@ -142,7 +142,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (guard_crush::Effect, OnHitType) {
+    ) -> (guard_crush::Effect, HitType) {
         let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
         {
             let effect = &mut effect.0;

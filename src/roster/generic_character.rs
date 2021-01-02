@@ -17,7 +17,7 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hit_info::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source};
+use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use std::collections::{HashMap, HashSet};
 
@@ -38,9 +38,8 @@ pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
     pub spirit_gauge: i32,
     pub spirit_delay: i32,
     pub hitstop: i32,
-    pub last_hit_using: Option<u64>,
-    pub last_hit_using_new: Option<(AttackId, usize)>,
-    pub current_combo_new: Option<ComboEffect>,
+    pub last_hit_using: Option<(AttackId, usize)>,
+    pub current_combo: Option<ComboEffect>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
     pub rebeat_chain: HashSet<CommandId>,
@@ -62,8 +61,6 @@ pub trait GenericCharacterBehaviour {
     fn collision(&self) -> PositionedHitbox;
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
     fn hurtboxes(&self) -> Vec<PositionedHitbox>;
-
-    fn get_attack_data_new(&self) -> Option<&AttackInfo>;
 
     fn prune_bullets(&mut self, play_area: &PlayArea);
 
@@ -96,7 +93,6 @@ pub trait GenericCharacterBehaviour {
         last_combo_state: &Option<(ComboEffect, usize)>,
     ) -> GameResult<()>;
 
-    fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)>;
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()>;
 
     fn draw_objects(
@@ -153,17 +149,19 @@ pub trait GenericCharacterBehaviour {
         facing: Facing,
     );
 
-    fn would_be_hit_new(
+    fn would_be_hit(
         &self,
         input: &[InputState],
         attack_info: &AttackInfo,
         source: &Source,
         combo_effect: Option<&ComboEffect>,
-        old_effect: Option<OnHitEffect>,
-    ) -> HitResultNew;
-    fn take_hit_new(&mut self, info: &OnHitEffect, play_area: &PlayArea);
-    fn deal_hit_new(&mut self, info: &OnHitType);
+        old_effect: Option<HitEffect>,
+    ) -> HitResult;
 
+    fn take_hit(&mut self, info: &HitEffect, play_area: &PlayArea);
+    fn deal_hit(&mut self, info: &HitType);
+    fn get_attack_data(&self) -> Option<&AttackInfo>;
+    fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)>;
     fn get_current_combo(&self) -> Option<&ComboEffect>;
 }
 

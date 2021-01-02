@@ -4,7 +4,7 @@ use crate::{
     typedefs::collision,
 };
 
-use super::{ComboEffect, OnHitType, Source};
+use super::{ComboEffect, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
     pub combo: ComboEffect,
@@ -23,7 +23,7 @@ pub struct DefenderEffect {
 }
 
 impl Effect {
-    pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> (Effect, OnHitType) {
+    pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> (Effect, HitType) {
         let counter_hit_info = &attack_info.on_counter_hit;
         (
             Effect {
@@ -58,11 +58,11 @@ impl Effect {
                     },
                 },
             },
-            OnHitType::CounterHit,
+            HitType::CounterHit,
         )
     }
 
-    pub fn append_hit(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
+    pub fn append_hit(mut self, attack_info: &AttackInfo) -> (Self, HitType) {
         let attack_info = &attack_info.on_hit;
         let damage = attack_info.damage * self.combo.proration / 100;
 
@@ -79,6 +79,6 @@ impl Effect {
         self.defender.take_spirit_gauge += attack_info.spirit_cost;
         self.defender.take_damage += damage;
 
-        (self, OnHitType::Hit)
+        (self, HitType::Hit)
     }
 }

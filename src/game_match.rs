@@ -15,9 +15,9 @@ use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use crate::{assets::ValueAlpha, roster::hit_info::HitSource};
-use crate::{character::state::components::GlobalGraphic, roster::hit_info::OnHitEffect};
-use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::HitResultNew};
-use crate::{hitbox::PositionedHitbox, roster::hit_info::OnHitType};
+use crate::{character::state::components::GlobalGraphic, roster::hit_info::HitEffect};
+use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::HitResult};
+use crate::{hitbox::PositionedHitbox, roster::hit_info::HitType};
 use flash::FlashOverlay;
 pub use flash::FlashType;
 use ggez::graphics::Image;
@@ -263,12 +263,12 @@ impl<Writer: Write> Match<Writer> {
         let attack_data: Vec<_> = self
             .players
             .iter()
-            .map(|player| player.get_attack_data_new())
+            .map(|player| player.get_attack_data())
             .collect();
 
         let facing: Vec<_> = self.players.iter().map(|item| item.facing()).collect();
 
-        let (hit_effects, hit_types): (Vec<Option<OnHitEffect>>, Vec<Option<OnHitType>>) = self
+        let (hit_effects, hit_types): (Vec<Option<HitEffect>>, Vec<Option<HitType>>) = self
             .players
             .iter()
             .zip(touched.iter())
@@ -277,7 +277,7 @@ impl<Writer: Write> Match<Writer> {
             .zip(input.iter())
             .map(|((((player, touched), attack_data), facing), input)| {
                 if let (true, Some(ref attack_data)) = (*touched, attack_data) {
-                    player.would_be_hit_new(
+                    player.would_be_hit(
                         input,
                         attack_data,
                         &Source {
@@ -288,7 +288,7 @@ impl<Writer: Write> Match<Writer> {
                         None,
                     )
                 } else {
-                    HitResultNew::None
+                    HitResult::None
                 }
             })
             .map(|item| item.split())
@@ -296,68 +296,9 @@ impl<Writer: Write> Match<Writer> {
 
         for (ref mut player, result) in self.players.iter_mut().zip(hit_types.iter().rev()) {
             if let Some(result) = result {
-                player.deal_hit_new(result);
+                player.deal_hit(result);
             }
         }
-
-        /*
-        let (p1, p2) = self.players.both_mut();
-                        for mut p1_bullet in p1.bullets_mut() {
-                            for mut p2_bullet in p2.bullets_mut() {
-                                if PositionedHitbox::overlaps_any(&p1_bullet.hitboxes(), &p2_bullet.hitboxes()) {
-                                    // TODO, replace unit parameter with bullet tier/hp system
-                                    p1_bullet.on_touch_bullet();
-                                    p2_bullet.on_touch_bullet();
-                                }
-                            }
-                        }
-
-                        for player in self.players.iter_mut() {
-                            player.prune_bullets(&self.runtime_data.play_area);
-                        }
-
-                        fn handle_bullets(
-                            acting: &mut CharacterBehavior,
-                            reference: &mut CharacterBehavior,
-                            acting_input: &[InputState],
-                            mut effect: Option<HitEffect>,
-                        ) -> (Option<HitEffect>, Vec<HitResult>) {
-                            let mut results = Vec::new();
-                            for mut bullet in reference.bullets_mut().filter(|bullet| {
-                                PositionedHitbox::overlaps_any(&bullet.hitboxes(), &acting.hurtboxes())
-                            }) {
-                                let result = acting.would_be_hit(
-                                    acting_input,
-                                    HitAction {
-                                        attack_info: bullet.attack_data(),
-                                        hash: bullet.hash(),
-                                        facing: bullet.facing(),
-                                        source: HitSource::Object,
-                                    },
-                                    effect,
-                                );
-                                if let Some(result) = result.1 {
-                                    bullet.deal_hit(&result);
-                                    results.push(result);
-                                }
-                                effect = result.0;
-                            }
-                            (effect, results)
-                        }
-
-                let (p1, p2) = self.players.both_mut();
-                let (hit_effects, hit_results): (Vec<_>, Vec<_>) = vec![
-                    handle_bullets(p1, p2, input.p1(), hit_effects[0]),
-                    handle_bullets(p2, p1, input.p2(), hit_effects[1]),
-                ]
-                .into_iter()
-                .unzip();
-
-        for (player, results) in self.players.iter_mut().zip(hit_results.into_iter().rev()) {
-            for result in results.into_iter() {
-                player.deal_hit(&result);
-            }
-        }*/
 
         for (player, effect) in self
             .players
@@ -365,10 +306,10 @@ impl<Writer: Write> Match<Writer> {
             .zip(hit_effects.into_iter())
             .flat_map(|(player, item)| item.map(|item| (player, item)))
         {
-            if matches!(effect, OnHitEffect::GuardCrush(_)) {
+            if matches!(effect, HitEffect::GuardCrush(_)) {
                 self.game_state.flash = Some(FlashType::GuardCrush.into())
             }
-            player.take_hit_new(&effect, &self.runtime_data.play_area);
+            player.take_hit(&effect, &self.runtime_data.play_area);
         }
 
         if self.players.iter().any(|player| player.is_dead()) {

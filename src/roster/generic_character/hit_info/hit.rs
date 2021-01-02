@@ -4,7 +4,7 @@ use crate::{
     typedefs::collision,
 };
 
-use super::{ComboEffect, OnHitType, Source};
+use super::{ComboEffect, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
     pub combo: ComboEffect,
@@ -27,7 +27,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (Effect, OnHitType) {
+    ) -> (Effect, HitType) {
         let attack_info = &attack_info.on_hit;
         (
             Effect {
@@ -64,7 +64,7 @@ impl Effect {
                     },
                 },
             },
-            OnHitType::Hit,
+            HitType::Hit,
         )
     }
 
@@ -73,7 +73,7 @@ impl Effect {
         source: &Source,
         airborne: bool,
         current_combo: ComboEffect,
-    ) -> (Effect, OnHitType) {
+    ) -> (Effect, HitType) {
         let attack_info = &attack_info.on_hit;
         let damage = attack_info.damage * current_combo.proration / 100;
         (
@@ -112,11 +112,11 @@ impl Effect {
                     },
                 },
             },
-            OnHitType::Hit,
+            HitType::Hit,
         )
     }
 
-    pub fn append_hit(mut self, attack_info: &AttackInfo, source: &Source) -> (Self, OnHitType) {
+    pub fn append_hit(mut self, attack_info: &AttackInfo, source: &Source) -> (Self, HitType) {
         let attack_info = &attack_info.on_hit;
         let damage = attack_info.damage * self.combo.proration / 100;
 
@@ -166,6 +166,6 @@ impl Effect {
             self.defender.set_should_pushback = source.source_type == HitSource::Character;
         }
 
-        (self, OnHitType::Hit)
+        (self, HitType::Hit)
     }
 }

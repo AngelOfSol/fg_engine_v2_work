@@ -4,7 +4,7 @@ use crate::{
     typedefs::collision,
 };
 
-use super::{guard_crush, OnHitType, Source};
+use super::{guard_crush, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
 }
@@ -29,7 +29,7 @@ impl Effect {
     ) -> bool {
         previous.unwrap_or(0) + attack_info.on_wrongblock.spirit_cost >= remaining_spirit
     }
-    pub fn build(attack_info: &AttackInfo, source: &Source) -> (Effect, OnHitType) {
+    pub fn build(attack_info: &AttackInfo, source: &Source) -> (Effect, HitType) {
         let block_info = &attack_info.on_wrongblock;
         (
             Effect {
@@ -50,11 +50,11 @@ impl Effect {
                     ),
                 },
             },
-            OnHitType::WrongBlock,
+            HitType::WrongBlock,
         )
     }
 
-    pub fn append_block(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
+    pub fn append_block(mut self, attack_info: &AttackInfo) -> (Self, HitType) {
         let block_info = &attack_info.on_block;
 
         self.defender.add_spirit_delay += block_info.spirit_delay;
@@ -63,14 +63,14 @@ impl Effect {
         self.defender.take_spirit_gauge += block_info.spirit_cost;
         self.defender.take_damage += block_info.damage;
 
-        (self, OnHitType::Block)
+        (self, HitType::Block)
     }
 
     pub fn append_wrongblock(
         mut self,
         attack_info: &AttackInfo,
         source: &Source,
-    ) -> (Self, OnHitType) {
+    ) -> (Self, HitType) {
         let block_info = &attack_info.on_wrongblock;
 
         self.defender.add_spirit_delay += block_info.spirit_delay;
@@ -90,14 +90,14 @@ impl Effect {
             self.defender.set_should_pushback = source.source_type == HitSource::Character;
         }
 
-        (self, OnHitType::WrongBlock)
+        (self, HitType::WrongBlock)
     }
     pub fn append_guard_crush(
         self,
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (guard_crush::Effect, OnHitType) {
+    ) -> (guard_crush::Effect, HitType) {
         let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
         {
             let effect = &mut effect.0;

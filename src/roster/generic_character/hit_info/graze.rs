@@ -1,4 +1,4 @@
-use super::{block, counter_hit, guard_crush, hit, wrong_block, OnHitType, Source};
+use super::{block, counter_hit, guard_crush, hit, wrong_block, HitType, Source};
 use crate::character::components::AttackInfo;
 
 pub struct Effect {
@@ -14,7 +14,7 @@ pub struct DefenderEffect {
 }
 
 impl Effect {
-    pub fn build(attack_info: &AttackInfo) -> (Effect, OnHitType) {
+    pub fn build(attack_info: &AttackInfo) -> (Effect, HitType) {
         let graze_info = &attack_info.on_graze;
         (
             Effect {
@@ -27,7 +27,7 @@ impl Effect {
                     take_damage: graze_info.damage,
                 },
             },
-            OnHitType::Graze,
+            HitType::Graze,
         )
     }
     pub fn append_block(
@@ -35,7 +35,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (block::Effect, OnHitType) {
+    ) -> (block::Effect, HitType) {
         let mut effect = block::Effect::build(attack_info, source, airborne);
         {
             let effect = &mut effect.0;
@@ -51,7 +51,7 @@ impl Effect {
         self,
         attack_info: &AttackInfo,
         source: &Source,
-    ) -> (wrong_block::Effect, OnHitType) {
+    ) -> (wrong_block::Effect, HitType) {
         let mut effect = wrong_block::Effect::build(attack_info, source);
         {
             let effect = &mut effect.0;
@@ -68,7 +68,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (hit::Effect, OnHitType) {
+    ) -> (hit::Effect, HitType) {
         let mut effect = hit::Effect::build_starter(attack_info, source, airborne);
         {
             let effect = &mut effect.0;
@@ -80,7 +80,7 @@ impl Effect {
 
         effect
     }
-    pub fn append_graze(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
+    pub fn append_graze(mut self, attack_info: &AttackInfo) -> (Self, HitType) {
         let graze_info = &attack_info.on_graze;
 
         self.defender.add_spirit_delay += graze_info.spirit_delay;
@@ -90,7 +90,7 @@ impl Effect {
         self.defender.take_spirit_gauge += graze_info.spirit_cost;
         self.defender.take_damage += graze_info.damage;
 
-        (self, OnHitType::Graze)
+        (self, HitType::Graze)
     }
 
     pub fn append_counterhit(
@@ -98,7 +98,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (counter_hit::Effect, OnHitType) {
+    ) -> (counter_hit::Effect, HitType) {
         let mut effect = counter_hit::Effect::build(attack_info, source, airborne);
         {
             let effect = &mut effect.0;
@@ -116,7 +116,7 @@ impl Effect {
         attack_info: &AttackInfo,
         source: &Source,
         airborne: bool,
-    ) -> (guard_crush::Effect, OnHitType) {
+    ) -> (guard_crush::Effect, HitType) {
         let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
         {
             let effect = &mut effect.0;
