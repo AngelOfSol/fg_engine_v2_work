@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use crate::graphics::animation_group::AnimationGroup;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
@@ -14,3 +17,5 @@ impl Default for GlobalGraphic {
         Self::SuperJump
     }
 }
+
+pub type GlobalGraphicMap = HashMap<GlobalGraphic, AnimationGroup>;

@@ -1,4 +1,5 @@
 pub const REPLAY_VERSION: usize = 4;
+pub const MAX_FALLING_VELOCITY: collision::Int = -8_00;
 
 pub mod graphics {
     pub type Float = f32;

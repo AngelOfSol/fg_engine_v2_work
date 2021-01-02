@@ -14,8 +14,6 @@ use super::{
     },
     OpponentState,
 };
-use crate::character::state::components::GlobalGraphic;
-use crate::game_match::sounds::PlayerSoundState;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
 use crate::input::button::Button;
@@ -37,6 +35,8 @@ use crate::{
     character::components::{AttackInfo, GroundAction},
     game_object::state::Position,
 };
+use crate::{character::state::components::GlobalGraphic, typedefs::MAX_FALLING_VELOCITY};
+use crate::{character::state::components::GlobalGraphicMap, game_match::sounds::PlayerSoundState};
 use crate::{
     character::state::components::StateType,
     game_match::{FlashType, PlayArea, UiElements},
@@ -54,22 +54,14 @@ use inspect_design::Inspect;
 use moves::MoveId;
 use rodio::Device;
 use serde::Deserialize;
-use serde::Serialize;
 use sounds::{SoundId, SoundList};
 use state::{PlayerState, StateDataMap, StateInstant};
 use std::fs::File;
-use std::hash::Hash;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-};
+use std::{borrow::Cow, collections::HashSet};
 use strum::IntoEnumIterator;
-use strum::{Display, EnumIter};
-
-const MAX_FALLING_VELOCITY: collision::Int = -8_00;
 
 #[derive(Clone, Inspect, Deserialize)]
 pub struct Yuyuko {
@@ -142,16 +134,6 @@ impl Yuyuko {
             path.pop();
         }
         Ok(character)
-    }
-}
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display)]
-pub enum YuyukoDataId {
-    Butterfly,
-}
-impl Default for YuyukoDataId {
-    fn default() -> Self {
-        Self::Butterfly
     }
 }
 
@@ -495,7 +477,7 @@ impl YuyukoPlayer {
             self.world.spawn(builder.build());
         }
     }
-    fn update_objects(&mut self, global_graphics: &HashMap<GlobalGraphic, AnimationGroup>) {
+    fn update_objects(&mut self, global_graphics: &GlobalGraphicMap) {
         for (_, Timer(timer)) in self.world.query::<&mut Timer>().iter() {
             *timer += 1;
         }
@@ -1196,7 +1178,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         input: &[InputState],
         opponent: OpponentState,
         play_area: &PlayArea,
-        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &GlobalGraphicMap,
     ) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
@@ -1279,7 +1261,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
-        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
+        global_graphics: &GlobalGraphicMap,
     ) -> GameResult<()> {
         for (_, (position, graphic, Timer(frame))) in
             self.world.query::<(&Position, &GraphicId, &Timer)>().iter()
@@ -1446,11 +1428,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.state.lockout > 0
     }
 
-    fn update_no_input(
-        &mut self,
-        play_area: &PlayArea,
-        global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
-    ) {
+    fn update_no_input(&mut self, play_area: &PlayArea, global_graphics: &GlobalGraphicMap) {
         if self.state.hitstop > 0 {
             self.state.hitstop -= 1;
         } else {

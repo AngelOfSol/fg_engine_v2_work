@@ -18,9 +18,9 @@ impl<LocalPath> PlayerSoundState<LocalPath> {
             value.current_frame += 1;
         }
     }
-    pub fn play_sound(&mut self, slot: ChannelName, path: LocalPath) {
+    pub fn play_sound(&mut self, channel: ChannelName, path: LocalPath) {
         self.channels.insert(
-            slot,
+            channel,
             SoundState {
                 current_frame: 0,
                 path,
