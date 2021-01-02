@@ -3,7 +3,6 @@ mod match_settings;
 mod noop_writer;
 pub mod sounds;
 
-use crate::input::Facing;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::GenericCharacterBehaviour;
@@ -18,6 +17,7 @@ use crate::{assets::ValueAlpha, roster::hit_info::HitSource};
 use crate::{character::state::components::GlobalGraphic, roster::hit_info::HitEffect};
 use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::HitResult};
 use crate::{hitbox::PositionedHitbox, roster::hit_info::HitType};
+use crate::{input::Facing, roster::OpponentState};
 use flash::FlashOverlay;
 pub use flash::FlashType;
 use ggez::graphics::Image;
@@ -206,21 +206,24 @@ impl<Writer: Write> Match<Writer> {
     fn update_normal(&mut self, input: PlayerData<&[InputState]>) {
         self.game_state.timer = self.game_state.timer.saturating_sub(1);
 
-        let positions: Vec<_> = self
+        let opponents: Vec<_> = self
             .players
             .iter()
             .rev()
-            .map(GenericCharacterBehaviour::position)
+            .map(|player| OpponentState {
+                position: player.position(),
+                in_hitstun: player.in_hitstun(),
+            })
             .collect();
-        for ((player, input), position) in self
+        for ((player, input), opponent) in self
             .players
             .iter_mut()
             .zip(input.iter())
-            .zip(positions.into_iter())
+            .zip(opponents.into_iter())
         {
             player.update_frame_mut(
                 input,
-                position,
+                opponent,
                 &self.runtime_data.play_area,
                 &self.runtime_data.graphics,
             );

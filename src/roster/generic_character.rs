@@ -53,6 +53,11 @@ pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
     pub dead: bool,
 }
 
+pub struct OpponentState {
+    pub position: collision::Vec2,
+    pub in_hitstun: bool,
+}
+
 #[enum_dispatch(CharacterBehavior)]
 pub trait GenericCharacterBehaviour {
     fn apply_pushback(&mut self, force: collision::Int);
@@ -69,7 +74,7 @@ pub trait GenericCharacterBehaviour {
     fn update_frame_mut(
         &mut self,
         input: &[InputState],
-        opponent_position: collision::Vec2,
+        opponent: OpponentState,
         play_area: &PlayArea,
         global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     );
@@ -160,10 +165,13 @@ pub trait GenericCharacterBehaviour {
 
     fn take_hit(&mut self, info: &HitEffect, play_area: &PlayArea);
     fn deal_hit(&mut self, info: &HitType);
-    fn get_attack_data(&self) -> Option<&AttackInfo>;
+    fn get_attack_data(&self) -> Option<Cow<'_, AttackInfo>>;
     fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)>;
     fn get_current_combo(&self) -> Option<&ComboEffect>;
+    fn in_hitstun(&self) -> bool;
 }
+
+use std::borrow::Cow;
 
 use super::yuyuko::YuyukoState;
 

@@ -6,7 +6,7 @@ use super::{
         block, counter_hit, graze, guard_crush, hit, wrong_block, ComboEffect, HitEffect,
         HitResult, HitType, Source,
     },
-    PlayerState,
+    OpponentState, PlayerState,
 };
 use crate::game_match::sounds::PlayerSoundState;
 use crate::game_object::state::Timer;
@@ -52,12 +52,15 @@ use moves::{CommandId, MoveId};
 use rodio::Device;
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::hash::Hash;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+};
 use strum::IntoEnumIterator;
 use strum::{Display, EnumIter};
 
@@ -351,6 +354,13 @@ impl YuyukoPlayer {
 
         if !matches!(self.data.states[&move_id].state_type, StateType::Attack) {
             self.state.rebeat_chain.clear();
+        }
+    }
+
+    fn handle_smp(&mut self, opponent: &OpponentState) {
+        if !opponent.in_hitstun {
+            self.state.first_command = None;
+            self.state.smp_list.clear();
         }
     }
     fn handle_expire(&mut self) {
@@ -946,6 +956,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         }
     }
 
+    fn in_hitstun(&self) -> bool {
+        let (_, move_id) = &self.state.current_state;
+        self.data.states[move_id].state_type == StateType::Hitstun
+    }
+
     fn take_hit(&mut self, info: &HitEffect, play_area: &PlayArea) {
         let airborne = match info {
             HitEffect::Hit(hit::Effect {
@@ -1246,14 +1261,29 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.state.current_combo.as_ref()
     }
 
-    fn get_attack_data(&self) -> Option<&AttackInfo> {
+    fn get_attack_data(&self) -> Option<Cow<'_, AttackInfo>> {
+        let smp = self
+            .state
+            .smp_list
+            .get(&self.state.most_recent_command.0)
+            .map(|old_time| self.state.most_recent_command.1 > *old_time)
+            .unwrap_or(false);
+
         let (frame, move_id) = &self.state.current_state;
         self.data.states[move_id].hitboxes[*frame]
             .hitbox
             .as_ref()
             .and_then(|hitbox| {
                 if Some((hitbox.data_id, hitbox.id)) != self.state.last_hit_using {
-                    Some(&self.data.attacks[&hitbox.data_id])
+                    if smp {
+                        let mut owned = self.data.attacks[&hitbox.data_id].clone();
+
+                        owned.on_hit.limit_cost *= 2;
+
+                        Some(Cow::Owned(owned))
+                    } else {
+                        Some(Cow::Borrowed(&self.data.attacks[&hitbox.data_id]))
+                    }
                 } else {
                     None
                 }
@@ -1273,7 +1303,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     fn update_frame_mut(
         &mut self,
         input: &[InputState],
-        opponent_position: collision::Vec2,
+        opponent: OpponentState,
         play_area: &PlayArea,
         global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) {
@@ -1290,8 +1320,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         }
         self.handle_combo_state();
         self.update_spirit();
+        self.handle_smp(&opponent);
         self.update_lockout();
-        self.update_meter(opponent_position);
+        self.update_meter(opponent.position);
         self.update_objects(global_graphics);
         self.spawn_objects();
         self.state.sound_state.update();

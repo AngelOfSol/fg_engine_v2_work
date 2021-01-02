@@ -282,14 +282,14 @@ TODO (2/15/2020):
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
     [] move to u32 for current_frame
-    [] split combo_state
-        [] for attacker
-            [] add smp list
-        [] remove all passing of data out through hitAction
-            [] on deal_hit, the player should know that the current hit is the hit to register
-                [] if its an object dealing the hit, an entity_id should be passed instead
-                [] this lets the player access any info they need to set last_hit_by or return data
-        [] for defender
+    [-] split combo_state
+        [x] add smp list
+        [-] remove all passing of data out through hitAction
+            [-] on deal_hit, the player should know that the current hit is the hit to register
+                [-] if its an object dealing the hit, an entity_id should be passed instead
+                [-] this lets the player access any info they need to set last_hit_by or return data
+        [-] for defender
+        [x] pass combo_state in to other character for rendering
     [] adjust attack info
         [] add hit_target
             [] grounded
