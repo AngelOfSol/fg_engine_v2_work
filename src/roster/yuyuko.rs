@@ -571,6 +571,8 @@ impl YuyukoPlayer {
 
         let accel = self.state.facing.fix_collision(flags.accel);
         self.state.velocity = base_velocity + accel + friction + gravity;
+        const MAX_FALLING_VELOCITY: collision::Int = -8_00;
+        self.state.velocity.y = self.state.velocity.y.max(MAX_FALLING_VELOCITY);
     }
     fn update_position(&mut self, play_area: &PlayArea) {
         let (frame, move_id) = self.state.current_state;

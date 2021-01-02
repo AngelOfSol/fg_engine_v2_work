@@ -308,6 +308,7 @@ TODO (2/15/2020):
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
     [] add hardlimits on velocity due to gravity
+    [] swap to StateInstant<'a> design like other game
     [] adjust attack info
         [] add hit_target
             [] grounded
