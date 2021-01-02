@@ -3,8 +3,7 @@ mod position;
 
 use super::state::{ExpiresAfterAnimation, Position, Timer};
 use crate::{
-    character::state::components::GlobalGraphic, imgui_extra::UiExtensions,
-    roster::graphic::YuyukoGraphic, typedefs::collision,
+    character::state::components::GlobalGraphic, imgui_extra::UiExtensions, typedefs::collision,
 };
 use enum_dispatch::*;
 use hecs::EntityBuilder;
@@ -341,7 +340,7 @@ construct_enum_impl!(
     Construct<Context = ()> for
     enum ContextlessConstructor {
         GlobalParticle(ParticleData<GlobalGraphic>),
-        YuyukoParticle(ParticleData<YuyukoGraphic>),
+        YuyukoParticle(ParticleData<crate::roster::yuyuko::graphic::YuyukoGraphic>),
 
     }
 );

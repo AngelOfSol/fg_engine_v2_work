@@ -3,7 +3,6 @@ mod macros;
 use crate::{
     character::state::components::GlobalGraphic,
     game_object::constructors::{TryAsMut, TryAsRef},
-    roster::graphic::YuyukoGraphic,
 };
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -19,7 +18,7 @@ use strum::{Display, EnumIter};
 impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
-        YuyukoGraphic(YuyukoGraphic),
+        YuyukoGraphic(crate::roster::yuyuko::graphic::YuyukoGraphic),
 
     }
 }

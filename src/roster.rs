@@ -1,9 +1,6 @@
 #[macro_use]
 pub mod generic_character;
-mod yuyuko;
-
-use enum_dispatch::enum_dispatch;
-use graphic::YuyukoGraphic;
+pub mod yuyuko;
 
 use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
@@ -13,28 +10,27 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
+use enum_dispatch::enum_dispatch;
 pub use generic_character::*;
 use ggez::{Context, GameResult};
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
-use sounds::SoundId;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter};
-pub use yuyuko::*;
 
 #[enum_dispatch]
 pub enum CharacterBehavior {
-    YuyukoPlayer,
+    YuyukoPlayer(yuyuko::YuyukoPlayer),
 }
 
 #[derive(Clone, Debug)]
 pub enum CharacterData {
-    Yuyuko(Rc<Yuyuko>),
+    Yuyuko(Rc<yuyuko::Yuyuko>),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
@@ -51,27 +47,31 @@ impl Default for Character {
 impl Character {
     pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => SoundId::iter().map(|item| item.to_string()),
+            Character::Yuyuko => yuyuko::sounds::SoundId::iter().map(|item| item.to_string()),
         }
     }
     pub fn data_id_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => YuyukoDataId::iter().map(|item| item.to_string()),
+            Character::Yuyuko => yuyuko::data::YuyukoDataId::iter().map(|item| item.to_string()),
         }
     }
     pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => YuyukoGraphic::iter().map(|item| item.file_name()),
+            Character::Yuyuko => {
+                yuyuko::graphic::YuyukoGraphic::iter().map(|item| item.file_name())
+            }
         }
     }
 
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
         match self {
-            Character::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(Yuyuko::new_with_path(
-                ctx,
-                assets,
-                PathBuf::from("./resources/yuyuko.json"),
-            )?))),
+            Character::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(
+                yuyuko::Yuyuko::new_with_path(
+                    ctx,
+                    assets,
+                    PathBuf::from("./resources/yuyuko.json"),
+                )?,
+            ))),
         }
     }
 }
@@ -79,7 +79,7 @@ impl Character {
 impl CharacterData {
     pub fn make_character(&self) -> CharacterBehavior {
         match self {
-            CharacterData::Yuyuko(data) => YuyukoPlayer::new(data.clone()).into(),
+            CharacterData::Yuyuko(data) => yuyuko::YuyukoPlayer::new(data.clone()).into(),
         }
     }
     pub fn is_for(&self, character: Character) -> bool {

@@ -2,7 +2,6 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
     graphics::animation_group::AnimationGroup,
-    roster::graphic::YuyukoGraphic,
 };
 use crate::{
     assets::{Assets, ValueAlpha},
@@ -170,7 +169,10 @@ impl AppState for InstanceDataEditor {
 
         let resource = self.resource.borrow();
 
-        if let Some(animation) = resource.instance.get::<YuyukoGraphic>(self.path.clone()) {
+        if let Some(animation) = resource
+            .instance
+            .get::<crate::roster::yuyuko::graphic::YuyukoGraphic>(self.path.clone())
+        {
             let key = animation.file_name();
             let resource = resource.graphics.get(&key).unwrap();
             if resource.duration() > 0 {

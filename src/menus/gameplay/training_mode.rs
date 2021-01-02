@@ -4,7 +4,6 @@ use crate::input::control_scheme::PadControlScheme;
 use crate::input::pads_context::{Event, EventType};
 use crate::input::InputState;
 use crate::player_list::PlayerList;
-use crate::roster::YuyukoUiState;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use inspect_design::traits::*;
@@ -21,7 +20,7 @@ pub struct TrainingMode {
     player_list: PlayerList,
     game_state: TrainingMatch,
     dirty: bool,
-    inspect_state: YuyukoUiState,
+    inspect_state: <crate::roster::yuyuko::Yuyuko as Inspect>::State,
     fps: u32,
 }
 

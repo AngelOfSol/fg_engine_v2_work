@@ -1,5 +1,6 @@
 pub mod attacks;
 pub mod commands;
+pub mod data;
 pub mod graphic;
 pub mod inputs;
 pub mod moves;
