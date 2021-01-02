@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum::{Display, EnumIter};
 
-pub type GraphicMap = HashMap<YuyukoGraphic, AnimationGroup>;
-pub type StateGraphicMap = HashMap<MoveId, YuyukoGraphic>;
+pub type GraphicMap = HashMap<GraphicId, AnimationGroup>;
+pub type StateGraphicMap = HashMap<MoveId, GraphicId>;
 
 #[derive(
     Debug,
@@ -24,7 +24,7 @@ pub type StateGraphicMap = HashMap<MoveId, YuyukoGraphic>;
     Ord,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum YuyukoGraphic {
+pub enum GraphicId {
     SuperJumpParticle,
     HitEffect,
     Butterfly1,
@@ -84,13 +84,13 @@ pub enum YuyukoGraphic {
     Dead,
 }
 
-impl Default for YuyukoGraphic {
+impl Default for GraphicId {
     fn default() -> Self {
         Self::Butterfly1
     }
 }
 
-impl YuyukoGraphic {
+impl GraphicId {
     pub fn file_name(self) -> String {
         serde_json::to_string(&self)
             .unwrap()

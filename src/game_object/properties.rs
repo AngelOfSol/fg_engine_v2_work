@@ -18,7 +18,7 @@ use strum::{Display, EnumIter};
 impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
-        YuyukoGraphic(crate::roster::yuyuko::graphic::YuyukoGraphic),
+        YuyukoGraphic(crate::roster::yuyuko::graphic::GraphicId),
 
     }
 }
@@ -224,6 +224,8 @@ impl Mapping {
 
 #[test]
 fn test_instance_data() {
+    use crate::roster::yuyuko::graphic::GraphicId;
+
     let mut props = InstanceData::new();
     props.insert(0, YuyukoGraphic::HitEffect);
     props.insert(1, GlobalGraphic::SuperJump);

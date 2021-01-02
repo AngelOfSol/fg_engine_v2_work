@@ -340,7 +340,7 @@ construct_enum_impl!(
     Construct<Context = ()> for
     enum ContextlessConstructor {
         GlobalParticle(ParticleData<GlobalGraphic>),
-        YuyukoParticle(ParticleData<crate::roster::yuyuko::graphic::YuyukoGraphic>),
+        YuyukoParticle(ParticleData<crate::roster::yuyuko::graphic::GraphicId>),
 
     }
 );

@@ -57,9 +57,7 @@ impl Character {
     }
     pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => {
-                yuyuko::graphic::YuyukoGraphic::iter().map(|item| item.file_name())
-            }
+            Character::Yuyuko => yuyuko::graphic::GraphicId::iter().map(|item| item.file_name()),
         }
     }
 

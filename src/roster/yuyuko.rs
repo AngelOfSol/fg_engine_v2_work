@@ -47,7 +47,7 @@ use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnima
 use attacks::AttackDataMap;
 use commands::{CommandId, CommandMap};
 use ggez::{Context, GameResult};
-use graphic::{GraphicMap, StateGraphicMap, YuyukoGraphic};
+use graphic::{GraphicId, GraphicMap, StateGraphicMap};
 use hecs::{EntityBuilder, World};
 use inputs::InputMap;
 use inspect_design::Inspect;
@@ -532,7 +532,7 @@ impl YuyukoPlayer {
         }
         let to_destroy: Vec<_> = self
             .world
-            .query::<(&Timer, &YuyukoGraphic)>()
+            .query::<(&Timer, &GraphicId)>()
             .with::<ExpiresAfterAnimation>()
             .iter()
             .filter(|(_, (Timer(timer), graphic))| *timer >= self.data.graphics[graphic].duration())
@@ -1312,10 +1312,8 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         world: graphics::Matrix4,
         global_graphics: &HashMap<GlobalGraphic, AnimationGroup>,
     ) -> GameResult<()> {
-        for (_, (position, graphic, Timer(frame))) in self
-            .world
-            .query::<(&Position, &YuyukoGraphic, &Timer)>()
-            .iter()
+        for (_, (position, graphic, Timer(frame))) in
+            self.world.query::<(&Position, &GraphicId, &Timer)>().iter()
         {
             self.data.graphics[graphic].draw_at_time(
                 ctx,
