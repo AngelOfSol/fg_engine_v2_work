@@ -163,18 +163,21 @@ impl AppState for TrainingMode {
             let fps = &mut self.fps;
             match self.game_state.players.p1_mut() {
                 crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
-                    //
                     imgui
                         .frame()
                         .run(|ui| {
-                            imgui::Window::new(&imgui::im_str!("Window"))
+                            imgui::Window::new(&imgui::im_str!("Editor"))
                                 .no_nav()
                                 .build(ui, || {
-                                    // std::rc::Rc::make_mut(&mut value.data).inspect_mut(
-                                    //     "yuyu",
-                                    //     inspect_state,
-                                    //     ui,
-                                    // );
+                                    std::rc::Rc::make_mut(&mut value.data).inspect_mut(
+                                        "yuyu",
+                                        inspect_state,
+                                        ui,
+                                    );
+                                });
+                            imgui::Window::new(&imgui::im_str!("Frame Rate"))
+                                .no_nav()
+                                .build(ui, || {
                                     fps.inspect_mut("fps", &mut (), ui);
                                     value.state.current_state.inspect(
                                         "state",

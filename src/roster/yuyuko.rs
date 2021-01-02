@@ -1165,9 +1165,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             }
             HitEffect::WrongBlock(_) => {
                 if self.current_flags().crouching {
-                    self.state.current_state = (0, MoveId::WrongblockStandStart);
-                } else {
                     self.state.current_state = (0, MoveId::WrongblockCrouchStart);
+                } else {
+                    self.state.current_state = (0, MoveId::WrongblockStandStart);
                 }
             }
             HitEffect::Graze(_) => {}
