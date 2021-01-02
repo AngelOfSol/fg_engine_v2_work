@@ -16,10 +16,7 @@ use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
 use ggez::{Context, GameResult};
-use hit_info::{
-    new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source},
-    HitAction, HitEffect, HitResult,
-};
+use hit_info::new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -1,4 +1,3 @@
-pub mod combo_state;
 pub mod hit_info;
 pub mod move_id;
 
@@ -18,13 +17,16 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hit_info::{
-    new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source},
-    HitAction, HitEffect, HitResult,
-};
+use hit_info::new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source};
 use rodio::Device;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug, Clone)]
+pub enum AllowedCancel {
+    Always,
+    Hit,
+    Block,
+}
 #[derive(Debug, Clone)]
 pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
     pub velocity: collision::Vec2,
@@ -38,7 +40,6 @@ pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
     pub hitstop: i32,
     pub last_hit_using: Option<u64>,
     pub last_hit_using_new: Option<(AttackId, usize)>,
-    pub current_combo: Option<ComboState>,
     pub current_combo_new: Option<ComboEffect>,
     pub health: i32,
     pub allowed_cancels: AllowedCancel,
@@ -62,20 +63,10 @@ pub trait GenericCharacterBehaviour {
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
     fn hurtboxes(&self) -> Vec<PositionedHitbox>;
 
-    fn get_attack_data(&self) -> Option<HitAction>;
     fn get_attack_data_new(&self) -> Option<&AttackInfo>;
 
     fn prune_bullets(&mut self, play_area: &PlayArea);
 
-    fn would_be_hit(
-        &self,
-        input: &[InputState],
-        total_info: HitAction,
-        effect: Option<HitEffect>,
-    ) -> (Option<HitEffect>, Option<HitResult>);
-
-    fn take_hit(&mut self, info: HitEffect, play_area: &PlayArea);
-    fn deal_hit(&mut self, info: &HitResult);
     fn handle_refacing(&mut self, other_player: collision::Int);
 
     fn update_frame_mut(
@@ -170,14 +161,11 @@ pub trait GenericCharacterBehaviour {
         combo_effect: Option<&ComboEffect>,
         old_effect: Option<OnHitEffect>,
     ) -> HitResultNew;
-
     fn take_hit_new(&mut self, info: &OnHitEffect, play_area: &PlayArea);
     fn deal_hit_new(&mut self, info: &OnHitType);
 
     fn get_current_combo(&self) -> Option<&ComboEffect>;
 }
-
-use self::combo_state::{AllowedCancel, ComboState};
 
 use super::yuyuko::YuyukoState;
 

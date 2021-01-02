@@ -6,7 +6,6 @@ pub mod sounds;
 use crate::input::Facing;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
-use crate::roster::generic_character::hit_info::HitEffectType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::roster::hit_info::new::Source;
