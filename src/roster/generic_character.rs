@@ -17,7 +17,7 @@ use crate::{
 };
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hit_info::new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source};
+use hit_info::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source};
 use rodio::Device;
 use std::collections::{HashMap, HashSet};
 

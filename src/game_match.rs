@@ -8,16 +8,16 @@ use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
-use crate::roster::hit_info::new::Source;
+use crate::roster::hit_info::Source;
 use crate::roster::CharacterBehavior;
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
 use crate::{assets::ValueAlpha, roster::hit_info::HitSource};
-use crate::{character::state::components::GlobalGraphic, roster::hit_info::new::OnHitEffect};
-use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::new::HitResultNew};
-use crate::{hitbox::PositionedHitbox, roster::hit_info::new::OnHitType};
+use crate::{character::state::components::GlobalGraphic, roster::hit_info::OnHitEffect};
+use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::HitResultNew};
+use crate::{hitbox::PositionedHitbox, roster::hit_info::OnHitType};
 use flash::FlashOverlay;
 pub use flash::FlashType;
 use ggez::graphics::Image;
@@ -276,8 +276,7 @@ impl<Writer: Write> Match<Writer> {
             .zip(facing.into_iter().rev())
             .zip(input.iter())
             .map(|((((player, touched), attack_data), facing), input)| {
-                if *touched && attack_data.is_some() {
-                    let attack_data = attack_data.unwrap();
+                if let (true, Some(ref attack_data)) = (*touched, attack_data) {
                     player.would_be_hit_new(
                         input,
                         attack_data,

@@ -280,7 +280,7 @@ pub fn draw_ui(
 }
 use crate::typedefs::collision::IntoGraphical;
 
-use super::hit_info::new::ComboEffect;
+use super::hit_info::ComboEffect;
 pub fn get_transform(
     world: graphics::Matrix4,
     offset: collision::Vec2,
