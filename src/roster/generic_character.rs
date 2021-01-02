@@ -19,7 +19,7 @@ use crate::{
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{
-    new::{ComboEffect, OnHitEffect, Source},
+    new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source},
     HitAction, HitEffect, HitResult,
 };
 use rodio::Device;
@@ -63,6 +63,7 @@ pub trait GenericCharacterBehaviour {
     fn hurtboxes(&self) -> Vec<PositionedHitbox>;
 
     fn get_attack_data(&self) -> Option<HitAction>;
+    fn get_attack_data_new(&self) -> Option<&AttackInfo>;
 
     fn prune_bullets(&mut self, play_area: &PlayArea);
 
@@ -101,8 +102,10 @@ pub trait GenericCharacterBehaviour {
         flipped: bool,
         wins: usize,
         first_to: usize,
+        last_combo_state: &Option<(ComboEffect, usize)>,
     ) -> GameResult<()>;
 
+    fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)>;
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()>;
 
     fn draw_objects(
@@ -166,10 +169,10 @@ pub trait GenericCharacterBehaviour {
         source: &Source,
         combo_effect: Option<&ComboEffect>,
         old_effect: Option<OnHitEffect>,
-    ) -> Option<OnHitEffect>;
+    ) -> HitResultNew;
 
     fn take_hit_new(&mut self, info: &OnHitEffect, play_area: &PlayArea);
-    fn deal_hit_new(&mut self, info: &OnHitEffect);
+    fn deal_hit_new(&mut self, info: &OnHitType);
 
     fn get_current_combo(&self) -> Option<&ComboEffect>;
 }

@@ -389,6 +389,57 @@ pub mod new {
         pub facing: Facing,
     }
 
+    pub enum OnHitType {
+        Hit,
+        GuardCrush,
+        Graze,
+        CounterHit,
+        Block,
+        WrongBlock,
+    }
+
+    pub enum HitResultNew {
+        None,
+        Pass(OnHitEffect),
+        HitBy(OnHitType, OnHitEffect),
+    }
+
+    impl<F> From<(F, OnHitType)> for HitResultNew
+    where
+        OnHitEffect: From<F>,
+    {
+        fn from((effect, hit_type): (F, OnHitType)) -> Self {
+            Self::HitBy(hit_type, OnHitEffect::from(effect))
+        }
+    }
+
+    impl<F> From<F> for HitResultNew
+    where
+        OnHitEffect: From<F>,
+    {
+        fn from(effect: F) -> Self {
+            Self::Pass(OnHitEffect::from(effect))
+        }
+    }
+    impl From<Option<OnHitEffect>> for HitResultNew {
+        fn from(value: Option<OnHitEffect>) -> Self {
+            match value {
+                Some(effect) => Self::Pass(effect),
+                None => Self::None,
+            }
+        }
+    }
+
+    impl HitResultNew {
+        pub fn split(self) -> (Option<OnHitEffect>, Option<OnHitType>) {
+            match self {
+                Self::None => (None, None),
+                Self::Pass(effect) => (Some(effect), None),
+                Self::HitBy(hit_type, effect) => (Some(effect), Some(hit_type)),
+            }
+        }
+    }
+
     pub enum OnHitEffect {
         Hit(hit::Effect),
         GuardCrush(guard_crush::Effect),
@@ -436,7 +487,7 @@ pub mod new {
             typedefs::collision,
         };
 
-        use super::{AttackerEffect, ComboEffect, Source};
+        use super::{AttackerEffect, ComboEffect, OnHitType, Source};
         pub struct Effect {
             pub attacker: AttackerEffect,
             pub defender: DefenderEffect,
@@ -460,45 +511,52 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> Effect {
+            ) -> (Effect, OnHitType) {
                 let attack_info = &attack_info.on_hit;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: attack_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            attack_info.attacker_stop
-                        } else {
-                            0
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: attack_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                attack_info.attacker_stop
+                            } else {
+                                0
+                            },
                         },
-                    },
 
-                    combo: ComboEffect {
-                        available_limit: attack_info.starter_limit,
-                        hits: 1,
-                        proration: attack_info.proration,
-                        total_damage: attack_info.damage,
-                        ground_action: attack_info.ground_action,
-                    },
-                    defender: DefenderEffect {
-                        add_spirit_delay: attack_info.spirit_delay,
-                        is_lethal: attack_info.lethal,
-                        modify_meter: attack_info.defender_meter,
-                        reset_spirit_delay: attack_info.reset_spirit_delay,
-                        set_stop: attack_info.defender_stop,
-                        take_spirit_gauge: attack_info.spirit_cost,
-                        set_stun: attack_info.stun,
-                        take_damage: attack_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: if airborne || attack_info.launcher {
-                            Force::Airborne(source.facing.fix_collision(attack_info.air_force))
-                        } else {
-                            Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                                attack_info.ground_pushback,
-                                0_00,
-                            )))
+                        combo: ComboEffect {
+                            available_limit: attack_info.starter_limit,
+                            hits: 1,
+                            proration: attack_info.proration,
+                            total_damage: attack_info.damage,
+                            ground_action: attack_info.ground_action,
+                        },
+                        defender: DefenderEffect {
+                            add_spirit_delay: attack_info.spirit_delay,
+                            is_lethal: attack_info.lethal,
+                            modify_meter: attack_info.defender_meter,
+                            reset_spirit_delay: attack_info.reset_spirit_delay,
+                            set_stop: attack_info.defender_stop,
+                            take_spirit_gauge: attack_info.spirit_cost,
+                            set_stun: if airborne || attack_info.launcher {
+                                attack_info.air_stun
+                            } else {
+                                attack_info.stun
+                            },
+                            take_damage: attack_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: if airborne || attack_info.launcher {
+                                Force::Airborne(source.facing.fix_collision(attack_info.air_force))
+                            } else {
+                                Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
+                                    attack_info.ground_pushback,
+                                    0_00,
+                                )))
+                            },
                         },
                     },
-                }
+                    OnHitType::Hit,
+                )
             }
 
             pub fn build(
@@ -506,50 +564,62 @@ pub mod new {
                 source: &Source,
                 airborne: bool,
                 current_combo: ComboEffect,
-            ) -> Effect {
+            ) -> (Effect, OnHitType) {
                 let attack_info = &attack_info.on_hit;
                 let damage = attack_info.damage * current_combo.proration / 100;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: attack_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            attack_info.attacker_stop
-                        } else {
-                            0
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: attack_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                attack_info.attacker_stop
+                            } else {
+                                0
+                            },
                         },
-                    },
 
-                    combo: ComboEffect {
-                        available_limit: (current_combo.available_limit - attack_info.limit_cost)
-                            .max(0),
-                        hits: current_combo.hits + 1,
-                        proration: current_combo.proration * attack_info.proration / 100,
-                        total_damage: current_combo.total_damage + damage,
-                        ground_action: attack_info.ground_action,
-                    },
-                    defender: DefenderEffect {
-                        add_spirit_delay: attack_info.spirit_delay,
-                        is_lethal: attack_info.lethal,
-                        modify_meter: attack_info.defender_meter,
-                        reset_spirit_delay: attack_info.reset_spirit_delay,
-                        set_stop: attack_info.defender_stop,
-                        take_spirit_gauge: attack_info.spirit_cost,
-                        set_stun: attack_info.stun,
-                        take_damage: attack_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: if airborne || attack_info.launcher {
-                            Force::Airborne(source.facing.fix_collision(attack_info.air_force))
-                        } else {
-                            Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                                attack_info.ground_pushback,
-                                0_00,
-                            )))
+                        combo: ComboEffect {
+                            available_limit: (current_combo.available_limit
+                                - attack_info.limit_cost)
+                                .max(0),
+                            hits: current_combo.hits + 1,
+                            proration: current_combo.proration * attack_info.proration / 100,
+                            total_damage: current_combo.total_damage + damage,
+                            ground_action: attack_info.ground_action,
+                        },
+                        defender: DefenderEffect {
+                            add_spirit_delay: attack_info.spirit_delay,
+                            is_lethal: attack_info.lethal,
+                            modify_meter: attack_info.defender_meter,
+                            reset_spirit_delay: attack_info.reset_spirit_delay,
+                            set_stop: attack_info.defender_stop,
+                            take_spirit_gauge: attack_info.spirit_cost,
+                            set_stun: if airborne || attack_info.launcher {
+                                attack_info.air_stun
+                            } else {
+                                attack_info.stun
+                            },
+                            take_damage: attack_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: if airborne || attack_info.launcher {
+                                Force::Airborne(source.facing.fix_collision(attack_info.air_force))
+                            } else {
+                                Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
+                                    attack_info.ground_pushback,
+                                    0_00,
+                                )))
+                            },
                         },
                     },
-                }
+                    OnHitType::Hit,
+                )
             }
 
-            pub fn append_hit(mut self, attack_info: &AttackInfo, source: &Source) -> Self {
+            pub fn append_hit(
+                mut self,
+                attack_info: &AttackInfo,
+                source: &Source,
+            ) -> (Self, OnHitType) {
                 let attack_info = &attack_info.on_hit;
                 let damage = attack_info.damage * self.combo.proration / 100;
 
@@ -601,7 +671,7 @@ pub mod new {
                     self.defender.set_should_pushback = source.source_type == HitSource::Character;
                 }
 
-                self
+                (self, OnHitType::Hit)
             }
         }
     }
@@ -613,7 +683,7 @@ pub mod new {
             typedefs::collision,
         };
 
-        use super::{AttackerEffect, ComboEffect, Source};
+        use super::{AttackerEffect, ComboEffect, OnHitType, Source};
         pub struct Effect {
             pub attacker: AttackerEffect,
             pub defender: DefenderEffect,
@@ -630,44 +700,57 @@ pub mod new {
         }
 
         impl Effect {
-            pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> Effect {
+            pub fn build(
+                attack_info: &AttackInfo,
+                source: &Source,
+                airborne: bool,
+            ) -> (Effect, OnHitType) {
                 let guard_crush_info = &attack_info.on_guard_crush;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: guard_crush_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            guard_crush_info.attacker_stop
-                        } else {
-                            0
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: guard_crush_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                guard_crush_info.attacker_stop
+                            } else {
+                                0
+                            },
                         },
-                    },
 
-                    combo: ComboEffect {
-                        available_limit: guard_crush_info.starter_limit,
-                        hits: 1,
-                        proration: guard_crush_info.proration,
-                        total_damage: guard_crush_info.damage,
-                        ground_action: guard_crush_info.ground_action,
-                    },
-                    defender: DefenderEffect {
-                        is_lethal: guard_crush_info.lethal,
-                        modify_meter: guard_crush_info.defender_meter,
-                        set_stop: guard_crush_info.defender_stop,
-                        set_stun: guard_crush_info.stun,
-                        take_damage: guard_crush_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: if airborne || guard_crush_info.launcher {
-                            Force::Airborne(source.facing.fix_collision(guard_crush_info.air_force))
-                        } else {
-                            Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                                guard_crush_info.ground_pushback,
-                                0_00,
-                            )))
+                        combo: ComboEffect {
+                            available_limit: guard_crush_info.starter_limit,
+                            hits: 1,
+                            proration: guard_crush_info.proration,
+                            total_damage: guard_crush_info.damage,
+                            ground_action: guard_crush_info.ground_action,
+                        },
+                        defender: DefenderEffect {
+                            is_lethal: guard_crush_info.lethal,
+                            modify_meter: guard_crush_info.defender_meter,
+                            set_stop: guard_crush_info.defender_stop,
+                            set_stun: if airborne || guard_crush_info.launcher {
+                                guard_crush_info.air_stun
+                            } else {
+                                guard_crush_info.stun
+                            },
+                            take_damage: guard_crush_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: if airborne || guard_crush_info.launcher {
+                                Force::Airborne(
+                                    source.facing.fix_collision(guard_crush_info.air_force),
+                                )
+                            } else {
+                                Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
+                                    guard_crush_info.ground_pushback,
+                                    0_00,
+                                )))
+                            },
                         },
                     },
-                }
+                    OnHitType::GuardCrush,
+                )
             }
-            pub fn append_hit(mut self, attack_info: &AttackInfo) -> Self {
+            pub fn append_hit(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
                 let attack_info = &attack_info.on_hit;
                 let damage = attack_info.damage * self.combo.proration / 100;
 
@@ -683,7 +766,7 @@ pub mod new {
                 self.defender.modify_meter += attack_info.defender_meter;
                 self.defender.take_damage += damage;
 
-                self
+                (self, OnHitType::Hit)
             }
         }
     }
@@ -695,7 +778,7 @@ pub mod new {
             typedefs::collision,
         };
 
-        use super::{AttackerEffect, ComboEffect, Source};
+        use super::{AttackerEffect, ComboEffect, OnHitType, Source};
         pub struct Effect {
             pub attacker: AttackerEffect,
             pub defender: DefenderEffect,
@@ -715,48 +798,61 @@ pub mod new {
         }
 
         impl Effect {
-            pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> Effect {
-                let attack_info = &attack_info.on_counter_hit;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: attack_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            attack_info.attacker_stop
-                        } else {
-                            0
+            pub fn build(
+                attack_info: &AttackInfo,
+                source: &Source,
+                airborne: bool,
+            ) -> (Effect, OnHitType) {
+                let counter_hit_info = &attack_info.on_counter_hit;
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: counter_hit_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                counter_hit_info.attacker_stop
+                            } else {
+                                0
+                            },
                         },
-                    },
 
-                    combo: ComboEffect {
-                        available_limit: attack_info.starter_limit,
-                        hits: 1,
-                        proration: attack_info.proration,
-                        total_damage: attack_info.damage,
-                        ground_action: attack_info.ground_action,
-                    },
-                    defender: DefenderEffect {
-                        add_spirit_delay: attack_info.spirit_delay,
-                        is_lethal: attack_info.lethal,
-                        modify_meter: attack_info.defender_meter,
-                        reset_spirit_delay: attack_info.reset_spirit_delay,
-                        set_stop: attack_info.defender_stop,
-                        take_spirit_gauge: attack_info.spirit_cost,
-                        set_stun: attack_info.stun,
-                        take_damage: attack_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: if airborne || attack_info.launcher {
-                            Force::Airborne(source.facing.fix_collision(attack_info.air_force))
-                        } else {
-                            Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                                attack_info.ground_pushback,
-                                0_00,
-                            )))
+                        combo: ComboEffect {
+                            available_limit: counter_hit_info.starter_limit,
+                            hits: 1,
+                            proration: counter_hit_info.proration,
+                            total_damage: counter_hit_info.damage,
+                            ground_action: counter_hit_info.ground_action,
+                        },
+                        defender: DefenderEffect {
+                            add_spirit_delay: counter_hit_info.spirit_delay,
+                            is_lethal: counter_hit_info.lethal,
+                            modify_meter: counter_hit_info.defender_meter,
+                            reset_spirit_delay: counter_hit_info.reset_spirit_delay,
+                            set_stop: counter_hit_info.defender_stop,
+                            take_spirit_gauge: counter_hit_info.spirit_cost,
+                            set_stun: if airborne || counter_hit_info.launcher {
+                                counter_hit_info.air_stun
+                            } else {
+                                counter_hit_info.stun
+                            },
+                            take_damage: counter_hit_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: if airborne || counter_hit_info.launcher {
+                                Force::Airborne(
+                                    source.facing.fix_collision(counter_hit_info.air_force),
+                                )
+                            } else {
+                                Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
+                                    counter_hit_info.ground_pushback,
+                                    0_00,
+                                )))
+                            },
                         },
                     },
-                }
+                    OnHitType::CounterHit,
+                )
             }
 
-            pub fn append_hit(mut self, attack_info: &AttackInfo) -> Self {
+            pub fn append_hit(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
                 let attack_info = &attack_info.on_hit;
                 let damage = attack_info.damage * self.combo.proration / 100;
 
@@ -775,13 +871,15 @@ pub mod new {
                 self.defender.take_spirit_gauge += attack_info.spirit_cost;
                 self.defender.take_damage += damage;
 
-                self
+                (self, OnHitType::Hit)
             }
         }
     }
 
     pub mod graze {
-        use super::{block, counter_hit, guard_crush, hit, wrong_block, AttackerEffect, Source};
+        use super::{
+            block, counter_hit, guard_crush, hit, wrong_block, AttackerEffect, OnHitType, Source,
+        };
         use crate::character::components::AttackInfo;
 
         pub struct Effect {
@@ -798,37 +896,42 @@ pub mod new {
         }
 
         impl Effect {
-            pub fn build(attack_info: &AttackInfo) -> Effect {
+            pub fn build(attack_info: &AttackInfo) -> (Effect, OnHitType) {
                 let graze_info = &attack_info.on_graze;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: graze_info.attacker_meter,
-                        set_stop: 0,
-                    },
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: graze_info.attacker_meter,
+                            set_stop: 0,
+                        },
 
-                    defender: DefenderEffect {
-                        add_spirit_delay: graze_info.spirit_delay,
-                        modify_meter: graze_info.defender_meter,
-                        reset_spirit_delay: graze_info.reset_spirit_delay,
-                        set_stop: graze_info.defender_stop,
-                        take_spirit_gauge: graze_info.spirit_cost,
-                        take_damage: graze_info.damage,
+                        defender: DefenderEffect {
+                            add_spirit_delay: graze_info.spirit_delay,
+                            modify_meter: graze_info.defender_meter,
+                            reset_spirit_delay: graze_info.reset_spirit_delay,
+                            set_stop: graze_info.defender_stop,
+                            take_spirit_gauge: graze_info.spirit_cost,
+                            take_damage: graze_info.damage,
+                        },
                     },
-                }
+                    OnHitType::Graze,
+                )
             }
             pub fn append_block(
                 self,
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> block::Effect {
+            ) -> (block::Effect, OnHitType) {
                 let mut effect = block::Effect::build(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
@@ -836,14 +939,16 @@ pub mod new {
                 self,
                 attack_info: &AttackInfo,
                 source: &Source,
-            ) -> wrong_block::Effect {
+            ) -> (wrong_block::Effect, OnHitType) {
                 let mut effect = wrong_block::Effect::build(attack_info, source);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
@@ -852,18 +957,20 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> hit::Effect {
+            ) -> (hit::Effect, OnHitType) {
                 let mut effect = hit::Effect::build_starter(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
-            pub fn append_graze(mut self, attack_info: &AttackInfo) -> Self {
+            pub fn append_graze(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
                 let graze_info = &attack_info.on_graze;
 
                 self.attacker.modify_meter += graze_info.attacker_meter;
@@ -875,7 +982,7 @@ pub mod new {
                 self.defender.take_spirit_gauge += graze_info.spirit_cost;
                 self.defender.take_damage += graze_info.damage;
 
-                self
+                (self, OnHitType::Graze)
             }
 
             pub fn append_counterhit(
@@ -883,14 +990,16 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> counter_hit::Effect {
+            ) -> (counter_hit::Effect, OnHitType) {
                 let mut effect = counter_hit::Effect::build(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
@@ -900,14 +1009,15 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> guard_crush::Effect {
+            ) -> (guard_crush::Effect, OnHitType) {
                 let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_damage += self.defender.take_damage;
-
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
                 effect
             }
         }
@@ -920,7 +1030,7 @@ pub mod new {
             typedefs::collision,
         };
 
-        use super::{guard_crush, hit, wrong_block, AttackerEffect, Source};
+        use super::{guard_crush, hit, wrong_block, AttackerEffect, OnHitType, Source};
         pub struct Effect {
             pub attacker: AttackerEffect,
             pub defender: DefenderEffect,
@@ -947,38 +1057,49 @@ pub mod new {
                 previous.unwrap_or(0) + attack_info.on_block.spirit_cost >= remaining_spirit
             }
 
-            pub fn build(attack_info: &AttackInfo, source: &Source, airborne: bool) -> Effect {
+            pub fn build(
+                attack_info: &AttackInfo,
+                source: &Source,
+                airborne: bool,
+            ) -> (Effect, OnHitType) {
                 let block_info = &attack_info.on_block;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: block_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            block_info.attacker_stop
-                        } else {
-                            0
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: block_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                block_info.attacker_stop
+                            } else {
+                                0
+                            },
                         },
-                    },
 
-                    defender: DefenderEffect {
-                        is_lethal: false,
-                        add_spirit_delay: block_info.spirit_delay,
-                        modify_meter: block_info.defender_meter,
-                        reset_spirit_delay: block_info.reset_spirit_delay,
-                        set_stop: block_info.defender_stop,
-                        take_spirit_gauge: block_info.spirit_cost,
-                        set_stun: block_info.stun,
-                        take_damage: block_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: if airborne {
-                            Force::Airborne(source.facing.fix_collision(block_info.air_force))
-                        } else {
-                            Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                                block_info.ground_pushback,
-                                0_00,
-                            )))
+                        defender: DefenderEffect {
+                            is_lethal: false,
+                            add_spirit_delay: block_info.spirit_delay,
+                            modify_meter: block_info.defender_meter,
+                            reset_spirit_delay: block_info.reset_spirit_delay,
+                            set_stop: block_info.defender_stop,
+                            take_spirit_gauge: block_info.spirit_cost,
+                            set_stun: if airborne {
+                                block_info.air_stun
+                            } else {
+                                block_info.stun
+                            },
+                            take_damage: block_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: if airborne {
+                                Force::Airborne(source.facing.fix_collision(block_info.air_force))
+                            } else {
+                                Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
+                                    block_info.ground_pushback,
+                                    0_00,
+                                )))
+                            },
                         },
                     },
-                }
+                    OnHitType::Block,
+                )
             }
 
             pub fn append_block(
@@ -986,7 +1107,7 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> Self {
+            ) -> (Self, OnHitType) {
                 let block_info = &attack_info.on_block;
 
                 self.attacker.modify_meter += block_info.attacker_meter;
@@ -1007,28 +1128,33 @@ pub mod new {
                                 0_00,
                             )))
                         };
-                    self.defender.set_stun = block_info.air_stun;
+                    self.defender.set_stun = if airborne {
+                        block_info.air_stun
+                    } else {
+                        block_info.stun
+                    };
                     self.defender.set_stop = block_info.defender_stop;
                     self.defender.set_should_pushback = source.source_type == HitSource::Character;
                 }
 
-                self
+                (self, OnHitType::Block)
             }
             pub fn append_wrongblock(
                 self,
                 attack_info: &AttackInfo,
                 source: &Source,
-            ) -> wrong_block::Effect {
+            ) -> (wrong_block::Effect, OnHitType) {
                 let mut effect = wrong_block::Effect::build(attack_info, source);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.add_spirit_delay += self.defender.add_spirit_delay;
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.reset_spirit_delay |= self.defender.reset_spirit_delay;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
-
+                    effect.defender.add_spirit_delay += self.defender.add_spirit_delay;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.reset_spirit_delay |= self.defender.reset_spirit_delay;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
                 effect
             }
 
@@ -1037,16 +1163,18 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> hit::Effect {
+            ) -> (hit::Effect, OnHitType) {
                 let mut effect = hit::Effect::build_starter(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.add_spirit_delay += self.defender.add_spirit_delay;
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.reset_spirit_delay |= self.defender.reset_spirit_delay;
-                effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.add_spirit_delay += self.defender.add_spirit_delay;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.reset_spirit_delay |= self.defender.reset_spirit_delay;
+                    effect.defender.take_spirit_gauge += self.defender.take_spirit_gauge;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
@@ -1056,13 +1184,15 @@ pub mod new {
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> guard_crush::Effect {
+            ) -> (guard_crush::Effect, OnHitType) {
                 let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_damage += self.defender.take_damage;
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
 
                 effect
             }
@@ -1076,7 +1206,7 @@ pub mod new {
             typedefs::collision,
         };
 
-        use super::{guard_crush, AttackerEffect, Source};
+        use super::{guard_crush, AttackerEffect, OnHitType, Source};
         pub struct Effect {
             pub attacker: AttackerEffect,
             pub defender: DefenderEffect,
@@ -1102,39 +1232,39 @@ pub mod new {
             ) -> bool {
                 previous.unwrap_or(0) + attack_info.on_wrongblock.spirit_cost >= remaining_spirit
             }
-            pub fn build(attack_info: &AttackInfo, source: &Source) -> Effect {
+            pub fn build(attack_info: &AttackInfo, source: &Source) -> (Effect, OnHitType) {
                 let block_info = &attack_info.on_wrongblock;
-                Effect {
-                    attacker: AttackerEffect {
-                        modify_meter: block_info.attacker_meter,
-                        set_stop: if source.source_type == HitSource::Character {
-                            block_info.attacker_stop
-                        } else {
-                            0
+                (
+                    Effect {
+                        attacker: AttackerEffect {
+                            modify_meter: block_info.attacker_meter,
+                            set_stop: if source.source_type == HitSource::Character {
+                                block_info.attacker_stop
+                            } else {
+                                0
+                            },
+                        },
+
+                        defender: DefenderEffect {
+                            is_lethal: false,
+                            add_spirit_delay: block_info.spirit_delay,
+                            modify_meter: block_info.defender_meter,
+                            reset_spirit_delay: block_info.reset_spirit_delay,
+                            set_stop: block_info.defender_stop,
+                            take_spirit_gauge: block_info.spirit_cost,
+                            set_stun: block_info.stun,
+                            take_damage: block_info.damage,
+                            set_should_pushback: source.source_type == HitSource::Character,
+                            set_force: Force::Grounded(source.facing.fix_collision(
+                                collision::Vec2::new(block_info.ground_pushback, 0_00),
+                            )),
                         },
                     },
-
-                    defender: DefenderEffect {
-                        is_lethal: false,
-                        add_spirit_delay: block_info.spirit_delay,
-                        modify_meter: block_info.defender_meter,
-                        reset_spirit_delay: block_info.reset_spirit_delay,
-                        set_stop: block_info.defender_stop,
-                        take_spirit_gauge: block_info.spirit_cost,
-                        set_stun: block_info.stun,
-                        take_damage: block_info.damage,
-                        set_should_pushback: source.source_type == HitSource::Character,
-                        set_force: Force::Grounded(
-                            source.facing.fix_collision(collision::Vec2::new(
-                                block_info.ground_pushback,
-                                0_00,
-                            )),
-                        ),
-                    },
-                }
+                    OnHitType::WrongBlock,
+                )
             }
 
-            pub fn append_block(mut self, attack_info: &AttackInfo) -> Self {
+            pub fn append_block(mut self, attack_info: &AttackInfo) -> (Self, OnHitType) {
                 let block_info = &attack_info.on_block;
 
                 self.attacker.modify_meter += block_info.attacker_meter;
@@ -1145,10 +1275,14 @@ pub mod new {
                 self.defender.take_spirit_gauge += block_info.spirit_cost;
                 self.defender.take_damage += block_info.damage;
 
-                self
+                (self, OnHitType::Block)
             }
 
-            pub fn append_wrongblock(mut self, attack_info: &AttackInfo, source: &Source) -> Self {
+            pub fn append_wrongblock(
+                mut self,
+                attack_info: &AttackInfo,
+                source: &Source,
+            ) -> (Self, OnHitType) {
                 let block_info = &attack_info.on_wrongblock;
 
                 self.attacker.modify_meter += block_info.attacker_meter;
@@ -1170,21 +1304,22 @@ pub mod new {
                     self.defender.set_should_pushback = source.source_type == HitSource::Character;
                 }
 
-                self
+                (self, OnHitType::WrongBlock)
             }
             pub fn append_guard_crush(
                 self,
                 attack_info: &AttackInfo,
                 source: &Source,
                 airborne: bool,
-            ) -> guard_crush::Effect {
+            ) -> (guard_crush::Effect, OnHitType) {
                 let mut effect = guard_crush::Effect::build(attack_info, source, airborne);
+                {
+                    let effect = &mut effect.0;
+                    effect.attacker.modify_meter += self.attacker.modify_meter;
 
-                effect.attacker.modify_meter += self.attacker.modify_meter;
-
-                effect.defender.modify_meter += self.defender.modify_meter;
-                effect.defender.take_damage += self.defender.take_damage;
-
+                    effect.defender.modify_meter += self.defender.modify_meter;
+                    effect.defender.take_damage += self.defender.take_damage;
+                }
                 effect
             }
         }

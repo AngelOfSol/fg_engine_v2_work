@@ -65,15 +65,13 @@ pub fn draw_ui(
     meter: i32,
     lockout: i32,
     properties: &Properties,
-    is_untech: bool,
 ) -> GameResult<()> {
     if let Some((combo, timer)) = last_combo_state {
         let text = format!(
-            "{} hits\n{} damage\n{} limit, untech: {}",
+            "{} hits\n{} damage\n{} limit",
             combo.hits,
             combo.total_damage,
             combo.available_limit.max(0),
-            is_untech
         );
 
         if let Some(combo_text) = combo_text.as_mut() {

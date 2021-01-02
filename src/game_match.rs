@@ -3,21 +3,22 @@ mod match_settings;
 mod noop_writer;
 pub mod sounds;
 
-use crate::assets::ValueAlpha;
-use crate::character::state::components::GlobalGraphic;
-use crate::graphics::animation_group::AnimationGroup;
-use crate::hitbox::PositionedHitbox;
 use crate::input::Facing;
 use crate::input::InputState;
 use crate::netcode::{InputSet, RollbackableGameState};
 use crate::roster::generic_character::hit_info::HitEffectType;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
+use crate::roster::hit_info::new::Source;
 use crate::roster::CharacterBehavior;
 use crate::stage::Stage;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::typedefs::player::PlayerData;
+use crate::{assets::ValueAlpha, roster::hit_info::HitSource};
+use crate::{character::state::components::GlobalGraphic, roster::hit_info::new::OnHitEffect};
+use crate::{graphics::animation_group::AnimationGroup, roster::hit_info::new::HitResultNew};
+use crate::{hitbox::PositionedHitbox, roster::hit_info::new::OnHitType};
 use flash::FlashOverlay;
 pub use flash::FlashType;
 use ggez::graphics::Image;
@@ -263,28 +264,41 @@ impl<Writer: Write> Match<Writer> {
         let attack_data: Vec<_> = self
             .players
             .iter()
-            .map(|player| player.get_attack_data())
+            .map(|player| player.get_attack_data_new())
             .collect();
 
-        let (hit_effects, hit_results): (Vec<_>, Vec<_>) = self
+        let facing: Vec<_> = self.players.iter().map(|item| item.facing()).collect();
+
+        let (hit_effects, hit_types): (Vec<Option<OnHitEffect>>, Vec<Option<OnHitType>>) = self
             .players
             .iter()
             .zip(touched.iter())
             .zip(attack_data.into_iter().rev())
+            .zip(facing.into_iter().rev())
             .zip(input.iter())
-            .map(|(((player, touched), attack_data), input)| {
-                if let Some(attack_data) = attack_data {
-                    if *touched {
-                        return player.would_be_hit(input, attack_data, None);
-                    }
+            .map(|((((player, touched), attack_data), facing), input)| {
+                if *touched && attack_data.is_some() {
+                    let attack_data = attack_data.unwrap();
+                    player.would_be_hit_new(
+                        input,
+                        attack_data,
+                        &Source {
+                            source_type: HitSource::Character,
+                            facing,
+                        },
+                        player.get_current_combo(),
+                        None,
+                    )
+                } else {
+                    HitResultNew::None
                 }
-                (None, None)
             })
+            .map(|item| item.split())
             .unzip();
 
-        for (ref mut player, ref result) in self.players.iter_mut().zip(hit_results.iter().rev()) {
+        for (ref mut player, result) in self.players.iter_mut().zip(hit_types.iter().rev()) {
             if let Some(result) = result {
-                player.deal_hit(result);
+                player.deal_hit_new(result);
             }
         }
 
@@ -340,12 +354,12 @@ impl<Writer: Write> Match<Writer> {
                 ]
                 .into_iter()
                 .unzip();
-        */
+
         for (player, results) in self.players.iter_mut().zip(hit_results.into_iter().rev()) {
             for result in results.into_iter() {
                 player.deal_hit(&result);
             }
-        }
+        }*/
 
         for (player, effect) in self
             .players
@@ -353,10 +367,10 @@ impl<Writer: Write> Match<Writer> {
             .zip(hit_effects.into_iter())
             .flat_map(|(player, item)| item.map(|item| (player, item)))
         {
-            if let HitEffectType::GuardCrush = effect.hit_type {
+            if matches!(effect, OnHitEffect::GuardCrush(_)) {
                 self.game_state.flash = Some(FlashType::GuardCrush.into())
             }
-            player.take_hit(effect, &self.runtime_data.play_area);
+            player.take_hit_new(&effect, &self.runtime_data.play_area);
         }
 
         if self.players.iter().any(|player| player.is_dead()) {
@@ -702,6 +716,10 @@ impl<Writer: Write> Match<Writer> {
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;
 
+        let combos = self
+            .players
+            .as_ref()
+            .map(|player| player.get_last_combo_state().clone());
         self.players.p1_mut().draw_ui(
             ctx,
             &assets,
@@ -710,6 +728,7 @@ impl<Writer: Write> Match<Writer> {
             false,
             *self.game_state.wins.p1(),
             self.settings.first_to,
+            combos.p2(),
         )?;
         self.players.p2_mut().draw_ui(
             ctx,
@@ -720,6 +739,7 @@ impl<Writer: Write> Match<Writer> {
             true,
             *self.game_state.wins.p2(),
             self.settings.first_to,
+            combos.p1(),
         )?;
 
         graphics::set_blend_mode(ctx, graphics::BlendMode::Alpha)?;

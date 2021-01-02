@@ -17,7 +17,7 @@ use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
 use ggez::{Context, GameResult};
 use hit_info::{
-    new::{ComboEffect, OnHitEffect, Source},
+    new::{ComboEffect, HitResultNew, OnHitEffect, OnHitType, Source},
     HitAction, HitEffect, HitResult,
 };
 use rodio::Device;
@@ -27,7 +27,6 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter};
-
 #[enum_dispatch]
 pub enum CharacterBehavior {
     YuyukoPlayer,

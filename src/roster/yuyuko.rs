@@ -326,7 +326,8 @@ use crate::game_match::sounds::PlayerSoundState;
 
 use super::{
     hit_info::new::{
-        block, counter_hit, graze, guard_crush, hit, wrong_block, ComboEffect, OnHitEffect, Source,
+        block, counter_hit, graze, guard_crush, hit, wrong_block, ComboEffect, HitResultNew,
+        OnHitEffect, OnHitType, Source,
     },
     PlayerState,
 };
@@ -365,6 +366,7 @@ impl YuyukoPlayer {
         self.state.current_state = if frame >= self.data.states[&move_id].duration() - 1 {
             self.state.allowed_cancels = AllowedCancel::Always;
             self.state.last_hit_using = None;
+            self.state.last_hit_using_new = None;
             self.state.rebeat_chain.clear();
 
             if move_id == MoveId::HitGround && self.state.dead {
@@ -490,6 +492,7 @@ impl YuyukoPlayer {
                     }
                     state.allowed_cancels = AllowedCancel::Always;
                     state.last_hit_using = None;
+                    state.last_hit_using_new = None;
                     state.rebeat_chain.insert(command_id);
                     state.most_recent_command = (
                         command_id,
@@ -581,7 +584,7 @@ impl YuyukoPlayer {
             let mut reset_hitstun = true;
             let mut reset_velocity = true;
             self.state.current_state = if state.state_type == StateType::Hitstun {
-                let combo = self.state.current_combo.as_mut().unwrap();
+                let combo = self.state.current_combo_new.as_mut().unwrap();
                 match combo.ground_action {
                     GroundAction::Knockdown => (0, MoveId::HitGround),
                     GroundAction::GroundSlam => {
@@ -752,7 +755,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         source: &Source,
         combo_effect: Option<&ComboEffect>,
         old_effect: Option<OnHitEffect>,
-    ) -> Option<OnHitEffect> {
+    ) -> HitResultNew {
         let flags = self.current_flags();
         let state_type = self.data.states[&self.state.current_state.1].state_type;
         let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
@@ -760,23 +763,23 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             Some(effect) => match effect {
                 OnHitEffect::Hit(effect) => {
                     if effect.combo.available_limit > 0 {
-                        Some(effect.append_hit(attack_info, source).into())
+                        effect.append_hit(attack_info, source).into()
                     } else {
-                        Some(effect.into())
+                        effect.into()
                     }
                 }
                 OnHitEffect::GuardCrush(effect) => {
                     if effect.combo.available_limit > 0 {
-                        Some(effect.append_hit(attack_info).into())
+                        effect.append_hit(attack_info).into()
                     } else {
-                        Some(effect.into())
+                        effect.into()
                     }
                 }
                 OnHitEffect::CounterHit(effect) => {
                     if effect.combo.available_limit > 0 {
-                        Some(effect.append_hit(attack_info).into())
+                        effect.append_hit(attack_info).into()
                     } else {
-                        Some(effect.into())
+                        effect.into()
                     }
                 }
                 OnHitEffect::Graze(effect) => {
@@ -785,9 +788,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                         || attack_info.air && flags.air.is_invuln()
                         || attack_info.foot && flags.foot.is_invuln()
                     {
-                        Some(effect.into())
+                        effect.into()
                     } else if attack_info.grazeable {
-                        Some(effect.append_graze(attack_info).into())
+                        effect.append_graze(attack_info).into()
                     } else if (flags.can_block
                         && (axis.is_blocking(false)
                             || axis.is_blocking(self.state.facing == source.facing)))
@@ -799,43 +802,33 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                                 attack_info,
                                 self.state.spirit_gauge,
                             ) {
-                                Some(
-                                    effect
-                                        .append_guard_crush(attack_info, source, flags.airborne)
-                                        .into(),
-                                )
+                                effect
+                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .into()
                             } else {
-                                Some(
-                                    effect
-                                        .append_block(attack_info, source, flags.airborne)
-                                        .into(),
-                                )
+                                effect
+                                    .append_block(attack_info, source, flags.airborne)
+                                    .into()
                             }
                         } else if wrong_block::Effect::would_crush(
                             Some(effect.defender.take_spirit_gauge),
                             attack_info,
                             self.state.spirit_gauge,
                         ) {
-                            Some(
-                                effect
-                                    .append_guard_crush(attack_info, source, flags.airborne)
-                                    .into(),
-                            )
+                            effect
+                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .into()
                         } else {
-                            Some(effect.append_wrongblock(attack_info, source).into())
+                            effect.append_wrongblock(attack_info, source).into()
                         }
                     } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
-                        Some(
-                            effect
-                                .append_counterhit(attack_info, source, flags.airborne)
-                                .into(),
-                        )
+                        effect
+                            .append_counterhit(attack_info, source, flags.airborne)
+                            .into()
                     } else {
-                        Some(
-                            effect
-                                .append_hit(attack_info, source, flags.airborne)
-                                .into(),
-                        )
+                        effect
+                            .append_hit(attack_info, source, flags.airborne)
+                            .into()
                     }
                 }
                 OnHitEffect::Block(effect) => {
@@ -846,37 +839,29 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                                 attack_info,
                                 self.state.spirit_gauge,
                             ) {
-                                Some(
-                                    effect
-                                        .append_guard_crush(attack_info, source, flags.airborne)
-                                        .into(),
-                                )
+                                effect
+                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .into()
                             } else {
-                                Some(
-                                    effect
-                                        .append_block(attack_info, source, flags.airborne)
-                                        .into(),
-                                )
+                                effect
+                                    .append_block(attack_info, source, flags.airborne)
+                                    .into()
                             }
                         } else if wrong_block::Effect::would_crush(
                             Some(effect.defender.take_spirit_gauge),
                             attack_info,
                             self.state.spirit_gauge,
                         ) {
-                            Some(
-                                effect
-                                    .append_guard_crush(attack_info, source, flags.airborne)
-                                    .into(),
-                            )
+                            effect
+                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .into()
                         } else {
-                            Some(effect.append_wrongblock(attack_info, source).into())
+                            effect.append_wrongblock(attack_info, source).into()
                         }
                     } else {
-                        Some(
-                            effect
-                                .append_hit(attack_info, source, flags.airborne)
-                                .into(),
-                        )
+                        effect
+                            .append_hit(attack_info, source, flags.airborne)
+                            .into()
                     }
                 }
                 OnHitEffect::WrongBlock(effect) => {
@@ -886,26 +871,22 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                             attack_info,
                             self.state.spirit_gauge,
                         ) {
-                            Some(
-                                effect
-                                    .append_guard_crush(attack_info, source, flags.airborne)
-                                    .into(),
-                            )
+                            effect
+                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .into()
                         } else {
-                            Some(effect.append_block(attack_info).into())
+                            effect.append_block(attack_info).into()
                         }
                     } else if wrong_block::Effect::would_crush(
                         Some(effect.defender.take_spirit_gauge),
                         attack_info,
                         self.state.spirit_gauge,
                     ) {
-                        Some(
-                            effect
-                                .append_guard_crush(attack_info, source, flags.airborne)
-                                .into(),
-                        )
+                        effect
+                            .append_guard_crush(attack_info, source, flags.airborne)
+                            .into()
                     } else {
-                        Some(effect.append_wrongblock(attack_info, source).into())
+                        effect.append_wrongblock(attack_info, source).into()
                     }
                 }
             },
@@ -920,9 +901,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                         .map(|item| item.available_limit <= 0)
                         .unwrap_or(false)
                 {
-                    None
+                    HitResultNew::None
                 } else if attack_info.grazeable && flags.grazing {
-                    Some(graze::Effect::build(attack_info).into())
+                    graze::Effect::build(attack_info).into()
                 } else if (matches!(state_type, StateType::Blockstun)
                     || (flags.can_block
                     // this is crossup protection
@@ -934,46 +915,38 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                 {
                     if flags.airborne || axis.is_guarding(attack_info.guard) {
                         if block::Effect::would_crush(None, attack_info, self.state.spirit_gauge) {
-                            Some(
-                                guard_crush::Effect::build(attack_info, source, flags.airborne)
-                                    .into(),
-                            )
+                            guard_crush::Effect::build(attack_info, source, flags.airborne).into()
                         } else {
-                            Some(block::Effect::build(attack_info, source, flags.airborne).into())
+                            block::Effect::build(attack_info, source, flags.airborne).into()
                         }
                     } else if wrong_block::Effect::would_crush(
                         None,
                         attack_info,
                         self.state.spirit_gauge,
                     ) {
-                        Some(guard_crush::Effect::build(attack_info, source, flags.airborne).into())
+                        guard_crush::Effect::build(attack_info, source, flags.airborne).into()
                     } else {
-                        Some(wrong_block::Effect::build(attack_info, source).into())
+                        wrong_block::Effect::build(attack_info, source).into()
                     }
                 } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
-                    Some(counter_hit::Effect::build(attack_info, source, flags.airborne).into())
+                    counter_hit::Effect::build(attack_info, source, flags.airborne).into()
                 } else {
                     combo_effect
                         .map(|combo| {
                             if combo.available_limit > 0 {
-                                Some(
-                                    hit::Effect::build(
-                                        attack_info,
-                                        source,
-                                        flags.airborne,
-                                        combo.clone(),
-                                    )
-                                    .into(),
+                                hit::Effect::build(
+                                    attack_info,
+                                    source,
+                                    flags.airborne,
+                                    combo.clone(),
                                 )
+                                .into()
                             } else {
-                                None
+                                HitResultNew::None
                             }
                         })
                         .unwrap_or_else(|| {
-                            Some(
-                                hit::Effect::build_starter(attack_info, source, flags.airborne)
-                                    .into(),
-                            )
+                            hit::Effect::build_starter(attack_info, source, flags.airborne).into()
                         })
                 }
             }
@@ -1087,6 +1060,15 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         };
 
         match info {
+            OnHitEffect::Hit(hit::Effect { combo, .. })
+            | OnHitEffect::GuardCrush(guard_crush::Effect { combo, .. })
+            | OnHitEffect::CounterHit(counter_hit::Effect { combo, .. }) => {
+                self.state.current_combo_new = Some(combo.clone());
+            }
+            _ => {}
+        }
+
+        match info {
             OnHitEffect::Hit(hit::Effect {
                 defender:
                     hit::DefenderEffect {
@@ -1186,34 +1168,34 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         self.validate_position(play_area);
     }
 
-    fn deal_hit_new(&mut self, info: &OnHitEffect) {
+    fn deal_hit_new(&mut self, info: &OnHitType) {
         match info {
-            OnHitEffect::Hit(_) => {
+            OnHitType::Hit => {
                 self.state
                     .sound_state
                     .play_sound(ChannelName::Hit, GlobalSound::Hit.into());
             }
-            OnHitEffect::GuardCrush(_) => {
+            OnHitType::GuardCrush => {
                 self.state
                     .sound_state
                     .play_sound(ChannelName::Hit, GlobalSound::GuardCrush.into());
             }
-            OnHitEffect::CounterHit(_) => {
+            OnHitType::CounterHit => {
                 self.state
                     .sound_state
                     .play_sound(ChannelName::Hit, GlobalSound::CounterHit.into());
             }
-            OnHitEffect::Block(_) => {
+            OnHitType::Block => {
                 self.state
                     .sound_state
                     .play_sound(ChannelName::Hit, GlobalSound::Block.into());
             }
-            OnHitEffect::WrongBlock(_) => {
+            OnHitType::WrongBlock => {
                 self.state
                     .sound_state
                     .play_sound(ChannelName::Hit, GlobalSound::WrongBlock.into());
             }
-            OnHitEffect::Graze(_) => {}
+            OnHitType::Graze => {}
         }
         let (frame, move_id) = &self.state.current_state;
         let hitbox = self.data.states[move_id].hitboxes[*frame]
@@ -1223,32 +1205,23 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         let attack_info = &self.data.attacks[&hitbox.data_id];
 
         self.state.meter += match info {
-            OnHitEffect::Hit(_) => attack_info.on_hit.attacker_meter,
-            OnHitEffect::GuardCrush(_) => attack_info.on_guard_crush.attacker_meter,
-            OnHitEffect::CounterHit(_) => attack_info.on_counter_hit.attacker_meter,
-            OnHitEffect::Graze(_) => attack_info.on_graze.attacker_meter,
-            OnHitEffect::Block(_) => attack_info.on_block.attacker_meter,
-            OnHitEffect::WrongBlock(_) => attack_info.on_wrongblock.attacker_meter,
+            OnHitType::Hit => attack_info.on_hit.attacker_meter,
+            OnHitType::GuardCrush => attack_info.on_guard_crush.attacker_meter,
+            OnHitType::CounterHit => attack_info.on_counter_hit.attacker_meter,
+            OnHitType::Graze => attack_info.on_graze.attacker_meter,
+            OnHitType::Block => attack_info.on_block.attacker_meter,
+            OnHitType::WrongBlock => attack_info.on_wrongblock.attacker_meter,
         };
         self.state.hitstop = match info {
-            OnHitEffect::Hit(_) => attack_info.on_hit.attacker_stop,
-            OnHitEffect::GuardCrush(_) => attack_info.on_guard_crush.attacker_stop,
-            OnHitEffect::CounterHit(_) => attack_info.on_counter_hit.attacker_stop,
-            OnHitEffect::Graze(_) => 0,
-            OnHitEffect::Block(_) => attack_info.on_block.attacker_stop,
-            OnHitEffect::WrongBlock(_) => attack_info.on_wrongblock.attacker_stop,
+            OnHitType::Hit => attack_info.on_hit.attacker_stop,
+            OnHitType::GuardCrush => attack_info.on_guard_crush.attacker_stop,
+            OnHitType::CounterHit => attack_info.on_counter_hit.attacker_stop,
+            OnHitType::Graze => 0,
+            OnHitType::Block => attack_info.on_block.attacker_stop,
+            OnHitType::WrongBlock => attack_info.on_wrongblock.attacker_stop,
         };
 
         self.state.last_hit_using_new = Some((hitbox.data_id, hitbox.id));
-
-        match info {
-            OnHitEffect::Hit(hit::Effect { combo, .. })
-            | OnHitEffect::GuardCrush(guard_crush::Effect { combo, .. })
-            | OnHitEffect::CounterHit(counter_hit::Effect { combo, .. }) => {
-                self.state.current_combo_new = Some(combo.clone());
-            }
-            _ => {}
-        }
 
         let associated_command = self.state.most_recent_command;
 
@@ -1266,11 +1239,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         }
 
         match info {
-            OnHitEffect::Hit(_) | OnHitEffect::GuardCrush(_) | OnHitEffect::CounterHit(_) => {
+            OnHitType::Hit | OnHitType::GuardCrush | OnHitType::CounterHit => {
                 self.state.allowed_cancels = AllowedCancel::Hit;
             }
-            OnHitEffect::Graze(_) => {}
-            OnHitEffect::Block(_) | OnHitEffect::WrongBlock(_) => {
+            OnHitType::Graze => {}
+            OnHitType::Block | OnHitType::WrongBlock => {
                 self.state.allowed_cancels = AllowedCancel::Block;
             }
         }
@@ -1278,6 +1251,20 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
 
     fn get_current_combo(&self) -> Option<&ComboEffect> {
         self.state.current_combo_new.as_ref()
+    }
+
+    fn get_attack_data_new(&self) -> Option<&AttackInfo> {
+        let (frame, move_id) = &self.state.current_state;
+        self.data.states[move_id].hitboxes[*frame]
+            .hitbox
+            .as_ref()
+            .and_then(|hitbox| {
+                if Some((hitbox.data_id, hitbox.id)) != self.state.last_hit_using_new {
+                    Some(&self.data.attacks[&hitbox.data_id])
+                } else {
+                    None
+                }
+            })
     }
 
     fn would_be_hit(
@@ -1715,6 +1702,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         flipped: bool,
         wins: usize,
         first_to: usize,
+        last_combo_state: &Option<(ComboEffect, usize)>,
     ) -> GameResult<()> {
         use std::ops::DerefMut;
         crate::roster::generic_character::impls::draw_ui(
@@ -1725,15 +1713,18 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             flipped,
             wins,
             first_to,
-            &self.last_combo_state,
+            last_combo_state,
             self.combo_text.borrow_mut().deref_mut(),
             self.state.health,
             self.state.spirit_gauge,
             self.state.meter,
             self.state.lockout,
             &self.data.properties,
-            matches!(self.state.current_state.1, MoveId::Untech),
         )
+    }
+
+    fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)> {
+        &self.last_combo_state
     }
 
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()> {
