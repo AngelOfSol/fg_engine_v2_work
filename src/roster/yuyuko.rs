@@ -1,4 +1,5 @@
 pub mod attacks;
+pub mod graphic;
 pub mod moves;
 pub mod sounds;
 pub mod state;
@@ -20,6 +21,7 @@ use crate::roster::generic_character::AllowedCancel;
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::typedefs::collision;
+use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics;
 use crate::{assets::Assets, game_object::constructors::Construct};
 use crate::{
@@ -35,7 +37,6 @@ use crate::{
     character::state::components::StateType,
     game_match::{FlashType, PlayArea, UiElements},
 };
-use crate::{character::state::State, typedefs::collision::IntoGraphical};
 use crate::{
     character::{command::Command, state::components::GlobalGraphic},
     input::Input,
@@ -45,6 +46,7 @@ use crate::{game_match::sounds::GlobalSoundList, game_object::state::Timer};
 use crate::{game_match::sounds::SoundPath, game_object::state::ExpiresAfterAnimation};
 use attacks::{AttackDataMap, AttackId};
 use ggez::{Context, GameResult};
+use graphic::{GraphicMap, StateGraphicMap, YuyukoGraphic};
 use hecs::{EntityBuilder, World};
 use inspect_design::Inspect;
 use moves::{CommandId, MoveId};
@@ -78,13 +80,13 @@ pub struct Yuyuko {
     #[skip]
     pub sounds: SoundList,
     #[tab = "Graphics"]
-    pub graphics: HashMap<YuyukoGraphic, AnimationGroup>,
+    pub graphics: GraphicMap,
     #[tab = "Inputs"]
     pub input_map: HashMap<Input, Vec<CommandId>>,
     #[tab = "Commands"]
     pub command_map: HashMap<CommandId, Command<MoveId>>,
     #[tab = "State to Graphics"]
-    pub state_graphics_map: HashMap<MoveId, YuyukoGraphic>,
+    pub state_graphics_map: StateGraphicMap,
 }
 
 impl std::fmt::Debug for Yuyuko {
@@ -125,10 +127,10 @@ pub struct YuyukoData {
     #[serde(skip)]
     #[serde(default = "SoundList::new")]
     sounds: SoundList,
-    graphics: HashMap<YuyukoGraphic, AnimationGroup>,
+    graphics: GraphicMap,
     input_map: HashMap<Input, Vec<CommandId>>,
     command_map: HashMap<CommandId, Command<MoveId>>,
-    state_graphics_map: HashMap<MoveId, YuyukoGraphic>,
+    state_graphics_map: StateGraphicMap,
 }
 impl YuyukoData {
     fn load_from_json(
@@ -169,97 +171,6 @@ impl YuyukoData {
             path.pop();
         }
         Ok(character)
-    }
-}
-
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    Hash,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    EnumIter,
-    Display,
-    Inspect,
-    PartialOrd,
-    Ord,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum YuyukoGraphic {
-    SuperJumpParticle,
-    HitEffect,
-    Butterfly1,
-    Butterfly2,
-    Butterfly3,
-    Butterfly4,
-    Stand,
-    WalkBackward,
-    WalkForward,
-    Attack5A,
-    Attack2A,
-    Attack5B,
-    Attack3B,
-    Attack2B,
-    Attack6B,
-    Attack5C,
-    Attack2C,
-    Air5A,
-    Air8A,
-    Air5B,
-    Air2B,
-    Air5C,
-    Air2C,
-    Crouch,
-    ToCrouch,
-    ToStand,
-    ForwardDashStart,
-    ForwardDash,
-    ForwardDashEnd,
-    BackDash,
-    Jump,
-    AirIdle,
-    Fly,
-    FlyStart,
-    FlyEnd,
-    HitstunStandStart,
-    HitstunStandLoop,
-    HitstunAirStart,
-    HitstunAirMid1,
-    HitstunAirMid2,
-    HitstunAirLoop,
-    BlockstunAirStart,
-    BlockstunAirLoop,
-    BlockstunCrouchStart,
-    BlockstunCrouchLoop,
-    BlockstunStandStart,
-    BlockstunStandLoop,
-    WrongblockCrouchStart,
-    WrongblockCrouchLoop,
-    WrongblockStandStart,
-    WrongblockStandLoop,
-    HitGround,
-    GetUp,
-    MeleeRestitution,
-    GuardCrush,
-    RoundStart,
-    Dead,
-}
-
-impl Default for YuyukoGraphic {
-    fn default() -> Self {
-        Self::Butterfly1
-    }
-}
-
-impl YuyukoGraphic {
-    pub fn file_name(self) -> String {
-        serde_json::to_string(&self)
-            .unwrap()
-            .trim_matches('\"')
-            .to_owned()
     }
 }
 

@@ -3,8 +3,8 @@ mod position;
 
 use super::state::{ExpiresAfterAnimation, Position, Timer};
 use crate::{
-    character::state::components::GlobalGraphic, imgui_extra::UiExtensions, roster::YuyukoGraphic,
-    typedefs::collision,
+    character::state::components::GlobalGraphic, imgui_extra::UiExtensions,
+    roster::graphic::YuyukoGraphic, typedefs::collision,
 };
 use enum_dispatch::*;
 use hecs::EntityBuilder;

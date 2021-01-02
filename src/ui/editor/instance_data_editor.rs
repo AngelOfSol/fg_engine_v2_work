@@ -1,8 +1,8 @@
-use crate::roster::YuyukoGraphic;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
     graphics::animation_group::AnimationGroup,
+    roster::graphic::YuyukoGraphic,
 };
 use crate::{
     assets::{Assets, ValueAlpha},

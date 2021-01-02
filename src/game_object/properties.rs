@@ -3,7 +3,7 @@ mod macros;
 use crate::{
     character::state::components::GlobalGraphic,
     game_object::constructors::{TryAsMut, TryAsRef},
-    roster::YuyukoGraphic,
+    roster::graphic::YuyukoGraphic,
 };
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

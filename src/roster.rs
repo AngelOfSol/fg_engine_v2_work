@@ -3,6 +3,7 @@ pub mod generic_character;
 mod yuyuko;
 
 use enum_dispatch::enum_dispatch;
+use graphic::YuyukoGraphic;
 
 use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
