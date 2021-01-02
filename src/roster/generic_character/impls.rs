@@ -1,51 +1,13 @@
-use crate::character::state::components::Flags;
-use crate::typedefs::collision;
-use crate::{character::state::components::StateType, input::Facing};
-
-pub fn handle_refacing(
-    facing: &mut Facing,
-    flags: &Flags,
-    position: &collision::Vec2,
-    other_player: collision::Int,
-) {
-    if flags.allow_reface {
-        *facing = if position.x > other_player && *facing == Facing::Right {
-            Facing::Left
-        } else if position.x < other_player && *facing == Facing::Left {
-            Facing::Right
-        } else {
-            *facing
-        }
-    }
-}
-pub fn handle_combo_state(
-    current_combo: &mut Option<ComboEffect>,
-    last_combo_state: &mut Option<(ComboEffect, usize)>,
-    current_state_type: StateType,
-) {
-    if !matches!(
-        current_state_type,
-        StateType::Hitstun | StateType::Blockstun
-    ) {
-        *current_combo = None;
-    }
-
-    if current_combo.is_some() {
-        *last_combo_state = Some((current_combo.clone().unwrap(), 30));
-    }
-    if last_combo_state.is_some() && current_combo.is_none() {
-        let (_, timer) = last_combo_state.as_mut().unwrap();
-        *timer -= 1;
-        if *timer == 0 {
-            *last_combo_state = None;
-        }
-    }
-}
-
-use crate::assets::{Assets, UiProgress};
+use super::hit_info::ComboEffect;
 use crate::character::components::Properties;
 use crate::game_match::UiElements;
+use crate::typedefs::collision;
+use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics;
+use crate::{
+    assets::{Assets, UiProgress},
+    input::Facing,
+};
 use ggez::{Context, GameResult};
 
 #[allow(clippy::too_many_arguments)]
@@ -278,9 +240,6 @@ pub fn draw_ui(
 
     Ok(())
 }
-use crate::typedefs::collision::IntoGraphical;
-
-use super::hit_info::ComboEffect;
 pub fn get_transform(
     world: graphics::Matrix4,
     offset: collision::Vec2,

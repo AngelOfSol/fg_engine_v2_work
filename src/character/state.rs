@@ -53,16 +53,26 @@ pub struct State<Id, AttackId, SoundType> {
 }
 
 impl<Id, AttackId, SoundType> State<Id, AttackId, SoundType> {
-    pub fn get(&self, time: usize) -> StateInstant<'_, Id, AttackId, SoundType> {
+    pub fn get(&self, frame: usize) -> StateInstant<'_, Id, AttackId, SoundType> {
         StateInstant {
-            flags: self.flags.get(time).1,
-            cancels: self.cancels.get(time).1,
-            hitboxes: self.hitboxes.get(time).1,
+            flags: self.flags.get(frame).1,
+            cancels: self.cancels.get(frame).1,
+            hitboxes: self.hitboxes.get(frame).1,
             on_expire: &self.on_expire,
             sounds: &self.sounds,
             spawns: &self.spawns,
             state_type: self.state_type,
+            duration: self.duration(),
+            frame,
         }
+    }
+    pub fn set_duration(&mut self, duration: usize) {
+        self.cancels.set_duration(duration);
+        self.hitboxes.set_duration(duration);
+        self.flags.set_duration(duration);
+    }
+    pub fn duration(&self) -> usize {
+        self.flags.duration()
     }
 }
 
@@ -74,6 +84,21 @@ pub struct StateInstant<'a, Id, AttackId, SoundType> {
     pub sounds: &'a [SoundPlayInfo<SoundType>],
     pub state_type: StateType,
     pub on_expire: &'a OnExpire<Id>,
+    pub duration: usize,
+    pub frame: usize,
+}
+
+impl<'a, Id, AttackId, SoundType> StateInstant<'a, Id, AttackId, SoundType> {
+    pub fn current_spawns(&self) -> impl Iterator<Item = &SpawnerInfo> {
+        self.spawns
+            .iter()
+            .filter(move |item| item.frame == self.frame)
+    }
+    pub fn current_sounds(&self) -> impl Iterator<Item = &SoundPlayInfo<SoundType>> {
+        self.sounds
+            .iter()
+            .filter(move |item| item.frame == self.frame)
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default, PartialEq, Eq, Debug)]
@@ -149,15 +174,6 @@ impl<
 
     pub fn save(state: &Self, path: PathBuf) {
         file::save(state, path)
-    }
-
-    pub fn set_duration(&mut self, duration: usize) {
-        self.cancels.set_duration(duration);
-        self.hitboxes.set_duration(duration);
-        self.flags.set_duration(duration);
-    }
-    pub fn duration(&self) -> usize {
-        self.flags.duration()
     }
 }
 

@@ -353,9 +353,10 @@ impl YuyukoPlayer {
     }
 
     fn handle_rebeat_data(&mut self) {
-        let (_, move_id) = self.state.current_state;
-
-        if !matches!(self.data.states[&move_id].state_type, StateType::Attack) {
+        if !matches!(
+            self.data.get(self.state.current_state).state_type,
+            StateType::Attack
+        ) {
             self.state.rebeat_chain.clear();
         }
     }
@@ -369,8 +370,9 @@ impl YuyukoPlayer {
     fn handle_expire(&mut self) {
         let (frame, move_id) = self.state.current_state;
 
-        // if the next frame would be out of bounds
-        self.state.current_state = if frame >= self.data.states[&move_id].duration() - 1 {
+        let state_data = self.data.get(self.state.current_state);
+
+        self.state.current_state = if frame >= state_data.duration - 1 {
             self.state.allowed_cancels = AllowedCancel::Always;
             self.state.last_hit_using = None;
             self.state.rebeat_chain.clear();
@@ -378,59 +380,53 @@ impl YuyukoPlayer {
             if move_id == MoveId::HitGround && self.state.dead {
                 (0, MoveId::Dead)
             } else {
-                let on_expire = &self.data.states[&move_id].on_expire;
-                (on_expire.frame, on_expire.state_id)
+                (state_data.on_expire.frame, state_data.on_expire.state_id)
             }
         } else {
             (frame + 1, move_id)
         };
     }
     fn handle_hitstun(&mut self) {
-        let (frame, move_id) = self.state.current_state;
-        let flags = &self.data.states[&move_id].flags[frame];
-        let state_type = self.data.states[&move_id].state_type;
+        let state_data = self.data.get(self.state.current_state);
 
         if let Some(ref mut stun) = self.state.stun {
             assert!(matches!(
-                state_type,
+                state_data.state_type,
                 StateType::Blockstun | StateType::Hitstun
             ));
             *stun -= 1;
             if *stun == 0 {
                 self.state.stun = None;
 
-                if !flags.airborne {
+                if !state_data.flags.airborne {
                     self.state.current_state = (
                         0,
-                        if flags.crouching {
+                        if state_data.flags.crouching {
                             MoveId::Crouch
                         } else {
                             MoveId::Stand
                         },
                     );
                 } else {
-                    self.state.current_state = if matches!(state_type, StateType::Blockstun) {
-                        (0, MoveId::AirIdle)
-                    } else {
-                        (0, MoveId::Untech)
-                    };
+                    self.state.current_state =
+                        if matches!(state_data.state_type, StateType::Blockstun) {
+                            (0, MoveId::AirIdle)
+                        } else {
+                            (0, MoveId::Untech)
+                        };
                 }
             }
         }
     }
     fn handle_input(&mut self, input: &[InputState]) {
         let (frame, move_id) = self.state.current_state;
-
-        let instant = self.data.get(self.state.current_state);
-        let cancels = instant.cancels;
-        let flags = instant.flags;
-        let state_type = instant.state_type;
+        let state_data = self.data.get(self.state.current_state);
 
         self.state.current_state = {
             let inputs = read_inputs(
                 input.iter().rev(),
                 self.state.facing,
-                state_type.buffer_window(),
+                state_data.state_type.buffer_window(),
             );
             // TODO move to better handling for this
             // inputs should be able to detect releases
@@ -445,33 +441,39 @@ impl YuyukoPlayer {
                 let data = self.data.as_ref();
                 let possible_new_move = inputs
                     .iter()
-                    .flat_map(|item| data.input_map.get(item))
-                    .flat_map(|item| item.iter())
-                    .map(|item| (*item, &data.command_map[item]))
-                    .find(|(command_id, item)| {
-                        item.reqs.iter().all(|requirement| match requirement {
+                    .flat_map(|input| data.input_map.get(input))
+                    .flat_map(|command_ids| command_ids.iter())
+                    .map(|id| (*id, &data.command_map[id]))
+                    .find(|(id, command)| {
+                        command.reqs.iter().all(|requirement| match requirement {
                             Requirement::HasAirActions => state.air_actions > 0,
-                            Requirement::InBlockstun => state_type == StateType::Blockstun,
+                            Requirement::InBlockstun => {
+                                state_data.state_type == StateType::Blockstun
+                            }
                             Requirement::NotLockedOut => state.lockout == 0,
                             Requirement::CanCancel(new_state_type) => {
-                                let is_self = item.state_id == move_id;
-                                let is_allowed_cancel = match state.allowed_cancels {
-                                    AllowedCancel::Hit => cancels.hit.contains(new_state_type),
-                                    AllowedCancel::Block => cancels.block.contains(new_state_type),
-                                    AllowedCancel::Always => false,
-                                } || cancels
-                                    .always
-                                    .contains(new_state_type);
+                                let is_self = command.state_id == move_id;
+                                let is_allowed_cancel =
+                                    match state.allowed_cancels {
+                                        AllowedCancel::Hit => {
+                                            state_data.cancels.hit.contains(new_state_type)
+                                        }
+                                        AllowedCancel::Block => {
+                                            state_data.cancels.block.contains(new_state_type)
+                                        }
+                                        AllowedCancel::Always => false,
+                                    } || state_data.cancels.always.contains(new_state_type);
 
-                                let can_rebeat = !state.rebeat_chain.contains(&command_id);
+                                let can_rebeat = !state.rebeat_chain.contains(&id);
 
-                                ((!is_self && can_rebeat) || (is_self && cancels.self_gatling))
+                                ((!is_self && can_rebeat)
+                                    || (is_self && state_data.cancels.self_gatling))
                                     && is_allowed_cancel
                             }
                             Requirement::Meter(value) => state.meter >= *value,
                             Requirement::Spirit(value) => state.spirit_gauge >= *value,
-                            Requirement::Airborne => flags.airborne,
-                            Requirement::Grounded => !flags.airborne,
+                            Requirement::Airborne => state_data.flags.airborne,
+                            Requirement::Grounded => !state_data.flags.airborne,
                             Requirement::CancelFrom(previous_state) => previous_state == &move_id,
                             Requirement::NoCancelFrom(previous_state) => previous_state != &move_id,
                         })
@@ -513,9 +515,8 @@ impl YuyukoPlayer {
     }
 
     fn update_spirit(&mut self) {
+        let state_data = self.data.get(self.state.current_state);
         let (ref mut frame, ref mut move_id) = &mut self.state.current_state;
-        let move_data = &self.data.states[move_id];
-        let flags = &move_data.flags[*frame];
 
         if *move_id == MoveId::Fly {
             self.state.spirit_gauge -= 5; // TODO, move this spirit cost to an editor value
@@ -524,12 +525,12 @@ impl YuyukoPlayer {
                 *frame = 0;
             }
         } else {
-            self.state.spirit_gauge -= flags.spirit_cost;
+            self.state.spirit_gauge -= state_data.flags.spirit_cost;
 
-            if flags.reset_spirit_delay {
+            if state_data.flags.reset_spirit_delay {
                 self.state.spirit_delay = 0;
             }
-            self.state.spirit_delay += flags.spirit_delay;
+            self.state.spirit_delay += state_data.flags.spirit_delay;
             self.state.spirit_delay -= 1;
             self.state.spirit_delay = std::cmp::max(self.state.spirit_delay, 0);
 
@@ -550,48 +551,46 @@ impl YuyukoPlayer {
         );
     }
     fn update_velocity(&mut self, play_area: &PlayArea) {
-        let (frame, move_id) = self.state.current_state;
-        let flags = &self.data.states[&move_id].flags[frame];
+        let state_data = self.data.get(self.state.current_state);
 
-        let base_velocity = if flags.reset_velocity {
+        let base_velocity = if state_data.flags.reset_velocity {
             collision::Vec2::zeros()
         } else {
             self.state.velocity
         };
 
         // we only run gravity if the move doesn't want to reset velocity, because that [resetting velocity] means the move has a trajectory in mind
-        let gravity = if flags.gravity && flags.airborne {
+        let gravity = if state_data.flags.gravity && state_data.flags.airborne {
             collision::Vec2::new(0_00, -0_20)
         } else {
             collision::Vec2::zeros()
         };
-        let friction = if !flags.airborne || self.in_corner(play_area) {
+        let friction = if !state_data.flags.airborne || self.in_corner(play_area) {
             collision::Vec2::new(
-                -i32::min(base_velocity.x.abs(), flags.friction) * i32::signum(base_velocity.x),
+                -i32::min(base_velocity.x.abs(), state_data.flags.friction)
+                    * i32::signum(base_velocity.x),
                 0_00,
             )
         } else {
             collision::Vec2::zeros()
         };
 
-        let accel = self.state.facing.fix_collision(flags.accel);
+        let accel = self.state.facing.fix_collision(state_data.flags.accel);
         self.state.velocity = base_velocity + accel + friction + gravity;
         self.state.velocity.y = self.state.velocity.y.max(MAX_FALLING_VELOCITY);
     }
     fn update_position(&mut self, play_area: &PlayArea) {
-        let (frame, move_id) = self.state.current_state;
-        let state = &self.data.states[&move_id];
-        let flags = &state.flags[frame];
-        let hitboxes = &state.hitboxes[frame];
-        let collision = &hitboxes.collision;
+        let state_data = self.data.get(self.state.current_state);
 
         self.state.position += self.state.velocity;
 
         // handle landing
-        if flags.airborne && self.state.position.y - collision.half_size.y <= -4 {
+        if state_data.flags.airborne
+            && self.state.position.y - state_data.hitboxes.collision.half_size.y <= -4
+        {
             let mut reset_hitstun = true;
             let mut reset_velocity = true;
-            self.state.current_state = if state.state_type == StateType::Hitstun {
+            self.state.current_state = if state_data.state_type == StateType::Hitstun {
                 let combo = self.state.current_combo.as_mut().unwrap();
                 match combo.ground_action {
                     GroundAction::Knockdown => (0, MoveId::HitGround),
@@ -614,7 +613,7 @@ impl YuyukoPlayer {
             if reset_velocity {
                 self.state.velocity = collision::Vec2::zeros();
             }
-            self.state.position.y = hitboxes.collision.half_size.y;
+            self.state.position.y = state_data.hitboxes.collision.half_size.y;
             self.state.air_actions = self.data.properties.max_air_actions;
         }
 
@@ -622,12 +621,7 @@ impl YuyukoPlayer {
     }
 
     fn spawn_objects(&mut self) {
-        let (frame, move_id) = self.state.current_state;
-        for spawner in self.data.states[&move_id]
-            .spawns
-            .iter()
-            .filter(|item| item.frame == frame)
-        {
+        for spawner in self.data.get(self.state.current_state).current_spawns() {
             let mut builder = EntityBuilder::new();
             for constructor in spawner.data.iter() {
                 let _ = match constructor {
@@ -669,28 +663,36 @@ impl YuyukoPlayer {
     }
 
     fn update_sound(&mut self) {
-        let (frame, move_id) = self.state.current_state;
-        let sounds = &self.data.states[&move_id].sounds;
-
-        for sound in sounds.iter().filter(|item| item.frame == frame) {
+        for sound in self.data.get(self.state.current_state).current_sounds() {
             self.state.sound_state.play_sound(sound.channel, sound.name);
         }
     }
 
     fn handle_combo_state(&mut self) {
-        let (_, move_id) = self.state.current_state;
-        let current_state_type = self.data.states[&move_id].state_type;
-        crate::roster::impls::handle_combo_state(
-            &mut self.state.current_combo,
-            &mut self.last_combo_state,
-            current_state_type,
-        );
+        let state_data = self.data.get(self.state.current_state);
+        if !matches!(
+            state_data.state_type,
+            StateType::Hitstun | StateType::Blockstun
+        ) {
+            self.state.current_combo = None;
+        }
+
+        if self.state.current_combo.is_some() {
+            self.last_combo_state = Some((self.state.current_combo.clone().unwrap(), 30));
+        }
+        if self.last_combo_state.is_some() && self.state.current_combo.is_none() {
+            let (_, timer) = self.last_combo_state.as_mut().unwrap();
+            *timer -= 1;
+            if *timer == 0 {
+                self.last_combo_state = None;
+            }
+        }
     }
 
     fn update_meter(&mut self, opponent_position: collision::Vec2) {
-        let flags = self.data.get(self.state.current_state).flags;
-        let move_type = self.data.states[&self.state.current_state.1].state_type;
-        self.state.meter -= flags.meter_cost;
+        let state_data = self.data.get(self.state.current_state);
+
+        self.state.meter -= state_data.flags.meter_cost;
 
         if self.state.meter < 50_00 {
             self.state.meter += 5;
@@ -706,7 +708,7 @@ impl YuyukoPlayer {
 
         let dir = (opponent_position - self.state.position).x.signum();
         let facing_opponent = dir == self.state.facing.collision_multiplier().x;
-        if matches!(move_type, StateType::Movement) && facing_opponent {
+        if matches!(state_data.state_type, StateType::Movement) && facing_opponent {
             // only apply bonus/penalty if we're facing the opponent
             // fly is the exception to this because it reorients our facing direction
             // TODO stop having fly reorient facing direction
@@ -732,26 +734,23 @@ impl YuyukoPlayer {
 
 impl GenericCharacterBehaviour for YuyukoPlayer {
     fn apply_pushback(&mut self, force: collision::Int) {
-        let flags = self.data.get(self.state.current_state).flags;
-        if !flags.airborne {
+        if !self.data.get(self.state.current_state).flags.airborne {
             self.state.position.x += force;
         }
     }
     fn validate_position(&mut self, play_area: &PlayArea) {
-        let (frame, move_id) = self.state.current_state;
-        let state = &self.data.states[&move_id];
-        let flags = &state.flags[frame];
-        let hitboxes = &state.hitboxes[frame];
-        let collision = &hitboxes.collision;
+        let state_data = self.data.get(self.state.current_state);
         // handle stage sides
-        if i32::abs(self.state.position.x) > play_area.width / 2 - collision.half_size.x {
-            self.state.position.x =
-                i32::signum(self.state.position.x) * (play_area.width / 2 - collision.half_size.x);
+        if i32::abs(self.state.position.x)
+            > play_area.width / 2 - state_data.hitboxes.collision.half_size.x
+        {
+            self.state.position.x = i32::signum(self.state.position.x)
+                * (play_area.width / 2 - state_data.hitboxes.collision.half_size.x);
         }
 
         // if not airborne, make sure the character is locked to the ground properly
-        if !flags.airborne {
-            self.state.position.y = hitboxes.collision.half_size.y;
+        if !state_data.flags.airborne {
+            self.state.position.y = state_data.hitboxes.collision.half_size.y;
         }
     }
     fn prune_bullets(&mut self, _play_area: &PlayArea) {}
@@ -764,9 +763,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         combo_effect: Option<&ComboEffect>,
         old_effect: Option<HitEffect>,
     ) -> HitResult {
-        let instant = self.data.get(self.state.current_state);
-        let flags = instant.flags;
-        let state_type = instant.state_type;
+        let state_data = self.data.get(self.state.current_state);
         let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
         match old_effect {
             Some(effect) => match effect {
@@ -792,31 +789,35 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                     }
                 }
                 HitEffect::Graze(effect) => {
-                    if attack_info.magic && flags.bullet.is_invuln()
-                        || attack_info.melee && flags.melee.is_invuln()
-                        || attack_info.air && flags.air.is_invuln()
-                        || attack_info.foot && flags.foot.is_invuln()
+                    if attack_info.magic && state_data.flags.bullet.is_invuln()
+                        || attack_info.melee && state_data.flags.melee.is_invuln()
+                        || attack_info.air && state_data.flags.air.is_invuln()
+                        || attack_info.foot && state_data.flags.foot.is_invuln()
                     {
                         effect.into()
                     } else if attack_info.grazeable {
                         effect.append_graze(attack_info).into()
-                    } else if (flags.can_block
+                    } else if (state_data.flags.can_block
                         && (axis.is_blocking(false)
                             || axis.is_blocking(self.state.facing == source.facing)))
-                        && !(attack_info.air_unblockable && flags.airborne)
+                        && !(attack_info.air_unblockable && state_data.flags.airborne)
                     {
-                        if flags.airborne || axis.is_guarding(attack_info.guard) {
+                        if state_data.flags.airborne || axis.is_guarding(attack_info.guard) {
                             if block::Effect::would_crush(
                                 Some(effect.defender.take_spirit_gauge),
                                 attack_info,
                                 self.state.spirit_gauge,
                             ) {
                                 effect
-                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .append_guard_crush(
+                                        attack_info,
+                                        source,
+                                        state_data.flags.airborne,
+                                    )
                                     .into()
                             } else {
                                 effect
-                                    .append_block(attack_info, source, flags.airborne)
+                                    .append_block(attack_info, source, state_data.flags.airborne)
                                     .into()
                             }
                         } else if wrong_block::Effect::would_crush(
@@ -825,35 +826,39 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                             self.state.spirit_gauge,
                         ) {
                             effect
-                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .append_guard_crush(attack_info, source, state_data.flags.airborne)
                                 .into()
                         } else {
                             effect.append_wrongblock(attack_info, source).into()
                         }
-                    } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
+                    } else if state_data.flags.can_be_counter_hit && attack_info.can_counter_hit {
                         effect
-                            .append_counterhit(attack_info, source, flags.airborne)
+                            .append_counterhit(attack_info, source, state_data.flags.airborne)
                             .into()
                     } else {
                         effect
-                            .append_hit(attack_info, source, flags.airborne)
+                            .append_hit(attack_info, source, state_data.flags.airborne)
                             .into()
                     }
                 }
                 HitEffect::Block(effect) => {
-                    if !(attack_info.air_unblockable && flags.airborne) {
-                        if flags.airborne || axis.is_guarding(attack_info.guard) {
+                    if !(attack_info.air_unblockable && state_data.flags.airborne) {
+                        if state_data.flags.airborne || axis.is_guarding(attack_info.guard) {
                             if block::Effect::would_crush(
                                 Some(effect.defender.take_spirit_gauge),
                                 attack_info,
                                 self.state.spirit_gauge,
                             ) {
                                 effect
-                                    .append_guard_crush(attack_info, source, flags.airborne)
+                                    .append_guard_crush(
+                                        attack_info,
+                                        source,
+                                        state_data.flags.airborne,
+                                    )
                                     .into()
                             } else {
                                 effect
-                                    .append_block(attack_info, source, flags.airborne)
+                                    .append_block(attack_info, source, state_data.flags.airborne)
                                     .into()
                             }
                         } else if wrong_block::Effect::would_crush(
@@ -862,14 +867,14 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                             self.state.spirit_gauge,
                         ) {
                             effect
-                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .append_guard_crush(attack_info, source, state_data.flags.airborne)
                                 .into()
                         } else {
                             effect.append_wrongblock(attack_info, source).into()
                         }
                     } else {
                         effect
-                            .append_hit(attack_info, source, flags.airborne)
+                            .append_hit(attack_info, source, state_data.flags.airborne)
                             .into()
                     }
                 }
@@ -881,7 +886,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                             self.state.spirit_gauge,
                         ) {
                             effect
-                                .append_guard_crush(attack_info, source, flags.airborne)
+                                .append_guard_crush(attack_info, source, state_data.flags.airborne)
                                 .into()
                         } else {
                             effect.append_block(attack_info).into()
@@ -892,7 +897,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                         self.state.spirit_gauge,
                     ) {
                         effect
-                            .append_guard_crush(attack_info, source, flags.airborne)
+                            .append_guard_crush(attack_info, source, state_data.flags.airborne)
                             .into()
                     } else {
                         effect.append_wrongblock(attack_info, source).into()
@@ -900,10 +905,10 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                 }
             },
             None => {
-                if attack_info.magic && flags.bullet.is_invuln()
-                    || attack_info.melee && flags.melee.is_invuln()
-                    || attack_info.air && flags.air.is_invuln()
-                    || attack_info.foot && flags.foot.is_invuln()
+                if attack_info.magic && state_data.flags.bullet.is_invuln()
+                    || attack_info.melee && state_data.flags.melee.is_invuln()
+                    || attack_info.air && state_data.flags.air.is_invuln()
+                    || attack_info.foot && state_data.flags.foot.is_invuln()
                     || self
                         .state
                         .current_combo
@@ -912,34 +917,42 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                         .unwrap_or(false)
                 {
                     HitResult::None
-                } else if attack_info.grazeable && flags.grazing {
+                } else if attack_info.grazeable && state_data.flags.grazing {
                     graze::Effect::build(attack_info).into()
-                } else if (matches!(state_type, StateType::Blockstun)
-                    || (flags.can_block
+                } else if (matches!(state_data.state_type, StateType::Blockstun)
+                    || (state_data.flags.can_block
                     // this is crossup protection
                     // if the attack is facing the same direction you're facing
                     // then the attack should be able to be blocked by holding both back
                     // and forward.
                     && (axis.is_blocking(false) || axis.is_blocking(self.state.facing == source.facing))))
-                    && !(attack_info.air_unblockable && flags.airborne)
+                    && !(attack_info.air_unblockable && state_data.flags.airborne)
                 {
-                    if flags.airborne || axis.is_guarding(attack_info.guard) {
+                    if state_data.flags.airborne || axis.is_guarding(attack_info.guard) {
                         if block::Effect::would_crush(None, attack_info, self.state.spirit_gauge) {
-                            guard_crush::Effect::build(attack_info, source, flags.airborne).into()
+                            guard_crush::Effect::build(
+                                attack_info,
+                                source,
+                                state_data.flags.airborne,
+                            )
+                            .into()
                         } else {
-                            block::Effect::build(attack_info, source, flags.airborne).into()
+                            block::Effect::build(attack_info, source, state_data.flags.airborne)
+                                .into()
                         }
                     } else if wrong_block::Effect::would_crush(
                         None,
                         attack_info,
                         self.state.spirit_gauge,
                     ) {
-                        guard_crush::Effect::build(attack_info, source, flags.airborne).into()
+                        guard_crush::Effect::build(attack_info, source, state_data.flags.airborne)
+                            .into()
                     } else {
                         wrong_block::Effect::build(attack_info, source).into()
                     }
-                } else if flags.can_be_counter_hit && attack_info.can_counter_hit {
-                    counter_hit::Effect::build(attack_info, source, flags.airborne).into()
+                } else if state_data.flags.can_be_counter_hit && attack_info.can_counter_hit {
+                    counter_hit::Effect::build(attack_info, source, state_data.flags.airborne)
+                        .into()
                 } else {
                     combo_effect
                         .map(|combo| {
@@ -947,7 +960,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                                 hit::Effect::build(
                                     attack_info,
                                     source,
-                                    flags.airborne,
+                                    state_data.flags.airborne,
                                     combo.clone(),
                                 )
                                 .into()
@@ -956,7 +969,12 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                             }
                         })
                         .unwrap_or_else(|| {
-                            hit::Effect::build_starter(attack_info, source, flags.airborne).into()
+                            hit::Effect::build_starter(
+                                attack_info,
+                                source,
+                                state_data.flags.airborne,
+                            )
+                            .into()
                         })
                 }
             }
@@ -964,8 +982,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
 
     fn in_hitstun(&self) -> bool {
-        let (_, move_id) = &self.state.current_state;
-        self.data.states[move_id].state_type == StateType::Hitstun
+        self.data.get(self.state.current_state).state_type == StateType::Hitstun
     }
 
     fn take_hit(&mut self, info: &HitEffect, play_area: &PlayArea) {
@@ -1212,8 +1229,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             }
             HitType::Graze => {}
         }
-        let (frame, move_id) = &self.state.current_state;
-        let hitbox = self.data.states[move_id].hitboxes[*frame]
+
+        let hitbox = self
+            .data
+            .get(self.state.current_state)
+            .hitboxes
             .hitbox
             .as_ref()
             .unwrap();
@@ -1276,8 +1296,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             .map(|old_time| self.state.most_recent_command.1 > *old_time)
             .unwrap_or(false);
 
-        let (frame, move_id) = &self.state.current_state;
-        self.data.states[move_id].hitboxes[*frame]
+        self.data
+            .get(self.state.current_state)
+            .hitboxes
             .hitbox
             .as_ref()
             .and_then(|hitbox| {
@@ -1298,14 +1319,17 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
 
     fn handle_refacing(&mut self, other_player: collision::Int) {
-        let (frame, move_id) = self.state.current_state;
-        let flags = &self.data.states[&move_id].flags[frame];
-        crate::roster::generic_character::impls::handle_refacing(
-            &mut self.state.facing,
-            flags,
-            &self.state.position,
-            other_player,
-        );
+        if self.data.get(self.state.current_state).flags.allow_reface {
+            self.state.facing = if self.state.position.x > other_player
+                && self.state.facing == Facing::Right
+            {
+                Facing::Left
+            } else if self.state.position.x < other_player && self.state.facing == Facing::Left {
+                Facing::Right
+            } else {
+                self.state.facing
+            }
+        }
     }
     fn update_frame_mut(
         &mut self,
