@@ -52,6 +52,30 @@ pub struct State<Id, AttackId, SoundType> {
     pub on_expire: OnExpire<Id>,
 }
 
+impl<Id, AttackId, SoundType> State<Id, AttackId, SoundType> {
+    pub fn get(&self, time: usize) -> StateInstant<'_, Id, AttackId, SoundType> {
+        StateInstant {
+            flags: self.flags.get(time).1,
+            cancels: self.cancels.get(time).1,
+            hitboxes: self.hitboxes.get(time).1,
+            on_expire: &self.on_expire,
+            sounds: &self.sounds,
+            spawns: &self.spawns,
+            state_type: self.state_type,
+        }
+    }
+}
+
+pub struct StateInstant<'a, Id, AttackId, SoundType> {
+    pub flags: &'a Flags,
+    pub cancels: &'a CancelSet,
+    pub hitboxes: &'a HitboxSet<AttackId>,
+    pub spawns: &'a [SpawnerInfo],
+    pub sounds: &'a [SoundPlayInfo<SoundType>],
+    pub state_type: StateType,
+    pub on_expire: &'a OnExpire<Id>,
+}
+
 #[derive(Clone, Deserialize, Serialize, Inspect, Default, PartialEq, Eq, Debug)]
 pub struct OnExpire<Id> {
     pub state_id: Id,

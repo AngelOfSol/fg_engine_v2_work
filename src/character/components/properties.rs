@@ -1,5 +1,4 @@
 use crate::roster::Character;
-use crate::typedefs::collision::Vec2;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 

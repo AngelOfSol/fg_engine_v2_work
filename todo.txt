@@ -266,6 +266,7 @@ TODO (2/15/2020):
                 [-] this lets the player access any info they need to set last_hit_by or return data
         [-] for defender
         [x] pass combo_state in to other character for rendering
+    [x] add hardlimits on velocity due to gravity
     [x] implement SMP
         [x] more like same move limit
         [x] figure out how to deal with bullets
@@ -307,7 +308,6 @@ TODO (2/15/2020):
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [] add hardlimits on velocity due to gravity
     [] swap to StateInstant<'a> design like other game
     [] adjust attack info
         [] add hit_target
@@ -356,6 +356,7 @@ TODO (2/15/2020):
     [] move to a new graphics api
         [] luminance-rs
         [] mini/macroquad
+    [] add better temp sound effects: https://soundeffect-lab.info/
     [] button check at character select 
         [] on press start
     [] controller support update

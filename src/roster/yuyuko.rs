@@ -8,7 +8,6 @@ use super::{
     },
     OpponentState, PlayerState,
 };
-use crate::game_match::sounds::PlayerSoundState;
 use crate::game_object::state::Timer;
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
@@ -35,11 +34,9 @@ use crate::{
     game_match::{FlashType, PlayArea, UiElements},
 };
 use crate::{character::state::State, typedefs::collision::IntoGraphical};
+use crate::{character::state::StateInstant, game_match::sounds::PlayerSoundState};
 use crate::{
-    character::{
-        command::Command,
-        state::components::{Flags, GlobalGraphic},
-    },
+    character::{command::Command, state::components::GlobalGraphic},
     input::Input,
 };
 
@@ -96,6 +93,13 @@ type StateList = HashMap<MoveId, State<MoveId, AttackId, YuyukoSound>>;
 pub type AttackList = HashMap<AttackId, AttackInfo>;
 
 impl Yuyuko {
+    pub fn get(
+        &self,
+        current_state: (usize, MoveId),
+    ) -> StateInstant<'_, MoveId, AttackId, YuyukoSound> {
+        self.states[&current_state.1].get(current_state.0)
+    }
+
     pub fn new_with_path(
         ctx: &mut Context,
         assets: &mut Assets,
@@ -347,10 +351,7 @@ impl YuyukoPlayer {
         let collision = self.collision();
         i32::abs(self.state.position.x) >= play_area.width / 2 - collision.half_size.x
     }
-    fn current_flags(&self) -> &Flags {
-        let (frame, move_id) = self.state.current_state;
-        &self.data.states[&move_id].flags[frame]
-    }
+
     fn handle_rebeat_data(&mut self) {
         let (_, move_id) = self.state.current_state;
 
@@ -419,9 +420,11 @@ impl YuyukoPlayer {
     }
     fn handle_input(&mut self, input: &[InputState]) {
         let (frame, move_id) = self.state.current_state;
-        let cancels = &self.data.states[&move_id].cancels[frame];
-        let flags = &self.data.states[&move_id].flags[frame];
-        let state_type = self.data.states[&move_id].state_type;
+
+        let instant = self.data.get(self.state.current_state);
+        let cancels = instant.cancels;
+        let flags = instant.flags;
+        let state_type = instant.state_type;
 
         self.state.current_state = {
             let inputs = read_inputs(
@@ -685,7 +688,7 @@ impl YuyukoPlayer {
     }
 
     fn update_meter(&mut self, opponent_position: collision::Vec2) {
-        let flags = self.current_flags();
+        let flags = self.data.get(self.state.current_state).flags;
         let move_type = self.data.states[&self.state.current_state.1].state_type;
         self.state.meter -= flags.meter_cost;
 
@@ -729,7 +732,7 @@ impl YuyukoPlayer {
 
 impl GenericCharacterBehaviour for YuyukoPlayer {
     fn apply_pushback(&mut self, force: collision::Int) {
-        let flags = self.current_flags();
+        let flags = self.data.get(self.state.current_state).flags;
         if !flags.airborne {
             self.state.position.x += force;
         }
@@ -761,8 +764,9 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
         combo_effect: Option<&ComboEffect>,
         old_effect: Option<HitEffect>,
     ) -> HitResult {
-        let flags = self.current_flags();
-        let state_type = self.data.states[&self.state.current_state.1].state_type;
+        let instant = self.data.get(self.state.current_state);
+        let flags = instant.flags;
+        let state_type = instant.state_type;
         let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.state.facing);
         match old_effect {
             Some(effect) => match effect {
@@ -1066,7 +1070,7 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
                 self.state.health -= effect.take_damage;
 
                 self.state.hitstop = effect.set_stop;
-                self.current_flags().airborne
+                self.data.get(self.state.current_state).flags.airborne
             }
         };
 
@@ -1160,14 +1164,14 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
             HitEffect::Block(_) => {
                 if airborne {
                     self.state.current_state = (0, MoveId::BlockstunAirStart);
-                } else if self.current_flags().crouching {
+                } else if self.data.get(self.state.current_state).flags.crouching {
                     self.state.current_state = (0, MoveId::BlockstunCrouchStart);
                 } else {
                     self.state.current_state = (0, MoveId::BlockstunStandStart);
                 }
             }
             HitEffect::WrongBlock(_) => {
-                if self.current_flags().crouching {
+                if self.data.get(self.state.current_state).flags.crouching {
                     self.state.current_state = (0, MoveId::WrongblockCrouchStart);
                 } else {
                     self.state.current_state = (0, MoveId::WrongblockStandStart);
@@ -1549,11 +1553,11 @@ impl GenericCharacterBehaviour for YuyukoPlayer {
     }
 
     fn get_flash(&self) -> Option<FlashType> {
-        self.current_flags().flash
+        self.data.get(self.state.current_state).flags.flash
     }
 
     fn get_lockout(&self) -> (i32, bool) {
-        let flags = self.current_flags();
+        let flags = self.data.get(self.state.current_state).flags;
         (flags.lockout_timer, flags.reset_lockout_timer)
     }
 
