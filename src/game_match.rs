@@ -324,10 +324,6 @@ impl<Writer: Write> Match<Writer> {
             );
         }
 
-        for player in self.players.iter_mut() {
-            player.prune_bullets(&self.runtime_data.play_area);
-        }
-
         match self
             .players
             .p1()
@@ -396,8 +392,9 @@ impl<Writer: Write> Match<Writer> {
             UpdateMode::GameEnd => UpdateMode::GameEnd,
             UpdateMode::Normal => {
                 self.update_midgame(input);
-
-                if self.players.iter().any(|player| player.is_dead()) {
+                if self.players.iter().all(|player| player.is_dead()) {
+                    UpdateMode::RoundEnd { duration: 120 }
+                } else if self.players.iter().any(|player| player.is_dead()) {
                     for (player, wins) in self
                         .players
                         .iter()
@@ -413,13 +410,14 @@ impl<Writer: Write> Match<Writer> {
                     match self.players.p1().health().cmp(&self.players.p2().health()) {
                         std::cmp::Ordering::Greater => {
                             *self.game_state.wins.p1_mut() += 1;
+                            self.game_state.round += 1;
                         }
                         std::cmp::Ordering::Less => {
                             *self.game_state.wins.p2_mut() += 1;
+                            self.game_state.round += 1;
                         }
                         std::cmp::Ordering::Equal => (),
                     }
-                    self.game_state.round += 1;
                     UpdateMode::RoundEnd { duration: 120 }
                 } else {
                     UpdateMode::Normal
