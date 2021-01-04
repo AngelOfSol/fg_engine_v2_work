@@ -16,7 +16,7 @@ use strum::Display;
     PartialOrd,
     Ord,
 )]
-pub enum CommandId {
+pub enum Command {
     Attack5A,
     Attack2A,
     Attack5B,
@@ -59,8 +59,8 @@ pub enum CommandId {
     BorderEscapeBackward,
     MeleeRestitution,
 }
-impl Default for CommandId {
+impl Default for Command {
     fn default() -> Self {
-        CommandId::Stand
+        Command::Stand
     }
 }

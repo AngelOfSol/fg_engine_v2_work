@@ -287,6 +287,7 @@ TODO (2/15/2020):
                         [x] add associated_command to smp_list
                     [x] when spawning a projectile, and smp is enabled, add the (command, time) to the projectile, so it can check smp in the  same process above
     [x] move to u32 for current_frame
+    [x] swap to StateInstant<'a> design like other game
     [] create object system
         [x] spawner type
             [x] defines parameters it needs to spawn
@@ -303,12 +304,12 @@ TODO (2/15/2020):
         [x] add expire_at component
         [x] add timer component
         [x] add velocity
+        [] remove context type from constructor, it should always take in a generic argument being the type of player
         [] add data_id for Hitboxes
             [] for rendering, add graphic_id to overlay 
             [] property
                 [] inspect_mut
                 [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-    [] swap to StateInstant<'a> design like other game
     [] adjust attack info
         [] add hit_target
             [] grounded
@@ -326,6 +327,7 @@ TODO (2/15/2020):
             [] sound settings
     [] add palletes
     [] add loading screen
+    [] move sounds into entities
     [] add timeskipping functionality to watch replay
         [] play/pause
         [] rewind 5 seconds/fast forward 5seconds

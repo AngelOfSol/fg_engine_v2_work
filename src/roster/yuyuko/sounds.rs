@@ -6,17 +6,17 @@ use strum::{Display, EnumIter};
 #[derive(
     Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
 )]
-pub enum SoundId {
+pub enum Sound {
     Grunt,
 }
 
-impl Into<SoundPath<SoundId>> for SoundId {
-    fn into(self) -> SoundPath<SoundId> {
+impl Into<SoundPath<Sound>> for Sound {
+    fn into(self) -> SoundPath<Sound> {
         SoundPath::Local(self)
     }
 }
 
-impl Default for SoundId {
+impl Default for Sound {
     fn default() -> Self {
         Self::Grunt
     }

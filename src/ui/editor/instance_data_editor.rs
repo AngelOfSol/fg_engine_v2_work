@@ -171,7 +171,7 @@ impl AppState for InstanceDataEditor {
 
         if let Some(animation) = resource
             .instance
-            .get::<crate::roster::yuyuko::graphic::GraphicId>(self.path.clone())
+            .get::<crate::roster::yuyuko::Graphic>(self.path.clone())
         {
             let key = animation.file_name();
             let resource = resource.graphics.get(&key).unwrap();

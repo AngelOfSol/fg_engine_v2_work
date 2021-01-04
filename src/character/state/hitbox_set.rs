@@ -35,24 +35,3 @@ impl<AttackId> HitboxSet<AttackId> {
         }
     }
 }
-
-mod inspect {
-    use super::{AttackData, HitboxSet};
-    use crate::game_object::constructors::InspectOld;
-    use imgui::*;
-
-    impl<AttackId> InspectOld for HitboxSet<AttackId>
-    where
-        AttackData<AttackId>: InspectOld,
-    {
-        fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
-            TabBar::new(im_str!("Hitbox Set")).build(ui, || {});
-
-            ui.text("Collision");
-            self.collision.inspect_mut_old(ui);
-            if CollapsingHeader::new(im_str!("Hitboxes")).build(ui) {
-                self.hurtbox.inspect_mut_old(ui);
-            }
-        }
-    }
-}

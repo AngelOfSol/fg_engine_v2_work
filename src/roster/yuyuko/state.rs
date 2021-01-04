@@ -17,7 +17,7 @@ use strum::Display;
     Ord,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum MoveId {
+pub enum State {
     Stand,
     WalkBackward,
     WalkForward,
@@ -98,8 +98,8 @@ pub enum MoveId {
     Dead,
 }
 
-impl Default for MoveId {
+impl Default for State {
     fn default() -> Self {
-        MoveId::Stand
+        State::Stand
     }
 }

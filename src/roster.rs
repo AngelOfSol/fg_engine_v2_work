@@ -51,17 +51,17 @@ impl Default for Character {
 impl Character {
     pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::sounds::SoundId::iter().map(|item| item.to_string()),
+            Character::Yuyuko => yuyuko::Sound::iter().map(|item| item.to_string()),
         }
     }
     pub fn data_id_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::data::YuyukoDataId::iter().map(|item| item.to_string()),
+            Character::Yuyuko => yuyuko::ObjectData::iter().map(|item| item.to_string()),
         }
     }
     pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::graphic::GraphicId::iter().map(|item| item.file_name()),
+            Character::Yuyuko => yuyuko::Graphic::iter().map(|item| item.file_name()),
         }
     }
 

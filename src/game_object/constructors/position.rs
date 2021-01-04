@@ -1,24 +1,21 @@
-use super::{inspect::InspectOld, Construct, ConstructError};
-use crate::imgui_extra::UiExtensions;
-use crate::{game_object::state::Position, typedefs::collision};
+use super::{Construct, ConstructError};
+use crate::roster::character::typedefs::Character;
+use crate::{
+    game_object::state::Position,
+    roster::character::{data::Data, player_state::PlayerState},
+};
 use hecs::EntityBuilder;
-use imgui::*;
 
-impl InspectOld for Position {
-    fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
-        ui.input_vec2_pixels(im_str!("Offset"), &mut self.value);
-    }
-}
-
-impl Construct for Position {
-    type Context = collision::Vec2;
+impl<C: Character> Construct<C> for Position {
     fn construct_on_to<'constructor, 'builder>(
         &'constructor self,
         builder: &'builder mut EntityBuilder,
-        offset: collision::Vec2,
+        context: &PlayerState<C>,
+        _data: &Data<C>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
-        Ok(builder.add(Self {
-            value: self.value + offset,
-        }))
+        builder.add(Self {
+            value: self.value + context.position,
+        });
+        Ok(builder)
     }
 }

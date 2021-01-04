@@ -1,15 +1,15 @@
 use super::character_editor::{ItemResource, StateResource};
-use crate::character::state::{EditorCharacterState, State};
+use crate::app_state::{AppContext, AppState, Transition};
+use crate::assets::Assets;
 use crate::character::PlayerCharacter;
 use crate::imgui_extra::UiExtensions;
 use crate::typedefs::collision::IntoGraphical;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::character::state::{CancelSetUi, StateUi};
 use crate::{
-    app_state::{AppContext, AppState, Transition},
-    game_object::state::Position,
+    character::state::{EditorCharacterState, State},
+    game_object::constructors::Constructor,
 };
-use crate::{assets::Assets, game_object::constructors::TryAsRef};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -376,7 +376,13 @@ impl AppState for StateEditor {
             .iter()
             .filter(|item| item.frame == self.frame)
             .flat_map(|item| item.data.iter())
-            .filter_map(|item| <_ as TryAsRef<Position>>::try_as_ref(item))
+            .filter_map(|item| {
+                if let Constructor::Position(position) = item {
+                    Some(position)
+                } else {
+                    None
+                }
+            })
         {
             let offset = item.value.into_graphical();
             draw_cross(ctx, offset)?;

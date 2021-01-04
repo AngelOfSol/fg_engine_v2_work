@@ -18,7 +18,7 @@ use strum::{Display, EnumIter};
     Ord,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum GraphicId {
+pub enum Graphic {
     SuperJumpParticle,
     HitEffect,
     Butterfly1,
@@ -78,13 +78,13 @@ pub enum GraphicId {
     Dead,
 }
 
-impl Default for GraphicId {
+impl Default for Graphic {
     fn default() -> Self {
         Self::Butterfly1
     }
 }
 
-impl GraphicId {
+impl Graphic {
     pub fn file_name(self) -> String {
         serde_json::to_string(&self)
             .unwrap()

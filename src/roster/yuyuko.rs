@@ -1,9 +1,9 @@
-pub mod attacks;
-pub mod commands;
-pub mod data;
-pub mod graphic;
-pub mod moves;
-pub mod sounds;
+mod attacks;
+mod commands;
+mod data;
+mod graphic;
+mod sounds;
+mod state;
 
 use super::{
     character::{
@@ -28,29 +28,31 @@ use crate::roster::generic_character::OpaqueStateData;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
 
-use attacks::AttackId;
-use commands::CommandId;
 use ggez::{Context, GameResult};
-use graphic::GraphicId;
-use moves::MoveId;
 use rodio::Device;
 use serde::{Deserialize, Serialize};
-use sounds::SoundId;
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 use strum::IntoEnumIterator;
 
+pub use attacks::Attack;
+pub use commands::Command;
+pub use data::ObjectData;
+pub use graphic::Graphic;
+pub use sounds::Sound;
+pub use state::State;
+
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct YuyukoType;
 
 impl Character for YuyukoType {
-    type Sound = SoundId;
-    type State = MoveId;
-    type Attack = AttackId;
-    type Graphic = GraphicId;
-    type Command = CommandId;
+    type Sound = Sound;
+    type State = State;
+    type Attack = Attack;
+    type Graphic = Graphic;
+    type Command = Command;
     type StaticData = ();
 
     fn round_start_reset(&mut self, _data: &super::character::data::Data<Self>) {}
@@ -70,7 +72,7 @@ impl Data<YuyukoType> {
         path.push(&name);
 
         path.push("sounds");
-        for sound in SoundId::iter() {
+        for sound in Sound::iter() {
             path.push(format!("{}.mp3", sound));
             use rodio::source::Source;
             let source =
@@ -98,7 +100,7 @@ impl Data<YuyukoType> {
     }
 }
 
-impl StateConsts for MoveId {
+impl StateConsts for State {
     const GAME_START: Self = Self::RoundStart;
     const ROUND_START: Self = Self::Stand;
     const DEAD: Self = Self::Dead;

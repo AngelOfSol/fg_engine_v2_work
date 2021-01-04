@@ -186,15 +186,3 @@ impl<T> GenericHitbox<T> {
         Ok(())
     }
 }
-
-mod inspect {
-    use super::Hitbox;
-    use crate::game_object::constructors::InspectOld;
-    use imgui::*;
-
-    impl InspectOld for Hitbox {
-        fn inspect_mut_old(&mut self, ui: &Ui<'_>) {
-            Hitbox::draw_ui(ui, self);
-        }
-    }
-}

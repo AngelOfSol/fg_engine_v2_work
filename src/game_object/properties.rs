@@ -1,9 +1,6 @@
 #[macro_use]
 mod macros;
-use crate::{
-    character::state::components::GlobalGraphic,
-    game_object::constructors::{TryAsMut, TryAsRef},
-};
+use crate::character::state::components::GlobalGraphic;
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -15,10 +12,17 @@ use std::{
 };
 use strum::{Display, EnumIter};
 
+pub trait TryAsRef<T> {
+    fn try_as_ref(&self) -> Option<&T>;
+}
+pub trait TryAsMut<T> {
+    fn try_as_mut(&mut self) -> Option<&mut T>;
+}
+
 impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
-        YuyukoGraphic(crate::roster::yuyuko::graphic::GraphicId),
+        YuyukoGraphic(crate::roster::yuyuko::Graphic),
 
     }
 }
@@ -224,23 +228,23 @@ impl Mapping {
 
 #[test]
 fn test_instance_data() {
-    use crate::roster::yuyuko::graphic::GraphicId;
+    use crate::roster::yuyuko::Graphic;
 
     let mut props = InstanceData::new();
-    props.insert(0, GraphicId::HitEffect);
+    props.insert(0, Graphic::HitEffect);
     props.insert(1, GlobalGraphic::SuperJump);
-    props.insert_any(2, GraphicId::SuperJumpParticle.into());
+    props.insert_any(2, Graphic::SuperJumpParticle.into());
     props.insert(2, GlobalGraphic::SuperJump);
 
     let string_variant = serde_json::to_string(&props);
     let round_trip: InstanceData<i32> = serde_json::from_str(&string_variant.unwrap()).unwrap();
     assert_eq!(props, round_trip);
 
-    assert_eq!(round_trip.get::<GraphicId>(0), Some(&GraphicId::HitEffect));
-    assert_eq!(round_trip.get(1), None::<&GraphicId>);
+    assert_eq!(round_trip.get::<Graphic>(0), Some(&Graphic::HitEffect));
+    assert_eq!(round_trip.get(1), None::<&Graphic>);
     assert_eq!(
-        round_trip.get::<GraphicId>(2),
-        Some(&GraphicId::SuperJumpParticle)
+        round_trip.get::<Graphic>(2),
+        Some(&Graphic::SuperJumpParticle)
     );
 
     assert_eq!(round_trip.get(0), None::<&GlobalGraphic>);
@@ -253,9 +257,9 @@ fn test_instance_data() {
         Some(&GlobalGraphic::SuperJump)
     );
 
-    assert_eq!(round_trip.exists::<GraphicId>(0), true);
-    assert_eq!(round_trip.exists::<GraphicId>(1), false);
-    assert_eq!(round_trip.exists::<GraphicId>(2), true);
+    assert_eq!(round_trip.exists::<Graphic>(0), true);
+    assert_eq!(round_trip.exists::<Graphic>(1), false);
+    assert_eq!(round_trip.exists::<Graphic>(2), true);
 
     assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(1), true);
@@ -266,11 +270,11 @@ fn test_instance_data() {
     round_trip.remove::<GlobalGraphic>(1);
     round_trip.remove_any(
         2,
-        PropertyType::from(GraphicId::SuperJumpParticle).inner_type_id(),
+        PropertyType::from(Graphic::SuperJumpParticle).inner_type_id(),
     );
-    assert_eq!(round_trip.exists::<GraphicId>(0), true);
-    assert_eq!(round_trip.exists::<GraphicId>(1), false);
-    assert_eq!(round_trip.exists::<GraphicId>(2), false);
+    assert_eq!(round_trip.exists::<Graphic>(0), true);
+    assert_eq!(round_trip.exists::<Graphic>(1), false);
+    assert_eq!(round_trip.exists::<Graphic>(2), false);
 
     assert_eq!(round_trip.exists::<GlobalGraphic>(0), false);
     assert_eq!(round_trip.exists::<GlobalGraphic>(1), false);

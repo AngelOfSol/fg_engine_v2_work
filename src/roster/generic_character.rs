@@ -1,6 +1,7 @@
 pub mod hit_info;
 pub mod move_id;
 
+use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -9,15 +10,11 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
-use crate::{
-    character::state::components::GlobalGraphic,
-    game_match::sounds::{PlayerSoundState, SoundPath},
-};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum AllowedCancel {
@@ -25,32 +22,6 @@ pub enum AllowedCancel {
     Hit,
     Block,
 }
-#[derive(Debug, Clone)]
-pub struct PlayerState<MoveId, SoundId, CommandId, AttackId> {
-    pub velocity: collision::Vec2,
-    pub position: collision::Vec2,
-    pub current_state: (usize, MoveId),
-    pub stun: Option<i32>,
-    pub facing: Facing,
-    pub air_actions: usize,
-    pub spirit_gauge: i32,
-    pub spirit_delay: i32,
-    pub hitstop: i32,
-    pub last_hit_using: Option<(AttackId, usize)>,
-    pub current_combo: Option<ComboEffect>,
-    pub health: i32,
-    pub allowed_cancels: AllowedCancel,
-    pub rebeat_chain: HashSet<CommandId>,
-    pub smp_list: HashMap<CommandId, usize>,
-    pub first_command: Option<(CommandId, usize)>,
-    pub most_recent_command: (CommandId, usize),
-    pub should_pushback: bool,
-    pub sound_state: PlayerSoundState<SoundPath<SoundId>>,
-    pub meter: i32,
-    pub lockout: i32,
-    pub dead: bool,
-}
-
 pub struct OpponentState {
     pub position: collision::Vec2,
     pub in_hitstun: bool,

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
     Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Inspect, PartialOrd, Ord,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum AttackId {
+pub enum Attack {
     #[serde(rename = "air5a")]
     Air5A,
     #[serde(rename = "air8a")]
@@ -30,8 +30,8 @@ pub enum AttackId {
     Butterfly,
 }
 
-impl Default for AttackId {
+impl Default for Attack {
     fn default() -> Self {
-        AttackId::Attack5A
+        Attack::Attack5A
     }
 }
