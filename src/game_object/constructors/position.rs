@@ -14,7 +14,7 @@ impl<C: Character> Construct<C> for Position {
         _data: &Data<C>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
         builder.add(Self {
-            value: self.value + context.position,
+            value: context.facing.fix_collision(self.value) + context.position,
         });
         Ok(builder)
     }

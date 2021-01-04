@@ -8,6 +8,7 @@ use crate::{
         components::{AttackInfo, Properties},
     },
     game_match::sounds::SoundList,
+    game_object::properties::InstanceData,
     graphics::animation_group::AnimationGroup,
     input::Input,
 };
@@ -25,6 +26,7 @@ pub struct Data<C: Character> {
     pub input_map: HashMap<Input, Vec<C::Command>>,
     pub command_map: HashMap<C::Command, Command<C::State>>,
     pub state_graphics_map: HashMap<C::State, C::Graphic>,
+    pub instance: InstanceData<C::ObjectData>,
     #[serde(default)]
     pub other: C::StaticData,
 }

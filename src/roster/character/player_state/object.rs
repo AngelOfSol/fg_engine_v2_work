@@ -1,11 +1,14 @@
+use std::{collections::HashMap, hash::Hash};
+
 use hecs::{EntityBuilder, World};
 
 use crate::{
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_object::{
         constructors::{Construct, Constructor},
-        state::{ExpiresAfterAnimation, Timer},
+        state::{ExpiresAfterAnimation, Position, Timer, Velocity},
     },
+    graphics::animation_group::AnimationGroup,
     roster::character::{data::Data, typedefs::Character},
 };
 
@@ -35,31 +38,38 @@ where
         for (_, Timer(timer)) in world.query::<&mut Timer>().iter() {
             *timer += 1;
         }
-        let to_destroy: Vec<_> = world
-            .query::<(&Timer, &C::Graphic)>()
-            .with::<ExpiresAfterAnimation>()
-            .iter()
-            .filter(|(_, (Timer(timer), graphic))| *timer >= data.graphics[graphic].duration())
-            .map(|(entity, _)| entity)
-            .chain(
-                world
-                    .query::<(&Timer, &GlobalGraphic)>()
-                    .with::<ExpiresAfterAnimation>()
-                    .iter()
-                    .filter(|(_, (Timer(timer), graphic))| {
-                        *timer >= global_graphics[graphic].duration()
-                    })
-                    .map(|(entity, _)| entity),
-            )
-            .collect();
-        for entity in to_destroy {
-            world.despawn(entity).unwrap();
-        }
-    }
 
+        update_velocity(world);
+
+        destroy_expire(world, &data.graphics);
+        destroy_expire(world, &global_graphics);
+    }
     pub fn update_sound(&mut self, data: &Data<C>) {
         for sound in data.get(self).current_sounds() {
             self.sound_state.play_sound(sound.channel, sound.name);
         }
+    }
+}
+
+pub fn update_velocity(world: &mut World) {
+    for (_, (position, velocity)) in world.query::<(&mut Position, &Velocity)>().iter() {
+        position.value += velocity.value;
+    }
+}
+
+pub fn destroy_expire<K: Hash + Eq + hecs::Component>(
+    world: &mut World,
+    graphics: &HashMap<K, AnimationGroup>,
+) {
+    let to_destroy: Vec<_> = world
+        .query::<(&Timer, &K)>()
+        .with::<ExpiresAfterAnimation>()
+        .iter()
+        .filter(|(_, (Timer(timer), graphic))| *timer >= graphics[graphic].duration())
+        .map(|(entity, _)| entity)
+        .collect();
+
+    for entity in to_destroy {
+        world.despawn(entity).unwrap();
     }
 }

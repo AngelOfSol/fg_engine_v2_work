@@ -16,6 +16,7 @@ pub trait Character: Sized + Default + Clone {
     type State: Id + StateConsts;
     type Attack: Id;
     type Graphic: Id;
+    type ObjectData: Id;
     type Command: Id + Default;
     type StaticData;
 

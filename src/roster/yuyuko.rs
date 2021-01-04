@@ -1,7 +1,7 @@
 mod attacks;
 mod commands;
-mod data;
 mod graphic;
+pub mod object;
 mod sounds;
 mod state;
 
@@ -39,8 +39,8 @@ use strum::IntoEnumIterator;
 
 pub use attacks::Attack;
 pub use commands::Command;
-pub use data::ObjectData;
 pub use graphic::Graphic;
+pub use object::ObjectData;
 pub use sounds::Sound;
 pub use state::State;
 
@@ -52,6 +52,7 @@ impl Character for YuyukoType {
     type State = State;
     type Attack = Attack;
     type Graphic = Graphic;
+    type ObjectData = ObjectData;
     type Command = Command;
     type StaticData = ();
 

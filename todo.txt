@@ -304,7 +304,7 @@ TODO (2/15/2020):
         [x] add expire_at component
         [x] add timer component
         [x] add velocity
-        [] remove context type from constructor, it should always take in a generic argument being the type of player
+        [x] remove context type from constructor, it should always take in a generic argument being the type of player
         [] add data_id for Hitboxes
             [] for rendering, add graphic_id to overlay 
             [] property

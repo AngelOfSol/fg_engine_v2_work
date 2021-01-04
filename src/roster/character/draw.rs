@@ -6,7 +6,7 @@ use crate::{
     assets::{Assets, UiProgress},
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_match::UiElements,
-    game_object::state::{Position, Timer},
+    game_object::state::{Position, Rotation, Timer},
     input::Facing,
     roster::hit_info::ComboEffect,
     typedefs::{
@@ -103,9 +103,9 @@ impl<C: Character> Player<C> {
         world: graphics::Matrix4,
         global_graphics: &GlobalGraphicMap,
     ) -> GameResult<()> {
-        for (_, (position, graphic, Timer(frame))) in self
+        for (_, (position, graphic, Timer(frame), rotation)) in self
             .world
-            .query::<(&Position, &C::Graphic, &Timer)>()
+            .query::<(&Position, &C::Graphic, &Timer, Option<&Rotation>)>()
             .iter()
         {
             self.data.graphics[graphic].draw_at_time(
@@ -115,12 +115,17 @@ impl<C: Character> Player<C> {
                 world
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
                         position.value.into_graphical(),
+                    ))
+                    * graphics::Matrix4::new_rotation(graphics::Vec3::new(
+                        0.0,
+                        0.0,
+                        rotation.map(|rotation| rotation.0).unwrap_or(0.0),
                     )),
             )?;
         }
-        for (_, (position, graphic, Timer(frame))) in self
+        for (_, (position, graphic, Timer(frame), rotation)) in self
             .world
-            .query::<(&Position, &GlobalGraphic, &Timer)>()
+            .query::<(&Position, &GlobalGraphic, &Timer, Option<&Rotation>)>()
             .iter()
         {
             global_graphics[graphic].draw_at_time(
@@ -130,6 +135,11 @@ impl<C: Character> Player<C> {
                 world
                     * graphics::Matrix4::new_translation(&graphics::up_dimension(
                         position.value.into_graphical(),
+                    ))
+                    * graphics::Matrix4::new_rotation(graphics::Vec3::new(
+                        0.0,
+                        0.0,
+                        rotation.map(|rotation| rotation.0).unwrap_or(0.0),
                     )),
             )?;
         }

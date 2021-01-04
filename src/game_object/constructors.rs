@@ -19,6 +19,7 @@ pub use position::*;
 use serde::{Deserialize, Serialize};
 pub use traits::Construct;
 use typedefs::ParticleData;
+use yuyuko::object::SpawnButterfly;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ConstructError {
@@ -28,10 +29,12 @@ pub enum ConstructError {
 // this should be implemented for every character for every constructor
 // it should
 #[derive(Debug, Clone, Serialize, Deserialize, Inspect, Eq, PartialEq)]
+#[no_label]
 pub enum Constructor {
     Position(Position),
     GlobalParticle(ParticleData<GlobalGraphic>),
     YuyukoParticle(ParticleData<yuyuko::Graphic>),
+    Butterfly(SpawnButterfly),
 }
 
 impl Default for Constructor {
@@ -49,8 +52,9 @@ impl Construct<YuyukoType> for Constructor {
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
         match self {
             Self::Position(v) => v.construct_on_to(builder, context, data),
-            Constructor::GlobalParticle(v) => v.construct_on_to(builder, context, data),
-            Constructor::YuyukoParticle(v) => v.construct_on_to(builder, context, data),
+            Self::GlobalParticle(v) => v.construct_on_to(builder, context, data),
+            Self::YuyukoParticle(v) => v.construct_on_to(builder, context, data),
+            Self::Butterfly(v) => v.construct_on_to(builder, context, data),
         }
     }
 }

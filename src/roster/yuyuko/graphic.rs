@@ -80,7 +80,7 @@ pub enum Graphic {
 
 impl Default for Graphic {
     fn default() -> Self {
-        Self::Butterfly1
+        Self::Stand
     }
 }
 
