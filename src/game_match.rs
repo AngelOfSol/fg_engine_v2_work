@@ -287,7 +287,6 @@ impl<Writer: Write> Match<Writer> {
                             source_type: HitSource::Character,
                             facing,
                         },
-                        player.get_current_combo(),
                         None,
                     )
                 } else {
@@ -659,7 +658,7 @@ impl<Writer: Write> Match<Writer> {
         let combos = self
             .players
             .as_ref()
-            .map(|player| player.get_last_combo_state().clone());
+            .map(|player| player.get_last_combo_state());
         self.players.p1_mut().draw_ui(
             ctx,
             &assets,

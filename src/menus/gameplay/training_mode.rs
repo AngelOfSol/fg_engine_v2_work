@@ -20,7 +20,7 @@ pub struct TrainingMode {
     player_list: PlayerList,
     game_state: TrainingMatch,
     dirty: bool,
-    inspect_state: <crate::roster::yuyuko::Yuyuko as Inspect>::State,
+    // inspect_state: <crate::roster::yuyuko::Yuyuko as Inspect>::State,
     fps: u32,
 }
 
@@ -50,7 +50,7 @@ impl TrainingMode {
                 crate::replay::create_new_replay_file("training")?,
             )?,
             dirty: true,
-            inspect_state: Default::default(),
+            // inspect_state: Default::default(),
             fps: 60,
         })
     }
@@ -158,7 +158,7 @@ impl AppState for TrainingMode {
 
             self.dirty = false;
 
-            let inspect_state = &mut self.inspect_state;
+            // let inspect_state = &mut self.inspect_state;
             let fps = &mut self.fps;
             match self.game_state.players.p1_mut() {
                 crate::roster::CharacterBehavior::YuyukoPlayer(value) => {
@@ -168,11 +168,7 @@ impl AppState for TrainingMode {
                             imgui::Window::new(&imgui::im_str!("Editor"))
                                 .no_nav()
                                 .build(ui, || {
-                                    std::rc::Rc::make_mut(&mut value.data).inspect_mut(
-                                        "yuyu",
-                                        inspect_state,
-                                        ui,
-                                    );
+                                    //  value.data.inspect_mut("yuyu", inspect_state, ui);
                                 });
                             imgui::Window::new(&imgui::im_str!("Frame Rate"))
                                 .no_nav()

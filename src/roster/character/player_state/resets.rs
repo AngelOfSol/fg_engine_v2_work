@@ -13,7 +13,7 @@ use crate::{
 };
 
 impl<C: Character> PlayerState<C> {
-    fn reset_to_position_gamestart(
+    pub fn reset_to_position_gamestart(
         &mut self,
         data: &Data<C>,
         play_area: &PlayArea,
@@ -48,13 +48,14 @@ impl<C: Character> PlayerState<C> {
             },
             last_hit_using: None,
             current_combo: None,
-            extra: C::default(),
+            other: std::mem::take(&mut self.other),
         };
+        self.other.round_start_reset(data);
 
-        //self.validate_position(play_area);
+        self.validate_position(data, play_area);
     }
 
-    fn reset_to_position_roundstart(
+    pub fn reset_to_position_roundstart(
         &mut self,
         data: &Data<C>,
         play_area: &PlayArea,
@@ -89,8 +90,9 @@ impl<C: Character> PlayerState<C> {
             },
             last_hit_using: None,
             current_combo: None,
-            extra: C::default(),
+            other: std::mem::take(&mut self.other),
         };
-        //self.validate_position(play_area);
+        self.other.round_start_reset(data);
+        self.validate_position(data, play_area);
     }
 }

@@ -1,12 +1,6 @@
-use super::moves::MoveId;
-use crate::graphics::animation_group::AnimationGroup;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use strum::{Display, EnumIter};
-
-pub type GraphicMap = HashMap<GraphicId, AnimationGroup>;
-pub type StateGraphicMap = HashMap<MoveId, GraphicId>;
 
 #[derive(
     Debug,

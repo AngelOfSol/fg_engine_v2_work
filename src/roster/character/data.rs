@@ -7,22 +7,26 @@ use crate::{
         command::Command,
         components::{AttackInfo, Properties},
     },
-    game_match::sounds::{SoundList, SoundPath},
+    game_match::sounds::SoundList,
     graphics::animation_group::AnimationGroup,
     input::Input,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Data<C: Character> {
     pub states: HashMap<C::State, CharacterState<C>>,
     pub attacks: HashMap<C::Attack, AttackInfo>,
     pub properties: Properties,
-    pub sounds: SoundList<SoundPath<C::Sound>>,
-    pub graphics: HashMap<C::Command, AnimationGroup>,
+    #[serde(skip)]
+    pub sounds: SoundList<C::Sound>,
+    pub graphics: HashMap<C::Graphic, AnimationGroup>,
     pub input_map: HashMap<Input, Vec<C::Command>>,
     pub command_map: HashMap<C::Command, Command<C::State>>,
     pub state_graphics_map: HashMap<C::State, C::Graphic>,
-    pub marker: C::StaticData,
+    #[serde(default)]
+    pub other: C::StaticData,
 }
 
 impl<C: Character> Data<C> {
@@ -31,5 +35,11 @@ impl<C: Character> Data<C> {
         state: &'state PlayerState<C>,
     ) -> CharacterStateInstant<'this, C> {
         self.states[&state.current_state.id].get(state.current_state.time)
+    }
+    pub fn get_next<'this, 'state>(
+        &'this self,
+        state: &'state PlayerState<C>,
+    ) -> CharacterStateInstant<'this, C> {
+        self.states[&state.current_state.id].get(state.current_state.time + 1)
     }
 }

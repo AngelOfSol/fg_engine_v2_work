@@ -1,4 +1,13 @@
+pub mod attack;
+pub mod combo;
+pub mod hitstun;
+pub mod input;
+pub mod meter;
+pub mod object;
+pub mod physics;
 pub mod resets;
+pub mod spirit;
+pub mod update;
 
 use super::{
     data::Data,
@@ -6,10 +15,7 @@ use super::{
     typedefs::{state::StateConsts, Character, HitId, Timed},
 };
 use crate::{
-    game_match::{
-        sounds::{PlayerSoundState, SoundPath},
-        PlayArea,
-    },
+    game_match::sounds::{PlayerSoundState, SoundPath},
     input::Facing,
     roster::{hit_info::ComboEffect, AllowedCancel},
     typedefs::collision,
@@ -38,12 +44,12 @@ pub struct PlayerState<C: Character> {
     pub should_pushback: bool,
     pub facing: Facing,
     pub current_combo: Option<ComboEffect>,
-    pub extra: C,
+    pub other: C,
     pub sound_state: PlayerSoundState<SoundPath<C::Sound>>,
 }
 
 impl<C: Character> PlayerState<C> {
-    fn new(data: &Data<C>) -> Self {
+    pub fn new(data: &Data<C>) -> Self {
         Self {
             velocity: collision::Vec2::zeros(),
             position: collision::Vec2::zeros(),
@@ -72,7 +78,7 @@ impl<C: Character> PlayerState<C> {
             },
             last_hit_using: None,
             current_combo: None,
-            extra: C::default(),
+            other: C::default(),
         }
     }
 }

@@ -1,8 +1,6 @@
 pub mod hit_info;
 pub mod move_id;
 
-pub mod impls;
-
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -66,8 +64,6 @@ pub trait GenericCharacterBehaviour {
     fn collision(&self) -> PositionedHitbox;
     fn hitboxes(&self) -> Vec<PositionedHitbox>;
     fn hurtboxes(&self) -> Vec<PositionedHitbox>;
-
-    fn prune_bullets(&mut self, play_area: &PlayArea);
 
     fn handle_refacing(&mut self, other_player: collision::Int);
 
@@ -159,25 +155,23 @@ pub trait GenericCharacterBehaviour {
         input: &[InputState],
         attack_info: &AttackInfo,
         source: &Source,
-        combo_effect: Option<&ComboEffect>,
         old_effect: Option<HitEffect>,
     ) -> HitResult;
 
     fn take_hit(&mut self, info: &HitEffect, play_area: &PlayArea);
     fn deal_hit(&mut self, info: &HitType);
     fn get_attack_data(&self) -> Option<Cow<'_, AttackInfo>>;
-    fn get_last_combo_state(&self) -> &Option<(ComboEffect, usize)>;
-    fn get_current_combo(&self) -> Option<&ComboEffect>;
+    fn get_last_combo_state(&self) -> Option<(ComboEffect, usize)>;
     fn in_hitstun(&self) -> bool;
 }
 
-use super::yuyuko::state::PlayerState as YuyukoState;
+use super::yuyuko::YuyukoType;
 use std::borrow::Cow;
 
 #[derive(Clone)]
 #[non_exhaustive]
 pub enum OpaqueStateData {
-    Yuyuko(YuyukoState),
+    Yuyuko(super::character::player_state::PlayerState<YuyukoType>),
     #[allow(dead_code)]
     Broken,
 }

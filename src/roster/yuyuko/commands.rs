@@ -1,11 +1,6 @@
-use super::moves::MoveId;
-use crate::character::command::Command;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use strum::Display;
-
-pub type CommandMap = HashMap<CommandId, Command<MoveId>>;
 
 #[derive(
     Clone,

@@ -1,9 +1,7 @@
-use crate::game_match::sounds::{SoundList as SL, SoundPath};
+use crate::game_match::sounds::SoundPath;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
-
-pub type SoundList = SL<SoundId>;
 
 #[derive(
     Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,

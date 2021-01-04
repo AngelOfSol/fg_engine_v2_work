@@ -3,14 +3,15 @@ pub mod state;
 use super::data::Data;
 use crate::character::state::{State, StateInstant};
 use hecs::Component;
+use inspect_design::Inspect;
+use serde::{de::DeserializeOwned, Serialize};
 use state::StateConsts;
-use std::hash::Hash;
+use std::{fmt::Debug, hash::Hash};
+pub trait Id: Hash + Eq + Component + Copy + Debug + DeserializeOwned + Serialize {}
 
-pub trait Id: Hash + Eq + Component {}
+impl<T> Id for T where T: Hash + Eq + Component + Copy + Debug + DeserializeOwned + Serialize {}
 
-impl<T> Id for T where T: Hash + Eq + Component {}
-
-pub trait Character: Sized + Default {
+pub trait Character: Sized + Default + Clone {
     type Sound: Id;
     type State: Id + StateConsts;
     type Attack: Id;
@@ -21,10 +22,12 @@ pub trait Character: Sized + Default {
     fn round_start_reset(&mut self, data: &Data<Self>);
 }
 
-pub type CharacterState<C: Character> = State<C::State, C::Attack, C::Sound>;
-pub type CharacterStateInstant<'a, C: Character> = StateInstant<'a, C::State, C::Attack, C::Sound>;
+pub type CharacterState<C> =
+    State<<C as Character>::State, <C as Character>::Attack, <C as Character>::Sound>;
+pub type CharacterStateInstant<'a, C> =
+    StateInstant<'a, <C as Character>::State, <C as Character>::Attack, <C as Character>::Sound>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Inspect)]
 pub struct Timed<Id> {
     pub time: usize,
     pub id: Id,

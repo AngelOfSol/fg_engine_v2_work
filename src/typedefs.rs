@@ -112,7 +112,7 @@ pub mod player {
         }
     }
 
-    impl<T: std::fmt::Debug, E: std::fmt::Debug> PlayerData<Result<T, E>> {
+    impl<T, E: std::fmt::Debug> PlayerData<Result<T, E>> {
         pub fn transpose(self) -> Result<PlayerData<T>, E> {
             let PlayerData([lhs, rhs]) = self;
             Ok([lhs?, rhs?].into())

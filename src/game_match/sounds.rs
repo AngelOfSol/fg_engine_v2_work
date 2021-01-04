@@ -29,3 +29,9 @@ impl<T> SoundList<T> {
         }
     }
 }
+
+impl<T> Default for SoundList<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
