@@ -6,9 +6,10 @@ use crate::{
     assets::{Assets, UiProgress},
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_match::UiElements,
-    game_object::state::{Position, Rotation, Timer},
+    game_object::state::{Hitbox, Position, Rotation, Timer},
     input::Facing,
     roster::hit_info::ComboEffect,
+    timeline::Timeline,
     typedefs::{
         collision::{self, IntoGraphical},
         graphics,
@@ -98,6 +99,7 @@ impl<C: Character> Player<C> {
     }
     pub fn draw_objects(
         &self,
+
         ctx: &mut Context,
         assets: &Assets,
         world: graphics::Matrix4,
@@ -142,6 +144,28 @@ impl<C: Character> Player<C> {
                         rotation.map(|rotation| rotation.0).unwrap_or(0.0),
                     )),
             )?;
+        }
+        #[cfg(feature = "debug_hitboxes")]
+        {
+            for (_, (position, Timer(frame), boxes)) in self
+                .world
+                .query::<(&Position, &Timer, &Hitbox<C::ObjectData>)>()
+                .iter()
+            {
+                if let Some(boxes) = self
+                    .data
+                    .instance
+                    .get::<Timeline<Vec<crate::hitbox::Hitbox>>>(boxes.0)
+                {
+                    let (_, boxes) = boxes.get(frame % boxes.duration());
+                    for hitbox in boxes.iter().map(|item| {
+                        item.with_position_and_facing(position.value, self.state.facing)
+                    }) {
+                        ggez::graphics::clear_shader(ctx);
+                        hitbox.draw(ctx, world, ggez::graphics::Color::new(1.0, 0.0, 0.0, 0.5))?;
+                    }
+                }
+            }
         }
 
         Ok(())

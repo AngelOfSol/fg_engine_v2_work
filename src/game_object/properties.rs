@@ -3,7 +3,7 @@ mod macros;
 
 pub mod typedefs;
 
-use crate::{character::state::components::GlobalGraphic, hitbox::Hitbox};
+use crate::{character::state::components::GlobalGraphic, hitbox::Hitbox, timeline::Timeline};
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use typedefs::Speed;
@@ -28,7 +28,7 @@ impl_property_type! {
         GlobalGraphic(GlobalGraphic),
         YuyukoGraphic(crate::roster::yuyuko::Graphic),
         Speed(Speed),
-        Hitbox(Vec<Hitbox>),
+        Hitbox(Timeline<Vec<Hitbox>>),
     }
 }
 

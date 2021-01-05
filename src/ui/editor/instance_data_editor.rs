@@ -3,6 +3,7 @@ use crate::{
     character::state::components::GlobalGraphic,
     graphics::animation_group::AnimationGroup,
     hitbox::Hitbox,
+    timeline::Timeline,
 };
 use crate::{
     assets::{Assets, ValueAlpha},
@@ -114,21 +115,27 @@ impl AppState for InstanceDataEditor {
                             }
                             ui.separator();
                         }
-                        let mut pc = self.resource.borrow_mut();
                         let mut to_remove = None;
-                        for (type_name, value) in pc.instance.iter_key_mut(self.path.clone()) {
-                            let id = ui.push_id(&type_name);
-                            ui.text(&type_name);
+                        TabBar::new(im_str!("Tabs")).build(ui, || {
+                            let mut pc = self.resource.borrow_mut();
+                            for (type_name, value) in pc.instance.iter_key_mut(self.path.clone()) {
+                                let token = TabItem::new(&im_str!("{}", type_name)).begin(ui);
+                                if let Some(token) = token {
+                                    value.inspect_mut("data", &mut self.inspect_state, ui);
 
-                            value.inspect_mut("data", &mut self.inspect_state, ui);
-                            // TODO UI
+                                    ui.separator();
 
-                            if ui.small_button(im_str!("Delete")) {
-                                to_remove = Some(value.inner_type_id());
+                                    if ui.small_button(im_str!("Delete")) {
+                                        to_remove = Some(value.inner_type_id());
+                                    }
+
+                                    token.end(ui);
+                                }
                             }
-                            ui.separator();
-                            id.pop(ui)
-                        }
+                        });
+
+                        let mut pc = self.resource.borrow_mut();
+
                         if let Some(to_remove) = to_remove {
                             pc.instance.remove_any(self.path.clone(), to_remove);
                         }
@@ -214,7 +221,11 @@ impl AppState for InstanceDataEditor {
             }
         }
 
-        if let Some(boxes) = resource.instance.get::<Vec<Hitbox>>(self.path.clone()) {
+        if let Some(boxes) = resource
+            .instance
+            .get::<Timeline<Vec<Hitbox>>>(self.path.clone())
+        {
+            let (_, boxes) = boxes.get(self.frame % boxes.duration());
             for hitbox in boxes.iter() {
                 hitbox.draw(ctx, offset, Color::new(1.0, 0.0, 0.0, 0.5))?;
             }
