@@ -4,7 +4,7 @@ macro_rules! impl_property_type {
             $($variant_name:ident($variant_type:ty),)+
         }
     ) => {
-        #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, EnumIter, Display, Inspect)]
+        #[derive(Serialize, Deserialize, Clone, Debug, EnumIter, Display, Inspect)]
         #[static_enum]
         pub enum PropertyType {
             $($variant_name($variant_type),)+

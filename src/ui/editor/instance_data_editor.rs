@@ -2,6 +2,7 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
     graphics::animation_group::AnimationGroup,
+    hitbox::Hitbox,
 };
 use crate::{
     assets::{Assets, ValueAlpha},
@@ -62,25 +63,26 @@ impl AppState for InstanceDataEditor {
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
-        let editor_height = 526.0;
         imgui
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
+                    .size([600.0, 700.0], Condition::Once)
+                    .position([300.0, 20.0], Condition::Once)
                     .build(ui, || {
-                        let mut pc = self.resource.borrow_mut();
                         let path = self.path.clone();
 
-                        let available_properties: Vec<_> = PropertyType::iter()
-                            .filter(|item| {
-                                pc.instance
-                                    .iter_key(path.clone())
-                                    .find(|(_, value)| value.same_type_as(item))
-                                    .is_none()
-                            })
-                            .collect();
+                        let available_properties: Vec<_> = {
+                            let pc = self.resource.borrow();
+                            PropertyType::iter()
+                                .filter(|item| {
+                                    pc.instance
+                                        .iter_key(path.clone())
+                                        .find(|(_, value)| value.same_type_as(item))
+                                        .is_none()
+                                })
+                                .collect()
+                        };
 
                         if !available_properties.is_empty() {
                             if !available_properties
@@ -90,11 +92,20 @@ impl AppState for InstanceDataEditor {
                                 self.selected_property =
                                     available_properties.first().unwrap().clone();
                             }
-                            ui.combo_items_display(
-                                im_str!("Type"),
-                                &mut self.selected_property,
-                                &available_properties,
-                            );
+
+                            ComboBox::new(im_str!("Type"))
+                                .preview_value(&im_str!("{}", self.selected_property))
+                                .build(ui, || {
+                                    for item in available_properties.iter() {
+                                        if Selectable::new(&im_str!("{}", item))
+                                            .selected(item.same_type_as(&self.selected_property))
+                                            .build(ui)
+                                        {
+                                            self.selected_property = item.clone();
+                                        }
+                                    }
+                                });
+                            let mut pc = self.resource.borrow_mut();
 
                             ui.same_line(0.0);
                             if ui.small_button(im_str!("Add")) {
@@ -103,6 +114,7 @@ impl AppState for InstanceDataEditor {
                             }
                             ui.separator();
                         }
+                        let mut pc = self.resource.borrow_mut();
                         let mut to_remove = None;
                         for (type_name, value) in pc.instance.iter_key_mut(self.path.clone()) {
                             let id = ui.push_id(&type_name);
@@ -132,9 +144,6 @@ impl AppState for InstanceDataEditor {
             })
             .render(ctx);
 
-        let dim = (256.0, 256.0);
-        let (width, height) = dim;
-
         let draw_cross = |ctx: &mut Context, origin: (f32, f32)| {
             let vertical = Mesh::new_line(
                 ctx,
@@ -161,13 +170,18 @@ impl AppState for InstanceDataEditor {
             )
         };
 
+        let dim = (256.0, 256.0);
+        let (width, height) = dim;
         // normal bullet
-        let pos = (300.0, 20.0);
+        let pos = (0.0, 20.0);
         let (x, y) = pos;
         let origin = (x + width / 2.0, y + height / 2.0);
         let offset = Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0));
 
         let resource = self.resource.borrow();
+
+        graphics::set_transform(ctx, Matrix4::identity());
+        graphics::apply_transformations(ctx)?;
 
         if let Some(animation) = resource
             .instance
@@ -178,15 +192,11 @@ impl AppState for InstanceDataEditor {
             if resource.duration() > 0 {
                 let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
-                resource.draw_at_time_debug(
+                resource.draw_at_time(
                     ctx,
                     &self.assets.borrow(),
                     self.frame % resource.duration(),
                     offset,
-                    ValueAlpha {
-                        alpha: 1.0,
-                        value: 1.0,
-                    },
                 )?;
             }
         }
@@ -195,20 +205,20 @@ impl AppState for InstanceDataEditor {
             if resource.duration() > 0 {
                 let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
-                resource.draw_at_time_debug(
+                resource.draw_at_time(
                     ctx,
                     &self.assets.borrow(),
                     self.frame % resource.duration(),
                     offset,
-                    ValueAlpha {
-                        alpha: 1.0,
-                        value: 1.0,
-                    },
                 )?;
             }
         }
-        // TODO gather global graphics
 
+        if let Some(boxes) = resource.instance.get::<Vec<Hitbox>>(self.path.clone()) {
+            for hitbox in boxes.iter() {
+                hitbox.draw(ctx, offset, Color::new(1.0, 0.0, 0.0, 0.5))?;
+            }
+        }
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
         draw_cross(ctx, origin)?;
