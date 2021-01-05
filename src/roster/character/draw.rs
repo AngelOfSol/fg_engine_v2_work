@@ -105,44 +105,59 @@ impl<C: Character> Player<C> {
         world: graphics::Matrix4,
         global_graphics: &GlobalGraphicMap,
     ) -> GameResult<()> {
-        for (_, (position, graphic, Timer(frame), rotation)) in self
+        for (_, (position, graphic, Timer(frame), rotation, facing)) in self
             .world
-            .query::<(&Position, &C::Graphic, &Timer, Option<&Rotation>)>()
+            .query::<(
+                &Position,
+                &C::Graphic,
+                &Timer,
+                Option<&Rotation>,
+                Option<&Facing>,
+            )>()
             .iter()
         {
+            // TODO (draw taking into account Option<&Facing>, so that objects with and without facing)
             self.data.graphics[graphic].draw_at_time(
                 ctx,
                 assets,
                 *frame % self.data.graphics[graphic].duration(),
-                world
-                    * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                        position.value.into_graphical(),
-                    ))
-                    * graphics::Matrix4::new_rotation(graphics::Vec3::new(
-                        0.0,
-                        0.0,
-                        rotation.map(|rotation| rotation.0).unwrap_or(0.0),
-                    )),
+                get_transform(
+                    world,
+                    collision::Vec2::zeros(),
+                    position.value,
+                    facing.copied().unwrap_or_default(),
+                ) * graphics::Matrix4::new_rotation(graphics::Vec3::new(
+                    0.0,
+                    0.0,
+                    rotation.map(|rotation| rotation.0).unwrap_or(0.0),
+                )),
             )?;
         }
-        for (_, (position, graphic, Timer(frame), rotation)) in self
+        for (_, (position, graphic, Timer(frame), rotation, facing)) in self
             .world
-            .query::<(&Position, &GlobalGraphic, &Timer, Option<&Rotation>)>()
+            .query::<(
+                &Position,
+                &GlobalGraphic,
+                &Timer,
+                Option<&Rotation>,
+                Option<&Facing>,
+            )>()
             .iter()
         {
             global_graphics[graphic].draw_at_time(
                 ctx,
                 assets,
                 *frame % global_graphics[graphic].duration(),
-                world
-                    * graphics::Matrix4::new_translation(&graphics::up_dimension(
-                        position.value.into_graphical(),
-                    ))
-                    * graphics::Matrix4::new_rotation(graphics::Vec3::new(
-                        0.0,
-                        0.0,
-                        rotation.map(|rotation| rotation.0).unwrap_or(0.0),
-                    )),
+                get_transform(
+                    world,
+                    collision::Vec2::zeros(),
+                    position.value,
+                    facing.copied().unwrap_or_default(),
+                ) * graphics::Matrix4::new_rotation(graphics::Vec3::new(
+                    0.0,
+                    0.0,
+                    rotation.map(|rotation| rotation.0).unwrap_or(0.0),
+                )),
             )?;
         }
         #[cfg(feature = "debug_hitboxes")]

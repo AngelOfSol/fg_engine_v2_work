@@ -1,14 +1,16 @@
 use std::{collections::HashMap, hash::Hash};
 
-use hecs::{EntityBuilder, World};
+use hecs::{Entity, EntityBuilder, World};
 
 use crate::{
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_object::{
         constructors::{Construct, Constructor},
-        state::{ExpiresAfterAnimation, Position, Timer, Velocity},
+        properties::ObjectHitboxSet,
+        state::{ExpiresAfterAnimation, Hitbox, Position, Timer, Velocity},
     },
     graphics::animation_group::AnimationGroup,
+    hitbox::PositionedHitbox,
     roster::character::{data::Data, typedefs::Character},
 };
 
@@ -48,6 +50,29 @@ where
         for sound in data.get(self).current_sounds() {
             self.sound_state.play_sound(sound.channel, sound.name);
         }
+    }
+
+    pub fn get_object_hitboxes(
+        &self,
+        world: &World,
+        data: &Data<C>,
+    ) -> Vec<(Entity, Vec<PositionedHitbox>)> {
+        world
+            .query::<(&Timer, &Position, &Hitbox<C::ObjectData>)>()
+            .iter()
+            .map(|(entity, (timer, position, hitbox))| {
+                let boxes = data.instance.get::<ObjectHitboxSet>(hitbox.0).unwrap();
+                let (_, hitboxes) = boxes.get(timer.0 % boxes.duration());
+
+                (
+                    entity,
+                    hitboxes
+                        .iter()
+                        .map(|hitbox| hitbox.with_collision_position(position.value))
+                        .collect(),
+                )
+            })
+            .collect()
     }
 }
 

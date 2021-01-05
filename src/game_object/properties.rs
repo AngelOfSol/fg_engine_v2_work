@@ -23,12 +23,19 @@ pub trait TryAsMut<T> {
     fn try_as_mut(&mut self) -> Option<&mut T>;
 }
 
+// todo chaange this to (attack_id, vec<hitbox>) or vec<(attack_id, hitbox)>, and make it generic on attack_id
+// think about alternate design for describing attack data????
+// build component for describing when some one was hitby somethign??
+// like the state mechanism?
+// or just build each attack id idea as we go?
+pub type ObjectHitboxSet = Timeline<Vec<Hitbox>>;
+
 impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
         YuyukoGraphic(crate::roster::yuyuko::Graphic),
         Speed(Speed),
-        Hitbox(Timeline<Vec<Hitbox>>),
+        Hitbox(ObjectHitboxSet),
     }
 }
 

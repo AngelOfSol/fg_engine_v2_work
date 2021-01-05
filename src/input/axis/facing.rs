@@ -6,12 +6,17 @@ pub enum Facing {
     Left,
     Right,
 }
+impl Default for Facing {
+    fn default() -> Self {
+        Self::Right
+    }
+}
 
 impl Facing {
     pub fn invert(self) -> Self {
         match self {
-            Facing::Left => Facing::Right,
-            Facing::Right => Facing::Left,
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
         }
     }
 
@@ -21,8 +26,8 @@ impl Facing {
     pub fn graphics_multiplier(self) -> graphics::Vec2 {
         graphics::Vec2::new(
             match self {
-                Facing::Left => -1.0,
-                Facing::Right => 1.0,
+                Self::Left => -1.0,
+                Self::Right => 1.0,
             },
             1.0,
         )
@@ -33,8 +38,8 @@ impl Facing {
     pub fn collision_multiplier(self) -> collision::Vec2 {
         collision::Vec2::new(
             match self {
-                Facing::Left => -1,
-                Facing::Right => 1,
+                Self::Left => -1,
+                Self::Right => 1,
             },
             1,
         )
