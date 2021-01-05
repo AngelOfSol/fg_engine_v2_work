@@ -1,15 +1,17 @@
 use hecs::EntityBuilder;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
+use yuyuko::ObjectData;
 
 use crate::{
     game_object::{
         constructors::{Construct, ConstructError},
-        state::{Rotation, Timer, Velocity},
+        properties::typedefs::Speed,
+        state::{Hitbox, Rotation, Timer, Velocity},
     },
     roster::{
         character::{data::Data, player_state::PlayerState},
-        yuyuko::{Graphic, YuyukoType},
+        yuyuko::{self, Graphic, YuyukoType},
     },
     typedefs::collision,
 };
@@ -39,10 +41,22 @@ impl Construct<YuyukoType> for SpawnButterfly {
         &'constructor self,
         builder: &'builder mut EntityBuilder,
         context: &PlayerState<YuyukoType>,
-        _data: &Data<YuyukoType>,
+        data: &Data<YuyukoType>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
         let velocity = context.facing.fix_collision(self.velocity);
-        builder.add(Velocity { value: velocity });
+        let angle = f32::atan2(-velocity.y as f32, velocity.x as f32);
+        let speed = data
+            .instance
+            .get::<Speed>(ObjectData::Butterfly)
+            .ok_or(ConstructError::MissingRequiredData)?
+            .0;
+
+        builder.add(Velocity {
+            value: collision::Vec2::new(
+                (angle.cos() * speed as f32) as i32,
+                (-angle.sin() * speed as f32) as i32,
+            ),
+        });
         builder.add(match self.color {
             ButterflyColor::Purple => Graphic::Butterfly1,
             ButterflyColor::Green => Graphic::Butterfly2,
@@ -50,7 +64,8 @@ impl Construct<YuyukoType> for SpawnButterfly {
             ButterflyColor::Red => Graphic::Butterfly4,
         });
         builder.add(Timer(0));
-        builder.add(Rotation(f32::atan2(-velocity.y as f32, velocity.x as f32)));
+        builder.add(Rotation(angle));
+        builder.add(Hitbox(ObjectData::Butterfly));
 
         Ok(builder)
     }

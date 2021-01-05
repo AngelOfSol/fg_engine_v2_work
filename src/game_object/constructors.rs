@@ -24,6 +24,7 @@ use yuyuko::object::SpawnButterfly;
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ConstructError {
     MissingRequiredComponent,
+    MissingRequiredData,
 }
 
 // this should be implemented for every character for every constructor

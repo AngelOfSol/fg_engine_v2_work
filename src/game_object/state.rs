@@ -19,3 +19,6 @@ pub struct ExpiresAfterAnimation;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
 pub struct Rotation(pub f32);
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
+pub struct Hitbox<T>(pub T);

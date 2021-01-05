@@ -1,8 +1,12 @@
 #[macro_use]
 mod macros;
+
+pub mod typedefs;
+
 use crate::character::state::components::GlobalGraphic;
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use typedefs::Speed;
 
 use std::{
     any::{Any, TypeId},
@@ -23,7 +27,7 @@ impl_property_type! {
     pub enum PropertyType {
         GlobalGraphic(GlobalGraphic),
         YuyukoGraphic(crate::roster::yuyuko::Graphic),
-
+        Speed(Speed),
     }
 }
 
