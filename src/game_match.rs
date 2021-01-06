@@ -302,6 +302,39 @@ impl<Writer: Write> Match<Writer> {
             }
         }
 
+        // entity - entity collisions
+
+        let hitboxes = self
+            .players
+            .as_ref()
+            .map(|player| player.get_object_hitboxes());
+
+        let entity_entity_collisions: Vec<_> = hitboxes
+            .p1()
+            .iter()
+            .flat_map(|(lhs_entity, lhs_hitboxes)| {
+                hitboxes
+                    .p2()
+                    .iter()
+                    .filter_map(move |(rhs_entity, rhs_hitboxes)| {
+                        if PositionedHitbox::overlaps_any(lhs_hitboxes, rhs_hitboxes) {
+                            Some((*lhs_entity, *rhs_entity))
+                        } else {
+                            None
+                        }
+                    })
+            })
+            .collect();
+
+        for (p1_entity, p2_entity) in entity_entity_collisions {
+            if let Some(tier) = self.players.p1().get_tier(p1_entity) {
+                self.players.p2_mut().on_touch(p2_entity, tier);
+            }
+            if let Some(tier) = self.players.p2().get_tier(p2_entity) {
+                self.players.p1_mut().on_touch(p1_entity, tier);
+            }
+        }
+
         for (player, effect) in self
             .players
             .iter_mut()

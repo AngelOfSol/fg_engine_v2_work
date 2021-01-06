@@ -16,6 +16,8 @@ use std::{
 };
 use strum::{Display, EnumIter};
 
+use super::state::BulletHp;
+
 pub trait TryAsRef<T> {
     fn try_as_ref(&self) -> Option<&T>;
 }
@@ -36,6 +38,7 @@ impl_property_type! {
         YuyukoGraphic(crate::roster::yuyuko::Graphic),
         Speed(Speed),
         Hitbox(ObjectHitboxSet),
+        BulletHp(BulletHp),
     }
 }
 

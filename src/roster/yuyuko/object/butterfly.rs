@@ -7,7 +7,7 @@ use crate::{
     game_object::{
         constructors::{Construct, ConstructError},
         properties::typedefs::Speed,
-        state::{Hitbox, Rotation, Timer, Velocity},
+        state::{BulletHp, Hitbox, Rotation, Timer, Velocity},
     },
     roster::{
         character::{data::Data, player_state::PlayerState},
@@ -43,6 +43,10 @@ impl Construct<YuyukoType> for SpawnButterfly {
         context: &PlayerState<YuyukoType>,
         data: &Data<YuyukoType>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        let angle = f32::atan2(-self.velocity.y as f32, self.velocity.x as f32);
+        builder.add(Rotation(angle));
+        builder.add(context.facing);
+
         let velocity = context.facing.fix_collision(self.velocity);
         let angle = f32::atan2(-velocity.y as f32, velocity.x as f32);
         let speed = data
@@ -64,8 +68,14 @@ impl Construct<YuyukoType> for SpawnButterfly {
             ButterflyColor::Red => Graphic::Butterfly4,
         });
         builder.add(Timer(0));
-        builder.add(Rotation(angle));
         builder.add(Hitbox(ObjectData::Butterfly));
+
+        builder.add(
+            *data
+                .instance
+                .get::<BulletHp>(ObjectData::Butterfly)
+                .ok_or(ConstructError::MissingRequiredData)?,
+        );
 
         Ok(builder)
     }

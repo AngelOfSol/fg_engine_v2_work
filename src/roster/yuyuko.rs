@@ -15,7 +15,6 @@ use super::{
     hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source},
     OpponentState,
 };
-use crate::assets::Assets;
 use crate::character::components::AttackInfo;
 use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::GlobalSound;
@@ -27,8 +26,10 @@ use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
 use crate::typedefs::collision;
 use crate::typedefs::graphics;
+use crate::{assets::Assets, game_object::state::BulletTier};
 
 use ggez::{Context, GameResult};
+use hecs::Entity;
 use rodio::Device;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -359,5 +360,17 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
 
     fn in_hitstun(&self) -> bool {
         self.state.in_hitstun(&self.data)
+    }
+
+    fn get_object_hitboxes(&self) -> Vec<(Entity, Vec<PositionedHitbox>)> {
+        self.state.get_object_hitboxes(&self.world, &self.data)
+    }
+
+    fn get_tier(&self, entity: Entity) -> Option<BulletTier> {
+        self.get_tier(entity)
+    }
+    fn on_touch(&mut self, entity: Entity, tier: BulletTier) {
+        self.state
+            .on_touch(&mut self.world, &self.data, entity, tier)
     }
 }

@@ -22,3 +22,22 @@ pub struct Rotation(pub f32);
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
 pub struct Hitbox<T>(pub T);
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect, Eq, PartialOrd, Ord)]
+pub enum BulletTier {
+    S,
+    A,
+    B,
+    C,
+}
+
+impl Default for BulletTier {
+    fn default() -> Self {
+        Self::C
+    }
+}
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
+pub struct BulletHp {
+    pub tier: BulletTier,
+    pub health: i32,
+}

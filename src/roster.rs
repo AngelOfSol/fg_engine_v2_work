@@ -3,7 +3,6 @@ pub mod generic_character;
 pub mod character;
 pub mod yuyuko;
 
-use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
@@ -11,10 +10,12 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
+use crate::{character::state::components::GlobalGraphic, game_object::state::BulletTier};
 use character::{data::Data, Player};
 use enum_dispatch::enum_dispatch;
 pub use generic_character::*;
 use ggez::{Context, GameResult};
+use hecs::Entity;
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use serde::{Deserialize, Serialize};
@@ -26,7 +27,6 @@ use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter};
 use yuyuko::YuyukoType;
 
-#[allow(clippy::large_enum_variant)]
 #[enum_dispatch]
 pub enum CharacterBehavior {
     YuyukoPlayer(Player<YuyukoType>),

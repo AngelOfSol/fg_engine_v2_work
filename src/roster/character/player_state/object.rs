@@ -3,11 +3,11 @@ use std::{collections::HashMap, hash::Hash};
 use hecs::{Entity, EntityBuilder, World};
 
 use crate::{
-    character::state::components::{GlobalGraphic, GlobalGraphicMap},
+    character::state::components::GlobalGraphicMap,
     game_object::{
         constructors::{Construct, Constructor},
         properties::ObjectHitboxSet,
-        state::{ExpiresAfterAnimation, Hitbox, Position, Timer, Velocity},
+        state::{BulletHp, BulletTier, ExpiresAfterAnimation, Hitbox, Position, Timer, Velocity},
     },
     graphics::animation_group::AnimationGroup,
     hitbox::PositionedHitbox,
@@ -43,9 +43,20 @@ where
 
         update_velocity(world);
 
+        self.destroy_objects(world, data, global_graphics);
+    }
+
+    pub fn destroy_objects(
+        &mut self,
+        world: &mut World,
+        data: &Data<C>,
+        global_graphics: &GlobalGraphicMap,
+    ) {
         destroy_expire(world, &data.graphics);
         destroy_expire(world, &global_graphics);
+        destroy_dead(world);
     }
+
     pub fn update_sound(&mut self, data: &Data<C>) {
         for sound in data.get(self).current_sounds() {
             self.sound_state.play_sound(sound.channel, sound.name);
@@ -74,6 +85,20 @@ where
             })
             .collect()
     }
+
+    pub fn on_touch(
+        &mut self,
+        world: &mut World,
+        _data: &Data<C>,
+        entity: Entity,
+        tier: BulletTier,
+    ) {
+        if let Ok(mut bullet_hp) = world.get_mut::<BulletHp>(entity) {
+            if tier >= bullet_hp.tier {
+                bullet_hp.health -= 1;
+            }
+        }
+    }
 }
 
 pub fn update_velocity(world: &mut World) {
@@ -94,6 +119,18 @@ pub fn destroy_expire<K: Hash + Eq + hecs::Component>(
         .map(|(entity, _)| entity)
         .collect();
 
+    for entity in to_destroy {
+        world.despawn(entity).unwrap();
+    }
+}
+
+pub fn destroy_dead(world: &mut World) {
+    let to_destroy: Vec<_> = world
+        .query::<&BulletHp>()
+        .iter()
+        .filter(|(_, hp)| hp.health <= 0)
+        .map(|(entity, _)| entity)
+        .collect();
     for entity in to_destroy {
         world.despawn(entity).unwrap();
     }

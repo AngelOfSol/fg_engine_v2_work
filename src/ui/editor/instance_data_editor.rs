@@ -1,3 +1,4 @@
+use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
@@ -5,15 +6,8 @@ use crate::{
     hitbox::Hitbox,
     timeline::Timeline,
 };
-use crate::{
-    assets::{Assets, ValueAlpha},
-    character::PlayerCharacter,
-};
+use crate::{assets::Assets, character::PlayerCharacter};
 use crate::{game_match::load_global_graphics, game_object::properties::PropertyType};
-use crate::{
-    imgui_extra::UiExtensions,
-    typedefs::graphics::{Matrix4, Vec3},
-};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

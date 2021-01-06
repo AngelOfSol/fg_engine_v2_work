@@ -1,7 +1,6 @@
 pub mod hit_info;
 pub mod move_id;
 
-use crate::character::state::components::GlobalGraphic;
 use crate::game_match::sounds::{GlobalSound, SoundList};
 use crate::game_match::UiElements;
 use crate::game_match::{FlashType, PlayArea};
@@ -10,8 +9,10 @@ use crate::hitbox::PositionedHitbox;
 use crate::input::{Facing, InputState};
 use crate::typedefs::{collision, graphics};
 use crate::{assets::Assets, character::components::AttackInfo};
+use crate::{character::state::components::GlobalGraphic, game_object::state::BulletTier};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
+use hecs::Entity;
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use std::collections::HashMap;
@@ -134,6 +135,12 @@ pub trait GenericCharacterBehaviour {
     fn get_attack_data(&self) -> Option<Cow<'_, AttackInfo>>;
     fn get_last_combo_state(&self) -> Option<(ComboEffect, usize)>;
     fn in_hitstun(&self) -> bool;
+
+    fn get_object_hitboxes(&self) -> Vec<(Entity, Vec<PositionedHitbox>)>;
+
+    fn get_tier(&self, entity: Entity) -> Option<BulletTier>;
+
+    fn on_touch(&mut self, entity: Entity, tier: BulletTier);
 }
 
 use super::yuyuko::YuyukoType;

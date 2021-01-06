@@ -6,10 +6,9 @@ use crate::{
     assets::{Assets, UiProgress},
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_match::UiElements,
-    game_object::state::{Hitbox, Position, Rotation, Timer},
+    game_object::state::{Position, Rotation, Timer},
     input::Facing,
     roster::hit_info::ComboEffect,
-    timeline::Timeline,
     typedefs::{
         collision::{self, IntoGraphical},
         graphics,
@@ -161,24 +160,21 @@ impl<C: Character> Player<C> {
             )?;
         }
         #[cfg(feature = "debug_hitboxes")]
+        for (_, (position, Timer(frame), boxes, facing)) in self
+            .world
+            .query::<(&Position, &Timer, &Hitbox<C::ObjectData>, Option<&Facing>)>()
+            .iter()
         {
-            for (_, (position, Timer(frame), boxes)) in self
-                .world
-                .query::<(&Position, &Timer, &Hitbox<C::ObjectData>)>()
-                .iter()
-            {
-                if let Some(boxes) = self
-                    .data
-                    .instance
-                    .get::<Timeline<Vec<crate::hitbox::Hitbox>>>(boxes.0)
-                {
-                    let (_, boxes) = boxes.get(frame % boxes.duration());
-                    for hitbox in boxes.iter().map(|item| {
-                        item.with_position_and_facing(position.value, self.state.facing)
-                    }) {
-                        ggez::graphics::clear_shader(ctx);
-                        hitbox.draw(ctx, world, ggez::graphics::Color::new(1.0, 0.0, 0.0, 0.5))?;
-                    }
+            if let Some(boxes) = self.data.instance.get::<ObjectHitboxSet>(boxes.0) {
+                let (_, boxes) = boxes.get(frame % boxes.duration());
+                for hitbox in boxes.iter().map(|item| {
+                    item.with_position_and_facing(
+                        position.value,
+                        facing.copied().unwrap_or_default(),
+                    )
+                }) {
+                    ggez::graphics::clear_shader(ctx);
+                    hitbox.draw(ctx, world, ggez::graphics::Color::new(1.0, 0.0, 0.0, 0.5))?;
                 }
             }
         }

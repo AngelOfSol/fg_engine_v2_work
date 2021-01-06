@@ -11,12 +11,13 @@ use crate::{
         sounds::{GlobalSoundList, SoundPath, SoundRenderer},
         FlashType,
     },
+    game_object::state::{BulletHp, BulletTier},
     hitbox::PositionedHitbox,
     input::Facing,
     typedefs::collision,
 };
 use data::Data;
-use hecs::World;
+use hecs::{Entity, World};
 use player_state::PlayerState;
 use rodio::Device;
 use std::cell::RefCell;
@@ -126,6 +127,13 @@ impl<C: Character> Player<C> {
     }
     pub fn health(&self) -> i32 {
         self.state.health
+    }
+
+    pub fn get_tier(&self, entity: Entity) -> Option<BulletTier> {
+        self.world
+            .get::<BulletHp>(entity)
+            .map(|item| item.tier)
+            .ok()
     }
 
     pub fn modify_lockout(&mut self, timer: i32, reset: bool) {
