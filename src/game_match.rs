@@ -296,7 +296,7 @@ impl<Writer: Write> Match<Writer> {
             .map(|item| item.split())
             .unzip();
 
-        for (ref mut player, result) in self.players.iter_mut().zip(hit_types.iter().rev()) {
+        for (player, result) in self.players.iter_mut().zip(hit_types.iter().rev()) {
             if let Some(result) = result {
                 player.deal_hit(result);
             }
@@ -328,17 +328,80 @@ impl<Writer: Write> Match<Writer> {
 
         for (p1_entity, p2_entity) in entity_entity_collisions {
             if let Some(tier) = self.players.p1().get_tier(p1_entity) {
-                self.players.p2_mut().on_touch(p2_entity, tier);
+                self.players.p2_mut().on_touch_entity(p2_entity, tier);
             }
             if let Some(tier) = self.players.p2().get_tier(p2_entity) {
-                self.players.p1_mut().on_touch(p1_entity, tier);
+                self.players.p1_mut().on_touch_entity(p1_entity, tier);
+            }
+        }
+
+        let player_entity_collisions: PlayerData<Vec<_>> = hitboxes
+            .iter()
+            .rev()
+            .zip(self.players.iter())
+            .map(|(hitboxes, player)| {
+                hitboxes
+                    .iter()
+                    .flat_map(|(entity, hitboxes)| {
+                        if PositionedHitbox::overlaps_any(hitboxes, &player.hurtboxes()) {
+                            Some(*entity)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect()
+            })
+            .collect();
+
+        let player_sets = [self.players.as_ref(), self.players.as_ref().swap()];
+
+        let (hit_effects, reactions): (Vec<_>, Vec<_>) = player_entity_collisions
+            .iter()
+            .zip(player_sets.iter())
+            .zip(input.iter())
+            .zip(hit_effects)
+            .map(|(((collision, players), input), hit_effect)| {
+                collision.iter().fold(
+                    (hit_effect, Vec::new()),
+                    move |(hit_effect, mut reactions), entity| {
+                        if let Some((facing, attack_data)) =
+                            players.p2().get_attack_data_entity(*entity)
+                        {
+                            let (new_hit_effect, hit_type) = players
+                                .p1()
+                                .would_be_hit(
+                                    input,
+                                    &attack_data,
+                                    &Source {
+                                        source_type: HitSource::Object,
+                                        facing,
+                                    },
+                                    hit_effect,
+                                )
+                                .split();
+                            if let Some(hit_type) = hit_type {
+                                reactions.push((*entity, hit_type));
+                            }
+
+                            (new_hit_effect, reactions)
+                        } else {
+                            (hit_effect, reactions)
+                        }
+                    },
+                )
+            })
+            .unzip();
+
+        for (player, reactions) in self.players.iter_mut().rev().zip(reactions) {
+            for (entity, hit_type) in reactions {
+                player.deal_hit_entity(entity, &hit_type);
             }
         }
 
         for (player, effect) in self
             .players
             .iter_mut()
-            .zip(hit_effects.into_iter())
+            .zip(hit_effects)
             .flat_map(|(player, item)| item.map(|item| (player, item)))
         {
             if matches!(effect, HitEffect::GuardCrush(_)) {

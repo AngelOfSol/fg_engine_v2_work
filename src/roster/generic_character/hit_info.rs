@@ -11,7 +11,6 @@ use crate::{character::components::GroundAction, input::Facing};
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum HitSource {
     Character,
-    #[allow(dead_code)]
     Object,
 }
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

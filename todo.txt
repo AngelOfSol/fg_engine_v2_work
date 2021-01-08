@@ -305,11 +305,28 @@ TODO (2/15/2020):
         [x] add timer component
         [x] add velocity
         [x] remove context type from constructor, it should always take in a generic argument being the type of player
-        [] add data_id for Hitboxes
-            [] for rendering, add graphic_id to overlay 
-            [] property
-                [] inspect_mut
-                [] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
+        [x] add data_id for Hitboxes
+            [x] for rendering, add graphic_id to overlay 
+            [x] property
+                [x] inspect_mut
+                [x] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
+        [] add hitbox_id and attack_id to ObjectHitboxSet
+        [] add OutOfBoundsExpire
+        [] add Hitstop
+            [] various queries should make sure to check .without::<Hitstop>()
+            [] remove hitstop component when it hits 0
+        [] add HitType
+            [] last_hit_using: (attack_id, hitbox_id)
+            [] Type
+                [] Normal(hitstop)
+                [] Multiple(max, hitstop)
+        [] implement second yuyuko bullet 
+        [] pull out of band cloning in, and get rollback working again
+    [] laser hitbox type
+        [] has an x,y position
+        [] has a "c = a x + b y" equation
+        [] checking to see if it overlaps with a box involves finding the closest box along the "c = a x + b y" line and checking overlap with it repositioned there
+        [] https://math.stackexchange.com/questions/13176/how-to-find-a-point-on-a-line-closest-to-another-given-point
     [] adjust attack info
         [] add hit_target
             [] grounded

@@ -351,6 +351,10 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
     fn get_attack_data(&self) -> Option<Cow<'_, AttackInfo>> {
         self.state.get_attack_data(&self.data)
     }
+    fn get_attack_data_entity(&self, entity: Entity) -> Option<(Facing, Cow<'_, AttackInfo>)> {
+        self.state
+            .get_attack_data_entity(&self.data, &self.world, entity)
+    }
 
     fn get_last_combo_state(&self) -> Option<(ComboEffect, usize)> {
         self.get_last_combo_state()
@@ -369,8 +373,13 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
     fn get_tier(&self, entity: Entity) -> Option<BulletTier> {
         self.get_tier(entity)
     }
-    fn on_touch(&mut self, entity: Entity, tier: BulletTier) {
+    fn on_touch_entity(&mut self, entity: Entity, tier: BulletTier) {
         self.state
-            .on_touch(&mut self.world, &self.data, entity, tier)
+            .on_touch_entity(&mut self.world, &self.data, entity, tier)
+    }
+
+    fn deal_hit_entity(&mut self, entity: Entity, info: &HitType) {
+        self.state
+            .deal_hit_entity(&mut self.world, &self.data, entity, info);
     }
 }

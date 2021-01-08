@@ -110,6 +110,11 @@ pub mod player {
             let data = self.0.split_at_mut(1);
             (&mut data.0[0], &mut data.1[0])
         }
+
+        pub fn swap(self) -> PlayerData<T> {
+            let [left, right] = self.0;
+            Self([right, left])
+        }
     }
 
     impl<T, E: std::fmt::Debug> PlayerData<Result<T, E>> {

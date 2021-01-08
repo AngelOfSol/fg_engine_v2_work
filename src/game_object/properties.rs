@@ -3,10 +3,15 @@ mod macros;
 
 pub mod typedefs;
 
-use crate::{character::state::components::GlobalGraphic, hitbox::Hitbox, timeline::Timeline};
+use crate::{
+    character::state::components::GlobalGraphic,
+    hitbox::Hitbox,
+    roster::{character::typedefs::Character, yuyuko::YuyukoType},
+    timeline::Timeline,
+};
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use typedefs::Speed;
+use typedefs::{AttackData, Speed};
 
 use std::{
     any::{Any, TypeId},
@@ -30,7 +35,9 @@ pub trait TryAsMut<T> {
 // build component for describing when some one was hitby somethign??
 // like the state mechanism?
 // or just build each attack id idea as we go?
-pub type ObjectHitboxSet = Timeline<Vec<Hitbox>>;
+// this should be Vec<Hitbox>, attack_id: AttackId, HitboxId: usize
+pub type ObjectHitboxSet = Timeline<AttackData>;
+pub type CharacterAttack<C> = Timeline<<C as Character>::Attack>;
 
 impl_property_type! {
     pub enum PropertyType {
@@ -39,6 +46,7 @@ impl_property_type! {
         Speed(Speed),
         Hitbox(ObjectHitboxSet),
         BulletHp(BulletHp),
+        YuyukoAttack(CharacterAttack<YuyukoType>),
     }
 }
 

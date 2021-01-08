@@ -1,13 +1,14 @@
-use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
     graphics::animation_group::AnimationGroup,
-    hitbox::Hitbox,
-    timeline::Timeline,
 };
 use crate::{assets::Assets, character::PlayerCharacter};
 use crate::{game_match::load_global_graphics, game_object::properties::PropertyType};
+use crate::{
+    game_object::properties::ObjectHitboxSet,
+    typedefs::graphics::{Matrix4, Vec3},
+};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -215,12 +216,9 @@ impl AppState for InstanceDataEditor {
             }
         }
 
-        if let Some(boxes) = resource
-            .instance
-            .get::<Timeline<Vec<Hitbox>>>(self.path.clone())
-        {
+        if let Some(boxes) = resource.instance.get::<ObjectHitboxSet>(self.path.clone()) {
             let (_, boxes) = boxes.get(self.frame % boxes.duration());
-            for hitbox in boxes.iter() {
+            for hitbox in boxes.boxes.iter() {
                 hitbox.draw(ctx, offset, Color::new(1.0, 0.0, 0.0, 0.5))?;
             }
         }

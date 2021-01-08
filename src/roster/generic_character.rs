@@ -140,7 +140,10 @@ pub trait GenericCharacterBehaviour {
 
     fn get_tier(&self, entity: Entity) -> Option<BulletTier>;
 
-    fn on_touch(&mut self, entity: Entity, tier: BulletTier);
+    fn on_touch_entity(&mut self, entity: Entity, tier: BulletTier);
+
+    fn get_attack_data_entity(&self, entity: Entity) -> Option<(Facing, Cow<'_, AttackInfo>)>;
+    fn deal_hit_entity(&mut self, entity: Entity, info: &HitType);
 }
 
 use super::yuyuko::YuyukoType;

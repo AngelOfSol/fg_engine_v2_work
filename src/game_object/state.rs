@@ -1,4 +1,7 @@
-use crate::typedefs::collision;
+use crate::{
+    roster::character::typedefs::{Character, HitId, Timed},
+    typedefs::collision,
+};
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default, Inspect)]
@@ -40,4 +43,11 @@ impl Default for BulletTier {
 pub struct BulletHp {
     pub tier: BulletTier,
     pub health: i32,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect)]
+pub struct ObjectAttack<C: Character> {
+    pub id: C::ObjectData,
+    pub command: Timed<C::Command>,
+    pub last_hit_using: Option<HitId<C::Attack>>,
 }

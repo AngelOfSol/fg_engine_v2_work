@@ -4,7 +4,10 @@ use super::PlayerState;
 use crate::{
     character::state::components::GlobalGraphicMap,
     game_match::PlayArea,
-    game_object::constructors::{Construct, Constructor},
+    game_object::{
+        constructors::{Construct, Constructor},
+        properties::{CharacterAttack, PropertyType, TryAsRef},
+    },
     input::InputState,
     roster::{
         character::{
@@ -19,6 +22,7 @@ use crate::{
 impl<C: Character> PlayerState<C>
 where
     Constructor: Construct<C>,
+    PropertyType: TryAsRef<CharacterAttack<C>>,
 {
     pub fn handle_expire(&mut self, data: &Data<C>) {
         let Timed { time, id } = self.current_state;

@@ -12,7 +12,7 @@ use imgui::*;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Eq, Serialize, Inspect)]
 pub struct GenericHitbox<T> {
     pub center: Vec2,
     pub half_size: Vec2,
@@ -29,9 +29,9 @@ impl<T> Default for GenericHitbox<T> {
     }
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Eq, Serialize, Inspect, Default)]
 pub struct Relative;
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Eq, Serialize, Inspect, Default)]
 pub struct Absolute;
 
 pub type Hitbox = GenericHitbox<Relative>;

@@ -7,7 +7,7 @@ use crate::{
     game_object::{
         constructors::{Construct, ConstructError},
         properties::typedefs::Speed,
-        state::{BulletHp, Hitbox, Rotation, Timer, Velocity},
+        state::{BulletHp, Hitbox, ObjectAttack, Rotation, Timer, Velocity},
     },
     roster::{
         character::{data::Data, player_state::PlayerState},
@@ -67,6 +67,7 @@ impl Construct<YuyukoType> for SpawnButterfly {
             ButterflyColor::Teal => Graphic::Butterfly3,
             ButterflyColor::Red => Graphic::Butterfly4,
         });
+
         builder.add(Timer(0));
         builder.add(Hitbox(ObjectData::Butterfly));
 
@@ -76,6 +77,12 @@ impl Construct<YuyukoType> for SpawnButterfly {
                 .get::<BulletHp>(ObjectData::Butterfly)
                 .ok_or(ConstructError::MissingRequiredData)?,
         );
+
+        builder.add(ObjectAttack::<YuyukoType> {
+            command: context.most_recent_command,
+            id: ObjectData::Butterfly,
+            last_hit_using: None,
+        });
 
         Ok(builder)
     }
