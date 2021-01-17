@@ -8,16 +8,16 @@ use crate::{
     graphics::animation_group::AnimationGroup,
 };
 use crate::{assets::Assets, character::command::Command, input::Input};
-use ggez::graphics;
+use ggez::{graphics, GameError};
 use ggez::{Context, GameResult};
 use imgui::*;
 use inspect_design::traits::{Inspect, InspectMut};
-use std::path::PathBuf;
 use std::rc::Rc;
 use std::{
     cell::{Ref, RefCell, RefMut},
     collections::HashMap,
 };
+use std::{fs::File, path::PathBuf};
 
 use super::instance_data_editor::InstanceDataEditor;
 
@@ -357,6 +357,21 @@ impl AppState for CharacterEditor {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
                             *self.resource.borrow_mut() = PlayerCharacter::new();
                             self.states_ui_data = StatesUi::new(&self.resource.borrow_mut().states)
+                        }
+                        if imgui::MenuItem::new(im_str!("Save Only Data")).build(ui) {
+                            if let Ok(nfd::Response::Okay(path)) =
+                                nfd::open_save_dialog(Some("json"), None)
+                            {
+                                let mut path = PathBuf::from(path);
+                                path.set_extension("json");
+                                let mut json = File::create(&path).unwrap();
+                                serde_json::to_writer(
+                                    &mut json,
+                                    std::ops::Deref::deref(&self.resource.borrow()),
+                                )
+                                .map_err(|err| GameError::FilesystemError(format!("{}", err)))
+                                .unwrap();
+                            }
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =

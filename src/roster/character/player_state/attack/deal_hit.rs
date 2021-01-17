@@ -67,10 +67,12 @@ where
             HitType::WrongBlock => attack_info.on_wrongblock.attacker_stop,
         };
 
-        self.last_hit_using = Some(HitId {
-            hitbox_id: hitbox.id,
-            id: hitbox.data_id,
-        });
+        if !matches!(info, HitType::Graze) {
+            self.last_hit_using = Some(HitId {
+                hitbox_id: hitbox.id,
+                id: hitbox.data_id,
+            });
+        }
 
         self.smp.push(self.most_recent_command);
 

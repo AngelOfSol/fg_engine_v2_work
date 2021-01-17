@@ -6,7 +6,7 @@ use crate::{
     character::components::AttackInfo,
     game_object::{
         properties::{CharacterAttack, ObjectHitboxSet, PropertyType, TryAsRef},
-        state::{Hitbox, ObjectAttack, Timer},
+        state::{HitDelay, Hitbox, Hitstop, MultiHitType, ObjectAttack, Timer},
     },
     input::Facing,
     roster::character::{
@@ -54,31 +54,32 @@ where
         entity: Entity,
     ) -> Option<(Facing, Cow<'data, AttackInfo>)> {
         let mut query = world
-            .query_one::<(
-                Option<&Timer>,
-                &ObjectAttack<C>,
-                &Hitbox<C::ObjectData>,
-                &Facing,
-            )>(entity)
-            .unwrap();
+            .query_one::<(Option<&Timer>, &ObjectAttack<C>, &C::ObjectData, &Facing)>(entity)
+            .unwrap()
+            .without::<Hitstop>()
+            .without::<HitDelay>()
+            .with::<Hitbox>();
 
-        let (timer, attack, hitboxes, facing) = query.get()?;
+        let (timer, attack, object_data_id, facing) = query.get()?;
 
         let timer = timer.map(|t| t.0).unwrap_or_default();
 
-        let hitboxes = &data.instance.get::<ObjectHitboxSet>(hitboxes.0).unwrap()[timer];
+        let hitboxes = &data
+            .instance
+            .get::<ObjectHitboxSet>(*object_data_id)
+            .unwrap()[timer];
 
         let attack_id = data
             .instance
-            .get::<CharacterAttack<C>>(attack.id)?
+            .get::<CharacterAttack<C>>(*object_data_id)?
             .get(timer)
             .1;
 
-        if attack.last_hit_using
-            != Some(HitId {
+        if attack.multi_hit
+            != MultiHitType::LastHitUsing(Some(HitId {
                 hitbox_id: hitboxes.id,
                 id: *attack_id,
-            })
+            }))
         {
             if self.smp.should_smp(attack.command) {
                 let mut owned = data.attacks[&attack_id].clone();

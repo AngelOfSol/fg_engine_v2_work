@@ -8,8 +8,8 @@ use crate::{
         constructors::{Construct, Constructor},
         properties::{CharacterAttack, ObjectHitboxSet, PropertyType, TryAsRef},
         state::{
-            BulletHp, BulletTier, ExpiresAfterAnimation, Hitbox, ObjectAttack, Position, Timer,
-            Velocity,
+            BulletHp, BulletTier, ExpiresAfterAnimation, GrazeResistance, HitDelay, Hitbox,
+            Hitstop, MultiHitType, ObjectAttack, Position, Timer, Velocity,
         },
     },
     graphics::animation_group::AnimationGroup,
@@ -47,11 +47,46 @@ where
         data: &Data<C>,
         global_graphics: &GlobalGraphicMap,
     ) {
-        for (_, Timer(timer)) in world.query::<&mut Timer>().iter() {
+        for (_, Timer(timer)) in world.query::<&mut Timer>().without::<Hitstop>().iter() {
             *timer += 1;
         }
 
         update_velocity(world);
+
+        let remove_hitdelay_from = world
+            .query::<&mut HitDelay>()
+            .without::<Hitstop>()
+            .iter()
+            .filter_map(|(entity, HitDelay(ref mut hit_delay))| {
+                *hit_delay -= 1;
+                if *hit_delay <= 0 {
+                    Some(entity)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        for entity in remove_hitdelay_from {
+            world.remove_one::<HitDelay>(entity).unwrap();
+        }
+
+        let remove_hitstop_from = world
+            .query::<&mut Hitstop>()
+            .iter()
+            .filter_map(|(entity, Hitstop(ref mut hitstop))| {
+                *hitstop -= 1;
+                if *hitstop <= 0 {
+                    Some(entity)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        for entity in remove_hitstop_from {
+            world.remove_one::<Hitstop>(entity).unwrap();
+        }
 
         self.destroy_objects(world, data, global_graphics);
     }
@@ -79,11 +114,15 @@ where
         data: &Data<C>,
     ) -> Vec<(Entity, Vec<PositionedHitbox>)> {
         world
-            .query::<(Option<&Timer>, &Position, &Hitbox<C::ObjectData>)>()
+            .query::<(Option<&Timer>, &Position, &C::ObjectData)>()
+            .with::<Hitbox>()
             .iter()
-            .map(|(entity, (timer, position, hitbox))| {
+            .map(|(entity, (timer, position, object_data_id))| {
                 let timer = timer.map(|t| t.0).unwrap_or_default();
-                let boxes = data.instance.get::<ObjectHitboxSet>(hitbox.0).unwrap();
+                let boxes = data
+                    .instance
+                    .get::<ObjectHitboxSet>(*object_data_id)
+                    .unwrap();
                 let (_, hitboxes) = boxes.get(timer % boxes.duration());
 
                 (
@@ -119,28 +158,55 @@ where
         entity: Entity,
         info: &HitType,
     ) {
-        let mut query = world
-            .query_one::<(Option<&Timer>, &mut ObjectAttack<C>, &Hitbox<C::ObjectData>)>(entity)
-            .unwrap();
-        if let Some((timer, object_attack, hitbox)) = query.get() {
-            let timer = timer.map(|item| item.0).unwrap_or_default();
-            let hitbox_id = data.instance.get::<ObjectHitboxSet>(hitbox.0).unwrap()[timer].id;
-            let attack_id = data
-                .instance
-                .get::<CharacterAttack<C>>(object_attack.id)
-                .unwrap()[timer];
+        if !matches!(info, HitType::Graze) {
+            let mut query = world
+                .query_one::<(Option<&Timer>, &mut ObjectAttack<C>, &C::ObjectData)>(entity)
+                .unwrap()
+                .with::<Hitbox>();
+            if let Some((timer, object_attack, object_data_id)) = query.get() {
+                let timer = timer.map(|item| item.0).unwrap_or_default();
+                let hitbox_id = data
+                    .instance
+                    .get::<ObjectHitboxSet>(*object_data_id)
+                    .unwrap()[timer]
+                    .id;
+                let attack_id = data
+                    .instance
+                    .get::<CharacterAttack<C>>(*object_data_id)
+                    .unwrap()[timer];
 
-            self.smp.push(object_attack.command);
+                self.smp.push(object_attack.command);
 
-            object_attack.last_hit_using = Some(HitId {
-                hitbox_id,
-                id: attack_id,
-            });
+                match object_attack.multi_hit {
+                    MultiHitType::LastHitUsing(ref mut last_hit_using) => {
+                        *last_hit_using = Some(HitId {
+                            hitbox_id,
+                            id: attack_id,
+                        })
+                    }
+                    MultiHitType::RemainingHits(ref mut hits) => *hits -= 1,
+                }
+
+                let id = *object_data_id;
+
+                drop(query);
+
+                if let Some(delay) = data.instance.get::<HitDelay>(id) {
+                    world.insert_one(entity, *delay).unwrap();
+                }
+                if let Some(stop) = data.instance.get::<Hitstop>(id) {
+                    world.insert_one(entity, *stop).unwrap();
+                }
+            }
+        } else {
+            let mut query = world
+                .query_one::<&mut GrazeResistance>(entity)
+                .unwrap()
+                .with::<Hitbox>();
+            if let Some(GrazeResistance(ref mut graze_resistance)) = query.get() {
+                *graze_resistance -= 1;
+            }
         }
-        drop(query);
-
-        // TODO add graze resistance
-        self.kill(world, data, entity);
     }
 
     pub fn kill(&mut self, world: &mut World, _data: &Data<C>, entity: Entity) {
@@ -167,21 +233,53 @@ where
     }
 
     pub fn destroy_dead(&mut self, world: &mut World, data: &Data<C>) {
-        let to_destroy: Vec<_> = world
+        let to_destroy_hp: Vec<_> = world
             .query::<&BulletHp>()
             .iter()
             .filter(|(_, hp)| hp.health <= 0)
             .map(|(entity, _)| entity)
             .collect();
 
-        for entity in to_destroy {
+        for entity in to_destroy_hp {
+            self.kill(world, data, entity);
+        }
+
+        let to_destroy_hits: Vec<_> = world
+            .query::<&ObjectAttack<C>>()
+            .iter()
+            .filter(|(_, object_attack)| {
+                if let MultiHitType::RemainingHits(hits) = object_attack.multi_hit {
+                    hits <= 0
+                } else {
+                    false
+                }
+            })
+            .map(|(entity, _)| entity)
+            .collect();
+
+        for entity in to_destroy_hits {
+            self.kill(world, data, entity);
+        }
+
+        let to_destroy_grazed: Vec<_> = world
+            .query::<&GrazeResistance>()
+            .iter()
+            .filter(|(_, GrazeResistance(resistance))| *resistance <= 0)
+            .map(|(entity, _)| entity)
+            .collect();
+
+        for entity in to_destroy_grazed {
             self.kill(world, data, entity);
         }
     }
 }
 
 pub fn update_velocity(world: &mut World) {
-    for (_, (position, velocity)) in world.query::<(&mut Position, &Velocity)>().iter() {
+    for (_, (position, velocity)) in world
+        .query::<(&mut Position, &Velocity)>()
+        .without::<Hitstop>()
+        .iter()
+    {
         position.value += velocity.value;
     }
 }

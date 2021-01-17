@@ -11,13 +11,24 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use state::StateConsts;
 use std::{fmt::Debug, hash::Hash};
 pub trait Id:
-    Hash + Eq + Component + Copy + Debug + DeserializeOwned + Serialize + Inspect + InspectMut + Default
+    Hash
+    + PartialEq
+    + Eq
+    + Component
+    + Copy
+    + Debug
+    + DeserializeOwned
+    + Serialize
+    + Inspect
+    + InspectMut
+    + Default
 {
 }
 
 impl<T> Id for T where
     T: Hash
         + Eq
+        + PartialEq
         + Component
         + Copy
         + Debug

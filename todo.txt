@@ -310,18 +310,34 @@ TODO (2/15/2020):
             [x] property
                 [x] inspect_mut
                 [x] render_screen(ctx, world: Mat4, graphics_hashmap, global_graphics_hashmap)
-        [] add hitbox_id and attack_id to ObjectHitboxSet
-        [] add OutOfBoundsExpire
-        [] add Hitstop
-            [] various queries should make sure to check .without::<Hitstop>()
-            [] remove hitstop component when it hits 0
-        [] add HitType
-            [] last_hit_using: (attack_id, hitbox_id)
-            [] Type
-                [] Normal(hitstop)
-                [] Multiple(max, hitstop)
+        [x] add hitbox_id and attack_id to ObjectHitboxSet
+        [-] add OutOfBoundsExpire
+        [] make any thing with a position expire if its position is outside 120% of the player area
+        [x] add Hitstop
+            [x] various queries should make sure to check .without::<Hitstop>()
+            [x] remove hitstop component when it hits 0
+        [x] add hit_delay (functiosn like hitstop, but only prevents attack-data returning)
+        [x] add HitType
+            [x] last_hit_using: (attack_id, hitbox_id)
+            [x] Type
+                [x] Normal(hitstop)
+                [x] Multiple(max, hitstop)
+        [x] add graze resistance component
         [] implement second yuyuko bullet 
         [] pull out of band cloning in, and get rollback working again
+    [] rework sound renderer
+        [] key: monotonic_sound_int|channel,
+        [] value: sound_id|global_sound_id, start_frame
+        [] player:
+            [] every frame:
+                [] add a new sound, with the start_frame of the current_frame
+                [] for each sound, if the current_frame - start_frame > duration, remove the sound
+        [] renderer:
+            [] every frame, check each sound_key
+                [] if the new_value != old_value
+                    [] if new_id == old_id, don't stop or start the sound (TBD: start_frame_grace_period)?? what if your playing the same sound on the same channel
+                    [] stop the old_sound if any
+                    [] play the new_sound if any
     [] laser hitbox type
         [] has an x,y position
         [] has a "c = a x + b y" equation
@@ -343,8 +359,17 @@ TODO (2/15/2020):
             [] controls
             [] sound settings
     [] add palletes
+    [] add iters to editor
+        [] add state_name_iter
+        [] add attack_id_iter
     [] add loading screen
     [] move sounds into entities
+        [] (entity, sound_id, frame, Option<channel>)
+            [] if channel = something, only check that channel
+            [] if no new_entity has sound_id
+                [] stop sound_id
+            [] if no old_entity has sound_id
+                [] start sound_id, skip to new_frame
     [] add timeskipping functionality to watch replay
         [] play/pause
         [] rewind 5 seconds/fast forward 5seconds
@@ -370,6 +395,7 @@ TODO (2/15/2020):
         [x] create parser for input notation
     [] move all weird constants into either Rust constants or loaded from a file
     [] upgrade rusttype for ggez?
+    [] remove inventory dependency, and use lazy_static instead
     [] play a small animation at the end of the game for the winner
     [] move graphics out of yuyu data, so that just game data can be loaded
     [] move to a new graphics api

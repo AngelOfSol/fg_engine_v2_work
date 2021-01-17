@@ -24,7 +24,7 @@ pub struct ExpiresAfterAnimation;
 pub struct Rotation(pub f32);
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
-pub struct Hitbox<T>(pub T);
+pub struct Hitbox;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect, Eq, PartialOrd, Ord)]
 pub enum BulletTier {
@@ -47,7 +47,31 @@ pub struct BulletHp {
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect)]
 pub struct ObjectAttack<C: Character> {
-    pub id: C::ObjectData,
     pub command: Timed<C::Command>,
-    pub last_hit_using: Option<HitId<C::Attack>>,
+    pub multi_hit: MultiHitType<C>,
 }
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Inspect)]
+pub enum MultiHitType<C: Character> {
+    LastHitUsing(Option<HitId<C::Attack>>),
+    RemainingHits(i32),
+}
+
+impl<C: Character> PartialEq for MultiHitType<C> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::RemainingHits(lhs), Self::RemainingHits(rhs)) => lhs == rhs,
+            (Self::LastHitUsing(lhs), Self::LastHitUsing(rhs)) => lhs == rhs,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
+pub struct Hitstop(pub i32);
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
+pub struct HitDelay(pub i32);
+
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
+pub struct GrazeResistance(pub i32);

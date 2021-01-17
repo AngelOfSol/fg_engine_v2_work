@@ -6,8 +6,11 @@ use yuyuko::ObjectData;
 use crate::{
     game_object::{
         constructors::{Construct, ConstructError},
-        properties::typedefs::Speed,
-        state::{BulletHp, Hitbox, ObjectAttack, Rotation, Timer, Velocity},
+        properties::typedefs::{Speed, TotalHits},
+        state::{
+            BulletHp, GrazeResistance, Hitbox, MultiHitType, ObjectAttack, Rotation, Timer,
+            Velocity,
+        },
     },
     roster::{
         character::{data::Data, player_state::PlayerState},
@@ -43,6 +46,8 @@ impl Construct<YuyukoType> for SpawnButterfly {
         context: &PlayerState<YuyukoType>,
         data: &Data<YuyukoType>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
+        const object_key: ObjectData = ObjectData::Butterfly;
+
         let angle = f32::atan2(-self.velocity.y as f32, self.velocity.x as f32);
         builder.add(Rotation(angle));
         builder.add(context.facing);
@@ -51,7 +56,7 @@ impl Construct<YuyukoType> for SpawnButterfly {
         let angle = f32::atan2(-velocity.y as f32, velocity.x as f32);
         let speed = data
             .instance
-            .get::<Speed>(ObjectData::Butterfly)
+            .get::<Speed>(object_key)
             .ok_or(ConstructError::MissingRequiredData)?
             .0;
 
@@ -69,20 +74,28 @@ impl Construct<YuyukoType> for SpawnButterfly {
         });
 
         builder.add(Timer(0));
-        builder.add(Hitbox(ObjectData::Butterfly));
+        builder.add(object_key);
+        builder.add(Hitbox);
 
         builder.add(
             *data
                 .instance
-                .get::<BulletHp>(ObjectData::Butterfly)
+                .get::<BulletHp>(object_key)
                 .ok_or(ConstructError::MissingRequiredData)?,
         );
 
         builder.add(ObjectAttack::<YuyukoType> {
             command: context.most_recent_command,
-            id: ObjectData::Butterfly,
-            last_hit_using: None,
+            multi_hit: data
+                .instance
+                .get::<TotalHits>(object_key)
+                .map(|TotalHits(hits)| MultiHitType::RemainingHits(*hits))
+                .unwrap_or(MultiHitType::LastHitUsing(None)),
         });
+
+        if let Some(graze_resistance) = data.instance.get::<GrazeResistance>(object_key) {
+            builder.add(*graze_resistance);
+        }
 
         Ok(builder)
     }

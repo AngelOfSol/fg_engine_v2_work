@@ -69,8 +69,6 @@ where
             .map(|hit| !hit.is_continuance(&self.state))
             .unwrap_or(true)
         {
-            self.sink.stop();
-
             if let Some(new_hit) = next {
                 if let Some(source) = new_hit.path.get(local, global) {
                     self.sink = SpatialSink::new(

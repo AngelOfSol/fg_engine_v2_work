@@ -11,7 +11,7 @@ use crate::{
 };
 use inspect_design::Inspect;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use typedefs::{AttackData, Speed};
+use typedefs::{AttackData, Speed, TotalHits};
 
 use std::{
     any::{Any, TypeId},
@@ -21,7 +21,7 @@ use std::{
 };
 use strum::{Display, EnumIter};
 
-use super::state::BulletHp;
+use super::state::{BulletHp, GrazeResistance, HitDelay, Hitstop};
 
 pub trait TryAsRef<T> {
     fn try_as_ref(&self) -> Option<&T>;
@@ -47,6 +47,10 @@ impl_property_type! {
         Hitbox(ObjectHitboxSet),
         BulletHp(BulletHp),
         YuyukoAttack(CharacterAttack<YuyukoType>),
+        Hitstop(Hitstop),
+        HitDelay(HitDelay),
+        TotalHits(TotalHits),
+        GrazeResistance(GrazeResistance),
     }
 }
 
