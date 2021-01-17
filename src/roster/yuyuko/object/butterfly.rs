@@ -46,7 +46,7 @@ impl Construct<YuyukoType> for SpawnButterfly {
         context: &PlayerState<YuyukoType>,
         data: &Data<YuyukoType>,
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
-        const object_key: ObjectData = ObjectData::Butterfly;
+        const OBJECT_KEY: ObjectData = ObjectData::Butterfly;
 
         let angle = f32::atan2(-self.velocity.y as f32, self.velocity.x as f32);
         builder.add(Rotation(angle));
@@ -56,7 +56,7 @@ impl Construct<YuyukoType> for SpawnButterfly {
         let angle = f32::atan2(-velocity.y as f32, velocity.x as f32);
         let speed = data
             .instance
-            .get::<Speed>(object_key)
+            .get::<Speed>(OBJECT_KEY)
             .ok_or(ConstructError::MissingRequiredData)?
             .0;
 
@@ -74,13 +74,13 @@ impl Construct<YuyukoType> for SpawnButterfly {
         });
 
         builder.add(Timer(0));
-        builder.add(object_key);
+        builder.add(OBJECT_KEY);
         builder.add(Hitbox);
 
         builder.add(
             *data
                 .instance
-                .get::<BulletHp>(object_key)
+                .get::<BulletHp>(OBJECT_KEY)
                 .ok_or(ConstructError::MissingRequiredData)?,
         );
 
@@ -88,12 +88,12 @@ impl Construct<YuyukoType> for SpawnButterfly {
             command: context.most_recent_command,
             multi_hit: data
                 .instance
-                .get::<TotalHits>(object_key)
+                .get::<TotalHits>(OBJECT_KEY)
                 .map(|TotalHits(hits)| MultiHitType::RemainingHits(*hits))
                 .unwrap_or(MultiHitType::LastHitUsing(None)),
         });
 
-        if let Some(graze_resistance) = data.instance.get::<GrazeResistance>(object_key) {
+        if let Some(graze_resistance) = data.instance.get::<GrazeResistance>(OBJECT_KEY) {
             builder.add(*graze_resistance);
         }
 

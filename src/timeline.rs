@@ -84,7 +84,7 @@ impl<T> Timeline<T> {
     pub fn duration(&self) -> usize {
         self.duration
     }
-    /// Removes every frame outside of the new duration.
+
     pub fn set_duration(&mut self, duration: usize) {
         if duration == 0 {
             panic!("Can't have a 0 duration timeline.");
@@ -207,6 +207,16 @@ impl<T> Timeline<T> {
     }
     pub fn frames_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.data.iter_mut().map(|(_, data)| data)
+    }
+
+    pub fn frame_durations(&self) -> impl Iterator<Item = usize> + '_ {
+        self.data
+            .windows(2)
+            .map(|window| {
+                let (lhs, rhs) = (window[0].0, window[1].0);
+                rhs - lhs
+            })
+            .chain(Some(self.duration - self.data.last().unwrap().0))
     }
 }
 

@@ -25,6 +25,8 @@ pub enum Command {
     Attack6B,
     Attack5C,
     Attack2C,
+    Attack5D,
+    Attack2D,
     Air5A,
     Air8A,
     Air5B,

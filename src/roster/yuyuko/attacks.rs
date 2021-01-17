@@ -28,6 +28,7 @@ pub enum Attack {
     Attack6B,
     MeleeRestitution,
     Butterfly,
+    Ghost,
 }
 
 impl Default for Attack {

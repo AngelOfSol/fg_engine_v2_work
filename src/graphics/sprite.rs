@@ -51,47 +51,49 @@ impl Sprite {
         constants: ValueAlpha,
         debug: bool,
     ) -> GameResult<()> {
-        let image = self.image.as_ref().unwrap();
+        if let Some(image) = self.image.as_ref() {
+            let image_offset = Matrix4::new_translation(&Vec3::new(
+                -f32::from(image.width()) / 2.0,
+                -f32::from(image.height()) / 2.0,
+                0.0,
+            ));
 
-        let image_offset = Matrix4::new_translation(&Vec3::new(
-            -f32::from(image.width()) / 2.0,
-            -f32::from(image.height()) / 2.0,
-            0.0,
-        ));
+            let sprite_transform = self.modifiers.get_matrix(time);
 
-        let sprite_transform = self.modifiers.get_matrix(time);
+            let transform = world * sprite_transform * image_offset;
 
-        let transform = world * sprite_transform * image_offset;
-
-        assets.shader.send(
-            ctx,
-            ValueAlpha {
-                value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
-                alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
-            },
-        )?;
-
-        graphics::set_transform(ctx, transform);
-        graphics::apply_transformations(ctx)?;
-
-        graphics::draw(ctx, image, DrawParam::default())?;
-
-        if debug {
-            let rectangle = Mesh::new_rectangle(
+            assets.shader.send(
                 ctx,
-                DrawMode::stroke(1.0),
-                Rect::new(
-                    0.0,
-                    0.0,
-                    f32::from(image.width()),
-                    f32::from(image.height()),
-                ),
-                Color::new(1.0, 0.0, 0.0, 1.0),
+                ValueAlpha {
+                    value: self.modifiers.value.get_eased(time).unwrap_or(1.0) * constants.value,
+                    alpha: self.modifiers.alpha.get_eased(time).unwrap_or(1.0) * constants.value,
+                },
             )?;
-            graphics::draw(ctx, &rectangle, DrawParam::default())?;
+
+            graphics::set_transform(ctx, transform);
+            graphics::apply_transformations(ctx)?;
+
+            graphics::draw(ctx, image, DrawParam::default())?;
+
+            if debug {
+                let rectangle = Mesh::new_rectangle(
+                    ctx,
+                    DrawMode::stroke(1.0),
+                    Rect::new(
+                        0.0,
+                        0.0,
+                        f32::from(image.width()),
+                        f32::from(image.height()),
+                    ),
+                    Color::new(1.0, 0.0, 0.0, 1.0),
+                )?;
+                graphics::draw(ctx, &rectangle, DrawParam::default())?;
+            }
+            graphics::set_transform(ctx, Matrix4::identity());
+            graphics::apply_transformations(ctx)?;
+        } else {
+            // TODO: log no image
         }
-        graphics::set_transform(ctx, Matrix4::identity());
-        graphics::apply_transformations(ctx)?;
 
         Ok(())
     }

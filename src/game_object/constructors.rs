@@ -19,7 +19,7 @@ pub use position::*;
 use serde::{Deserialize, Serialize};
 pub use traits::Construct;
 use typedefs::ParticleData;
-use yuyuko::object::SpawnButterfly;
+use yuyuko::object::{SpawnButterfly, SpawnGhost};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ConstructError {
@@ -36,6 +36,7 @@ pub enum Constructor {
     GlobalParticle(ParticleData<GlobalGraphic>),
     YuyukoParticle(ParticleData<yuyuko::Graphic>),
     Butterfly(SpawnButterfly),
+    Ghost(SpawnGhost),
 }
 
 impl Default for Constructor {
@@ -56,6 +57,7 @@ impl Construct<YuyukoType> for Constructor {
             Self::GlobalParticle(v) => v.construct_on_to(builder, context, data),
             Self::YuyukoParticle(v) => v.construct_on_to(builder, context, data),
             Self::Butterfly(v) => v.construct_on_to(builder, context, data),
+            Self::Ghost(v) => v.construct_on_to(builder, context, data),
         }
     }
 }

@@ -5,7 +5,6 @@ pub mod typedefs;
 
 use crate::{
     character::state::components::GlobalGraphic,
-    hitbox::Hitbox,
     roster::{character::typedefs::Character, yuyuko::YuyukoType},
     timeline::Timeline,
 };

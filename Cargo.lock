@@ -717,6 +717,7 @@ dependencies = [
  "inventory",
  "ipconfig",
  "laminar",
+ "lazy_static",
  "maplit",
  "nalgebra 0.21.1",
  "nfd",

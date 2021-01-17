@@ -370,7 +370,8 @@ impl AppState for StateEditor {
                 DrawParam::default().dest([origin.x, origin.y]),
             )
         };
-
+        graphics::set_transform(ctx, offset);
+        graphics::apply_transformations(ctx)?;
         for item in resource
             .spawns
             .iter()

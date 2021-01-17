@@ -30,7 +30,7 @@ impl AnimationGroup {
         self.animations
             .iter()
             .map(|item| item.delay + item.duration())
-            .fold(0, std::cmp::max)
+            .fold(1, std::cmp::max)
     }
 
     pub fn fix_durations(&mut self) {

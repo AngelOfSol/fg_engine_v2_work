@@ -31,6 +31,15 @@ impl AppState for AnimationEditor {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
+            self.resource
+                .modifiers
+                .set_duration(self.resource.frames.duration());
+
+            let durations = self.resource.frames.frame_durations().collect::<Vec<_>>();
+
+            for (frame, duration) in self.resource.frames.frames_mut().zip(durations) {
+                frame.modifiers.set_duration(duration)
+            }
         }
 
         match std::mem::replace(&mut self.done, Status::NotDone) {

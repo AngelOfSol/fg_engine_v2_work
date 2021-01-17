@@ -37,6 +37,10 @@ pub enum State {
     Attack5C,
     #[serde(rename = "attack2c")]
     Attack2C,
+    #[serde(rename = "attack5d")]
+    Attack5D,
+    #[serde(rename = "attack2d")]
+    Attack2D,
     #[serde(rename = "air5a")]
     Air5A,
     #[serde(rename = "air8a")]
