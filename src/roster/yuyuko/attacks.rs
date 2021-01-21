@@ -26,6 +26,8 @@ pub enum Attack {
     Attack3B,
     #[serde(rename = "attack6b")]
     Attack6B,
+    DragonPunch,
+    SuperDragonPunch,
     MeleeRestitution,
     Butterfly,
     Ghost,

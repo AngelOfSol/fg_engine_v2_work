@@ -149,10 +149,4 @@ impl<C: Character> Player<C> {
             fps,
         );
     }
-    pub fn save(&self) -> PlayerState<C> {
-        self.state.clone()
-    }
-    pub fn load(&mut self, new_state: PlayerState<C>) {
-        self.state = new_state;
-    }
 }

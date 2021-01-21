@@ -1118,8 +1118,7 @@ dependencies = [
 [[package]]
 name = "hecs"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fc21f4816c4332a954ac0b7a227f1a06a0addd8f240c2727591449f56de5931"
+source = "git+https://github.com/AngelOfSol/hecs.git?branch=temp/feature-clone-hashbrown-0.9#5a17b44e4c4ce1d7e389efa91eb9f881c28dcb9e"
 dependencies = [
  "hashbrown",
 ]

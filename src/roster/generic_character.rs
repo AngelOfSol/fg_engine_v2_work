@@ -12,7 +12,7 @@ use crate::{assets::Assets, character::components::AttackInfo};
 use crate::{character::state::components::GlobalGraphic, game_object::state::BulletTier};
 use enum_dispatch::enum_dispatch;
 use ggez::{Context, GameResult};
-use hecs::Entity;
+use hecs::{Entity, World};
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use std::collections::HashMap;
@@ -152,7 +152,10 @@ use std::borrow::Cow;
 #[derive(Clone)]
 #[non_exhaustive]
 pub enum OpaqueStateData {
-    Yuyuko(super::character::player_state::PlayerState<YuyukoType>),
+    Yuyuko(
+        super::character::player_state::PlayerState<YuyukoType>,
+        World,
+    ),
     #[allow(dead_code)]
     Broken,
 }

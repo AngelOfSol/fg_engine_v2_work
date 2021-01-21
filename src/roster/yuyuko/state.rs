@@ -53,6 +53,9 @@ pub enum State {
     Air5C,
     #[serde(rename = "air2c")]
     Air2C,
+    MeleeDragonPunch,
+    BulletDragonPunch,
+    SuperDragonPunch,
     Crouch,
     ToCrouch,
     ToStand,

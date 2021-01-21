@@ -269,12 +269,18 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
     }
 
     fn save(&self) -> GameResult<OpaqueStateData> {
-        Ok(OpaqueStateData::Yuyuko(self.save()))
+        Ok(OpaqueStateData::Yuyuko(
+            self.state.clone(),
+            self.world.clone(),
+        ))
     }
 
     fn load(&mut self, value: OpaqueStateData) -> GameResult<()> {
         match value {
-            OpaqueStateData::Yuyuko(data) => self.load(data),
+            OpaqueStateData::Yuyuko(state, world) => {
+                self.state = state;
+                self.world = world;
+            }
             _ => unreachable!(),
         }
 

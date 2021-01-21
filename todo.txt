@@ -323,7 +323,7 @@ TODO (2/15/2020):
                 [x] Normal(hitstop)
                 [x] Multiple(max, hitstop)
         [x] add graze resistance component
-        [] implement second yuyuko bullet 
+        [x] implement second yuyuko bullet 
         [] pull out of band cloning in, and get rollback working again
     [] rework sound renderer
         [] key: monotonic_sound_int|channel,
@@ -353,6 +353,9 @@ TODO (2/15/2020):
         [] maybe attacker gets extra meter for destroying bullets this way
     [] integrate typesafe appstate transitions instead of Boxed Closures 
     [] add pause menu
+    [] rework input reading system a bit
+        [] 2ab needs to read as both 2b and 2a in that order as an example
+        [] introduce AB and CD binds
     [] create settings object
         [] holds all settings
             [] window properties
