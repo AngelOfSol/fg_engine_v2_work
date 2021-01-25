@@ -6,7 +6,7 @@ use crate::{
     character::components::AttackInfo,
     game_object::{
         properties::{CharacterAttack, ObjectHitboxSet, PropertyType, TryAsRef},
-        state::{HitDelay, Hitbox, Hitstop, MultiHitType, ObjectAttack, Timer},
+        state::{HasHitbox, HitDelay, Hitstop, MultiHitType, ObjectAttack, Timer},
     },
     input::Facing,
     roster::character::{
@@ -58,7 +58,7 @@ where
             .unwrap()
             .without::<Hitstop>()
             .without::<HitDelay>()
-            .with::<Hitbox>();
+            .with::<HasHitbox>();
 
         let (timer, attack, object_data_id, facing) = query.get()?;
 

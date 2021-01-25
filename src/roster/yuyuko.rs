@@ -213,6 +213,7 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
     }
 
     fn draw(&self, ctx: &mut Context, assets: &Assets, world: graphics::Matrix4) -> GameResult<()> {
+        let _ = self.save();
         self.draw(ctx, assets, world)
     }
 
@@ -269,10 +270,8 @@ impl GenericCharacterBehaviour for Player<YuyukoType> {
     }
 
     fn save(&self) -> GameResult<OpaqueStateData> {
-        Ok(OpaqueStateData::Yuyuko(
-            self.state.clone(),
-            self.world.clone(),
-        ))
+        let w = self.world.clone();
+        Ok(OpaqueStateData::Yuyuko(self.state.clone(), w))
     }
 
     fn load(&mut self, value: OpaqueStateData) -> GameResult<()> {

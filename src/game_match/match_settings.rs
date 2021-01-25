@@ -5,8 +5,8 @@ use crate::game_match::{
 };
 use crate::graphics::animation_group::AnimationGroup;
 use crate::player_list::PlayerList;
-use crate::roster::Character;
 use crate::roster::CharacterData;
+use crate::roster::RosterCharacter;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
@@ -20,7 +20,7 @@ use strum::IntoEnumIterator;
 pub struct MatchSettings {
     replay_version: usize,
     pub first_to: usize,
-    pub characters: PlayerData<Character>,
+    pub characters: PlayerData<RosterCharacter>,
     #[serde(skip)]
     pub runtime_data: Option<Rc<RuntimeData>>,
 }
@@ -51,7 +51,7 @@ impl MatchSettings {
     pub fn new() -> MatchSettings {
         MatchSettings {
             first_to: 2,
-            characters: [Character::default(); 2].into(),
+            characters: [RosterCharacter::default(); 2].into(),
             replay_version: crate::typedefs::REPLAY_VERSION,
             runtime_data: None,
         }

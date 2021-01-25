@@ -1,4 +1,4 @@
-use crate::roster::Character;
+use crate::roster::RosterCharacter;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
@@ -15,7 +15,7 @@ pub struct Properties {
 
     #[serde(default)]
     #[skip]
-    pub character: Character,
+    pub character: RosterCharacter,
 }
 
 fn default_max_air_actions() -> usize {

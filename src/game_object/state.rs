@@ -24,7 +24,7 @@ pub struct ExpiresAfterAnimation;
 pub struct Rotation(pub f32);
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Default, Inspect)]
-pub struct Hitbox;
+pub struct HasHitbox;
 
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect, Eq, PartialOrd, Ord)]
 pub enum BulletTier {

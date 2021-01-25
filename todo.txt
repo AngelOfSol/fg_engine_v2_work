@@ -324,10 +324,28 @@ TODO (2/15/2020):
                 [x] Multiple(max, hitstop)
         [x] add graze resistance component
         [x] implement second yuyuko bullet 
-        [] pull out of band cloning in, and get rollback working again
+        [x] pull out of band cloning in, and get rollback working again
+    [] move state to take a <C: Character>
+    [] separate out game pieces into crates
     [] rework sound renderer
-        [] key: monotonic_sound_int|channel,
+        [] only one (sound_id, frame) is unique it doesnt make sense to do anything else
+        [] announce voice state should be played from global gamestate
+        [] (sound_id, frame, position), design around this 
+        [] if sound_id, frame are the same, but position is different, move the old sound to the new_position
+
+        [] move everything so that its in the right place in listener space
+        [] 
+        [] delay this until we de-integrate functionality
         [] value: sound_id|global_sound_id, start_frame
+        [] hash_set with sound_id, start_frame
+        [] hash_set with global_sound_id, start_frame
+        [] maybe SoundPath<C::Sound>, start_frame?
+        [] hash_map with sound_id, start_frame -> playing_sound
+        [] difference operation to find things that need to be started, and need to be ended
+        [] for channels, its an Option<sound_id, start_frame> + Option<playing_sound>,
+            [] if old_value != new_value
+                [] if let old_value = Some -> playing_sound.take().unwrap().stop()
+                [] if let new_value = Some -> playing_sound = new_sound
         [] player:
             [] every frame:
                 [] add a new sound, with the start_frame of the current_frame
@@ -343,16 +361,30 @@ TODO (2/15/2020):
         [] has a "c = a x + b y" equation
         [] checking to see if it overlaps with a box involves finding the closest box along the "c = a x + b y" line and checking overlap with it repositioned there
         [] https://math.stackexchange.com/questions/13176/how-to-find-a-point-on-a-line-closest-to-another-given-point
+        [] equation 
+        [] a laser is two lines equations
+        [] a laser collides with a box if
+            [] line_1 intersects the box
+            [] or if line_2 intersects the box
+            [] or if the box's center, is on different sides (crossproduct) of each line
+        [] define lines as parametric equations
+            [] y = rise * t + offset_y
+            [] x = run * facing_multiplier * t + offset_x
     [] adjust attack info
         [] add hit_target
             [] grounded
             [] airborne
             [] both (default)
         [] add unblockable
+        [] add screen shake
+            [] vertical
+            [] horizontal
+            [] both
     [] your bullets go away on getting hit
         [] maybe attacker gets extra meter for destroying bullets this way
     [] integrate typesafe appstate transitions instead of Boxed Closures 
-    [] add pause menu
+    [] figure out menuing abstraction
+    [] add pause menu 
     [] rework input reading system a bit
         [] 2ab needs to read as both 2b and 2a in that order as an example
         [] introduce AB and CD binds
@@ -373,6 +405,8 @@ TODO (2/15/2020):
                 [] stop sound_id
             [] if no old_entity has sound_id
                 [] start sound_id, skip to new_frame
+    [] switch to turbulence + std::Udp for netcode
+    [] rework workspace to have subcrates for game logic
     [] add timeskipping functionality to watch replay
         [] play/pause
         [] rewind 5 seconds/fast forward 5seconds

@@ -102,6 +102,7 @@ impl<C: Character> PlayerState<C> {
                         }
                     }
                     self.allowed_cancels = AllowedCancel::Always;
+                    self.stun = None;
                     self.last_hit_using = None;
                     self.rebeat_chain.insert(command_id);
                     self.most_recent_command = Timed {

@@ -4,7 +4,7 @@ use crate::enum_helpers::NextPrev;
 use crate::game_match::{FromMatchSettings, MatchSettings};
 use crate::input::pads_context::{Button, EventType};
 use crate::player_list::PlayerList;
-use crate::roster::Character;
+use crate::roster::RosterCharacter;
 use crate::typedefs::player::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
@@ -32,7 +32,7 @@ impl<Target> FromControllerList for CharacterSelect<Target> {
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Debug)]
 struct SelectState {
-    selected: Character,
+    selected: RosterCharacter,
     confirmed: Status,
 }
 
@@ -96,13 +96,13 @@ where
                     match button {
                         Button::DPadUp => {
                             if player.confirmed == Status::None {
-                                player.selected = Character::prev(player.selected);
+                                player.selected = RosterCharacter::prev(player.selected);
                                 dirty = true;
                             }
                         }
                         Button::DPadDown => {
                             if player.confirmed == Status::None {
-                                player.selected = Character::next(player.selected);
+                                player.selected = RosterCharacter::next(player.selected);
                                 dirty = true;
                             }
                         }
@@ -227,7 +227,7 @@ where
                     ui.columns(2, im_str!("col"), true);
 
                     for player in self.chosen_characters.iter() {
-                        for character in Character::iter() {
+                        for character in RosterCharacter::iter() {
                             let color = if character == player.selected {
                                 if player.confirmed == Status::Confirmed {
                                     [0.0, 1.0, 0.0, 1.0]

@@ -38,36 +38,36 @@ pub enum CharacterData {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
-pub enum Character {
+pub enum RosterCharacter {
     Yuyuko,
 }
 
-impl Default for Character {
+impl Default for RosterCharacter {
     fn default() -> Self {
         Self::Yuyuko
     }
 }
 
-impl Character {
+impl RosterCharacter {
     pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::Sound::iter().map(|item| item.to_string()),
+            RosterCharacter::Yuyuko => yuyuko::Sound::iter().map(|item| item.to_string()),
         }
     }
     pub fn data_id_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::ObjectData::iter().map(|item| item.to_string()),
+            RosterCharacter::Yuyuko => yuyuko::ObjectData::iter().map(|item| item.to_string()),
         }
     }
     pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
         match self {
-            Character::Yuyuko => yuyuko::Graphic::iter().map(|item| item.file_name()),
+            RosterCharacter::Yuyuko => yuyuko::Graphic::iter().map(|item| item.file_name()),
         }
     }
 
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
         match self {
-            Character::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(
+            RosterCharacter::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(
                 Data::<YuyukoType>::new_with_path(
                     ctx,
                     assets,
@@ -84,10 +84,10 @@ impl CharacterData {
             CharacterData::Yuyuko(data) => Player::new((**data).clone()).into(),
         }
     }
-    pub fn is_for(&self, character: Character) -> bool {
+    pub fn is_for(&self, character: RosterCharacter) -> bool {
         matches!(
             (self, character),
-            (CharacterData::Yuyuko(..), Character::Yuyuko)
+            (CharacterData::Yuyuko(..), RosterCharacter::Yuyuko)
         )
     }
 }

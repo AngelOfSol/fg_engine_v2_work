@@ -8,8 +8,8 @@ use crate::{
         constructors::{Construct, ConstructError},
         properties::typedefs::TotalHits,
         state::{
-            BulletHp, ExpiresAfterAnimation, GrazeResistance, Hitbox, MultiHitType, ObjectAttack,
-            Timer,
+            BulletHp, ExpiresAfterAnimation, GrazeResistance, HasHitbox, MultiHitType,
+            ObjectAttack, Timer,
         },
     },
     roster::{
@@ -35,7 +35,7 @@ impl Construct<YuyukoType> for SpawnGhost {
         builder.add(Timer(0));
         builder.add(ExpiresAfterAnimation);
         builder.add(OBJECT_KEY);
-        builder.add(Hitbox);
+        builder.add(HasHitbox);
         builder.add(context.facing);
 
         builder.add(

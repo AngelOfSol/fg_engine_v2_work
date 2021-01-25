@@ -8,7 +8,7 @@ use crate::{
         constructors::{Construct, ConstructError},
         properties::typedefs::{Speed, TotalHits},
         state::{
-            BulletHp, GrazeResistance, Hitbox, MultiHitType, ObjectAttack, Rotation, Timer,
+            BulletHp, GrazeResistance, HasHitbox, MultiHitType, ObjectAttack, Rotation, Timer,
             Velocity,
         },
     },
@@ -75,7 +75,7 @@ impl Construct<YuyukoType> for SpawnButterfly {
 
         builder.add(Timer(0));
         builder.add(OBJECT_KEY);
-        builder.add(Hitbox);
+        builder.add(HasHitbox);
 
         builder.add(
             *data

@@ -8,7 +8,7 @@ use crate::{
         constructors::{Construct, Constructor},
         properties::{CharacterAttack, ObjectHitboxSet, PropertyType, TryAsRef},
         state::{
-            BulletHp, BulletTier, ExpiresAfterAnimation, GrazeResistance, HitDelay, Hitbox,
+            BulletHp, BulletTier, ExpiresAfterAnimation, GrazeResistance, HasHitbox, HitDelay,
             Hitstop, MultiHitType, ObjectAttack, Position, Timer, Velocity,
         },
     },
@@ -115,7 +115,7 @@ where
     ) -> Vec<(Entity, Vec<PositionedHitbox>)> {
         world
             .query::<(Option<&Timer>, &Position, &C::ObjectData)>()
-            .with::<Hitbox>()
+            .with::<HasHitbox>()
             .iter()
             .map(|(entity, (timer, position, object_data_id))| {
                 let timer = timer.map(|t| t.0).unwrap_or_default();
@@ -162,7 +162,7 @@ where
             let mut query = world
                 .query_one::<(Option<&Timer>, &mut ObjectAttack<C>, &C::ObjectData)>(entity)
                 .unwrap()
-                .with::<Hitbox>();
+                .with::<HasHitbox>();
             if let Some((timer, object_attack, object_data_id)) = query.get() {
                 let timer = timer.map(|item| item.0).unwrap_or_default();
                 let hitbox_id = data
@@ -202,7 +202,7 @@ where
             let mut query = world
                 .query_one::<&mut GrazeResistance>(entity)
                 .unwrap()
-                .with::<Hitbox>();
+                .with::<HasHitbox>();
             if let Some(GrazeResistance(ref mut graze_resistance)) = query.get() {
                 *graze_resistance -= 1;
             }

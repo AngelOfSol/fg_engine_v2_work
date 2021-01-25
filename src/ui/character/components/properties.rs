@@ -1,6 +1,6 @@
 use crate::character::components::Properties;
 use crate::imgui_extra::UiExtensions;
-use crate::roster::Character;
+use crate::roster::RosterCharacter;
 use imgui::*;
 use strum::IntoEnumIterator;
 
@@ -18,7 +18,7 @@ impl PropertiesUi {
         ui.combo_items(
             im_str!("Character"),
             &mut data.character,
-            &Character::iter().collect::<Vec<_>>(),
+            &RosterCharacter::iter().collect::<Vec<_>>(),
             &|item| im_str!("{}", item.to_string()).into(),
         );
     }

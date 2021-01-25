@@ -4,6 +4,8 @@ pub mod player_state;
 pub mod smp;
 pub mod typedefs;
 
+mod clone;
+
 use super::hit_info::ComboEffect;
 use crate::{
     character::state::components::StateType,
@@ -41,7 +43,7 @@ impl<C: Character> Player<C> {
         Self {
             state: PlayerState::new(&data),
             data,
-            world: World::new(),
+            world: World::new_with(clone::registry_for::<C>()),
             ui_state: UiState {
                 last_combo_state: None,
                 combo_text: RefCell::new(None),
