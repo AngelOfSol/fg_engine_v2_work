@@ -1,15 +1,19 @@
-use super::character_editor::{ItemResource, StateResource};
-use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::Assets;
-use crate::character::PlayerCharacter;
-use crate::imgui_extra::UiExtensions;
-use crate::typedefs::collision::IntoGraphical;
-use crate::typedefs::graphics::{Matrix4, Vec3};
-use crate::ui::character::state::{CancelSetUi, StateUi};
+use super::typed_character_editor::EDITOR_BACKGROUND;
 use crate::{
-    character::state::{EditorCharacterState, State},
-    game_object::constructors::Constructor,
+    app_state::{AppContext, AppState, Transition},
+    character::state::components::{CancelSet, HitboxSet},
+    roster::character::data::Data,
 };
+use crate::{assets::Assets, roster::character::typedefs::Character};
+use crate::{
+    character::state::components::Flags,
+    timeline::Timeline,
+    typedefs::graphics::{Matrix4, Vec3},
+};
+use crate::{character::state::components::StateType, imgui_extra::UiExtensions};
+use crate::{character::state::SpawnerInfo, typedefs::collision::IntoGraphical};
+use crate::{character::state::State, game_object::constructors::Constructor};
+use crate::{timeline, ui::character::state::CancelSetUi};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -18,18 +22,23 @@ use inspect_design::traits::{Inspect, InspectMut};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
+use strum::IntoEnumIterator;
 
-pub struct StateEditor {
-    character_data: Rc<RefCell<PlayerCharacter>>,
+pub struct TypedStateEditor<C: Character> {
+    character_data: Rc<RefCell<Data<C>>>,
     assets: Rc<RefCell<Assets>>,
-    resource: Rc<RefCell<EditorCharacterState>>,
-    path: StateResource,
+    id: C::State,
+    new_state: State<C::State, C::Attack, C::Sound>,
     frame: usize,
     is_playing: bool,
     transition: Transition,
-    ui_data: StateUi,
     draw_mode: DrawMode,
-    inspect_state: <EditorCharacterState as Inspect>::State,
+    graphic_inspect_state: <C::Graphic as Inspect>::State,
+    spawner_info_inspect_state: <Vec<SpawnerInfo> as Inspect>::State,
+    flags_state: <Timeline<Flags> as Inspect>::State,
+    cancels_state: <Timeline<CancelSet> as Inspect>::State,
+    hitbox_state: <Timeline<HitboxSet<C::Attack>> as Inspect>::State,
+    current_cancel_set_ui: CancelSetUi,
 }
 struct DrawMode {
     collision_alpha: f32,
@@ -39,14 +48,13 @@ struct DrawMode {
     show_axes: bool,
 }
 
-impl AppState for StateEditor {
+impl<C: Character> AppState for TypedStateEditor<C> {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             if self.is_playing {
                 self.frame = self.frame.wrapping_add(1);
-                let resource = self.resource.borrow();
 
-                self.frame %= resource.duration();
+                self.frame %= self.new_state.duration();
             }
         }
 
@@ -61,79 +69,118 @@ impl AppState for StateEditor {
         ctx: &mut Context,
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
-        let (state_list, attack_ids, sounds_list) = {
-            let character_data = self.character_data.borrow();
+        graphics::clear(ctx, EDITOR_BACKGROUND.into());
 
-            let state_list = {
-                let mut state_list: Vec<_> = character_data.states.rest.keys().cloned().collect();
-                state_list.sort();
-                state_list
-            };
-
-            let attack_ids: Vec<_> = character_data.attacks.attacks.keys().cloned().collect();
-
-            let sounds_list: Vec<_> = character_data
-                .properties
-                .character
-                .sound_name_iter()
-                .collect();
-
-            (state_list, attack_ids, sounds_list)
-        };
         imgui
             .frame()
             .run(|ui| {
-                imgui::Window::new(im_str!("TEST"))
-                    .size([300.0, 140.0], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
+                imgui::Window::new(im_str!("Main"))
+                    .size([1620.0, 1060.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .draw_background(true)
+                    .movable(false)
+                    .resizable(false)
+                    .collapsible(false)
+                    .title_bar(false)
                     .build(ui, || {
-                        self.resource
-                            .borrow_mut()
-                            .inspect_mut("test", &mut self.inspect_state, ui);
-                    });
+                        imgui::TabBar::new(im_str!("Main")).build(ui, || {
+                            imgui::TabItem::new(&im_str!("Properties")).build(ui, || {
+                                {
+                                    let mut cd = self.character_data.borrow_mut();
+                                    let entry = cd.state_graphics_map.entry(self.id).or_default();
 
-                imgui::Window::new(im_str!("Properties"))
-                    .size([300.0, 140.0], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        let mut res = self.resource.borrow_mut();
-                        {
-                            let mut cd = self.character_data.borrow_mut();
+                                    entry.inspect_mut(
+                                        "Graphic",
+                                        &mut self.graphic_inspect_state,
+                                        ui,
+                                    );
+                                }
 
-                            let mut graphic_list: Vec<_> = cd.graphics.keys().cloned().collect();
-                            graphic_list.sort();
-                            let graphic_list = graphic_list;
+                                let cd = self.character_data.borrow();
+                                let entry = cd.state_graphics_map.get(&self.id).unwrap();
 
-                            let entry = cd
-                                .state_graphics_map
-                                .entry(self.path.state.clone())
-                                .or_insert_with(|| graphic_list[0].clone());
+                                self.new_state.set_duration(cd.graphics[entry].duration());
 
-                            ui.combo_items(im_str!("Graphic"), entry, &graphic_list, &|item| {
-                                im_str!("{}", item).into()
+                                ui.combo_items(
+                                    im_str!("State Type"),
+                                    &mut self.new_state.state_type,
+                                    StateType::all(),
+                                    &|item| im_str!("{}", item).into(),
+                                );
+
+                                ui.combo_items(
+                                    im_str!("On Expire"),
+                                    &mut self.new_state.on_expire.state_id,
+                                    &C::State::iter().collect::<Vec<_>>(),
+                                    &|item| im_str!("{}", item).into(),
+                                );
+
+                                let _ = ui.input_whole(
+                                    im_str!("Frame"),
+                                    &mut self.new_state.on_expire.frame,
+                                );
                             });
-                        }
 
-                        let cd = self.character_data.borrow();
-                        let entry = cd.state_graphics_map.get(&self.path.state).unwrap();
-                        res.set_duration(cd.graphics[entry].duration());
+                            imgui::TabItem::new(im_str!("Spawners##State")).build(ui, || {
+                                self.new_state.spawns.inspect_mut(
+                                    "spawners",
+                                    &mut self.spawner_info_inspect_state,
+                                    ui,
+                                );
+                            });
 
-                        self.ui_data.draw_header(ui, &state_list, &mut res);
+                            imgui::TabItem::new(im_str!("Flags")).build(ui, || {
+                                self.new_state.flags.inspect_mut(
+                                    "flags",
+                                    &mut self.flags_state,
+                                    ui,
+                                );
+                            });
+                            imgui::TabItem::new(im_str!("Cancels")).build(ui, || {
+                                let id = ui.push_id("Cancels");
+                                let ui_state = &mut self.current_cancel_set_ui;
+
+                                timeline::inspect::inspect_mut_custom(
+                                    &mut self.new_state.cancels,
+                                    "cancels",
+                                    &mut self.cancels_state,
+                                    ui,
+                                    |_, data| {
+                                        ui.separator();
+                                        imgui::ChildWindow::new(im_str!("child frame"))
+                                            .size([0.0, 0.0])
+                                            .build(ui, || {
+                                                ui_state.draw_ui(ui, data);
+                                            });
+                                    },
+                                );
+
+                                id.pop(ui);
+                            });
+                            imgui::TabItem::new(im_str!("Hitboxes")).build(ui, || {
+                                self.new_state.hitboxes.inspect_mut(
+                                    "hitboxes",
+                                    &mut self.hitbox_state,
+                                    ui,
+                                );
+                            });
+                        });
                     });
 
                 imgui::Window::new(im_str!("Playback"))
                     .size([300.0, 215.0], Condition::Once)
+                    .movable(false)
+                    .resizable(false)
+                    .collapsible(false)
                     .position([0.0, 505.0], Condition::Once)
                     .build(ui, || {
-                        let resource = self.resource.borrow();
-                        if resource.duration() > 0 {
+                        if self.new_state.duration() > 0 {
                             if ui
                                 .slider_whole(
                                     im_str!("Frame"),
                                     &mut self.frame,
                                     0,
-                                    resource.duration() - 1,
+                                    self.new_state.duration() - 1,
                                 )
                                 .unwrap_or(false)
                             {
@@ -167,70 +214,10 @@ impl AppState for StateEditor {
                             .build(ui, &mut self.draw_mode.hitbox_alpha);
                     });
 
-                imgui::Window::new(im_str!("Spawners##State"))
-                    .size([300.0, 420.0], Condition::Once)
-                    .position([300.0, 283.0], Condition::Once)
-                    .collapsed(true, Condition::Once)
-                    .build(ui, || {
-                        self.ui_data
-                            .draw_spawner_editor(ui, &mut self.resource.borrow_mut().spawns);
-                    });
-                imgui::Window::new(im_str!("Sounds##State"))
-                    .size([300.0, 400.0], Condition::Once)
-                    .position([300.0, 323.0], Condition::Once)
-                    .collapsed(true, Condition::Once)
-                    .build(ui, || {
-                        self.ui_data.draw_sounds_editor(
-                            ui,
-                            &sounds_list,
-                            &mut self.resource.borrow_mut().sounds,
-                        );
-                    });
-                imgui::Window::new(im_str!("Flags"))
-                    .size([300.0, 420.0], Condition::Once)
-                    .position([600.0, 283.0], Condition::Once)
-                    .build(ui, || {
-                        self.ui_data
-                            .draw_flags_editor(ui, &mut self.resource.borrow_mut().flags);
-                    });
-                imgui::Window::new(im_str!("Cancels"))
-                    .size([300.0, 420.0], Condition::Once)
-                    .position([900.0, 283.0], Condition::Once)
-                    .build(ui, || {
-                        self.ui_data
-                            .draw_cancels_editor(ui, &mut self.resource.borrow_mut().cancels);
-                    });
-                imgui::Window::new(im_str!("Hitboxes"))
-                    .size([300.0, 700.0], Condition::Once)
-                    .position([1200.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        self.ui_data.draw_hitbox_editor(
-                            ui,
-                            &mut self.resource.borrow_mut().hitboxes,
-                            &attack_ids,
-                        );
-                    });
-                imgui::Window::new(im_str!("Animation"))
-                    .size([300.0, 263.0], Condition::Always)
-                    .position([300.0, 20.0], Condition::Always)
-                    .resizable(false)
-                    .movable(false)
-                    .collapsible(false)
-                    .build(ui, || {});
-
-                imgui::Window::new(im_str!("Current Cancels"))
-                    .size([300.0, 263.0], Condition::Once)
-                    .position([900.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        let res = self.resource.borrow();
-                        let (_, data) = res.cancels.get(self.frame);
-                        CancelSetUi::draw_display_ui(ui, data);
-                    });
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("State Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            *self.resource.borrow_mut() = State::new();
-                            self.ui_data = StateUi::new();
+                            self.new_state = self.character_data.borrow().states[&self.id].clone();
                         }
                         if imgui::MenuItem::new(im_str!("Save to file")).build(ui) {
                             if let Ok(nfd::Response::Okay(path)) =
@@ -238,7 +225,7 @@ impl AppState for StateEditor {
                             {
                                 let mut path = PathBuf::from(path);
                                 path.set_extension("json");
-                                State::save(&self.resource.borrow(), path);
+                                State::save(&self.new_state, path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
@@ -246,16 +233,16 @@ impl AppState for StateEditor {
                                 nfd::open_file_dialog(Some("json"), None)
                             {
                                 let state = State::load_from_json(PathBuf::from(path));
-                                *self.resource.borrow_mut() = state;
-                                self.ui_data = StateUi::new();
+                                self.new_state = state;
                             }
                         }
                         ui.separator();
 
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
-                            let mut overwrite_target = self.path.get_from_mut().unwrap();
-                            *overwrite_target =
-                                std::mem::replace(&mut self.resource.borrow_mut(), State::new());
+                            self.character_data
+                                .borrow_mut()
+                                .states
+                                .insert(self.id, self.new_state.clone());
                             self.transition = Transition::Pop;
                         }
                         if imgui::MenuItem::new(im_str!("Back without saving")).build(ui) {
@@ -265,7 +252,7 @@ impl AppState for StateEditor {
                 });
             })
             .render(ctx);
-        let animation_window_center = Matrix4::new_translation(&Vec3::new(450.0, 270.0, 0.0));
+        let animation_window_center = Matrix4::new_translation(&Vec3::new(150.0, 270.0, 0.0));
         if self.draw_mode.show_axes {
             graphics::set_transform(ctx, animation_window_center);
             graphics::apply_transformations(ctx)?;
@@ -285,12 +272,10 @@ impl AppState for StateEditor {
             graphics::draw(ctx, &y_axis, DrawParam::default())?;
         }
 
-        let resource = self.resource.borrow();
-
         let offset = {
             let mut offset = Vec3::zeros();
 
-            let (_, boxes) = resource.hitboxes.get(self.frame);
+            let (_, boxes) = self.new_state.hitboxes.get(self.frame);
             let recenter = boxes.collision.collision_graphic_recenter();
             offset.x -= recenter.x;
             offset.y -= recenter.y;
@@ -306,7 +291,7 @@ impl AppState for StateEditor {
 
             if self.draw_mode.debug_animation {
                 let pc = self.character_data.borrow();
-                pc.graphics[&pc.state_graphics_map[&self.path.state]].draw_at_time_debug(
+                pc.graphics[&pc.state_graphics_map[&self.id]].draw_at_time_debug(
                     ctx,
                     assets,
                     self.frame,
@@ -315,14 +300,14 @@ impl AppState for StateEditor {
                 )?;
             } else {
                 let pc = self.character_data.borrow();
-                pc.graphics[&pc.state_graphics_map[&self.path.state]]
+                pc.graphics[&pc.state_graphics_map[&self.id]]
                     .draw_at_time(ctx, assets, self.frame, offset)?;
             }
         }
 
         let offset = {
             let mut offset = Vec3::zeros();
-            let (_, boxes) = resource.hitboxes.get(self.frame);
+            let (_, boxes) = self.new_state.hitboxes.get(self.frame);
             offset.x -= boxes.collision.center.x.into_graphical();
             offset.y -= boxes.collision.half_size.y.into_graphical()
                 - boxes.collision.center.y.into_graphical();
@@ -330,7 +315,7 @@ impl AppState for StateEditor {
             offset
         };
         let offset = animation_window_center * Matrix4::new_translation(&offset);
-        let (_, boxes) = resource.hitboxes.get(self.frame);
+        let (_, boxes) = self.new_state.hitboxes.get(self.frame);
         boxes.collision.draw(
             ctx,
             offset,
@@ -339,7 +324,7 @@ impl AppState for StateEditor {
 
         let offset = {
             let mut offset = Vec3::zeros();
-            let (_, boxes) = resource.hitboxes.get(self.frame);
+            let (_, boxes) = self.new_state.hitboxes.get(self.frame);
             offset.y -= boxes.collision.half_size.y.into_graphical();
 
             offset
@@ -372,7 +357,8 @@ impl AppState for StateEditor {
         };
         graphics::set_transform(ctx, offset);
         graphics::apply_transformations(ctx)?;
-        for item in resource
+        for item in self
+            .new_state
             .spawns
             .iter()
             .filter(|item| item.frame == self.frame)
@@ -389,7 +375,7 @@ impl AppState for StateEditor {
             draw_cross(ctx, offset)?;
         }
 
-        let (_, boxes) = resource.hitboxes.get(self.frame);
+        let (_, boxes) = self.new_state.hitboxes.get(self.frame);
         for hurtbox in boxes.hurtbox.iter() {
             hurtbox.draw(
                 ctx,
@@ -411,23 +397,21 @@ impl AppState for StateEditor {
     }
 }
 
-impl StateEditor {
+impl<C: Character> TypedStateEditor<C> {
     pub fn new(
-        character_data: Rc<RefCell<PlayerCharacter>>,
+        character_data: Rc<RefCell<Data<C>>>,
+        id: C::State,
         assets: Rc<RefCell<Assets>>,
-        path: StateResource,
-    ) -> Option<Self> {
-        let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
-        Some(Self {
-            inspect_state: Default::default(),
+    ) -> Self {
+        let new_state = character_data.borrow().states[&id].clone();
+        Self {
+            new_state,
             character_data,
             assets,
-            path,
-            resource,
+            id,
             transition: Transition::None,
             frame: 0,
             is_playing: true,
-            ui_data: StateUi::new(),
             draw_mode: DrawMode {
                 collision_alpha: 0.15,
                 hurtbox_alpha: 0.15,
@@ -435,6 +419,12 @@ impl StateEditor {
                 debug_animation: true,
                 show_axes: true,
             },
-        })
+            graphic_inspect_state: Default::default(),
+            spawner_info_inspect_state: Default::default(),
+            flags_state: Default::default(),
+            current_cancel_set_ui: Default::default(),
+            cancels_state: Default::default(),
+            hitbox_state: Default::default(),
+        }
     }
 }

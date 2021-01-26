@@ -2,6 +2,7 @@ use crate::character::state::components::{CancelSet, CommandType};
 use crate::imgui_extra::UiExtensions;
 use imgui::*;
 
+#[derive(Default)]
 pub struct CancelSetUi {}
 
 const GREEN: [f32; 4] = [0.2, 1.0, 0.2, 1.0];
@@ -9,9 +10,6 @@ const BLUE: [f32; 4] = [0.7, 0.7, 1.0, 1.0];
 const RED: [f32; 4] = [1.0, 0.2, 0.2, 1.0];
 
 impl CancelSetUi {
-    pub fn new() -> CancelSetUi {
-        CancelSetUi {}
-    }
     pub fn draw_ui(&mut self, ui: &Ui<'_>, data: &mut CancelSet) {
         for move_type in CommandType::all() {
             ui.text(&im_str!("{}:", move_type));
@@ -32,29 +30,5 @@ impl CancelSetUi {
         ui.separator();
 
         ui.checkbox(im_str!("Self Gatling"), &mut data.self_gatling);
-    }
-    pub fn draw_display_ui(ui: &Ui<'_>, data: &CancelSet) {
-        ui.text(im_str!("Always"));
-        let token = ui.push_style_color(StyleColor::Text, GREEN);
-        for move_type in data.always.iter() {
-            ui.text(im_str!("{}", move_type));
-        }
-        token.pop(ui);
-
-        ui.separator();
-        ui.text(im_str!("On Block"));
-        let token = ui.push_style_color(StyleColor::Text, BLUE);
-        for move_type in data.block.iter() {
-            ui.text(im_str!("{}", move_type));
-        }
-        token.pop(ui);
-
-        ui.separator();
-        ui.text(im_str!("On Hit"));
-        let token = ui.push_style_color(StyleColor::Text, RED);
-        for move_type in data.hit.iter() {
-            ui.text(im_str!("{}", move_type));
-        }
-        token.pop(ui);
     }
 }

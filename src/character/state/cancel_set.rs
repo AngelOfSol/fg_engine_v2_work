@@ -179,14 +179,3 @@ impl std::fmt::Debug for CancelSet {
         builder.finish()
     }
 }
-
-impl CancelSet {
-    pub fn new() -> Self {
-        Self {
-            always: HashSet::new(),
-            hit: HashSet::new(),
-            block: HashSet::new(),
-            self_gatling: false,
-        }
-    }
-}

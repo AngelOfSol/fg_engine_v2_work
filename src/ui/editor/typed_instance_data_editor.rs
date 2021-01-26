@@ -1,9 +1,11 @@
+use crate::assets::Assets;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
+    game_object::properties::TryAsRef,
     graphics::animation_group::AnimationGroup,
+    roster::character::{data::Data, typedefs::Character},
 };
-use crate::{assets::Assets, character::PlayerCharacter};
 use crate::{game_match::load_global_graphics, game_object::properties::PropertyType};
 use crate::{
     game_object::properties::ObjectHitboxSet,
@@ -19,15 +21,17 @@ use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
 use strum::IntoEnumIterator;
 
+use super::typed_character_editor::EDITOR_BACKGROUND;
+
 enum Status {
     DoneAndQuit,
     NotDone,
 }
 
-pub struct InstanceDataEditor {
+pub struct TypedInstanceDataEditor<C: Character> {
     frame: usize,
-    path: String,
-    resource: Rc<RefCell<PlayerCharacter>>,
+    path: C::ObjectData,
+    resource: Rc<RefCell<Data<C>>>,
     done: Status,
     selected_property: PropertyType,
     transition: Transition,
@@ -36,7 +40,10 @@ pub struct InstanceDataEditor {
     inspect_state: <PropertyType as Inspect>::State,
 }
 
-impl AppState for InstanceDataEditor {
+impl<C: Character> AppState for TypedInstanceDataEditor<C>
+where
+    PropertyType: TryAsRef<C::Graphic>,
+{
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
@@ -57,23 +64,28 @@ impl AppState for InstanceDataEditor {
         ctx: &mut Context,
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, EDITOR_BACKGROUND.into());
 
         imgui
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([600.0, 700.0], Condition::Once)
-                    .position([300.0, 20.0], Condition::Once)
+                    .size([1620.0, 1060.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .draw_background(true)
+                    .movable(false)
+                    .resizable(false)
+                    .collapsible(false)
+                    .title_bar(false)
                     .build(ui, || {
-                        let path = self.path.clone();
+                        let path = self.path;
 
                         let available_properties: Vec<_> = {
                             let pc = self.resource.borrow();
                             PropertyType::iter()
                                 .filter(|item| {
                                     pc.instance
-                                        .iter_key(path.clone())
+                                        .iter_key(path)
                                         .find(|(_, value)| value.same_type_as(item))
                                         .is_none()
                                 })
@@ -106,14 +118,14 @@ impl AppState for InstanceDataEditor {
                             ui.same_line(0.0);
                             if ui.small_button(im_str!("Add")) {
                                 pc.instance
-                                    .insert_any(self.path.clone(), self.selected_property.clone());
+                                    .insert_any(self.path, self.selected_property.clone());
                             }
                             ui.separator();
                         }
                         let mut to_remove = None;
                         TabBar::new(im_str!("Tabs")).build(ui, || {
                             let mut pc = self.resource.borrow_mut();
-                            for (type_name, value) in pc.instance.iter_key_mut(self.path.clone()) {
+                            for (type_name, value) in pc.instance.iter_key_mut(self.path) {
                                 let token = TabItem::new(&im_str!("{}", type_name)).begin(ui);
                                 if let Some(token) = token {
                                     value.inspect_mut("data", &mut self.inspect_state, ui);
@@ -132,7 +144,7 @@ impl AppState for InstanceDataEditor {
                         let mut pc = self.resource.borrow_mut();
 
                         if let Some(to_remove) = to_remove {
-                            pc.instance.remove_any(self.path.clone(), to_remove);
+                            pc.instance.remove_any(self.path, to_remove);
                         }
                     });
 
@@ -185,12 +197,8 @@ impl AppState for InstanceDataEditor {
         graphics::set_transform(ctx, Matrix4::identity());
         graphics::apply_transformations(ctx)?;
 
-        if let Some(animation) = resource
-            .instance
-            .get::<crate::roster::yuyuko::Graphic>(self.path.clone())
-        {
-            let key = animation.file_name();
-            let resource = resource.graphics.get(&key).unwrap();
+        if let Some(key) = resource.instance.get::<C::Graphic>(self.path) {
+            let resource = resource.graphics.get(key).unwrap();
             if resource.duration() > 0 {
                 let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
@@ -202,7 +210,7 @@ impl AppState for InstanceDataEditor {
                 )?;
             }
         }
-        if let Some(animation) = resource.instance.get::<GlobalGraphic>(self.path.clone()) {
+        if let Some(animation) = resource.instance.get::<GlobalGraphic>(self.path) {
             let resource = self.globals.get(animation).unwrap();
             if resource.duration() > 0 {
                 let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
@@ -216,7 +224,7 @@ impl AppState for InstanceDataEditor {
             }
         }
 
-        if let Some(boxes) = resource.instance.get::<ObjectHitboxSet>(self.path.clone()) {
+        if let Some(boxes) = resource.instance.get::<ObjectHitboxSet>(self.path) {
             let (_, boxes) = boxes.get(self.frame % boxes.duration());
             for hitbox in boxes.boxes.iter() {
                 hitbox.draw(ctx, offset, Color::new(1.0, 0.0, 0.0, 0.5))?;
@@ -229,14 +237,13 @@ impl AppState for InstanceDataEditor {
     }
 }
 
-impl InstanceDataEditor {
+impl<C: Character> TypedInstanceDataEditor<C> {
     pub fn new(
         assets: Rc<RefCell<Assets>>,
-        resource: Rc<RefCell<PlayerCharacter>>,
-
-        path: String,
-    ) -> Option<Self> {
-        Some(Self {
+        resource: Rc<RefCell<Data<C>>>,
+        path: C::ObjectData,
+    ) -> Self {
+        Self {
             inspect_state: Default::default(),
             assets,
             path,
@@ -246,6 +253,6 @@ impl InstanceDataEditor {
             transition: Transition::None,
             selected_property: Default::default(),
             globals: HashMap::new(),
-        })
+        }
     }
 }

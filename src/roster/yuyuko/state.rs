@@ -1,6 +1,6 @@
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
-use strum::Display;
+use strum::{Display, EnumIter};
 
 #[derive(
     Clone,
@@ -15,6 +15,7 @@ use strum::Display;
     Inspect,
     PartialOrd,
     Ord,
+    EnumIter,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum State {

@@ -9,7 +9,11 @@ use inspect_design::{
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use state::StateConsts;
-use std::{fmt::Debug, hash::Hash};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+};
+use strum::IntoEnumIterator;
 pub trait Id:
     Hash
     + PartialEq
@@ -22,6 +26,10 @@ pub trait Id:
     + Inspect
     + InspectMut
     + Default
+    + Display
+    + IntoEnumIterator
+    + PartialOrd
+    + Ord
 {
 }
 
@@ -37,6 +45,10 @@ impl<T> Id for T where
         + Inspect
         + InspectMut
         + Default
+        + Display
+        + IntoEnumIterator
+        + PartialOrd
+        + Ord
 {
 }
 
@@ -51,7 +63,7 @@ pub trait Character: Sized + Default + Clone + 'static {
     type Graphic: Id;
     type ObjectData: Id;
     type Command: Id + Default;
-    type StaticData;
+    type StaticData: Serialize + DeserializeOwned + Default;
 
     fn round_start_reset(&mut self, data: &Data<Self>);
 }

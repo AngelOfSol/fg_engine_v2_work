@@ -158,10 +158,6 @@ where
     }
 }
 
-pub type EditorCharacterState = State<String, String, String>;
-fn default_move_type() -> StateType {
-    StateType::Idle
-}
 impl<
         Id: Serialize + DeserializeOwned + Eq + Hash + Default,
         AttackId: Serialize + DeserializeOwned + Default,
@@ -174,19 +170,5 @@ impl<
 
     pub fn save(state: &Self, path: PathBuf) {
         file::save(state, path)
-    }
-}
-
-impl EditorCharacterState {
-    pub fn new() -> Self {
-        Self {
-            flags: Timeline::with_data(vec![(0, Flags::new())], 1).unwrap(),
-            cancels: Timeline::with_data(vec![(0, CancelSet::new())], 1).unwrap(),
-            hitboxes: Timeline::with_data(vec![(0, HitboxSet::new())], 1).unwrap(),
-            state_type: default_move_type(),
-            on_expire: OnExpire::default(),
-            spawns: Vec::new(),
-            sounds: Vec::new(),
-        }
     }
 }

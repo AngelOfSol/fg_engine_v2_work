@@ -23,7 +23,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
-use strum::IntoEnumIterator;
 use strum::{Display, EnumCount, EnumIter};
 use yuyuko::YuyukoType;
 
@@ -49,22 +48,6 @@ impl Default for RosterCharacter {
 }
 
 impl RosterCharacter {
-    pub fn sound_name_iter(self) -> impl Iterator<Item = String> {
-        match self {
-            RosterCharacter::Yuyuko => yuyuko::Sound::iter().map(|item| item.to_string()),
-        }
-    }
-    pub fn data_id_iter(self) -> impl Iterator<Item = String> {
-        match self {
-            RosterCharacter::Yuyuko => yuyuko::ObjectData::iter().map(|item| item.to_string()),
-        }
-    }
-    pub fn graphic_name_iter(self) -> impl Iterator<Item = String> {
-        match self {
-            RosterCharacter::Yuyuko => yuyuko::Graphic::iter().map(|item| item.file_name()),
-        }
-    }
-
     pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
         match self {
             RosterCharacter::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(

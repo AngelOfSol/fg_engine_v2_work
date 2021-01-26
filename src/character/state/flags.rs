@@ -24,7 +24,7 @@ impl Hittable {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect, Default)]
+#[derive(Debug, Clone, Deserialize, PartialEq, Serialize, Inspect)]
 pub struct Flags {
     pub melee: Hittable,
     pub bullet: Hittable,
@@ -84,8 +84,8 @@ pub struct MovementData {
     pub pos: Vec2,
 }
 
-impl Flags {
-    pub fn new() -> Self {
+impl Default for Flags {
+    fn default() -> Self {
         Self {
             melee: Hittable::Hit,
             bullet: Hittable::Hit,

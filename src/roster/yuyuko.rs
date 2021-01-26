@@ -7,7 +7,6 @@ mod state;
 
 use super::{
     character::{
-        data::Data,
         draw::UiContext,
         typedefs::{state::StateConsts, Character, Timed},
         Player,
@@ -33,10 +32,6 @@ use hecs::Entity;
 use rodio::Device;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
-use strum::IntoEnumIterator;
 
 pub use attacks::Attack;
 pub use commands::Command;
@@ -59,49 +54,6 @@ impl Character for YuyukoType {
 
     fn round_start_reset(&mut self, _data: &super::character::data::Data<Self>) {}
 }
-
-impl Data<YuyukoType> {
-    pub fn new_with_path(
-        ctx: &mut Context,
-        assets: &mut Assets,
-        mut path: PathBuf,
-    ) -> GameResult<Self> {
-        let file = File::open(&path).unwrap();
-        let buf_read = BufReader::new(file);
-        let mut character = serde_json::from_reader::<_, Self>(buf_read).unwrap();
-        let name = path.file_stem().unwrap().to_str().unwrap().to_owned();
-        path.pop();
-        path.push(&name);
-
-        path.push("sounds");
-        for sound in Sound::iter() {
-            path.push(format!("{}.mp3", sound));
-            use rodio::source::Source;
-            let source =
-                rodio::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(&path)?))
-                    .unwrap();
-            let source = rodio::buffer::SamplesBuffer::new(
-                source.channels(),
-                source.sample_rate(),
-                source.convert_samples().collect::<Vec<_>>(),
-            )
-            .buffered();
-
-            character.sounds.data.insert(sound, source);
-            path.pop();
-        }
-
-        path.pop();
-        path.push("graphics");
-        for (name, animation_group) in character.graphics.iter_mut() {
-            path.push(name.file_name());
-            AnimationGroup::load(ctx, assets, animation_group, path.clone())?;
-            path.pop();
-        }
-        Ok(character)
-    }
-}
-
 impl StateConsts for State {
     const GAME_START: Self = Self::RoundStart;
     const ROUND_START: Self = Self::Stand;

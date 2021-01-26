@@ -1,9 +1,15 @@
-use super::character_editor::{AttackResource, ItemResource};
-use crate::app_state::{AppContext, AppState, Transition};
+use std::cell::RefCell;
+
+use super::typed_character_editor::EDITOR_BACKGROUND;
 use crate::character::components::AttackInfo;
-use crate::ui::character::components::AttackInfoUi;
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    roster::character::{data::Data, typedefs::Character},
+};
 use ggez::{graphics, Context, GameResult};
 use imgui::*;
+use inspect_design::traits::{Inspect, InspectMut};
+use std::rc::Rc;
 
 enum Status {
     DoneAndSave,
@@ -11,15 +17,16 @@ enum Status {
     NotDone,
 }
 
-pub struct AttackInfoEditor {
-    path: AttackResource,
+pub struct TypedAttackEditor<C: Character> {
+    path: C::Attack,
     frame: usize,
     resource: AttackInfo,
-    ui_data: AttackInfoUi,
+    character_data: Rc<RefCell<Data<C>>>,
+    ui_data: <AttackInfo as Inspect>::State,
     done: Status,
     transition: Transition,
 }
-impl AppState for AttackInfoEditor {
+impl<C: Character> AppState for TypedAttackEditor<C> {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
@@ -28,8 +35,8 @@ impl AppState for AttackInfoEditor {
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
-                let mut overwrite_target = self.path.get_from_mut().unwrap();
-                *overwrite_target = std::mem::take(&mut self.resource);
+                let mut cd = self.character_data.borrow_mut();
+                cd.attacks.insert(self.path, self.resource.clone());
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),
@@ -43,23 +50,27 @@ impl AppState for AttackInfoEditor {
         ctx: &mut Context,
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
-        let editor_height = 526.0;
+        graphics::clear(ctx, EDITOR_BACKGROUND.into());
         imgui
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
+                    .size([1920.0, 1060.0], Condition::Always)
+                    .position([0.0, 20.0], Condition::Always)
+                    .draw_background(true)
+                    .movable(false)
+                    .resizable(false)
+                    .collapsible(false)
+                    .title_bar(false)
                     .build(ui, || {
-                        self.ui_data.draw_ui(&ui, &mut self.resource);
+                        self.resource.inspect_mut("attack", &mut self.ui_data, ui);
                     });
 
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Attack Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
-                            self.resource = AttackInfo::default();
-                            self.ui_data = AttackInfoUi::new();
+                            self.resource = Default::default();
+                            self.ui_data = Default::default();
                         }
                         ui.separator();
                         if imgui::MenuItem::new(im_str!("Save and back")).build(ui) {
@@ -77,16 +88,17 @@ impl AppState for AttackInfoEditor {
     }
 }
 
-impl AttackInfoEditor {
-    pub fn new(path: AttackResource) -> Option<Self> {
-        let resource = path.get_from()?.clone();
-        Some(Self {
+impl<C: Character> TypedAttackEditor<C> {
+    pub fn new(path: C::Attack, character_data: Rc<RefCell<Data<C>>>) -> Self {
+        let resource = character_data.borrow().attacks[&path].clone();
+        Self {
             path,
             frame: 0,
             resource,
-            ui_data: AttackInfoUi::new(),
+            character_data,
+            ui_data: Default::default(),
             done: Status::NotDone,
             transition: Transition::None,
-        })
+        }
     }
 }

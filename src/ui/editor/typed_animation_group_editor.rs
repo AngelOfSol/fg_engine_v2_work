@@ -1,14 +1,15 @@
-use super::character_editor::{AnimationGroupResource, ItemResource};
-use crate::graphics::animation_group::AnimationGroup;
-use crate::typedefs::graphics::{Matrix4, Vec3};
-use crate::ui::editor::AnimationEditor;
+use super::{
+    typed_animation_editor::TypedAnimationEditor, typed_character_editor::EDITOR_BACKGROUND,
+};
 use crate::{
     app_state::{AppContext, AppState, Transition},
     ui::graphics::animations::AnimationsUi,
 };
+use crate::{assets::Assets, graphics::keyframe::Modifiers};
+use crate::{graphics::animation_group::AnimationGroup, roster::character::typedefs::Character};
 use crate::{
-    assets::{Assets, ValueAlpha},
-    graphics::keyframe::Modifiers,
+    roster::character::data::Data,
+    typedefs::graphics::{Matrix4, Vec3},
 };
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
@@ -25,10 +26,11 @@ enum Status {
     NotDone,
 }
 
-pub struct AnimationGroupEditor {
+pub struct TypedAnimationGroupEditor<C: Character> {
     frame: usize,
-    path: Box<dyn ItemResource<Output = AnimationGroup>>,
-    resource: Rc<RefCell<AnimationGroup>>,
+    path: C::Graphic,
+    resource: AnimationGroup,
+    character_data: Rc<RefCell<Data<C>>>,
     ui_data: AnimationsUi,
     done: Status,
     transition: Transition,
@@ -36,20 +38,21 @@ pub struct AnimationGroupEditor {
     modifiers_state: <Modifiers as Inspect>::State,
 }
 
-impl AppState for AnimationGroupEditor {
+impl<C: Character> AppState for TypedAnimationGroupEditor<C> {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
-            self.resource.borrow_mut().fix_durations();
+            self.resource.fix_durations();
         }
 
         match self.done {
             Status::NotDone => Ok(std::mem::replace(&mut self.transition, Transition::None)),
             Status::DoneAndSave => {
-                self.resource.borrow_mut().fix_durations();
-                let mut overwrite_target = self.path.get_from_mut().unwrap();
-                *overwrite_target =
-                    std::mem::replace(&mut self.resource.borrow_mut(), AnimationGroup::new());
+                self.resource.fix_durations();
+                self.character_data
+                    .borrow_mut()
+                    .graphics
+                    .insert(self.path, self.resource.clone());
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),
@@ -64,60 +67,56 @@ impl AppState for AnimationGroupEditor {
         ctx: &mut Context,
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
-        graphics::clear(ctx, graphics::BLACK);
+        graphics::clear(ctx, EDITOR_BACKGROUND.into());
 
-        let editor_height = 526.0;
-        let dim = [editor_height / 2.0, editor_height / 2.0];
-        let pos = [300.0, 20.0];
         imgui
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        let edit_change = self.ui_data.draw_ui(
-                            ctx,
-                            &mut self.assets.borrow_mut(),
-                            &ui,
-                            &mut self.resource.borrow_mut().animations,
-                        );
-                        if let Some(name) = &edit_change {
-                            self.transition = Transition::Push(Box::new(
-                                AnimationEditor::new(
-                                    self.assets.clone(),
-                                    Box::new(AnimationGroupResource {
-                                        animation: name.clone(),
-                                        data: self.resource.clone(),
-                                    }),
-                                )
-                                .unwrap(),
-                            ));
-                        }
-                    });
-                imgui::Window::new(im_str!("Modifiers"))
-                    .size([300.0, editor_height], Condition::Once)
-                    .position([600.0, 20.0], Condition::Once)
-                    .build(ui, || {
-                        self.resource.borrow_mut().modifiers.inspect_mut(
-                            "modifiers",
-                            &mut self.modifiers_state,
-                            ui,
-                        );
-                    });
-
-                imgui::Window::new(im_str!("Animation"))
-                    .size(dim, Condition::Always)
-                    .position(pos, Condition::Always)
-                    .resizable(false)
+                    .size([1620.0, 1060.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .draw_background(true)
                     .movable(false)
+                    .resizable(false)
                     .collapsible(false)
-                    .build(ui, || {});
+                    .title_bar(false)
+                    .build(ui, || {
+                        imgui::TabBar::new(im_str!("Main")).build(ui, || {
+                            imgui::TabItem::new(im_str!("Animations")).build(ui, || {
+                                let edit_change = self.ui_data.draw_ui(
+                                    ctx,
+                                    &mut self.assets.borrow_mut(),
+                                    &ui,
+                                    &mut self.resource.animations,
+                                );
+                                if let Some(name) = edit_change {
+                                    self.transition =
+                                        Transition::Push(Box::new(TypedAnimationEditor::new(
+                                            self.assets.clone(),
+                                            self.character_data.clone(),
+                                            self.path,
+                                            self.resource
+                                                .animations
+                                                .iter()
+                                                .position(|item| item.name == name)
+                                                .unwrap(),
+                                        )));
+                                }
+                            });
+                            imgui::TabItem::new(im_str!("Modifiers")).build(ui, || {
+                                self.resource.modifiers.inspect_mut(
+                                    "modifiers",
+                                    &mut self.modifiers_state,
+                                    ui,
+                                );
+                            });
+                        });
+                    });
 
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Particle Info Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("New")).build(ui) {
-                            *self.resource.borrow_mut() = AnimationGroup::new();
+                            self.resource = AnimationGroup::new();
                             self.ui_data = AnimationsUi::new();
                         }
                         ui.separator();
@@ -129,12 +128,7 @@ impl AppState for AnimationGroupEditor {
                                 path.set_extension("json");
                                 let assets = &mut self.assets.borrow_mut();
                                 // TODO: use this error
-                                let _ = AnimationGroup::save(
-                                    ctx,
-                                    assets,
-                                    &self.resource.borrow(),
-                                    path,
-                                );
+                                let _ = AnimationGroup::save(ctx, assets, &self.resource, path);
                             }
                         }
                         if imgui::MenuItem::new(im_str!("Load from file")).build(ui) {
@@ -148,7 +142,7 @@ impl AppState for AnimationGroupEditor {
                                     PathBuf::from(path),
                                 );
                                 if let Ok(animation_group) = animation_group {
-                                    *self.resource.borrow_mut() = animation_group;
+                                    self.resource = animation_group;
                                     self.ui_data = AnimationsUi::new();
                                 } else if let Err(err) = animation_group {
                                     dbg!(err);
@@ -197,25 +191,19 @@ impl AppState for AnimationGroupEditor {
         };
 
         // normal bullet
-        let pos = (300.0, 20.0);
+        let pos = (0.0, 20.0);
         let (x, y) = pos;
         let origin = (x + width / 2.0, y + height / 2.0);
         let offset = Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0));
 
-        let resource = self.resource.borrow();
-
-        if resource.duration() > 0 {
+        if self.resource.duration() > 0 {
             let _lock = graphics::use_shader(ctx, &self.assets.borrow().shader);
 
-            resource.draw_at_time_debug(
+            self.resource.draw_at_time(
                 ctx,
                 &self.assets.borrow(),
-                self.frame % resource.duration(),
+                self.frame % self.resource.duration(),
                 offset,
-                ValueAlpha {
-                    alpha: 1.0,
-                    value: 1.0,
-                },
             )?;
         }
 
@@ -226,21 +214,23 @@ impl AppState for AnimationGroupEditor {
     }
 }
 
-impl AnimationGroupEditor {
+impl<C: Character> TypedAnimationGroupEditor<C> {
     pub fn new(
         assets: Rc<RefCell<Assets>>,
-        path: Box<dyn ItemResource<Output = AnimationGroup>>,
-    ) -> Option<Self> {
-        let resource = Rc::new(RefCell::new(path.get_from()?.clone()));
-        Some(Self {
+        character_data: Rc<RefCell<Data<C>>>,
+        path: C::Graphic,
+    ) -> Self {
+        let resource = character_data.borrow().graphics[&path].clone();
+        Self {
             assets,
             path,
             frame: 0,
             resource,
+            character_data,
             ui_data: AnimationsUi::new(),
             done: Status::NotDone,
             transition: Transition::None,
             modifiers_state: Default::default(),
-        })
+        }
     }
 }

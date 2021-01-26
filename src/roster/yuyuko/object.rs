@@ -9,7 +9,19 @@ use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};
 
 #[derive(
-    Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, EnumIter, Display, Inspect,
+    Debug,
+    Copy,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    EnumIter,
+    Display,
+    Inspect,
+    PartialOrd,
+    Ord,
 )]
 pub enum ObjectData {
     Butterfly,

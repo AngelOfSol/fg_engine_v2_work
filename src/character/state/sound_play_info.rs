@@ -8,13 +8,3 @@ pub struct SoundPlayInfo<SoundType> {
     pub channel: ChannelName,
     pub frame: usize,
 }
-
-impl<SoundType> SoundPlayInfo<SoundType> {
-    pub fn new(name: SoundPath<SoundType>) -> Self {
-        Self {
-            name,
-            channel: ChannelName::System,
-            frame: 0,
-        }
-    }
-}

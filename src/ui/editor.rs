@@ -1,14 +1,9 @@
-mod animation_editor;
-mod animation_group_editor;
-mod attack_editor;
-mod character_editor;
-mod instance_data_editor;
 mod main_menu;
-mod state_editor;
+pub mod typed_animation_editor;
+pub mod typed_animation_group_editor;
+pub mod typed_attack_editor;
+pub mod typed_character_editor;
+pub mod typed_instance_data_editor;
+pub mod typed_state_editor;
 
-pub use animation_editor::AnimationEditor;
-pub use animation_group_editor::AnimationGroupEditor;
-pub use attack_editor::AttackInfoEditor;
-pub use character_editor::*;
 pub use main_menu::EditorMenu;
-pub use state_editor::StateEditor;

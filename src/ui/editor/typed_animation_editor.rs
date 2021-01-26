@@ -1,9 +1,14 @@
-use super::character_editor::ItemResource;
-use crate::app_state::{AppContext, AppState, Transition};
-use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::Animation;
 use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::graphics::animation::AnimationUi;
+use crate::{
+    app_state::{AppContext, AppState, Transition},
+    roster::character::typedefs::Character,
+};
+use crate::{
+    assets::{Assets, ValueAlpha},
+    roster::character::data::Data,
+};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -18,16 +23,18 @@ enum Status {
     NotDone,
 }
 
-pub struct AnimationEditor {
+pub struct TypedAnimationEditor<C: Character> {
     frame: usize,
     assets: Rc<RefCell<Assets>>,
-    path: Box<dyn ItemResource<Output = Animation>>,
+    path: C::Graphic,
+    character_data: Rc<RefCell<Data<C>>>,
+    index: usize,
     resource: Animation,
     ui_data: AnimationUi,
     done: Status,
 }
 
-impl AppState for AnimationEditor {
+impl<C: Character> AppState for TypedAnimationEditor<C> {
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             self.frame = self.frame.wrapping_add(1);
@@ -45,8 +52,12 @@ impl AppState for AnimationEditor {
         match std::mem::replace(&mut self.done, Status::NotDone) {
             Status::NotDone => Ok(Transition::None),
             Status::DoneAndSave => {
-                let mut overwrite_target = self.path.get_from_mut().unwrap();
-                *overwrite_target = std::mem::replace(&mut self.resource, Animation::new("empty"));
+                self.character_data
+                    .borrow_mut()
+                    .graphics
+                    .get_mut(&self.path)
+                    .unwrap()
+                    .animations[self.index] = self.resource.clone();
                 Ok(Transition::Pop)
             }
             Status::DoneAndQuit => Ok(Transition::Pop),
@@ -238,19 +249,23 @@ impl AppState for AnimationEditor {
     }
 }
 
-impl AnimationEditor {
+impl<C: Character> TypedAnimationEditor<C> {
     pub fn new(
         assets: Rc<RefCell<Assets>>,
-        path: Box<dyn ItemResource<Output = Animation>>,
-    ) -> Option<Self> {
-        let resource = path.get_from()?.clone();
-        Some(Self {
+        character_data: Rc<RefCell<Data<C>>>,
+        path: C::Graphic,
+        index: usize,
+    ) -> Self {
+        let resource = character_data.borrow().graphics[&path].animations[index].clone();
+        Self {
             frame: 0,
             assets,
             resource,
+            index,
+            character_data,
             path,
             ui_data: AnimationUi::new(),
             done: Status::NotDone,
-        })
+        }
     }
 }

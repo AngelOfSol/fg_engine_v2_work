@@ -3,8 +3,7 @@ use crate::assets::Assets;
 use ggez::error::GameError;
 use ggez::graphics;
 use ggez::{Context, GameResult};
-use image::png::PNGEncoder;
-use image::{ColorType, ImageBuffer, Rgba};
+use image::{png::PngEncoder, ColorType, ImageBuffer, Rgba};
 use std::fs::File;
 use std::io::{BufWriter, Read};
 use std::path::{Path, PathBuf};
@@ -21,7 +20,7 @@ fn load_image_data<P: AsRef<Path>>(
                 let mut buf = Vec::new();
                 let mut reader = std::fs::File::open(&path)?;
                 let _ = reader.read_to_end(&mut buf)?;
-                image::load_from_memory(&buf).unwrap().to_rgba()
+                image::load_from_memory(&buf).unwrap().to_rgba8()
             };
             let (width, height) = img.dimensions();
 
@@ -51,7 +50,7 @@ pub fn save(
     let image = sprite.image.as_ref().unwrap();
     let output = File::create(&path)?;
     let writer = BufWriter::new(output);
-    let png_writer = PNGEncoder::new(writer);
+    let png_writer = PngEncoder::new(writer);
 
     let mut image: ImageBuffer<Rgba<_>, _> = ImageBuffer::from_raw(
         u32::from(image.width()),

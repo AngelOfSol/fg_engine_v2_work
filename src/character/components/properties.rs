@@ -3,7 +3,7 @@ use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize, Clone, Inspect)]
+#[derive(Debug, Serialize, Deserialize, Clone, Inspect, Default)]
 pub struct Properties {
     pub health: i32,
     pub name: String,
@@ -23,17 +23,4 @@ fn default_max_air_actions() -> usize {
 }
 fn default_max_spirit_gauge() -> i32 {
     500
-}
-
-impl Properties {
-    pub fn new() -> Self {
-        Self {
-            health: 1,
-            name: "new_chara".to_owned(),
-
-            max_air_actions: default_max_air_actions(),
-            max_spirit_gauge: default_max_spirit_gauge(),
-            character: Default::default(),
-        }
-    }
 }

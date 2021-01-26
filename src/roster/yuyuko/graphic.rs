@@ -1,6 +1,8 @@
+use std::fmt::Formatter;
+
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
-use strum::{Display, EnumIter};
+use strum::EnumIter;
 
 #[derive(
     Debug,
@@ -12,7 +14,6 @@ use strum::{Display, EnumIter};
     Serialize,
     Deserialize,
     EnumIter,
-    Display,
     Inspect,
     PartialOrd,
     Ord,
@@ -95,5 +96,11 @@ impl Graphic {
             .unwrap()
             .trim_matches('\"')
             .to_owned()
+    }
+}
+
+impl std::fmt::Display for Graphic {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.file_name())
     }
 }

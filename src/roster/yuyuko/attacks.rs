@@ -1,8 +1,21 @@
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
+use strum::{Display, EnumIter};
 
 #[derive(
-    Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq, Inspect, PartialOrd, Ord,
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    Hash,
+    PartialEq,
+    Eq,
+    Inspect,
+    PartialOrd,
+    Ord,
+    Display,
+    EnumIter,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum Attack {

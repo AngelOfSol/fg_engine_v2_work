@@ -38,21 +38,6 @@ pub type Hitbox = GenericHitbox<Relative>;
 pub type PositionedHitbox = GenericHitbox<Absolute>;
 
 impl Hitbox {
-    pub fn new() -> Self {
-        Self {
-            center: Vec2::zeros(),
-            half_size: Vec2::new(1_00, 1_00),
-            _secret: std::marker::PhantomData,
-        }
-    }
-    pub fn with_half_size(half_size: Vec2) -> Self {
-        Self {
-            center: Vec2::zeros(),
-            half_size,
-            _secret: std::marker::PhantomData,
-        }
-    }
-
     pub fn with_collision_position(&self, position: Vec2) -> PositionedHitbox {
         PositionedHitbox {
             center: position,
