@@ -82,37 +82,18 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
             .frame()
             .run(|ui| {
                 imgui::Window::new(im_str!("Editor"))
-                    .size([300.0, editor_height], Condition::Once)
-                    .position([0.0, 20.0], Condition::Once)
+                    .size([1620.0, 1060.0], Condition::Always)
+                    .position([300.0, 20.0], Condition::Always)
+                    .draw_background(true)
+                    .movable(false)
+                    .resizable(false)
+                    .collapsible(false)
+                    .title_bar(false)
                     .build(ui, || {
                         let assets = &mut self.assets.borrow_mut();
                         editor_result = self.ui_data.draw_ui(&ui, ctx, assets, &mut self.resource);
                     });
 
-                if self.resource.frames.duration() > 0 {
-                    imgui::Window::new(im_str!("Animation"))
-                        .size(dim, Condition::Always)
-                        .position(pos, Condition::Always)
-                        .resizable(false)
-                        .movable(false)
-                        .collapsible(false)
-                        .build(ui, || {});
-                    imgui::Window::new(im_str!("Current Frame"))
-                        .size(dim, Condition::Always)
-                        .position([x + width, y], Condition::Always)
-                        .resizable(false)
-                        .movable(false)
-                        .collapsible(false)
-                        .build(ui, || {});
-
-                    imgui::Window::new(im_str!("Every Frame"))
-                        .size(dim, Condition::Always)
-                        .position([x, y + height], Condition::Always)
-                        .resizable(false)
-                        .movable(false)
-                        .collapsible(false)
-                        .build(ui, || {});
-                }
                 ui.main_menu_bar(|| {
                     ui.menu(im_str!("Animation Editor"), true, || {
                         if imgui::MenuItem::new(im_str!("Reset")).build(ui) {
@@ -156,8 +137,7 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
             .render(ctx);
         editor_result?;
 
-        let dim = (256.0, 256.0);
-        let (width, height) = dim;
+        let height = 256.0;
 
         let draw_cross = |ctx: &mut Context, origin: (f32, f32)| {
             let vertical = Mesh::new_line(
@@ -189,7 +169,7 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
         if self.resource.frames.duration() > 0 {
             {
                 // normal animation
-                let pos = (300.0, 20.0);
+                let pos = (0.0, 20.0);
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
 
@@ -210,26 +190,9 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
                 draw_cross(ctx, origin)?;
             }
 
-            {
-                // current_frame
-                let pos = (300.0, 20.0 + height);
-                let (x, y) = pos;
-                let origin = (x + width / 2.0, y + height / 2.0);
-
-                {
-                    let _lock = graphics::use_shader(ctx, &assets.shader);
-
-                    self.resource.draw_every_frame(
-                        ctx,
-                        assets,
-                        Matrix4::new_translation(&Vec3::new(origin.0, origin.1, 0.0)),
-                    )?;
-                }
-            }
-
             if let Some(frame) = self.ui_data.current_sprite {
                 // current_frame
-                let pos = (300.0 + width, 20.0);
+                let pos = (0.0, height + 20.0);
                 let (x, y) = pos;
                 let origin = (x + width / 2.0, y + height / 2.0);
                 {

@@ -81,29 +81,6 @@ impl Animation {
         )
     }
 
-    pub fn draw_every_frame(
-        &self,
-        ctx: &mut Context,
-        assets: &Assets,
-        world: Matrix4,
-    ) -> GameResult<()> {
-        graphics::set_blend_mode(ctx, self.blend_mode.into())?;
-        for sprite in self.frames.frames() {
-            sprite.draw_debug(
-                ctx,
-                assets,
-                world,
-                0,
-                ValueAlpha {
-                    value: 1.0,
-                    alpha: 1.0,
-                },
-            )?
-        }
-
-        Ok(())
-    }
-
     pub fn draw_at_time(
         &self,
         ctx: &mut Context,
