@@ -31,6 +31,7 @@ pub struct SpawnerInfo {
 }
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default)]
+#[serde(bound(serialize = "", deserialize = ""))]
 pub struct State<C: Character> {
     #[tab = "Flags"]
     pub flags: Timeline<Flags>,
@@ -38,7 +39,7 @@ pub struct State<C: Character> {
     pub cancels: Timeline<CancelSet>,
     #[tab = "Hitboxes"]
     #[inspect_mut_bounds = "C::Attack: Clone"]
-    pub hitboxes: Timeline<HitboxSet<C::Attack>>,
+    pub hitboxes: Timeline<HitboxSet<C>>,
     #[tab = "Spawns"]
     pub spawns: Vec<SpawnerInfo>,
     #[tab = "Spawns"]
@@ -47,7 +48,7 @@ pub struct State<C: Character> {
     pub state_type: StateType,
     #[inspect_mut_bounds = "C::State: Clone"]
     #[serde(alias = "on_expire_state")]
-    pub on_expire: OnExpire<C::State>,
+    pub on_expire: OnExpire<C>,
 }
 
 impl<C: Character> State<C> {
@@ -77,11 +78,11 @@ impl<C: Character> State<C> {
 pub struct StateInstant<'a, C: Character> {
     pub flags: &'a Flags,
     pub cancels: &'a CancelSet,
-    pub hitboxes: &'a HitboxSet<C::Attack>,
+    pub hitboxes: &'a HitboxSet<C>,
     pub spawns: &'a [SpawnerInfo],
     pub sounds: &'a [SoundPlayInfo<C::Sound>],
     pub state_type: StateType,
-    pub on_expire: &'a OnExpire<<C as Character>::State>,
+    pub on_expire: &'a OnExpire<C>,
     pub duration: usize,
     pub frame: usize,
 }
@@ -100,23 +101,15 @@ impl<'a, C: Character> StateInstant<'a, C> {
 }
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default, PartialEq, Eq, Debug)]
-pub struct OnExpire<Id> {
-    pub state_id: Id,
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct OnExpire<C: Character> {
+    pub state_id: C::State,
     pub frame: usize,
 }
 
-impl<Id: Display> Display for OnExpire<Id> {
+impl<C: Character> Display for OnExpire<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {})", self.frame, self.state_id)
-    }
-}
-
-impl<Id> From<Id> for OnExpire<Id> {
-    fn from(value: Id) -> Self {
-        Self {
-            state_id: value,
-            frame: 0,
-        }
     }
 }
 

@@ -325,7 +325,8 @@ TODO (2/15/2020):
         [x] add graze resistance component
         [x] implement second yuyuko bullet 
         [x] pull out of band cloning in, and get rollback working again
-    [] move state to take a <C: Character>
+    [x] rework editor to be typed
+    [x] move state to take a <C: Character>
     [] separate out game pieces into crates
     [] rework sound renderer
         [] only one (sound_id, frame) is unique it doesnt make sense to do anything else

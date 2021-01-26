@@ -9,10 +9,13 @@ use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
 use ggez::{Context, GameResult};
 use imgui::*;
-use inspect_design::Inspect;
+use inspect_design::{
+    traits::{Inspect, InspectMut},
+    Inspect,
+};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Eq, Serialize, Inspect)]
+#[derive(Debug, Copy, Clone, Deserialize, PartialEq, Eq, Serialize)]
 pub struct GenericHitbox<T> {
     pub center: Vec2,
     pub half_size: Vec2,
@@ -26,6 +29,30 @@ impl<T> Default for GenericHitbox<T> {
             half_size: Vec2::new(1_00, 1_00),
             _secret: PhantomData,
         }
+    }
+}
+
+impl Inspect for Hitbox {
+    type State = ();
+    fn inspect(&self, _: &str, _: &mut Self::State, ui: &Ui<'_>) {
+        ui.indent();
+        ui.text(im_str!(
+            "center: ({}, {})",
+            self.center.x / 100,
+            self.center.y / 100
+        ));
+        ui.text(im_str!(
+            "half_size: ({}, {})",
+            self.half_size.x / 100,
+            self.half_size.y / 100
+        ));
+        ui.unindent();
+    }
+}
+
+impl InspectMut for Hitbox {
+    fn inspect_mut(&mut self, _: &str, _: &mut Self::State, ui: &Ui<'_>) {
+        Hitbox::draw_ui(ui, self)
     }
 }
 

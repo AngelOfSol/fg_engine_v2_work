@@ -38,7 +38,7 @@ pub struct TypedStateEditor<C: Character> {
     spawner_info_inspect_state: <Vec<SpawnerInfo> as Inspect>::State,
     flags_state: <Timeline<Flags> as Inspect>::State,
     cancels_state: <Timeline<CancelSet> as Inspect>::State,
-    hitbox_state: <Timeline<HitboxSet<C::Attack>> as Inspect>::State,
+    hitbox_state: <Timeline<HitboxSet<C>> as Inspect>::State,
     current_cancel_set_ui: CancelSetUi,
 }
 struct DrawMode {
