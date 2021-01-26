@@ -40,7 +40,7 @@ pub use object::ObjectData;
 pub use sounds::Sound;
 pub use state::State;
 
-#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct YuyukoType;
 
 impl Character for YuyukoType {

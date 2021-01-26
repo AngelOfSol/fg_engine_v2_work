@@ -72,11 +72,6 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
         AppContext { ref mut imgui, .. }: &mut AppContext,
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
-        let editor_height = 526.0;
-        let dim = [editor_height / 2.0, editor_height / 2.0];
-        let [width, height] = dim;
-        let pos = [300.0, 20.0];
-        let [x, y] = pos;
         let mut editor_result = Ok(());
         imgui
             .frame()
@@ -165,6 +160,8 @@ impl<C: Character> AppState for TypedAnimationEditor<C> {
             )
         };
         let assets = &mut self.assets.borrow_mut();
+
+        let width = 300.0;
 
         if self.resource.frames.duration() > 0 {
             {

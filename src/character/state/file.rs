@@ -1,26 +1,23 @@
+use crate::roster::character::{data::Data, typedefs::Character};
+
 use super::State;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::hash::Hash;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-pub fn load_from_json<
-    Id: DeserializeOwned + Serialize + Eq + Hash + Default,
-    AttackId: DeserializeOwned + Serialize + Default,
-    SoundType: DeserializeOwned + Serialize + Default,
->(
-    path: PathBuf,
-) -> State<Id, AttackId, SoundType> {
+pub fn load_from_json<C: Character>(path: PathBuf) -> State<C>
+where
+    Data<C>: Serialize + for<'de> Deserialize<'de>,
+{
     let file = File::open(&path).unwrap();
     let buf_read = BufReader::new(file);
-    serde_json::from_reader::<_, State<_, _, _>>(buf_read).unwrap()
+    serde_json::from_reader::<_, State<_>>(buf_read).unwrap()
 }
-pub fn save<Id: Serialize + Eq + Hash, AttackId: Serialize, SoundType: Serialize>(
-    state: &State<Id, AttackId, SoundType>,
-    path: PathBuf,
-) {
+pub fn save<C: Character>(state: &State<C>, path: PathBuf)
+where
+    Data<C>: Serialize + for<'de> Deserialize<'de>,
+{
     let mut json = File::create(&path).unwrap();
     serde_json::to_writer(&mut json, &state).unwrap();
 }

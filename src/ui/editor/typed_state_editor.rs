@@ -19,6 +19,7 @@ use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
 use imgui::*;
 use inspect_design::traits::{Inspect, InspectMut};
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -28,7 +29,7 @@ pub struct TypedStateEditor<C: Character> {
     character_data: Rc<RefCell<Data<C>>>,
     assets: Rc<RefCell<Assets>>,
     id: C::State,
-    new_state: State<C::State, C::Attack, C::Sound>,
+    new_state: State<C>,
     frame: usize,
     is_playing: bool,
     transition: Transition,
@@ -48,7 +49,10 @@ struct DrawMode {
     show_axes: bool,
 }
 
-impl<C: Character> AppState for TypedStateEditor<C> {
+impl<C: Character> AppState for TypedStateEditor<C>
+where
+    Data<C>: Serialize + for<'de> Deserialize<'de>,
+{
     fn update(&mut self, ctx: &mut Context, _: &mut AppContext) -> GameResult<Transition> {
         while ggez::timer::check_update_time(ctx, 60) {
             if self.is_playing {

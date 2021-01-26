@@ -1,7 +1,6 @@
 pub mod state;
 
 use super::data::Data;
-use crate::character::state::{State, StateInstant};
 use hecs::Component;
 use inspect_design::{
     traits::{Inspect, InspectMut},
@@ -21,7 +20,7 @@ pub trait Id:
     + Component
     + Copy
     + Debug
-    + DeserializeOwned
+    + for<'de> Deserialize<'de>
     + Serialize
     + Inspect
     + InspectMut
@@ -40,7 +39,7 @@ impl<T> Id for T where
         + Component
         + Copy
         + Debug
-        + DeserializeOwned
+        + for<'de> Deserialize<'de>
         + Serialize
         + Inspect
         + InspectMut
@@ -56,7 +55,7 @@ pub trait AttackObjectData {}
 
 impl<T> AttackObjectData for T {}
 
-pub trait Character: Sized + Default + Clone + 'static {
+pub trait Character: Sized + Default + Clone + Debug + PartialEq + Eq + 'static {
     type Sound: Id;
     type State: Id + StateConsts;
     type Attack: Id;
@@ -67,11 +66,6 @@ pub trait Character: Sized + Default + Clone + 'static {
 
     fn round_start_reset(&mut self, data: &Data<Self>);
 }
-
-pub type CharacterState<C> =
-    State<<C as Character>::State, <C as Character>::Attack, <C as Character>::Sound>;
-pub type CharacterStateInstant<'a, C> =
-    StateInstant<'a, <C as Character>::State, <C as Character>::Attack, <C as Character>::Sound>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Inspect, Serialize, Deserialize)]
 pub struct Timed<Id> {

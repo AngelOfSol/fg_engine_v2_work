@@ -13,17 +13,15 @@ pub mod components {
     pub use super::hitbox_set::*;
     pub use super::sound_play_info::*;
 }
-use crate::game_object::constructors::Constructor;
-use crate::timeline::Timeline;
+use crate::{game_object::constructors::Constructor, roster::character::typedefs::Character};
+use crate::{roster::character::data::Data, timeline::Timeline};
 use cancel_set::{CancelSet, StateType};
 use flags::Flags;
 use hitbox_set::HitboxSet;
 use inspect_design::Inspect;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sound_play_info::SoundPlayInfo;
 use std::fmt::{Display, Formatter};
-use std::hash::Hash;
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq, Inspect)]
@@ -33,27 +31,27 @@ pub struct SpawnerInfo {
 }
 
 #[derive(Clone, Deserialize, Serialize, Inspect, Default)]
-pub struct State<Id, AttackId, SoundType> {
+pub struct State<C: Character> {
     #[tab = "Flags"]
     pub flags: Timeline<Flags>,
     #[tab = "Cancels"]
     pub cancels: Timeline<CancelSet>,
-    #[inspect_mut_bounds = "AttackId: Clone"]
     #[tab = "Hitboxes"]
-    pub hitboxes: Timeline<HitboxSet<AttackId>>,
+    #[inspect_mut_bounds = "C::Attack: Clone"]
+    pub hitboxes: Timeline<HitboxSet<C::Attack>>,
     #[tab = "Spawns"]
     pub spawns: Vec<SpawnerInfo>,
     #[tab = "Spawns"]
-    pub sounds: Vec<SoundPlayInfo<SoundType>>,
+    pub sounds: Vec<SoundPlayInfo<C::Sound>>,
     #[serde(default)]
     pub state_type: StateType,
-    #[inspect_mut_bounds = "Id: Clone"]
+    #[inspect_mut_bounds = "C::State: Clone"]
     #[serde(alias = "on_expire_state")]
-    pub on_expire: OnExpire<Id>,
+    pub on_expire: OnExpire<C::State>,
 }
 
-impl<Id, AttackId, SoundType> State<Id, AttackId, SoundType> {
-    pub fn get(&self, frame: usize) -> StateInstant<'_, Id, AttackId, SoundType> {
+impl<C: Character> State<C> {
+    pub fn get(&self, frame: usize) -> StateInstant<'_, C> {
         StateInstant {
             flags: self.flags.get(frame).1,
             cancels: self.cancels.get(frame).1,
@@ -76,25 +74,25 @@ impl<Id, AttackId, SoundType> State<Id, AttackId, SoundType> {
     }
 }
 
-pub struct StateInstant<'a, Id, AttackId, SoundType> {
+pub struct StateInstant<'a, C: Character> {
     pub flags: &'a Flags,
     pub cancels: &'a CancelSet,
-    pub hitboxes: &'a HitboxSet<AttackId>,
+    pub hitboxes: &'a HitboxSet<C::Attack>,
     pub spawns: &'a [SpawnerInfo],
-    pub sounds: &'a [SoundPlayInfo<SoundType>],
+    pub sounds: &'a [SoundPlayInfo<C::Sound>],
     pub state_type: StateType,
-    pub on_expire: &'a OnExpire<Id>,
+    pub on_expire: &'a OnExpire<<C as Character>::State>,
     pub duration: usize,
     pub frame: usize,
 }
 
-impl<'a, Id, AttackId, SoundType> StateInstant<'a, Id, AttackId, SoundType> {
+impl<'a, C: Character> StateInstant<'a, C> {
     pub fn current_spawns(&self) -> impl Iterator<Item = &SpawnerInfo> {
         self.spawns
             .iter()
             .filter(move |item| item.frame == self.frame)
     }
-    pub fn current_sounds(&self) -> impl Iterator<Item = &SoundPlayInfo<SoundType>> {
+    pub fn current_sounds(&self) -> impl Iterator<Item = &SoundPlayInfo<C::Sound>> {
         self.sounds
             .iter()
             .filter(move |item| item.frame == self.frame)
@@ -122,11 +120,7 @@ impl<Id> From<Id> for OnExpire<Id> {
     }
 }
 
-impl<Id, AttackId, SoundType> PartialEq for State<Id, AttackId, SoundType>
-where
-    Id: PartialEq,
-    AttackId: PartialEq,
-{
+impl<C: Character> PartialEq for State<C> {
     fn eq(&self, rhs: &Self) -> bool {
         self.flags.eq(&rhs.flags)
             && self.cancels.eq(&rhs.cancels)
@@ -135,18 +129,9 @@ where
             && self.on_expire.eq(&rhs.on_expire)
     }
 }
-impl<Id, AttackId, SoundType> Eq for State<Id, AttackId, SoundType>
-where
-    Id: PartialEq,
-    AttackId: PartialEq,
-{
-}
+impl<C: Character> Eq for State<C> {}
 
-impl<Id, AttackId, SoundType> std::fmt::Debug for State<Id, AttackId, SoundType>
-where
-    Id: std::fmt::Debug,
-    AttackId: std::fmt::Debug,
-{
+impl<C: Character> std::fmt::Debug for State<C> {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         let mut builder = fmt.debug_struct("State");
         let _ = builder.field("flags", &self.flags);
@@ -158,11 +143,9 @@ where
     }
 }
 
-impl<
-        Id: Serialize + DeserializeOwned + Eq + Hash + Default,
-        AttackId: Serialize + DeserializeOwned + Default,
-        SoundType: Serialize + DeserializeOwned + Default,
-    > State<Id, AttackId, SoundType>
+impl<C: Character> State<C>
+where
+    Data<C>: Serialize + for<'de> Deserialize<'de>,
 {
     pub fn load_from_json(path: PathBuf) -> Self {
         file::load_from_json(path)

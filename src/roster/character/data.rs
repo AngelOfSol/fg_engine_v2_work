@@ -1,12 +1,10 @@
-use super::{
-    player_state::PlayerState,
-    typedefs::{Character, CharacterState, CharacterStateInstant},
-};
+use super::{player_state::PlayerState, typedefs::Character};
 use crate::{
     assets::Assets,
     character::{
         command::Command,
         components::{AttackInfo, Properties},
+        state::{State, StateInstant},
     },
     game_match::sounds::SoundList,
     game_object::properties::InstanceData,
@@ -20,7 +18,7 @@ use strum::IntoEnumIterator;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct Data<C: Character> {
-    pub states: HashMap<C::State, CharacterState<C>>,
+    pub states: HashMap<C::State, State<C>>,
     pub attacks: HashMap<C::Attack, AttackInfo>,
     pub properties: Properties,
     #[serde(skip)]
@@ -38,13 +36,13 @@ impl<C: Character> Data<C> {
     pub fn get<'this, 'state>(
         &'this self,
         state: &'state PlayerState<C>,
-    ) -> CharacterStateInstant<'this, C> {
+    ) -> StateInstant<'this, C> {
         self.states[&state.current_state.id].get(state.current_state.time)
     }
     pub fn get_next<'this, 'state>(
         &'this self,
         state: &'state PlayerState<C>,
-    ) -> CharacterStateInstant<'this, C> {
+    ) -> StateInstant<'this, C> {
         self.states[&state.current_state.id].get(state.current_state.time + 1)
     }
 }
