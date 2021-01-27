@@ -6,8 +6,9 @@ pub use button_state::ButtonState;
 
 use serde::{Deserialize, Serialize};
 use std::ops::BitOr;
+use strum::Display;
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Display)]
 #[repr(u8)]
 pub enum Button {
     A = 0b00001,

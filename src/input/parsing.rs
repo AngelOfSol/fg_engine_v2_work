@@ -1,10 +1,14 @@
 use nom::{
-    branch::alt,
+    branch::{alt, permutation},
     bytes::complete::tag,
+    character::complete::char,
     combinator::opt,
-    combinator::{peek, success, verify},
-    IResult,
+    combinator::{map, map_parser, success, value, verify},
+    sequence,
+    sequence::pair,
+    IResult, Parser,
 };
+use sequence::{preceded, tuple};
 
 use super::{
     button::{Button, ButtonSet},
@@ -23,87 +27,78 @@ pub fn parse_input(input: &str) -> IResult<&str, Input> {
 }
 
 pub fn parse_high_jump(input: &str) -> IResult<&str, Input> {
-    let (input, _) = alt((tag("hj"), tag("2"), tag("1"), tag("3")))(input)?;
-    let (input, _) = peek(alt((tag("7"), tag("8"), tag("9"))))(input)?;
-    let (input, dir) = parse_directed_axis(input)?;
-    Ok((input, Input::SuperJump(dir)))
+    preceded(
+        alt((tag("hj"), tag("2"), tag("1"), tag("3"))),
+        map_parser(alt((tag("7"), tag("8"), tag("9"))), parse_directed_axis).map(Input::SuperJump),
+    )(input)
 }
 pub fn parse_quarter_circle(input: &str) -> IResult<&str, Input> {
-    let (input, dir) = alt((tag("236"), tag("214")))(input)?;
-
-    let dir = match dir {
-        "236" => Direction::Forward,
-        "214" => Direction::Backward,
-        _ => unreachable!(),
-    };
-
-    let (input, buttons) = parse_button_set(input)?;
-
-    Ok((input, Input::QuarterCircle(dir, buttons)))
+    map(
+        pair(
+            alt((
+                tag("236").map(|_| Direction::Forward),
+                tag("214").map(|_| Direction::Backward),
+            )),
+            parse_button_set,
+        ),
+        |(dir, buttons)| Input::QuarterCircle(dir, buttons),
+    )(input)
 }
 pub fn parse_dragon_punch(input: &str) -> IResult<&str, Input> {
-    let (input, dir) = alt((tag("623"), tag("421")))(input)?;
-
-    let dir = match dir {
-        "623" => Direction::Forward,
-        "421" => Direction::Backward,
-        _ => unreachable!(),
-    };
-
-    let (input, buttons) = parse_button_set(input)?;
-
-    Ok((input, Input::DragonPunch(dir, buttons)))
+    map(
+        pair(
+            alt((
+                tag("623").map(|_| Direction::Forward),
+                tag("421").map(|_| Direction::Backward),
+            )),
+            parse_button_set,
+        ),
+        |(dir, buttons)| Input::DragonPunch(dir, buttons),
+    )(input)
 }
 
 pub fn parse_idle(input: &str) -> IResult<&str, Input> {
-    let (input, axis) = parse_directed_axis(input)?;
-    Ok((input, Input::Idle(axis)))
+    map(parse_directed_axis, Input::Idle)(input)
 }
 
 pub fn parse_double_tap(input: &str) -> IResult<&str, Input> {
-    let (input, axis) = parse_directed_axis(input)?;
-    let (input, _) = verify(parse_directed_axis, |second| &axis == second)(input)?;
-    Ok((input, Input::DoubleTap(axis)))
+    parse_directed_axis
+        .flat_map(|directed| verify(parse_directed_axis, move |new| &directed == new))
+        .map(Input::DoubleTap)
+        .parse(input)
 }
 
 pub fn parse_button_press(input: &str) -> IResult<&str, Input> {
-    let (input, axis) = parse_directed_axis(input)?;
-    let (input, buttons) = parse_button_set(input)?;
-    Ok((input, Input::PressButton(axis, buttons)))
+    pair(parse_directed_axis, parse_button_set)
+        .map(|(axis, buttons)| Input::PressButton(axis, buttons))
+        .parse(input)
+}
+
+fn parse_button(c: char, val: Button) -> impl FnMut(&str) -> IResult<&str, Button> {
+    move |input| value(val, char(c))(input)
+}
+
+fn merge_button<'a, F>(
+    buttons: ButtonSet,
+    f: F,
+) -> impl FnMut(&'a str) -> IResult<&'a str, ButtonSet>
+where
+    F: Parser<&'a str, Button, nom::error::Error<&'a str>>,
+{
+    let mut f = map(f, move |b| buttons | b).or(success(buttons));
+    move |input| f.parse(input)
 }
 
 #[allow(clippy::many_single_char_names)]
 pub fn parse_button_set(input: &str) -> IResult<&str, ButtonSet> {
-    let mut buttons = ButtonSet::default();
-
-    let (input, a) = opt(tag("a"))(input)?;
-    if a.is_some() {
-        buttons |= Button::A;
-    }
-
-    let (input, b) = opt(tag("b"))(input)?;
-    if b.is_some() {
-        buttons |= Button::B;
-    }
-
-    let (input, c) = opt(tag("c"))(input)?;
-    if c.is_some() {
-        buttons |= Button::C;
-    }
-
-    let (input, d) = opt(tag("d"))(input)?;
-    if d.is_some() {
-        buttons |= Button::D;
-    }
-
-    let (input, e) = opt(tag("e"))(input)?;
-    if e.is_some() {
-        buttons |= Button::E;
-    }
-
-    let (input, _) = verify(success(0), |value| &buttons.0 != value)(input)?;
-
-    Ok((input, buttons))
+    verify(
+        merge_button(ButtonSet::default(), parse_button('a', Button::A))
+            .flat_map(|res| merge_button(res, parse_button('b', Button::B)))
+            .flat_map(|res| merge_button(res, parse_button('c', Button::C)))
+            .flat_map(|res| merge_button(res, parse_button('d', Button::D)))
+            .flat_map(|res| merge_button(res, parse_button('e', Button::E))),
+        |buttons| buttons.0 != 0,
+    )(input)
 }
 
 pub fn parse_directed_axis(input: &str) -> IResult<&str, DirectedAxis> {

@@ -61,7 +61,7 @@ pub trait Character: Sized + Default + Clone + Debug + PartialEq + Eq + 'static 
     type Attack: Id;
     type Graphic: Id;
     type ObjectData: Id;
-    type Command: Id + Default;
+    type Command: Id;
     type StaticData: Serialize + DeserializeOwned + Default;
 
     fn round_start_reset(&mut self, data: &Data<Self>);

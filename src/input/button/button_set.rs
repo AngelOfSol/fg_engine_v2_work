@@ -2,7 +2,7 @@ use crate::input::parsing::parse_button_set;
 
 use super::Button;
 use inspect_design::Inspect;
-use nom::Finish;
+use nom::{combinator::eof, sequence::terminated, Finish};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
@@ -41,7 +41,7 @@ impl From<Button> for ButtonSet {
 impl FromStr for ButtonSet {
     type Err = nom::error::ErrorKind;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_button_set(s)
+        terminated(parse_button_set, eof)(s)
             .finish()
             .map_err(|err| err.code)
             .map(|(_, item)| item)
@@ -85,17 +85,14 @@ mod test {
     }
     #[test]
     fn multi_button() {
-        assert_eq!(
-            ButtonSet::from_str("ab"),
-            Ok(ButtonSet::from(Button::A) | Button::B)
-        );
+        assert_eq!(ButtonSet::from_str("ab"), Ok(Button::A | Button::B));
         assert_eq!(
             ButtonSet::from_str("abcde"),
-            Ok(ButtonSet::from(Button::A) | Button::B | Button::C | Button::D | Button::E)
+            Ok(Button::A | Button::B | Button::C | Button::D | Button::E)
         );
         assert_eq!(
             ButtonSet::from_str("ace"),
-            Ok(ButtonSet::from(Button::A) | Button::C | Button::E)
+            Ok(Button::A | Button::C | Button::E)
         );
         assert!(ButtonSet::from_str("acb").is_err());
         assert!(ButtonSet::from_str("aa").is_err());

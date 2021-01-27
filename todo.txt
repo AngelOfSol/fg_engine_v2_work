@@ -328,6 +328,8 @@ TODO (2/15/2020):
     [x] rework editor to be typed
     [x] move state to take a <C: Character>
     [] separate out game pieces into crates
+        [] separate out graphics from rest of data
+    [] consider reworking input reading to use nom to parse inputs from controllers?
     [] rework sound renderer
         [] only one (sound_id, frame) is unique it doesnt make sense to do anything else
         [] announce voice state should be played from global gamestate
@@ -448,3 +450,76 @@ TODO (2/15/2020):
         [] keyboard support
 
 
+
+mod parse {
+    use nom::{
+        branch::alt,
+        combinator::verify,
+        error::{ErrorKind, ParseError},
+        Err, IResult, Parser,
+    };
+
+    #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+    pub enum Simple {
+        Left,
+        Middle,
+        Right,
+    }
+
+    pub fn tag<'a: 'b, 'b, Value: 'a>(
+        tag: &'b [Value],
+    ) -> impl FnMut(&'a [Value]) -> IResult<&'a [Value], &'a [Value]> + 'b
+    where
+        Value: PartialEq,
+    {
+        verify(
+            take_while_m_n(tag.len(), tag.len(), |_| true),
+            move |value: &[Value]| value == tag,
+        )
+    }
+
+    pub fn take_while_m_n<Value>(
+        m: usize,
+        n: usize,
+        f: impl Fn(&Value) -> bool,
+    ) -> impl Fn(&[Value]) -> IResult<&[Value], &[Value]>
+    where
+        Value: PartialEq,
+    {
+        move |i: &[Value]| {
+            if let Some(index) = i.iter().position(|value| !f(value)) {
+                if index >= m && index <= n {
+                    Ok((&i[index..], &i[0..index]))
+                } else {
+                    let e: ErrorKind = ErrorKind::TakeWhileMN;
+                    Err(Err::Error(nom::error::Error::from_error_kind(i, e)))
+                }
+            } else if n <= i.len() {
+                Ok((&i[n..], &i[..n]))
+            } else {
+                let e: ErrorKind = ErrorKind::TakeWhileMN;
+                Err(Err::Error(nom::error::Error::from_error_kind(i, e)))
+            }
+        }
+    }
+
+    fn test_parse(input: &[Simple]) -> IResult<&[Simple], Simple> {
+        let (input, output) =
+            alt((tag([Simple::Left].as_ref()), tag([Simple::Right].as_ref())))(input)?;
+        let output = output[0];
+        Ok((input, output))
+    }
+
+    #[test]
+    fn test() {
+        let data = [Simple::Left, Simple::Right, Simple::Middle];
+
+        let (input, value) = test_parse(&data).unwrap();
+
+        assert_eq!(value, Simple::Left);
+        let (input, value) = test_parse(&input).unwrap();
+        assert_eq!(value, Simple::Right);
+
+        assert!(test_parse(&input).is_err());
+    }
+}
