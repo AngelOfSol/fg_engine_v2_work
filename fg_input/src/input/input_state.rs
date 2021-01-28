@@ -1,16 +1,18 @@
-use crate::button::ButtonSet;
+use crate::{axis::Axis, button::ButtonSet};
 
 use super::button::ButtonState;
-use super::Axis;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InputState {
-    pub axis: Axis,
+    pub axis: [i32; 2],
     pub buttons: [ButtonState; 5],
 }
 
 impl InputState {
+    pub fn axis(&self) -> Axis {
+        self.axis.into()
+    }
     pub fn button_set(&self) -> ButtonSet {
         self.buttons
             .iter()
@@ -25,7 +27,7 @@ impl InputState {
 impl Default for InputState {
     fn default() -> Self {
         Self {
-            axis: Axis::Neutral,
+            axis: [0, 0],
             buttons: [
                 ButtonState::Released,
                 ButtonState::Released,

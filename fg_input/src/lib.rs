@@ -1,8 +1,9 @@
-mod axis;
+pub mod axis;
 pub mod guard;
 mod input;
 pub mod notation;
 pub use input::*;
 pub mod motion;
 
+pub use axis::Facing;
 pub use motion::Input;

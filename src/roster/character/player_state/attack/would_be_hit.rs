@@ -7,7 +7,7 @@ use crate::{
         },
     },
 };
-use fg_input::{DirectedAxis, InputState};
+use fg_input::{axis::DirectedAxis, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn would_be_hit(
@@ -19,7 +19,7 @@ impl<C: Character> PlayerState<C> {
         old_effect: Option<HitEffect>,
     ) -> HitResult {
         let state_data = data.get(self);
-        let axis = DirectedAxis::from_facing(input.last().unwrap().axis, self.facing);
+        let axis = DirectedAxis::from_facing(input.last().unwrap().axis(), self.facing);
         match old_effect {
             Some(effect) => match effect {
                 HitEffect::Hit(effect) => {

@@ -1,6 +1,5 @@
 use super::button_set;
-use crate::input::Direction;
-use crate::Input;
+use crate::{axis::Direction, Input};
 use nom::{
     branch::alt,
     bytes::complete::tag,

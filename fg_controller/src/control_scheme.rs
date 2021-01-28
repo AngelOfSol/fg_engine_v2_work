@@ -2,14 +2,14 @@ use crate::pads_context::GamepadId;
 
 use std::collections::{HashMap, HashSet};
 
-use fg_input::{button::ButtonState, Axis, InputState};
+use fg_input::{button::ButtonState, InputState};
 use sdl2::controller::Button as SdlButton;
 
 pub type PadControlScheme = ControlScheme<SdlButton>;
 
 #[derive(Clone, Debug)]
 pub struct ControlScheme<ButtonCode> {
-    axis: HashMap<ButtonCode, Axis>,
+    axis: HashMap<ButtonCode, [i32; 2]>,
     pub buttons: [HashSet<ButtonCode>; 5],
     pub gamepad: GamepadId,
 }
@@ -70,10 +70,10 @@ impl ControlScheme<SdlButton> {
         ret.buttons[3].insert(SdlButton::A);
         ret.buttons[4].insert(SdlButton::RightShoulder);
 
-        ret.axis.insert(SdlButton::DPadUp, Axis::Up);
-        ret.axis.insert(SdlButton::DPadDown, Axis::Down);
-        ret.axis.insert(SdlButton::DPadRight, Axis::Right);
-        ret.axis.insert(SdlButton::DPadLeft, Axis::Left);
+        ret.axis.insert(SdlButton::DPadUp, [0, 1]);
+        ret.axis.insert(SdlButton::DPadDown, [0, -1]);
+        ret.axis.insert(SdlButton::DPadRight, [1, 0]);
+        ret.axis.insert(SdlButton::DPadLeft, [-1, 0]);
 
         ret
     }
@@ -90,7 +90,9 @@ impl ControlScheme<SdlButton> {
 
     pub fn handle_press(&self, button: SdlButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
-            input.axis = input.axis.add(self.axis[&button]);
+            for (old, modify) in input.axis.iter_mut().zip(self.axis[&button].iter()) {
+                *old += modify;
+            }
         }
 
         for (set, state) in self.buttons.iter().zip(input.buttons.iter_mut()) {
@@ -102,7 +104,9 @@ impl ControlScheme<SdlButton> {
 
     pub fn handle_release(&self, button: SdlButton, input: &mut InputState) {
         if self.axis.contains_key(&button) {
-            input.axis = input.axis.remove(self.axis[&button]);
+            for (old, modify) in input.axis.iter_mut().zip(self.axis[&button].iter()) {
+                *old -= modify;
+            }
         }
 
         for (set, state) in self.buttons.iter().zip(input.buttons.iter_mut()) {

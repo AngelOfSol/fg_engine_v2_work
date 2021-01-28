@@ -1,6 +1,6 @@
 use nom::{branch::alt, bytes::complete::tag, combinator::value, IResult};
 
-use crate::DirectedAxis;
+use crate::axis::DirectedAxis;
 
 pub fn parse(input: &str) -> IResult<&str, DirectedAxis> {
     alt((

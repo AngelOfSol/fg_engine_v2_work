@@ -2,7 +2,7 @@ pub mod directed_axis;
 pub mod direction;
 pub mod facing;
 
-//pub use directed_axis::DirectedAxis;
+pub use directed_axis::DirectedAxis;
 pub use direction::Direction;
 pub use facing::Facing;
 use serde::{Deserialize, Serialize};

@@ -3,7 +3,11 @@ use std::{
     str::FromStr,
 };
 
-use crate::{button::ButtonSet, notation, DirectedAxis, Direction};
+use crate::{
+    axis::{DirectedAxis, Direction},
+    button::ButtonSet,
+    notation,
+};
 use inspect_design::traits::{Inspect, InspectMut};
 use nom::Finish;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -123,8 +127,8 @@ impl FromStr for Input {
 mod test {
     use super::Input;
     use crate::{
+        axis::{DirectedAxis, Direction},
         button::button_set,
-        input::{DirectedAxis, Direction},
     };
     use std::str::FromStr;
 

@@ -1,12 +1,9 @@
-use crate::{button::button_set, motion::Input, notation};
+use crate::motion::Input;
 
-use super::axis::{Axis, DirectedAxis, Direction, Facing};
 use super::button::{ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
 use super::{InputState, MOTION_DIRECTION_SIZE};
-use inspect_design::traits::*;
-use nom::Finish;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate::axis::{Axis, DirectedAxis, Direction, Facing};
 
 fn read_button_set(button_list: [ButtonState; 5], check_state: ButtonState) -> Option<ButtonSet> {
     let mut buttons = None;
@@ -18,7 +15,7 @@ fn read_button_set(button_list: [ButtonState; 5], check_state: ButtonState) -> O
     {
         buttons = match buttons {
             Some(button) => Some(button | ButtonSet::from_id(id)),
-            None => Some(ButtonSet::from_id(id).into()),
+            None => Some(ButtonSet::from_id(id)),
         }
     }
     buttons
@@ -51,7 +48,7 @@ pub fn read_inputs<'a>(
 }
 
 pub fn read_idle<'a>(mut buffer: impl Iterator<Item = &'a InputState> + Clone) -> Option<Input> {
-    buffer.next().map(|item| Input::Idle(item.axis.into()))
+    buffer.next().map(|item| Input::Idle(item.axis().into()))
 }
 
 pub fn read_double_tap<'a>(
@@ -65,7 +62,7 @@ pub fn read_double_tap<'a>(
                 buffer.next();
                 new_buffer
             }
-            .map(|item| item.axis.into()),
+            .map(|item| item.axis().into()),
         );
 
         let ret = buffer
@@ -107,7 +104,7 @@ fn read_button_press<'a>(
     for _ in 0..forgiveness {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             return Some(Input::PressButton(
-                buffer.next().unwrap().axis.into(),
+                buffer.next().unwrap().axis().into(),
                 buttons,
             ));
         }
@@ -138,11 +135,7 @@ fn read_recent_button_set<'a>(
         })
 }
 
-use std::{
-    collections::HashSet,
-    fmt::{Debug, Display, Formatter},
-    str::FromStr,
-};
+use std::{collections::HashSet, fmt::Debug};
 #[derive(Clone, Debug)]
 enum ReadInput {
     Optional(HashSet<Axis>, usize),
@@ -154,7 +147,7 @@ enum ReadInput {
 use maplit::hashset;
 
 fn read_super_jump<'a>(buffer: impl Iterator<Item = &'a InputState> + Clone) -> Option<Input> {
-    let buffer = InputCoalesce::new(buffer.map(|item| item.axis));
+    let buffer = InputCoalesce::new(buffer.map(|item| item.axis()));
 
     let super_jump_right = vec![
         ReadInput::RequiredWithin(hashset!(Axis::UpRight), MOTION_DIRECTION_SIZE),
@@ -215,7 +208,7 @@ fn read_dragon_punch<'a>(
                     buffer.next();
                     new_buffer
                 }
-                .map(|item| item.axis),
+                .map(|item| item.axis()),
             );
 
             let dp_right = vec![
@@ -261,7 +254,7 @@ fn read_quarter_circle<'a>(
                     buffer.next();
                     new_buffer
                 }
-                .map(|item| item.axis),
+                .map(|item| item.axis()),
             );
 
             let qcf_right = vec![
