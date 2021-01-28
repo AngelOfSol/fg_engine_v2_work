@@ -12,7 +12,7 @@ use crate::{
         AllowedCancel,
     },
 };
-use fg_input::{button::Button, read_inputs, InputState};
+use fg_input::{button::button_set, read_inputs, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn handle_input(&mut self, data: &Data<C>, input: &[InputState]) {
@@ -28,7 +28,12 @@ impl<C: Character> PlayerState<C> {
             // TODO move to better handling for this
             // inputs should be able to detect releases
             if id == C::State::FLY {
-                if input.last().unwrap()[Button::E].is_pressed() {
+                if input
+                    .last()
+                    .unwrap()
+                    .button_set()
+                    .is_superset(button_set::E)
+                {
                     Timed { time, id }
                 } else {
                     Timed {

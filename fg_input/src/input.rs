@@ -9,7 +9,7 @@ pub mod pads_context;
 
 pub use axis::{DirectedAxis, Direction, Facing};
 pub use input_state::InputState;
-pub use motion::{read_inputs, Input};
+pub use motion::read_inputs;
 
 use axis::Axis;
 

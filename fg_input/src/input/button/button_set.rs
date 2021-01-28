@@ -1,6 +1,5 @@
 use crate::notation::button_set;
 
-use super::Button;
 use inspect_design::Inspect;
 use nom::{combinator::eof, sequence::terminated, Finish};
 use serde::{Deserialize, Serialize};
@@ -20,21 +19,24 @@ use std::{
     PartialEq,
     Eq,
     Inspect,
-    Default,
     PartialOrd,
     Ord,
+    Default,
 )]
 pub struct ButtonSet(pub u8);
 
-impl ButtonSet {
-    pub fn has(&self, button: Button) -> bool {
-        self.0 & button as u8 == button as u8
-    }
-}
+pub const A: ButtonSet = ButtonSet(0b00001);
+pub const B: ButtonSet = ButtonSet(0b00010);
+pub const C: ButtonSet = ButtonSet(0b00100);
+pub const D: ButtonSet = ButtonSet(0b01000);
+pub const E: ButtonSet = ButtonSet(0b10000);
 
-impl From<Button> for ButtonSet {
-    fn from(value: Button) -> ButtonSet {
-        ButtonSet(value as u8)
+impl ButtonSet {
+    pub fn from_id(id: usize) -> Self {
+        Self(1 << id)
+    }
+    pub fn is_superset(self, rhs: ButtonSet) -> bool {
+        rhs.0 & self.0 == rhs.0
     }
 }
 
@@ -50,19 +52,19 @@ impl FromStr for ButtonSet {
 
 impl Display for ButtonSet {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.has(Button::A) {
+        if self.0 & A.0 == A.0 {
             write!(f, "a")?
         }
-        if self.has(Button::B) {
+        if self.0 & B.0 == B.0 {
             write!(f, "b")?
         }
-        if self.has(Button::C) {
+        if self.0 & C.0 == C.0 {
             write!(f, "c")?
         }
-        if self.has(Button::D) {
+        if self.0 & D.0 == D.0 {
             write!(f, "d")?
         }
-        if self.has(Button::E) {
+        if self.0 & E.0 == E.0 {
             write!(f, "e")?
         }
         Ok(())
@@ -72,27 +74,27 @@ impl Display for ButtonSet {
 #[cfg(test)]
 mod test {
     use super::ButtonSet;
-    use crate::input::button::Button;
+
     use std::str::FromStr;
 
     #[test]
     fn single_button() {
-        assert_eq!(ButtonSet::from_str("a"), Ok(Button::A.into()));
-        assert_eq!(ButtonSet::from_str("b"), Ok(Button::B.into()));
-        assert_eq!(ButtonSet::from_str("c"), Ok(Button::C.into()));
-        assert_eq!(ButtonSet::from_str("d"), Ok(Button::D.into()));
-        assert_eq!(ButtonSet::from_str("e"), Ok(Button::E.into()));
+        assert_eq!(ButtonSet::from_str("a"), Ok(super::A));
+        assert_eq!(ButtonSet::from_str("b"), Ok(super::B));
+        assert_eq!(ButtonSet::from_str("c"), Ok(super::C));
+        assert_eq!(ButtonSet::from_str("d"), Ok(super::D));
+        assert_eq!(ButtonSet::from_str("e"), Ok(super::E));
     }
     #[test]
     fn multi_button() {
-        assert_eq!(ButtonSet::from_str("ab"), Ok(Button::A | Button::B));
+        assert_eq!(ButtonSet::from_str("ab"), Ok(super::A | super::B));
         assert_eq!(
             ButtonSet::from_str("abcde"),
-            Ok(Button::A | Button::B | Button::C | Button::D | Button::E)
+            Ok(super::A | super::B | super::C | super::D | super::E)
         );
         assert_eq!(
             ButtonSet::from_str("ace"),
-            Ok(Button::A | Button::C | Button::E)
+            Ok(super::A | super::C | super::E)
         );
         assert!(ButtonSet::from_str("acb").is_err());
         assert!(ButtonSet::from_str("aa").is_err());

@@ -1,4 +1,4 @@
-use super::button::{Button, ButtonState};
+use super::button::ButtonState;
 use super::{Axis, InputState};
 use std::collections::{HashMap, HashSet};
 
@@ -64,11 +64,11 @@ impl ControlScheme<SdlButton> {
             gamepad: id,
         };
 
-        ret.buttons[Button::A.as_id()].insert(SdlButton::X);
-        ret.buttons[Button::B.as_id()].insert(SdlButton::Y);
-        ret.buttons[Button::C.as_id()].insert(SdlButton::B);
-        ret.buttons[Button::D.as_id()].insert(SdlButton::A);
-        ret.buttons[Button::E.as_id()].insert(SdlButton::RightShoulder);
+        ret.buttons[0].insert(SdlButton::X);
+        ret.buttons[1].insert(SdlButton::Y);
+        ret.buttons[2].insert(SdlButton::B);
+        ret.buttons[3].insert(SdlButton::A);
+        ret.buttons[4].insert(SdlButton::RightShoulder);
 
         ret.axis.insert(SdlButton::DPadUp, Axis::Up);
         ret.axis.insert(SdlButton::DPadDown, Axis::Down);

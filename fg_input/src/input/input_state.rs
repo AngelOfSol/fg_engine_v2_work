@@ -1,7 +1,8 @@
-use super::button::{Button, ButtonState};
+use crate::button::ButtonSet;
+
+use super::button::ButtonState;
 use super::Axis;
 use serde::{Deserialize, Serialize};
-use std::ops::{Index, IndexMut};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InputState {
@@ -9,29 +10,15 @@ pub struct InputState {
     pub buttons: [ButtonState; 5],
 }
 
-impl std::fmt::Display for InputState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "(Axis: {}, A: {}, B: {}, C: {}, D: {}, E: {})",
-            self.axis,
-            self.buttons[0],
-            self.buttons[1],
-            self.buttons[2],
-            self.buttons[3],
-            self.buttons[4]
-        )
-    }
-}
-impl Index<Button> for InputState {
-    type Output = ButtonState;
-    fn index(&self, idx: Button) -> &Self::Output {
-        &self.buttons[idx.as_id()]
-    }
-}
-impl IndexMut<Button> for InputState {
-    fn index_mut(&mut self, idx: Button) -> &mut Self::Output {
-        &mut self.buttons[idx.as_id()]
+impl InputState {
+    pub fn button_set(&self) -> ButtonSet {
+        self.buttons
+            .iter()
+            .enumerate()
+            .filter(|(_, state)| state.is_pressed())
+            .fold(ButtonSet::default(), |acc, (idx, _)| {
+                acc | ButtonSet::from_id(idx + 1)
+            })
     }
 }
 
