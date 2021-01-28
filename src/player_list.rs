@@ -1,5 +1,5 @@
+use fg_controller::pads_context::GamepadId;
 use fg_datastructures::player_data::PlayerData;
-use fg_input::pads_context::GamepadId;
 use std::net::SocketAddr;
 use strum::Display;
 

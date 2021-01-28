@@ -752,6 +752,10 @@ dependencies = [
 [[package]]
 name = "fg_controller"
 version = "0.1.0"
+dependencies = [
+ "fg_input",
+ "sdl2",
+]
 
 [[package]]
 name = "fg_datastructures"
@@ -769,6 +773,7 @@ dependencies = [
  "chrono",
  "clipboard",
  "enum_dispatch",
+ "fg_controller",
  "fg_datastructures",
  "fg_input",
  "flate2",
@@ -809,7 +814,6 @@ dependencies = [
  "maplit",
  "nalgebra 0.24.0",
  "nom 6.1.0",
- "sdl2",
  "serde",
  "serde_json",
  "strum",

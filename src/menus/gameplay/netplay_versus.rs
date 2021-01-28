@@ -1,8 +1,8 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::netcode::{NetcodeClient as Client, Packet as NetcodeClientPacket, PlayerHandle};
-use fg_input::control_scheme::PadControlScheme;
-use fg_input::pads_context::{Event, EventType};
+use fg_controller::control_scheme::PadControlScheme;
+use fg_controller::pads_context::{Event, EventType};
 use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
 use laminar::{Packet as SocketPacket, SocketEvent};

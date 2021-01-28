@@ -1,6 +1,6 @@
 use crate::imgui_wrapper::ImGuiWrapper;
-use fg_input::control_scheme::PadControlScheme;
-use fg_input::pads_context::{GamepadId, PadsContext};
+use fg_controller::control_scheme::PadControlScheme;
+use fg_controller::pads_context::{GamepadId, PadsContext};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};

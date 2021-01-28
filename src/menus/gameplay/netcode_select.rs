@@ -4,7 +4,7 @@ use super::CharacterSelect;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
 use crate::player_list::{PlayerList, PlayerType};
-use fg_input::pads_context::{Button, EventType};
+use fg_controller::pads_context::{Button, EventType};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
 use laminar::{Packet, SocketEvent};

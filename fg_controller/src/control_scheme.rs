@@ -1,8 +1,8 @@
-use super::button::ButtonState;
-use super::{Axis, InputState};
+use crate::pads_context::GamepadId;
+
 use std::collections::{HashMap, HashSet};
 
-use crate::input::pads_context::GamepadId;
+use fg_input::{button::ButtonState, Axis, InputState};
 use sdl2::controller::Button as SdlButton;
 
 pub type PadControlScheme = ControlScheme<SdlButton>;

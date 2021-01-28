@@ -1,6 +1,6 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use fg_input::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
-use fg_input::pads_context::{Event, EventType, GamepadId, PadsContext};
+use fg_controller::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
+use fg_controller::pads_context::{Event, EventType, GamepadId, PadsContext};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
