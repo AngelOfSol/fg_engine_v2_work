@@ -1,10 +1,10 @@
+use super::{guard_crush, HitType, Source};
 use crate::{
     character::components::AttackInfo,
     roster::hit_info::{Force, HitSource},
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
 
-use super::{guard_crush, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
 }
@@ -46,7 +46,7 @@ impl Effect {
                     set_force: Force::Grounded(
                         source
                             .facing
-                            .fix_collision(collision::Vec2::new(block_info.ground_pushback, 0_00)),
+                            .fix(collision::Vec2::new(block_info.ground_pushback, 0_00)),
                     ),
                 },
             },
@@ -83,7 +83,7 @@ impl Effect {
             self.defender.set_force = Force::Grounded(
                 source
                     .facing
-                    .fix_collision(collision::Vec2::new(block_info.ground_pushback, 0_00)),
+                    .fix(collision::Vec2::new(block_info.ground_pushback, 0_00)),
             );
             self.defender.set_stun = block_info.stun;
             self.defender.set_stop = block_info.defender_stop;

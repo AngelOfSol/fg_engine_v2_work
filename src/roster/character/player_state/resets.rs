@@ -1,7 +1,6 @@
 use super::PlayerState;
 use crate::{
     game_match::{sounds::PlayerSoundState, PlayArea},
-    input::Facing,
     roster::{
         character::{
             data::Data,
@@ -9,8 +8,9 @@ use crate::{
         },
         AllowedCancel,
     },
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
+use fg_input::Facing;
 
 impl<C: Character> PlayerState<C> {
     pub fn reset_to_position_gamestart(

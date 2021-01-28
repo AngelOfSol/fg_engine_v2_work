@@ -15,10 +15,11 @@ use crate::{
     },
     game_object::state::{BulletHp, BulletTier},
     hitbox::PositionedHitbox,
-    input::Facing,
-    typedefs::collision,
 };
+
 use data::Data;
+use fg_datastructures::math::collision;
+use fg_input::Facing;
 use hecs::{Entity, World};
 use player_state::PlayerState;
 use rodio::Device;

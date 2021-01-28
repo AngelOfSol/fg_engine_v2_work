@@ -1,5 +1,5 @@
 use crate::game_match::FlashType;
-use crate::typedefs::collision::{Int, Vec2};
+use fg_datastructures::math::collision::{Int, Vec2};
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 

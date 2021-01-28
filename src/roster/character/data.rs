@@ -9,11 +9,16 @@ use crate::{
     game_match::sounds::SoundList,
     game_object::properties::InstanceData,
     graphics::animation_group::AnimationGroup,
-    input::Input,
 };
+use fg_input::Input;
 use ggez::{Context, GameError, GameResult};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
+use std::{
+    collections::{BTreeMap, HashMap},
+    fs::File,
+    io::BufReader,
+    path::PathBuf,
+};
 use strum::IntoEnumIterator;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -24,7 +29,7 @@ pub struct Data<C: Character> {
     #[serde(skip)]
     pub sounds: SoundList<C::Sound>,
     pub graphics: HashMap<C::Graphic, AnimationGroup>,
-    pub input_map: HashMap<Input, Vec<C::Command>>,
+    pub input_map: BTreeMap<Input, Vec<C::Command>>,
     pub command_map: HashMap<C::Command, Command<C::State>>,
     pub state_graphics_map: HashMap<C::State, C::Graphic>,
     pub instance: InstanceData<C::ObjectData>,

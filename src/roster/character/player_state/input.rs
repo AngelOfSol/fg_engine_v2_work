@@ -1,9 +1,9 @@
+use super::PlayerState;
 use crate::{
     character::{
         command::{Effect, Requirement},
         state::components::StateType,
     },
-    input::{button::Button, read_inputs, InputState},
     roster::{
         character::{
             data::Data,
@@ -12,8 +12,7 @@ use crate::{
         AllowedCancel,
     },
 };
-
-use super::PlayerState;
+use fg_input::{button::Button, read_inputs, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn handle_input(&mut self, data: &Data<C>, input: &[InputState]) {

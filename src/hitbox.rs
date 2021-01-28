@@ -2,9 +2,9 @@ use std::marker::PhantomData;
 
 use crate::game_match::PlayArea;
 use crate::imgui_extra::UiExtensions;
-use crate::input::Facing;
-use crate::typedefs::collision::{Int, IntoGraphical, Vec2};
-use crate::typedefs::graphics::{Matrix4, Vec2 as GraphicVec2};
+use fg_datastructures::math::collision::{Int, IntoGraphical, Vec2};
+use fg_datastructures::math::graphics::{Matrix4, Vec2 as GraphicVec2};
+use fg_input::Facing;
 use ggez::graphics;
 use ggez::graphics::{BlendMode, Color, DrawMode, DrawParam, FillOptions, Mesh, Rect};
 use ggez::{Context, GameResult};
@@ -74,7 +74,7 @@ impl Hitbox {
     }
     pub fn with_position_and_facing(&self, position: Vec2, facing: Facing) -> PositionedHitbox {
         PositionedHitbox {
-            center: facing.fix_collision(self.center) + position,
+            center: facing.fix(self.center) + position,
             half_size: self.half_size,
             _secret: std::marker::PhantomData,
         }
@@ -119,7 +119,7 @@ impl PositionedHitbox {
         } else if vels.0 + vels.1 != 0 {
             Int::signum(vels.0 + vels.1)
         } else {
-            facing.invert().collision_multiplier().x
+            facing.invert().fix(Vec2::new(1, 1)).x
         };
 
         let (left_mod, right_mod) = (

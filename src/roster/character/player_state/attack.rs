@@ -2,20 +2,19 @@ use std::borrow::Cow;
 
 use hecs::{Entity, World};
 
+use super::PlayerState;
 use crate::{
     character::components::AttackInfo,
     game_object::{
         properties::{CharacterAttack, ObjectHitboxSet, PropertyType, TryAsRef},
         state::{HasHitbox, HitDelay, Hitstop, MultiHitType, ObjectAttack, Timer},
     },
-    input::Facing,
     roster::character::{
         data::Data,
         typedefs::{Character, HitId},
     },
 };
-
-use super::PlayerState;
+use fg_input::Facing;
 
 pub mod deal_hit;
 pub mod take_hit;

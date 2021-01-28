@@ -11,12 +11,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Input {
-    Idle(DirectedAxis),
-    PressButton(DirectedAxis, ButtonSet),
-    QuarterCircle(Direction, ButtonSet),
     DragonPunch(Direction, ButtonSet),
-    DoubleTap(DirectedAxis),
+    QuarterCircle(Direction, ButtonSet),
+    PressButton(DirectedAxis, ButtonSet),
     SuperJump(DirectedAxis),
+    DoubleTap(DirectedAxis),
+    Idle(DirectedAxis),
 }
 
 impl Inspect for Input {
@@ -73,7 +73,7 @@ impl<'de> Deserialize<'de> for Input {
 
 impl Debug for Input {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "Input {{ {} }}", self)
     }
 }
 

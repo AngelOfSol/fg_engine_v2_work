@@ -13,7 +13,7 @@ impl std::fmt::Display for InputState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Axis: {}, A: {}, B: {}, C: {}, D: {}, E: {})",
+            "(Axis: {}, A: {}, B: {}, C: {}, D: {}, E: {})",
             self.axis,
             self.buttons[0],
             self.buttons[1],

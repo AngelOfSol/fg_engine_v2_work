@@ -1,5 +1,6 @@
-use super::{GroundAction, Guard};
-use crate::typedefs::collision::{Int, Vec2};
+use super::GroundAction;
+use fg_datastructures::math::collision::{Int, Vec2};
+use fg_input::guard::Guard;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 

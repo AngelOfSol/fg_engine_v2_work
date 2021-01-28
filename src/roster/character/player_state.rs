@@ -16,10 +16,10 @@ use super::{
 };
 use crate::{
     game_match::sounds::{PlayerSoundState, SoundPath},
-    input::Facing,
     roster::{hit_info::ComboEffect, AllowedCancel},
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
+use fg_input::Facing;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]

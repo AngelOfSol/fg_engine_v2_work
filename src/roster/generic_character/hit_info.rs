@@ -5,8 +5,9 @@ pub mod guard_crush;
 pub mod hit;
 pub mod wrong_block;
 
-use crate::typedefs::collision::Vec2;
-use crate::{character::components::GroundAction, input::Facing};
+use crate::character::components::GroundAction;
+use fg_datastructures::math::collision::Vec2;
+use fg_input::Facing;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum HitSource {

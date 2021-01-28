@@ -1,19 +1,17 @@
 use super::typed_character_editor::EDITOR_BACKGROUND;
+use crate::character::state::SpawnerInfo;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::{CancelSet, HitboxSet},
     roster::character::data::Data,
 };
 use crate::{assets::Assets, roster::character::typedefs::Character};
-use crate::{
-    character::state::components::Flags,
-    timeline::Timeline,
-    typedefs::graphics::{Matrix4, Vec3},
-};
+use crate::{character::state::components::Flags, timeline::Timeline};
 use crate::{character::state::components::StateType, imgui_extra::UiExtensions};
-use crate::{character::state::SpawnerInfo, typedefs::collision::IntoGraphical};
 use crate::{character::state::State, game_object::constructors::Constructor};
 use crate::{timeline, ui::character::state::CancelSetUi};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
+use fg_datastructures::math::{collision::IntoGraphical, graphics::Vec2};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};
@@ -334,7 +332,7 @@ where
             offset
         };
         let offset = animation_window_center * Matrix4::new_translation(&offset);
-        let draw_cross = |ctx: &mut Context, origin: crate::typedefs::graphics::Vec2| {
+        let draw_cross = |ctx: &mut Context, origin: Vec2| {
             let vertical = Mesh::new_line(
                 ctx,
                 &[[0.0, -10.0], [0.0, 10.0]],

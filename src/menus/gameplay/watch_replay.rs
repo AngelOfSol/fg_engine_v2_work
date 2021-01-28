@@ -1,9 +1,9 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{MatchSettings, MatchSettingsError, NoLogMatch};
-use crate::input::pads_context::{Button, Event, EventType};
-use crate::input::InputState;
 use crate::netcode::RollbackableGameState;
-use crate::typedefs::player::PlayerData;
+use fg_datastructures::player_data::PlayerData;
+use fg_input::pads_context::{Button, Event, EventType};
+use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
 
 use std::io::Read;

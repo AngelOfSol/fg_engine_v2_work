@@ -2,7 +2,7 @@ mod file;
 use crate::assets::{Assets, ValueAlpha};
 use crate::graphics::animation::Animation;
 use crate::graphics::keyframe::Modifiers;
-use crate::typedefs::graphics::Matrix4;
+use fg_datastructures::math::graphics::Matrix4;
 use ggez::{Context, GameResult};
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};

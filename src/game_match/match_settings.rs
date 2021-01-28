@@ -7,7 +7,7 @@ use crate::graphics::animation_group::AnimationGroup;
 use crate::player_list::PlayerList;
 use crate::roster::CharacterData;
 use crate::roster::RosterCharacter;
-use crate::typedefs::player::PlayerData;
+use fg_datastructures::player_data::PlayerData;
 use ggez::{graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -15,6 +15,8 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
+
+const REPLAY_VERSION: usize = 4;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MatchSettings {
@@ -52,13 +54,13 @@ impl MatchSettings {
         MatchSettings {
             first_to: 2,
             characters: [RosterCharacter::default(); 2].into(),
-            replay_version: crate::typedefs::REPLAY_VERSION,
+            replay_version: REPLAY_VERSION,
             runtime_data: None,
         }
     }
 
     pub fn validate(&self) -> Result<(), MatchSettingsError> {
-        if self.replay_version != crate::typedefs::REPLAY_VERSION {
+        if self.replay_version != REPLAY_VERSION {
             return Err(MatchSettingsError::ReplayVersionMismatch);
         }
 

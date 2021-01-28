@@ -1,7 +1,5 @@
-use crate::{
-    roster::character::typedefs::{Character, HitId, Timed},
-    typedefs::collision,
-};
+use crate::roster::character::typedefs::{Character, HitId, Timed};
+use fg_datastructures::math::collision;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Default, Inspect)]

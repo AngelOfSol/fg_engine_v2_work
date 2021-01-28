@@ -16,8 +16,8 @@ use crate::{
         character::{data::Data, player_state::PlayerState},
         yuyuko::{self, Graphic, YuyukoType},
     },
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Inspect)]
 pub enum ButterflyColor {
@@ -48,12 +48,12 @@ impl Construct<YuyukoType> for SpawnButterfly {
     ) -> Result<&'builder mut EntityBuilder, ConstructError> {
         const OBJECT_KEY: ObjectData = ObjectData::Butterfly;
 
-        let angle = f32::atan2(-self.velocity.y as f32, self.velocity.x as f32);
-        builder.add(Rotation(angle));
+        let angle = f64::atan2(-self.velocity.y as f64, self.velocity.x as f64);
+        builder.add(Rotation(angle as f32));
         builder.add(context.facing);
 
-        let velocity = context.facing.fix_collision(self.velocity);
-        let angle = f32::atan2(-velocity.y as f32, velocity.x as f32);
+        let velocity = context.facing.fix(self.velocity);
+        let angle = f64::atan2(-velocity.y as f64, velocity.x as f64);
         let speed = data
             .instance
             .get::<Speed>(OBJECT_KEY)
@@ -62,8 +62,8 @@ impl Construct<YuyukoType> for SpawnButterfly {
 
         builder.add(Velocity {
             value: collision::Vec2::new(
-                (angle.cos() * speed as f32) as i32,
-                (-angle.sin() * speed as f32) as i32,
+                (angle.cos() * speed as f64) as i32,
+                (-angle.sin() * speed as f64) as i32,
             ),
         });
         builder.add(match self.color {

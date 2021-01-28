@@ -9,8 +9,8 @@ use crate::{
             ObjectAttack, Position, Rotation, Timer, Velocity,
         },
     },
-    input::Facing,
 };
+use fg_input::Facing;
 
 use super::typedefs::Character;
 

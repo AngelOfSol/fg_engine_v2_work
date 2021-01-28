@@ -1,7 +1,5 @@
-use crate::{
-    timeline::{Surrounding, Timeline},
-    typedefs::graphics::{Matrix4, Vec3},
-};
+use crate::timeline::{Surrounding, Timeline};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumIter};

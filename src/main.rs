@@ -28,7 +28,6 @@ mod replay;
 mod roster;
 mod stage;
 mod timeline;
-mod typedefs;
 mod ui;
 
 fn main() {

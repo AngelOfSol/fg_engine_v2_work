@@ -5,15 +5,16 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     game_object::properties::{PropertyType, TryAsRef},
 };
-use crate::{assets::Assets, character::command::Command, input::Input};
+use crate::{assets::Assets, character::command::Command};
+use fg_input::Input;
 use ggez::{graphics, GameError};
 use ggez::{Context, GameResult};
 use imgui::*;
 use inspect_design::traits::{Inspect, InspectMut};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::rc::Rc;
 use std::{cell::RefCell, collections::HashMap};
+use std::{collections::BTreeMap, rc::Rc};
 use std::{fs::File, path::PathBuf};
 use strum::IntoEnumIterator;
 
@@ -28,7 +29,7 @@ pub struct TypedCharacterEditor<C: Character> {
     assets: Rc<RefCell<Assets>>,
     transition: Transition,
     command_map_state: <HashMap<C::Command, Command<C::State>> as Inspect>::State,
-    input_map_state: <HashMap<Input, Vec<C::Command>> as Inspect>::State,
+    input_map_state: <BTreeMap<Input, Vec<C::Command>> as Inspect>::State,
 }
 
 pub const EDITOR_BACKGROUND: [f32; 4] = [0.0823, 0.349, 0.3333, 1.0];

@@ -1,4 +1,4 @@
-use crate::typedefs::graphics::{Matrix4, Vec3};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{DrawParam, Image};
 use ggez::{Context, GameResult};

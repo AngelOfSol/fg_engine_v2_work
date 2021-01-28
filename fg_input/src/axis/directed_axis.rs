@@ -1,5 +1,5 @@
 use super::{Axis, Facing};
-use crate::character::components::Guard;
+use crate::guard::Guard;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -107,9 +107,11 @@ impl DirectedAxis {
 
     pub fn invert(self) -> Self {
         match self {
+            // Forward to Backward
             DirectedAxis::Forward => DirectedAxis::Backward,
             DirectedAxis::DownForward => DirectedAxis::DownBackward,
             DirectedAxis::UpForward => DirectedAxis::UpBackward,
+            // Backward to Forward
             DirectedAxis::Backward => DirectedAxis::Forward,
             DirectedAxis::DownBackward => DirectedAxis::DownForward,
             DirectedAxis::UpBackward => DirectedAxis::UpForward,

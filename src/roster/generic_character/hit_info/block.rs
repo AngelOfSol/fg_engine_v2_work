@@ -1,10 +1,9 @@
+use super::{guard_crush, hit, wrong_block, HitType, Source};
 use crate::{
     character::components::AttackInfo,
     roster::hit_info::{Force, HitSource},
-    typedefs::collision,
 };
-
-use super::{guard_crush, hit, wrong_block, HitType, Source};
+use fg_datastructures::math::collision;
 pub struct Effect {
     pub defender: DefenderEffect,
 }
@@ -49,13 +48,12 @@ impl Effect {
                     take_damage: block_info.damage,
                     set_should_pushback: source.source_type == HitSource::Character,
                     set_force: if airborne {
-                        Force::Airborne(source.facing.fix_collision(block_info.air_force))
+                        Force::Airborne(source.facing.fix(block_info.air_force))
                     } else {
                         Force::Grounded(
-                            source.facing.fix_collision(collision::Vec2::new(
-                                block_info.ground_pushback,
-                                0_00,
-                            )),
+                            source
+                                .facing
+                                .fix(collision::Vec2::new(block_info.ground_pushback, 0_00)),
                         )
                     },
                 },
@@ -80,12 +78,12 @@ impl Effect {
 
         if self.defender.set_stun < block_info.stun {
             self.defender.set_force = if airborne {
-                Force::Airborne(source.facing.fix_collision(block_info.air_force))
+                Force::Airborne(source.facing.fix(block_info.air_force))
             } else {
                 Force::Grounded(
                     source
                         .facing
-                        .fix_collision(collision::Vec2::new(block_info.ground_pushback, 0_00)),
+                        .fix(collision::Vec2::new(block_info.ground_pushback, 0_00)),
                 )
             };
             self.defender.set_stun = if airborne {

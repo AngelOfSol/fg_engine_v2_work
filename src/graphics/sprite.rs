@@ -2,7 +2,7 @@ mod file;
 
 use super::keyframe::{KeyframeExt, Modifiers};
 use crate::assets::{Assets, ValueAlpha};
-use crate::typedefs::graphics::{Matrix4, Vec3};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawMode, DrawParam, Image, Mesh, Rect};
 use ggez::{Context, GameResult};

@@ -1,5 +1,4 @@
 use crate::graphics::Animation;
-use crate::typedefs::graphics::{Matrix4, Vec3};
 use crate::ui::graphics::animation::AnimationUi;
 use crate::{
     app_state::{AppContext, AppState, Transition},
@@ -9,6 +8,7 @@ use crate::{
     assets::{Assets, ValueAlpha},
     roster::character::data::Data,
 };
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

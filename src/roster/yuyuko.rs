@@ -20,13 +20,12 @@ use crate::game_match::sounds::GlobalSound;
 use crate::game_match::{FlashType, PlayArea, UiElements};
 use crate::graphics::animation_group::AnimationGroup;
 use crate::hitbox::PositionedHitbox;
-use crate::input::{Facing, InputState};
 use crate::roster::generic_character::GenericCharacterBehaviour;
 use crate::roster::generic_character::OpaqueStateData;
-use crate::typedefs::collision;
-use crate::typedefs::graphics;
 use crate::{assets::Assets, game_object::state::BulletTier};
-
+use fg_datastructures::math::collision;
+use fg_datastructures::math::graphics;
+use fg_input::{Facing, InputState};
 use ggez::{Context, GameResult};
 use hecs::Entity;
 use rodio::Device;

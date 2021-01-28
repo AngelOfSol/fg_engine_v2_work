@@ -1,14 +1,11 @@
 use nom::{
-    branch::{alt, permutation},
+    branch::alt,
     bytes::complete::tag,
-    character::complete::char,
-    combinator::opt,
-    combinator::{map, map_parser, success, value, verify},
-    sequence,
-    sequence::pair,
+    character::complete::{char, one_of},
+    combinator::{map, map_parser, recognize, success, value, verify},
+    sequence::{pair, preceded},
     IResult, Parser,
 };
-use sequence::{preceded, tuple};
 
 use super::{
     button::{Button, ButtonSet},
@@ -28,7 +25,7 @@ pub fn parse_input(input: &str) -> IResult<&str, Input> {
 
 pub fn parse_high_jump(input: &str) -> IResult<&str, Input> {
     preceded(
-        alt((tag("hj"), tag("2"), tag("1"), tag("3"))),
+        alt((recognize(tag("hj")), recognize(one_of("123")))),
         map_parser(alt((tag("7"), tag("8"), tag("9"))), parse_directed_axis).map(Input::SuperJump),
     )(input)
 }

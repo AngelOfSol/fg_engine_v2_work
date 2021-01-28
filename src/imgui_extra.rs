@@ -1,5 +1,4 @@
-use crate::typedefs::collision;
-use crate::typedefs::graphics;
+use fg_datastructures::math::{collision, graphics};
 use imgui::*;
 use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};

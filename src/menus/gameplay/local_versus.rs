@@ -1,11 +1,11 @@
 use super::retry_screen::RetryScreen;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{FromMatchSettings, Match, MatchSettings};
-use crate::input::control_scheme::PadControlScheme;
-use crate::input::pads_context::{Event, EventType};
-use crate::input::InputState;
 use crate::player_list::PlayerList;
-use crate::typedefs::player::PlayerData;
+use fg_datastructures::player_data::PlayerData;
+use fg_input::control_scheme::PadControlScheme;
+use fg_input::pads_context::{Event, EventType};
+use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
 
 type LocalMatch = Match<crate::replay::ReplayWriterFile>;

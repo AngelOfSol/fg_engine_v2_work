@@ -1,10 +1,10 @@
+use super::{ComboEffect, HitType, Source};
 use crate::{
     character::components::AttackInfo,
     roster::hit_info::{Force, HitSource},
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
 
-use super::{ComboEffect, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
     pub combo: ComboEffect,
@@ -49,12 +49,13 @@ impl Effect {
                     take_damage: counter_hit_info.damage,
                     set_should_pushback: source.source_type == HitSource::Character,
                     set_force: if airborne || counter_hit_info.launcher {
-                        Force::Airborne(source.facing.fix_collision(counter_hit_info.air_force))
+                        Force::Airborne(source.facing.fix(counter_hit_info.air_force))
                     } else {
-                        Force::Grounded(source.facing.fix_collision(collision::Vec2::new(
-                            counter_hit_info.ground_pushback,
-                            0_00,
-                        )))
+                        Force::Grounded(
+                            source
+                                .facing
+                                .fix(collision::Vec2::new(counter_hit_info.ground_pushback, 0_00)),
+                        )
                     },
                 },
             },

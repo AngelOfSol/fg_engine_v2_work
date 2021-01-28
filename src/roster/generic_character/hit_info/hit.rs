@@ -1,10 +1,10 @@
+use super::{ComboEffect, HitType, Source};
 use crate::{
     character::components::AttackInfo,
     roster::hit_info::{Force, HitSource},
-    typedefs::collision,
 };
+use fg_datastructures::math::collision;
 
-use super::{ComboEffect, HitType, Source};
 pub struct Effect {
     pub defender: DefenderEffect,
     pub combo: ComboEffect,
@@ -53,13 +53,12 @@ impl Effect {
                     take_damage: attack_info.damage,
                     set_should_pushback: source.source_type == HitSource::Character,
                     set_force: if airborne || attack_info.launcher {
-                        Force::Airborne(source.facing.fix_collision(attack_info.air_force))
+                        Force::Airborne(source.facing.fix(attack_info.air_force))
                     } else {
                         Force::Grounded(
-                            source.facing.fix_collision(collision::Vec2::new(
-                                attack_info.ground_pushback,
-                                0_00,
-                            )),
+                            source
+                                .facing
+                                .fix(collision::Vec2::new(attack_info.ground_pushback, 0_00)),
                         )
                     },
                 },
@@ -101,13 +100,12 @@ impl Effect {
                     take_damage: attack_info.damage,
                     set_should_pushback: source.source_type == HitSource::Character,
                     set_force: if airborne || attack_info.launcher {
-                        Force::Airborne(source.facing.fix_collision(attack_info.air_force))
+                        Force::Airborne(source.facing.fix(attack_info.air_force))
                     } else {
                         Force::Grounded(
-                            source.facing.fix_collision(collision::Vec2::new(
-                                attack_info.ground_pushback,
-                                0_00,
-                            )),
+                            source
+                                .facing
+                                .fix(collision::Vec2::new(attack_info.ground_pushback, 0_00)),
                         )
                     },
                 },
@@ -136,8 +134,7 @@ impl Effect {
         if matches!(self.defender.set_force, Force::Grounded(..)) && attack_info.launcher {
             self.combo.ground_action = attack_info.ground_action;
 
-            self.defender.set_force =
-                Force::Airborne(source.facing.fix_collision(attack_info.air_force));
+            self.defender.set_force = Force::Airborne(source.facing.fix(attack_info.air_force));
             self.defender.set_stun = attack_info.air_stun;
             self.defender.set_stop = attack_info.defender_stop;
             self.defender.set_should_pushback = source.source_type == HitSource::Character;
@@ -149,7 +146,7 @@ impl Effect {
             self.defender.set_force = Force::Grounded(
                 source
                     .facing
-                    .fix_collision(collision::Vec2::new(attack_info.ground_pushback, 0_00)),
+                    .fix(collision::Vec2::new(attack_info.ground_pushback, 0_00)),
             );
             self.defender.set_stun = attack_info.stun;
             self.defender.set_stop = attack_info.defender_stop;
@@ -159,8 +156,7 @@ impl Effect {
         {
             self.combo.ground_action = attack_info.ground_action;
 
-            self.defender.set_force =
-                Force::Airborne(source.facing.fix_collision(attack_info.air_force));
+            self.defender.set_force = Force::Airborne(source.facing.fix(attack_info.air_force));
             self.defender.set_stun = attack_info.air_stun;
             self.defender.set_stop = attack_info.defender_stop;
             self.defender.set_should_pushback = source.source_type == HitSource::Character;

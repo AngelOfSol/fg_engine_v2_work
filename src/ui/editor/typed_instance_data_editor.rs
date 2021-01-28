@@ -1,4 +1,5 @@
 use crate::assets::Assets;
+use crate::game_object::properties::ObjectHitboxSet;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     character::state::components::GlobalGraphic,
@@ -7,10 +8,7 @@ use crate::{
     roster::character::{data::Data, typedefs::Character},
 };
 use crate::{game_match::load_global_graphics, game_object::properties::PropertyType};
-use crate::{
-    game_object::properties::ObjectHitboxSet,
-    typedefs::graphics::{Matrix4, Vec3},
-};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

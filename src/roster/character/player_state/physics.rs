@@ -1,15 +1,17 @@
 use crate::{
     character::{components::GroundAction, state::components::StateType},
     game_match::PlayArea,
-    input::Facing,
     roster::character::{
         data::Data,
         typedefs::{state::StateConsts, Character, Timed},
     },
-    typedefs::{collision, MAX_FALLING_VELOCITY},
 };
+use fg_datastructures::math::collision;
+use fg_input::Facing;
 
 use super::PlayerState;
+
+const MAX_FALLING_VELOCITY: i32 = -8_00;
 
 impl<C: Character> PlayerState<C> {
     pub fn update_velocity(&mut self, data: &Data<C>, play_area: &PlayArea) {
@@ -37,7 +39,7 @@ impl<C: Character> PlayerState<C> {
             collision::Vec2::zeros()
         };
 
-        let accel = self.facing.fix_collision(state_data.flags.accel);
+        let accel = self.facing.fix(state_data.flags.accel);
         self.velocity = base_velocity + accel + friction + gravity;
         self.velocity.y = self.velocity.y.max(MAX_FALLING_VELOCITY);
     }

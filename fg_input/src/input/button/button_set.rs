@@ -72,16 +72,16 @@ impl Display for ButtonSet {
 #[cfg(test)]
 mod test {
     use super::ButtonSet;
-    use crate::input::button::Button;
+    use crate::input::button::Button; 
     use std::str::FromStr;
 
     #[test]
     fn single_button() {
-        assert_eq!(ButtonSet::from_str("a"), Ok(ButtonSet::from(Button::A)));
-        assert_eq!(ButtonSet::from_str("b"), Ok(ButtonSet::from(Button::B)));
-        assert_eq!(ButtonSet::from_str("c"), Ok(ButtonSet::from(Button::C)));
-        assert_eq!(ButtonSet::from_str("d"), Ok(ButtonSet::from(Button::D)));
-        assert_eq!(ButtonSet::from_str("e"), Ok(ButtonSet::from(Button::E)));
+        assert_eq!(ButtonSet::from_str("a"), Ok(Button::A.into()));
+        assert_eq!(ButtonSet::from_str("b"), Ok(Button::B.into()));
+        assert_eq!(ButtonSet::from_str("c"), Ok(Button::C.into()));
+        assert_eq!(ButtonSet::from_str("d"), Ok(Button::D.into()));
+        assert_eq!(ButtonSet::from_str("e"), Ok(Button::E.into()));
     }
     #[test]
     fn multi_button() {

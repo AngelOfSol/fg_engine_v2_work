@@ -7,13 +7,11 @@ use crate::{
     character::state::components::{GlobalGraphic, GlobalGraphicMap},
     game_match::UiElements,
     game_object::state::{Position, Rotation, Timer},
-    input::Facing,
     roster::hit_info::ComboEffect,
-    typedefs::{
-        collision::{self, IntoGraphical},
-        graphics,
-    },
 };
+use fg_datastructures::math::collision::{self, IntoGraphical};
+use fg_datastructures::math::graphics;
+use fg_input::Facing;
 use ggez::{Context, GameResult};
 
 pub struct UiContext<'a> {
@@ -32,13 +30,11 @@ pub fn get_transform(
     facing: Facing,
 ) -> graphics::Matrix4 {
     world
-        * graphics::Matrix4::new_translation(&graphics::up_dimension(position.into_graphical()))
-        * graphics::Matrix4::new_translation(&graphics::up_dimension(
-            facing.fix_graphics(-offset.into_graphical()),
-        ))
-        * graphics::Matrix4::new_nonuniform_scaling(&graphics::up_dimension(
-            facing.graphics_multiplier(),
-        ))
+        * graphics::Matrix4::new_translation(&position.into_graphical().to_homogeneous())
+        * graphics::Matrix4::new_translation(&facing.fix(-offset.into_graphical()).to_homogeneous())
+        * graphics::Matrix4::new_nonuniform_scaling(
+            &facing.fix(graphics::Vec2::new(1.0, 1.0)).to_homogeneous(),
+        )
 }
 
 impl<C: Character> Player<C> {

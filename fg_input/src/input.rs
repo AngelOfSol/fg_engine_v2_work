@@ -1,0 +1,17 @@
+pub mod button;
+pub mod control_scheme;
+mod input_state;
+pub mod pads_context;
+pub mod parsing;
+
+mod input_coalesce;
+mod motion;
+mod axis;
+
+pub use axis::{DirectedAxis, Direction, Facing};
+pub use input_state::InputState;
+pub use motion::{read_inputs, Input};
+
+use axis::Axis;
+
+const MOTION_DIRECTION_SIZE: usize = 10;

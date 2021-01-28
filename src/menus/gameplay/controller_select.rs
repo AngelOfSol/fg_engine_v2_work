@@ -1,7 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use crate::input::pads_context::{Button, EventType};
 use crate::player_list::{PlayerList, PlayerType};
-use crate::typedefs::player::PlayerData;
+use fg_datastructures::player_data::PlayerData;
+use fg_input::pads_context::{Button, EventType};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
 

@@ -1,16 +1,14 @@
 use super::{
     typed_animation_editor::TypedAnimationEditor, typed_character_editor::EDITOR_BACKGROUND,
 };
+use crate::roster::character::data::Data;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     ui::graphics::animations::AnimationsUi,
 };
 use crate::{assets::Assets, graphics::keyframe::Modifiers};
 use crate::{graphics::animation_group::AnimationGroup, roster::character::typedefs::Character};
-use crate::{
-    roster::character::data::Data,
-    typedefs::graphics::{Matrix4, Vec3},
-};
+use fg_datastructures::math::graphics::{Matrix4, Vec3};
 use ggez::graphics;
 use ggez::graphics::{Color, DrawParam, Mesh};
 use ggez::{Context, GameResult};

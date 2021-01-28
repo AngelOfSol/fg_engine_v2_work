@@ -1,6 +1,5 @@
 use crate::{
     character::{components::AttackInfo, state::components::StateType},
-    input::{DirectedAxis, InputState},
     roster::{
         character::{data::Data, player_state::PlayerState, typedefs::Character},
         hit_info::{
@@ -8,6 +7,7 @@ use crate::{
         },
     },
 };
+use fg_input::{DirectedAxis, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn would_be_hit(

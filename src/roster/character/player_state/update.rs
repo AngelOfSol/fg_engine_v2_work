@@ -1,3 +1,4 @@
+use fg_input::InputState;
 use hecs::World;
 
 use super::PlayerState;
@@ -8,7 +9,6 @@ use crate::{
         constructors::{Construct, Constructor},
         properties::{CharacterAttack, PropertyType, TryAsRef},
     },
-    input::InputState,
     roster::{
         character::{
             data::Data,
@@ -76,7 +76,7 @@ where
         self.update_spirit(data);
         self.handle_smp(&opponent);
         self.update_lockout();
-        self.update_meter(data, opponent.position);
+        self.update_meter(data);
         self.update_objects(world, data, global_graphics);
         self.spawn_objects(world, data);
         self.sound_state.update();
