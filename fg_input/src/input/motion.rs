@@ -1,9 +1,8 @@
+use crate::notation;
+
 use super::axis::{Axis, DirectedAxis, Direction, Facing};
+use super::button::{Button, ButtonSet, ButtonState};
 use super::input_coalesce::InputCoalesce;
-use super::{
-    button::{Button, ButtonSet, ButtonState},
-    parsing::parse_input,
-};
 use super::{InputState, MOTION_DIRECTION_SIZE};
 use inspect_design::traits::*;
 use nom::Finish;
@@ -113,7 +112,7 @@ impl Display for Input {
 impl FromStr for Input {
     type Err = nom::error::ErrorKind;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse_input(s)
+        notation::parse(s)
             .finish()
             .map_err(|err| err.code)
             .map(|(_, item)| item)

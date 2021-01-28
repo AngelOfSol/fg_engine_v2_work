@@ -1,4 +1,4 @@
-use crate::input::parsing::parse_button_set;
+use crate::notation::button_set;
 
 use super::Button;
 use inspect_design::Inspect;
@@ -41,7 +41,7 @@ impl From<Button> for ButtonSet {
 impl FromStr for ButtonSet {
     type Err = nom::error::ErrorKind;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        terminated(parse_button_set, eof)(s)
+        terminated(button_set::parse, eof)(s)
             .finish()
             .map_err(|err| err.code)
             .map(|(_, item)| item)
@@ -72,7 +72,7 @@ impl Display for ButtonSet {
 #[cfg(test)]
 mod test {
     use super::ButtonSet;
-    use crate::input::button::Button; 
+    use crate::input::button::Button;
     use std::str::FromStr;
 
     #[test]

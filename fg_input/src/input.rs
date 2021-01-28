@@ -1,12 +1,11 @@
+mod axis;
+mod input_coalesce;
+mod input_state;
+mod motion;
+
 pub mod button;
 pub mod control_scheme;
-mod input_state;
 pub mod pads_context;
-pub mod parsing;
-
-mod input_coalesce;
-mod motion;
-mod axis;
 
 pub use axis::{DirectedAxis, Direction, Facing};
 pub use input_state::InputState;
