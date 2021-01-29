@@ -4,4 +4,5 @@ pub mod double_tap;
 pub mod dragon_punch;
 pub mod helper;
 pub mod quarter_circle;
+pub mod super_jump;
 pub mod types;

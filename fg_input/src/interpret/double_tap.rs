@@ -1,17 +1,10 @@
-use crate::{axis::Axis, input_state::RawAxis};
+use crate::{axis::Axis, input_state::matches_cardinal};
 
 use super::{
     axis::axes,
     helper::{next, peek, take_while_m_n, value},
     types::{IResult, InputBuffer, ReadInput},
 };
-
-fn matches_cardinal(lhs: RawAxis, rhs: RawAxis) -> bool {
-    !lhs.iter()
-        .zip(rhs.iter())
-        .filter(|(l, _)| **l != 0)
-        .all(|(l, r)| l != r)
-}
 
 pub fn interpret(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
     let (required, _) = axes(motion_size);

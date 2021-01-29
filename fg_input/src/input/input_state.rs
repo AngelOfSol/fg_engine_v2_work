@@ -5,6 +5,13 @@ use serde::{Deserialize, Serialize};
 
 pub type RawAxis = [i32; 2];
 
+pub fn matches_cardinal(lhs: RawAxis, rhs: RawAxis) -> bool {
+    !lhs.iter()
+        .zip(rhs.iter())
+        .filter(|(l, _)| **l != 0)
+        .all(|(l, r)| l != r)
+}
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct InputState {
     pub axis: RawAxis,
