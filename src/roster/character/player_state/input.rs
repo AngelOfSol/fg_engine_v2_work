@@ -12,7 +12,7 @@ use crate::{
         AllowedCancel,
     },
 };
-use fg_input::{button::button_set, read_inputs, InputState};
+use fg_input::{button::button_set, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn handle_input(&mut self, data: &Data<C>, input: &[InputState]) {
@@ -20,10 +20,12 @@ impl<C: Character> PlayerState<C> {
         let state_data = data.get(self);
 
         self.current_state = {
-            let inputs = read_inputs(
-                input.iter().rev(),
+            let inputs = fg_input::interpret::interpret(
                 self.facing,
                 state_data.state_type.buffer_window(),
+                3,
+                8,
+                &input,
             );
             // TODO move to better handling for this
             // inputs should be able to detect releases

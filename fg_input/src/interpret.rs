@@ -53,8 +53,8 @@ pub fn interpret(
         ])
         .flatten()
         .map(|item| match facing {
-            Facing::Left => item,
-            Facing::Right => item.invert(),
+            Facing::Right => item,
+            Facing::Left => item.invert(),
         })
         .collect()
 }
