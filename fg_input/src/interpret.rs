@@ -2,14 +2,14 @@ use types::InputBuffer;
 
 use crate::{Facing, Input};
 
-pub mod axis;
-pub mod button_set;
-pub mod double_tap;
-pub mod dragon_punch;
-pub mod helper;
-pub mod quarter_circle;
-pub mod super_jump;
-pub mod types;
+mod axis;
+mod button_set;
+mod double_tap;
+mod dragon_punch;
+mod helper;
+mod quarter_circle;
+mod super_jump;
+mod types;
 
 use helper::*;
 
