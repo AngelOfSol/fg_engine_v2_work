@@ -104,8 +104,8 @@ fn read_button_press<'a>(
     for _ in 0..forgiveness {
         if let Some(buttons) = read_recent_button_set(buffer.clone()) {
             return Some(Input::PressButton(
-                buffer.next().unwrap().axis().into(),
                 buttons,
+                buffer.next().unwrap().axis().into(),
             ));
         }
         buffer.next();

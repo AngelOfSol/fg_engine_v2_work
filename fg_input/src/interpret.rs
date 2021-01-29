@@ -1,3 +1,7 @@
+use types::InputBuffer;
+
+use crate::{Facing, Input};
+
 pub mod axis;
 pub mod button_set;
 pub mod double_tap;
@@ -6,3 +10,51 @@ pub mod helper;
 pub mod quarter_circle;
 pub mod super_jump;
 pub mod types;
+
+use helper::*;
+
+pub fn interpret(
+    facing: Facing,
+    buffer_size: usize,
+    grace_period: usize,
+    motion_size: usize,
+    buffer: InputBuffer<'_>,
+) -> Vec<Input> {
+    let buttons = (0..buffer_size).into_iter().find_map(|start| {
+        peek(button_set::interpret_buffered(grace_period))(&buffer[..buffer.len() - start])
+    });
+
+    buttons
+        .map(|(button_set_buffer, buttons)| {
+            vec![
+                // read dragon punch
+                dragon_punch::interpret(motion_size)(button_set_buffer)
+                    .map(|(_, direction)| Input::DragonPunch(direction, buttons)),
+                // read quarter circle
+                quarter_circle::interpret(motion_size)(button_set_buffer)
+                    .map(|(_, direction)| Input::QuarterCircle(direction, buttons)),
+                // read press button
+                next_axis(button_set_buffer)
+                    .map(|(_, axis)| Input::PressButton(buttons, axis.into())),
+            ]
+            .into_iter()
+        })
+        .into_iter()
+        .flatten()
+        .chain(vec![
+            // read super jump
+            super_jump::interpret(motion_size)(buffer)
+                .map(|(_, axis)| Input::SuperJump(axis.into())),
+            // read dash motions
+            double_tap::interpret(motion_size)(buffer)
+                .map(|(_, axis)| Input::DoubleTap(axis.into())),
+            // read idle
+            next_axis(buffer).map(|(_, axis)| Input::Idle(axis.into())),
+        ])
+        .flatten()
+        .map(|item| match facing {
+            Facing::Left => item,
+            Facing::Right => item.invert(),
+        })
+        .collect()
+}

@@ -6,7 +6,11 @@ use super::{
     types::{IResult, InputBuffer, ReadInput},
 };
 
-pub fn interpret(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
+pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'_, Axis> {
+    move |buffer: InputBuffer<'_>| interpret_internal(motion_size, buffer)
+}
+
+fn interpret_internal(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
     let (required, _) = axes(motion_size);
 
     peek(next)
@@ -30,7 +34,7 @@ pub fn interpret(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Axi
 mod test {
     use crate::{axis::Axis, InputState};
 
-    use super::{interpret, matches_cardinal};
+    use super::{interpret_internal, matches_cardinal};
 
     #[test]
     fn test_matches_cardinal() {
@@ -57,12 +61,12 @@ mod test {
         buffer[4].axis = [1, 0];
         buffer[5].axis = [1, 0];
 
-        assert_eq!(interpret(2, &buffer).unwrap().1, Axis::Right);
-        assert_eq!(interpret(1, &buffer), None);
+        assert_eq!(interpret_internal(2, &buffer).unwrap().1, Axis::Right);
+        assert_eq!(interpret_internal(1, &buffer), None);
 
         buffer[2].axis = [1, -1];
         buffer[3].axis = [1, 1];
 
-        assert_eq!(interpret(2, &buffer), None);
+        assert_eq!(interpret_internal(2, &buffer), None);
     }
 }

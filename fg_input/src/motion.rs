@@ -16,7 +16,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub enum Input {
     DragonPunch(Direction, ButtonSet),
     QuarterCircle(Direction, ButtonSet),
-    PressButton(DirectedAxis, ButtonSet),
+    PressButton(ButtonSet, DirectedAxis),
     SuperJump(DirectedAxis),
     DoubleTap(DirectedAxis),
     Idle(DirectedAxis),
@@ -108,7 +108,7 @@ impl Display for Input {
                     button
                 )
             }
-            Self::PressButton(dir, button) => write!(f, "{}{}", dir, button),
+            Self::PressButton(button, dir) => write!(f, "{}{}", dir, button),
         }
     }
 }
@@ -131,6 +131,23 @@ mod test {
         button::button_set,
     };
     use std::str::FromStr;
+
+    #[test]
+    fn test_ordering() {
+        let list: Vec<_> = vec![
+            "623ab", "623b", "623a", "214ab", "214b", "214a", "6ab", "6b", "5b", "6a", "5a", "29",
+            "66", "6", "5",
+        ]
+        .into_iter()
+        .map(|value| Input::from_str(value))
+        .flatten()
+        .collect();
+
+        let mut sorted = list.clone();
+        sorted.sort();
+
+        assert_eq!(sorted, list);
+    }
 
     #[test]
     fn test_super_jump() {
@@ -237,14 +254,14 @@ mod test {
     fn press_button() {
         assert_eq!(
             Input::from_str("6d"),
-            Ok(Input::PressButton(DirectedAxis::Forward, button_set::D))
+            Ok(Input::PressButton(button_set::D, DirectedAxis::Forward,))
         );
         assert_eq!(
             Input::from_str("5a"),
-            Ok(Input::PressButton(DirectedAxis::Neutral, button_set::A))
+            Ok(Input::PressButton(button_set::A, DirectedAxis::Neutral,))
         );
 
-        let value = Input::PressButton(DirectedAxis::Neutral, button_set::A);
+        let value = Input::PressButton(button_set::A, DirectedAxis::Neutral);
         // round trip
         assert_eq!(
             value,
@@ -266,7 +283,7 @@ impl Input {
         match self {
             Input::Idle(dir) => Input::Idle(dir.invert()),
             Input::DoubleTap(dir) => Input::DoubleTap(dir.invert()),
-            Input::PressButton(dir, button) => Input::PressButton(dir.invert(), button),
+            Input::PressButton(button, dir) => Input::PressButton(button, dir.invert()),
             Input::QuarterCircle(dir, button) => Input::QuarterCircle(dir.invert(), button),
             Input::DragonPunch(dir, button) => Input::DragonPunch(dir.invert(), button),
             Input::SuperJump(dir) => Input::SuperJump(dir.invert()),

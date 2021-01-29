@@ -6,14 +6,12 @@ use super::{
 };
 
 pub fn interpret_buffered(
-    buffer_size: usize,
+    grace_period: usize,
 ) -> impl FnMut(InputBuffer<'_>) -> IResult<'_, ButtonSet> {
+    assert!(grace_period != 0);
     move |buffer: InputBuffer| {
-        if buffer_size == 0 {
-            return None;
-        }
-        let (mut buffer, mut button_set) = (buffer, ButtonSet::default());
-        for _ in 0..buffer_size {
+        let (mut buffer, mut button_set) = interpret(buffer)?;
+        for _ in 1..grace_period {
             if let Some((new_buffer, rest)) = take(1)(buffer) {
                 buffer = new_buffer;
                 if let Some((_, additional)) = interpret(rest) {
@@ -28,16 +26,13 @@ pub fn interpret_buffered(
 }
 
 pub fn interpret(buffer: InputBuffer<'_>) -> IResult<'_, ButtonSet> {
-    let (buffer, buttons) = map(next, |state| state.just_pressed())(buffer)?;
-    if buttons.is_empty() {
-        None
-    } else {
-        Some((buffer, buttons))
-    }
+    map(next, |state| state.just_pressed())(buffer)
 }
 
 #[cfg(test)]
 mod test {
+    use button_set::ButtonSet;
+
     use crate::{
         button::{button_set, ButtonState},
         InputState,
@@ -60,7 +55,11 @@ mod test {
 
         assert_eq!(
             interpret(&buffer),
-            Some((&buffer[0..4], button_set::A | button_set::B))
+            Some((&buffer[..4], button_set::A | button_set::B))
+        );
+        assert_eq!(
+            interpret(&buffer[..1]),
+            Some((&buffer[..0], ButtonSet::default()))
         );
     }
     #[test]
@@ -78,7 +77,7 @@ mod test {
 
         assert_eq!(
             interpret_buffered(3)(&buffer),
-            Some((&buffer[0..2], button_set::A | button_set::B))
+            Some((&buffer[..2], button_set::A | button_set::B))
         );
     }
 }

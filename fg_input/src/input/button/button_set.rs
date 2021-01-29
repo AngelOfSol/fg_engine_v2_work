@@ -4,26 +4,26 @@ use inspect_design::Inspect;
 use nom::{combinator::eof, sequence::terminated, Finish};
 use serde::{Deserialize, Serialize};
 use std::{
+    cmp::Ordering,
     fmt::{Display, Formatter},
     ops::{BitOr, BitOrAssign},
     str::FromStr,
 };
 
-#[derive(
-    Debug,
-    Serialize,
-    Deserialize,
-    Clone,
-    Copy,
-    Hash,
-    PartialEq,
-    Eq,
-    Inspect,
-    PartialOrd,
-    Ord,
-    Default,
-)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Inspect, Default)]
 pub struct ButtonSet(pub u8);
+
+impl PartialOrd<Self> for ButtonSet {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.0.cmp(&other.0).reverse())
+    }
+}
+
+impl Ord for ButtonSet {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
 
 pub const A: ButtonSet = ButtonSet(0b00001);
 pub const B: ButtonSet = ButtonSet(0b00010);
