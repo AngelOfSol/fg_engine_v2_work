@@ -21,6 +21,31 @@ pub enum Axis {
     DownLeft,
 }
 
+impl Axis {
+    pub fn shift_down(self) -> Self {
+        match self {
+            Self::Up => Self::Neutral,
+            Self::Right => Self::DownRight,
+            Self::Left => Self::DownLeft,
+            Self::Neutral => Self::Down,
+            Self::UpRight => Self::Right,
+            Self::UpLeft => Self::Left,
+            _ => self,
+        }
+    }
+    pub fn shift_up(self) -> Self {
+        match self {
+            Self::Down => Self::Neutral,
+            Self::Right => Self::UpRight,
+            Self::Left => Self::UpLeft,
+            Self::Neutral => Self::Up,
+            Self::DownRight => Self::Right,
+            Self::DownLeft => Self::Left,
+            _ => self,
+        }
+    }
+}
+
 impl From<[i32; 2]> for Axis {
     fn from([x, y]: [i32; 2]) -> Self {
         match x.cmp(&0) {

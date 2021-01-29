@@ -14,3 +14,9 @@ impl ButtonState {
         matches!(self, ButtonState::Pressed | ButtonState::JustPressed)
     }
 }
+
+impl Default for ButtonState {
+    fn default() -> Self {
+        Self::Released
+    }
+}

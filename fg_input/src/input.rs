@@ -1,6 +1,6 @@
 //mod axis;
 mod input_coalesce;
-mod input_state;
+pub mod input_state;
 mod motion;
 
 pub mod button;

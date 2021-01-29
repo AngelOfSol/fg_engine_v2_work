@@ -38,6 +38,9 @@ impl ButtonSet {
     pub fn is_superset(self, rhs: ButtonSet) -> bool {
         rhs.0 & self.0 == rhs.0
     }
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
 }
 
 impl FromStr for ButtonSet {
