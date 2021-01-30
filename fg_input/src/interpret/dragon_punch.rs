@@ -2,8 +2,8 @@ use crate::axis::{Axis, Direction};
 
 use super::{
     axis::axes,
-    helper::{alt, map, next_axis, peek, success, value, verify},
-    types::{IResult, InputBuffer, ReadInput},
+    helper::{alt, value},
+    types::{IResult, InputBuffer},
 };
 
 pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'_, Direction> {
@@ -15,43 +15,30 @@ fn interpret_internal(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_
 
     let (required, optional) = axes(motion_size);
 
-    map(
-        peek(next_axis)
-            .flat_map(move |axis| {
-                alt((
-                    verify(
-                        value(
-                            axis.shift_down(),
-                            (required(axis), required(axis.shift_down())),
-                        ),
-                        move |_| matches!(axis, Axis::UpRight | Axis::UpLeft),
-                    ),
-                    verify(required(axis), move |_| {
-                        matches!(axis, Axis::Right | Axis::Left)
-                    }),
-                    verify(success(axis.shift_up()), move |_| {
-                        matches!(axis, Axis::DownRight | Axis::DownLeft)
-                    }),
-                ))
-            })
-            .flat_map(move |axis| {
-                value(
-                    axis,
-                    (
-                        required(axis.shift_down()),
-                        required(Axis::Down),
-                        optional(axis.shift_down()),
-                        required(axis),
-                    ),
-                )
-            }),
-        |axis| match axis {
-            Axis::Right => Direction::Forward,
-            Axis::Left => Direction::Backward,
-            _ => unreachable!(),
-        },
-    )
-    .read_input(buffer)
+    alt((
+        value(
+            Direction::Forward,
+            (
+                optional(Axis::UpRight),
+                optional(Axis::Right),
+                required(Axis::DownRight),
+                required(Axis::Down),
+                optional(Axis::DownRight),
+                required(Axis::Right),
+            ),
+        ),
+        (value(
+            Direction::Backward,
+            (
+                optional(Axis::UpLeft),
+                optional(Axis::Left),
+                required(Axis::DownLeft),
+                required(Axis::Down),
+                optional(Axis::DownLeft),
+                required(Axis::Left),
+            ),
+        )),
+    ))(buffer)
 }
 
 #[cfg(test)]

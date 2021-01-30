@@ -2,8 +2,8 @@ use crate::axis::{Axis, Direction};
 
 use super::{
     axis::axes,
-    helper::{alt, map, next_axis, peek, success, value, verify},
-    types::{IResult, InputBuffer, ReadInput},
+    helper::{alt, value},
+    types::{IResult, InputBuffer},
 };
 
 pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'_, Direction> {
@@ -13,38 +13,28 @@ pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'
 fn interpret_internal(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Direction> {
     assert!(motion_size > 0);
 
-    let (required, _) = axes(motion_size);
+    let (required, optional) = axes(motion_size);
 
-    map(
-        peek(next_axis)
-            .flat_map(move |axis| {
-                alt((
-                    verify(value(axis.shift_down(), required(axis)), move |_| {
-                        matches!(axis, Axis::UpRight | Axis::UpLeft)
-                    }),
-                    verify(success(axis), move |_| {
-                        matches!(axis, Axis::Right | Axis::Left)
-                    }),
-                ))
-            })
-            .flat_map(move |axis| {
-                value(
-                    axis,
-                    //[236]
-                    (
-                        required(axis),
-                        required(axis.shift_down()),
-                        required(Axis::Down),
-                    ),
-                )
-            }),
-        |axis| match axis {
-            Axis::Right => Direction::Forward,
-            Axis::Left => Direction::Backward,
-            _ => unreachable!(),
-        },
-    )
-    .read_input(buffer)
+    alt((
+        value(
+            Direction::Forward,
+            (
+                optional(Axis::UpRight),
+                required(Axis::Right),
+                required(Axis::DownRight),
+                required(Axis::Down),
+            ),
+        ),
+        (value(
+            Direction::Backward,
+            (
+                optional(Axis::UpLeft),
+                required(Axis::Left),
+                required(Axis::DownLeft),
+                required(Axis::Down),
+            ),
+        )),
+    ))(buffer)
 }
 
 #[cfg(test)]

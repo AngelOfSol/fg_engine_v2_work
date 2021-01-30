@@ -2,8 +2,8 @@ use crate::{axis::Axis, input_state::matches_cardinal};
 
 use super::{
     axis::axes,
-    helper::{next, peek, take_while_m_n, value},
-    types::{IResult, InputBuffer, ReadInput},
+    helper::{alt, take_while_m_n, value},
+    types::{IResult, InputBuffer},
 };
 
 pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'_, Axis> {
@@ -13,21 +13,38 @@ pub fn interpret(motion_size: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'
 fn interpret_internal(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
     let (required, _) = axes(motion_size);
 
-    peek(next)
-        .flat_map(|state| {
-            let axis = state.axis();
-            value(
-                axis,
-                (
-                    required(axis),
-                    take_while_m_n(1, motion_size, move |value| {
-                        !matches_cardinal(state.axis, value.axis)
-                    }),
-                    required(axis),
-                ),
-            )
-        })
-        .read_input(buffer)
+    alt((
+        value(
+            Axis::Right,
+            (
+                required(Axis::Right),
+                take_while_m_n(1, motion_size, move |value| {
+                    !matches_cardinal([1, 0], value.axis)
+                }),
+                required(Axis::Right),
+            ),
+        ),
+        value(
+            Axis::Left,
+            (
+                required(Axis::Left),
+                take_while_m_n(1, motion_size, move |value| {
+                    !matches_cardinal([-1, 0], value.axis)
+                }),
+                required(Axis::Left),
+            ),
+        ),
+        value(
+            Axis::Down,
+            (
+                required(Axis::Down),
+                take_while_m_n(1, motion_size, move |value| {
+                    !matches_cardinal([0, -1], value.axis)
+                }),
+                required(Axis::Down),
+            ),
+        ),
+    ))(buffer)
 }
 
 #[cfg(test)]

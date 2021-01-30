@@ -1,7 +1,7 @@
 use crate::button::ButtonSet;
 
 use super::{
-    helper::{map, next, take},
+    helper::{map, next},
     types::{IResult, InputBuffer},
 };
 
@@ -11,16 +11,13 @@ pub fn interpret_buffered(
     assert!(grace_period != 0);
     move |buffer: InputBuffer| {
         let (mut buffer, mut button_set) = interpret(buffer)?;
+
         for _ in 1..grace_period {
-            if let Some((new_buffer, rest)) = take(1)(buffer) {
-                buffer = new_buffer;
-                if let Some((_, additional)) = interpret(rest) {
-                    button_set |= additional;
-                }
-            } else {
-                break;
-            }
+            let (new_buffer, additional) = map(next, |x| x.just_pressed())(buffer)?;
+            buffer = new_buffer;
+            button_set |= additional;
         }
+
         Some((buffer, button_set))
     }
 }

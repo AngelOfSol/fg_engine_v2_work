@@ -10,16 +10,6 @@ pub fn next(buffer: InputBuffer) -> IResult<'_, &InputState> {
     Some((&buffer[..buffer.len() - 1], element))
 }
 
-pub fn take(count: usize) -> impl FnMut(InputBuffer<'_>) -> IResult<'_> {
-    move |buffer: InputBuffer| {
-        if count > buffer.len() {
-            None
-        } else {
-            Some(buffer.split_at(buffer.len() - count))
-        }
-    }
-}
-
 pub fn take_while_m_n<'a, F>(
     m: usize,
     n: usize,
@@ -62,13 +52,6 @@ where
     }
 }
 
-pub fn success<'a, O>(value: O) -> impl FnMut(InputBuffer<'a>) -> IResult<'a, O>
-where
-    O: Clone,
-{
-    move |buffer: InputBuffer| Some((buffer, value.clone()))
-}
-
 pub fn peek<'a, F, O>(mut f: F) -> impl FnMut(InputBuffer<'a>) -> IResult<'a, O>
 where
     F: ReadInput<'a, O>,
@@ -94,36 +77,12 @@ pub fn next_axis(buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
     map(next, |state| state.axis())(buffer)
 }
 
-pub fn verify<'a, R, O>(
-    mut r: R,
-    cond: impl Fn(&O) -> bool,
-) -> impl FnMut(InputBuffer<'a>) -> IResult<'a, O>
-where
-    R: ReadInput<'a, O>,
-{
-    move |buffer: InputBuffer| {
-        let (buffer, value) = r.read_input(buffer)?;
-        if cond(&value) {
-            Some((buffer, value))
-        } else {
-            None
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
 
     use crate::{axis::Axis, InputState};
 
-    use super::{map, next, next_axis, peek, success, take, take_while_m_n, value, verify};
-
-    #[test]
-    fn test_success() {
-        let buffer = [Default::default(); 1];
-
-        assert_eq!(success(0)(&buffer), Some((buffer.as_ref(), 0)));
-    }
+    use super::{map, next, next_axis, peek, take_while_m_n, value};
 
     #[test]
     fn test_next() {
@@ -135,16 +94,6 @@ mod test {
         assert!(buffer.is_empty());
 
         assert_eq!(next(buffer), None);
-    }
-    #[test]
-    fn test_take() {
-        let buffer = [Default::default(); 2];
-
-        let (new_buffer, result) = take(1)(&buffer).unwrap();
-        assert_eq!(&buffer[0..1], new_buffer);
-        assert_eq!(&buffer[1..2], result);
-
-        assert_eq!(take(3)(&buffer), None);
     }
 
     #[test]
@@ -178,10 +127,7 @@ mod test {
     fn test_map() {
         let buffer = [Default::default()];
 
-        assert_eq!(
-            map(success(1), |val| val + 1)(&buffer),
-            Some((buffer.as_ref(), 2))
-        );
+        assert_eq!(map(next, |_| 2)(&buffer), Some((&buffer[..0], 2)));
     }
 
     #[test]
@@ -196,8 +142,8 @@ mod test {
     fn test_value() {
         let buffer = [Default::default()];
 
-        assert_eq!(value(0, take(1))(&buffer), Some((&buffer[..0], 0)));
-        assert_eq!(value(0, take(2))(&buffer), None);
+        assert_eq!(value(0, next)(&buffer), Some((&buffer[..0], 0)));
+        assert_eq!(value(0, next)(&buffer[..0]), None);
     }
 
     #[test]
@@ -210,16 +156,5 @@ mod test {
         assert!(buffer.is_empty());
 
         assert_eq!(next_axis(buffer), None);
-    }
-
-    #[test]
-    fn test_verify() {
-        let buffer = [Default::default(); 1];
-
-        assert_eq!(
-            verify(next_axis, |axis| *axis == Axis::Neutral)(&buffer),
-            Some((&buffer[..0], Axis::Neutral))
-        );
-        assert_eq!(verify(next_axis, |axis| *axis == Axis::Up)(&buffer), None);
     }
 }

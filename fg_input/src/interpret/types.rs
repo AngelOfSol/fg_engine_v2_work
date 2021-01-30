@@ -81,6 +81,45 @@ where
         Some((input, (first, second, third, fourth)))
     }
 }
+impl<'a, O1, O2, O3, O4, O5, T, U, V, W, X> ReadInput<'a, (O1, O2, O3, O4, O5)> for (T, U, V, W, X)
+where
+    T: ReadInput<'a, O1>,
+    U: ReadInput<'a, O2>,
+    V: ReadInput<'a, O3>,
+    W: ReadInput<'a, O4>,
+    X: ReadInput<'a, O5>,
+{
+    fn read_input(&mut self, input: InputBuffer<'a>) -> IResult<'a, (O1, O2, O3, O4, O5)> {
+        let (input, first) = self.0.read_input(input)?;
+        let (input, second) = self.1.read_input(input)?;
+        let (input, third) = self.2.read_input(input)?;
+        let (input, fourth) = self.3.read_input(input)?;
+        let (input, fifth) = self.4.read_input(input)?;
+
+        Some((input, (first, second, third, fourth, fifth)))
+    }
+}
+impl<'a, O1, O2, O3, O4, O5, O6, T, U, V, W, X, Y> ReadInput<'a, (O1, O2, O3, O4, O5, O6)>
+    for (T, U, V, W, X, Y)
+where
+    T: ReadInput<'a, O1>,
+    U: ReadInput<'a, O2>,
+    V: ReadInput<'a, O3>,
+    W: ReadInput<'a, O4>,
+    X: ReadInput<'a, O5>,
+    Y: ReadInput<'a, O6>,
+{
+    fn read_input(&mut self, input: InputBuffer<'a>) -> IResult<'a, (O1, O2, O3, O4, O5, O6)> {
+        let (input, first) = self.0.read_input(input)?;
+        let (input, second) = self.1.read_input(input)?;
+        let (input, third) = self.2.read_input(input)?;
+        let (input, fourth) = self.3.read_input(input)?;
+        let (input, fifth) = self.4.read_input(input)?;
+        let (input, sixth) = self.5.read_input(input)?;
+
+        Some((input, (first, second, third, fourth, fifth, sixth)))
+    }
+}
 
 pub struct Or<T, U> {
     first: T,
