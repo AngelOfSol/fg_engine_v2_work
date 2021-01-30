@@ -8,14 +8,14 @@ use std::fmt::{Display, Formatter};
     Debug, Copy, Clone, Hash, PartialEq, Eq, Serialize, Deserialize, Inspect, PartialOrd, Ord,
 )]
 pub enum DirectedAxis {
-    DownForward,
-    Forward,
-    UpForward,
-    Backward,
     DownBackward,
-    UpBackward,
+    DownForward,
     Down,
+    UpBackward,
+    UpForward,
     Up,
+    Backward,
+    Forward,
     Neutral,
 }
 
@@ -65,7 +65,7 @@ impl DirectedAxis {
                 DirectedAxis::Backward | DirectedAxis::Neutral
             ) | (DirectedAxis::Down, DirectedAxis::Down)
                 | (DirectedAxis::Up, DirectedAxis::Up)
-                | (DirectedAxis::Neutral, DirectedAxis::Neutral)
+                | (_, DirectedAxis::Neutral)
         )
     }
 

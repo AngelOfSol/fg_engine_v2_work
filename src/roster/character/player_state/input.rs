@@ -12,7 +12,7 @@ use crate::{
         AllowedCancel,
     },
 };
-use fg_input::{button::button_set, InputState};
+use fg_input::{button::button_set, Input, InputState};
 
 impl<C: Character> PlayerState<C> {
     pub fn handle_input(&mut self, data: &Data<C>, input: &[InputState]) {
@@ -44,10 +44,11 @@ impl<C: Character> PlayerState<C> {
                     }
                 }
             } else {
-                let possible_new_move = inputs
+                let possible_new_move = data
+                    .input_map
                     .iter()
-                    .flat_map(|input| data.input_map.get(input))
-                    .flat_map(|command_ids| command_ids.iter())
+                    .filter(|(input, _)| inputs.iter().any(|active| Input::matches(active, input)))
+                    .flat_map(|(_, command_ids)| command_ids.iter())
                     .map(|command_id| (*command_id, &data.command_map[command_id]))
                     .find(|(command_id, command)| {
                         command.reqs.iter().all(|requirement| match requirement {
