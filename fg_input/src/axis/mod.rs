@@ -31,6 +31,28 @@ impl Default for Axis {
         Self::Neutral
     }
 }
+
+impl Axis {
+    pub fn x(self) -> Self {
+        (self as u8 & 0b0110).try_into().unwrap()
+    }
+
+    pub fn y(self) -> Self {
+        (self as u8 & 0b1001).try_into().unwrap()
+    }
+
+    fn socd(lhs: Self, rhs: Self) -> Self {
+        let x = lhs.x() + rhs.x();
+        let y = if lhs.y() == Axis::Up || rhs.y() == Axis::Up {
+            Axis::Up
+        } else {
+            lhs + rhs
+        };
+
+        x + y
+    }
+}
+
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct InvalidAxisValue;
 impl TryFrom<u8> for Axis {
@@ -168,5 +190,26 @@ mod test {
         assert_eq!(-Axis::DownRight, Axis::UpLeft);
         assert_eq!(-Axis::UpRight, Axis::DownLeft);
         assert_eq!(-Axis::DownLeft, Axis::UpRight);
+    }
+
+    #[test]
+    fn test_socd() {
+        assert_eq!(Axis::socd(Axis::Left, Axis::Right), Axis::Neutral);
+        assert_eq!(Axis::socd(Axis::Right, Axis::Left), Axis::Neutral);
+
+        assert_eq!(Axis::socd(Axis::Down, Axis::Up), Axis::Up);
+        assert_eq!(Axis::socd(Axis::Up, Axis::Down), Axis::Up);
+
+        assert_eq!(Axis::socd(Axis::DownLeft, Axis::UpRight), Axis::Up);
+        assert_eq!(Axis::socd(Axis::UpRight, Axis::DownLeft,), Axis::Up);
+
+        assert_eq!(Axis::socd(Axis::Left, Axis::Down), Axis::DownLeft);
+        assert_eq!(Axis::socd(Axis::Down, Axis::Left), Axis::DownLeft);
+
+        assert_eq!(Axis::socd(Axis::DownLeft, Axis::Neutral), Axis::DownLeft);
+        assert_eq!(Axis::socd(Axis::Neutral, Axis::DownLeft,), Axis::DownLeft);
+
+        assert_eq!(Axis::socd(Axis::UpRight, Axis::Neutral), Axis::UpRight);
+        assert_eq!(Axis::socd(Axis::Neutral, Axis::UpRight), Axis::UpRight);
     }
 }
