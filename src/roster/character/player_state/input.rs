@@ -81,6 +81,9 @@ impl<C: Character> PlayerState<C> {
                             Requirement::Grounded => !state_data.flags.airborne,
                             Requirement::CancelFrom(previous_state) => previous_state == &id,
                             Requirement::NoCancelFrom(previous_state) => previous_state != &id,
+                            Requirement::CharacterSpecific(req) => {
+                                C::check_requirement(self, data, req)
+                            }
                         })
                     });
 

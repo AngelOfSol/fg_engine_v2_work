@@ -1,12 +1,12 @@
 pub mod state;
 
-use super::data::Data;
+use super::{data::Data, player_state::PlayerState};
 use hecs::Component;
 use inspect_design::{
     traits::{Inspect, InspectMut},
     Inspect,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use state::StateConsts;
 use std::{
     fmt::{Debug, Display},
@@ -51,6 +51,33 @@ impl<T> Id for T where
 {
 }
 
+pub trait CharacterData:
+    Hash
+    + PartialEq
+    + Eq
+    + Debug
+    + for<'de> Deserialize<'de>
+    + Serialize
+    + Inspect
+    + InspectMut
+    + Default
+    + Clone
+{
+}
+impl<T> CharacterData for T where
+    T: Hash
+        + PartialEq
+        + Eq
+        + Debug
+        + for<'de> Deserialize<'de>
+        + Serialize
+        + Inspect
+        + InspectMut
+        + Default
+        + Clone
+{
+}
+
 pub trait AttackObjectData {}
 
 impl<T> AttackObjectData for T {}
@@ -62,9 +89,18 @@ pub trait Character: Sized + Default + Clone + Debug + PartialEq + Eq + 'static 
     type Graphic: Id;
     type ObjectData: Id;
     type Command: Id;
-    type StaticData: Serialize + DeserializeOwned + Default;
+    type StaticData: CharacterData;
+    type Requirement: CharacterData;
 
     fn round_start_reset(&mut self, data: &Data<Self>);
+
+    fn check_requirement(
+        _state: &PlayerState<Self>,
+        _data: &Data<Self>,
+        _req: &Self::Requirement,
+    ) -> bool {
+        false
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Inspect, Serialize, Deserialize)]

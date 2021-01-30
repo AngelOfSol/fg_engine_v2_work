@@ -50,6 +50,7 @@ impl Character for YuyukoType {
     type ObjectData = ObjectData;
     type Command = Command;
     type StaticData = ();
+    type Requirement = ();
 
     fn round_start_reset(&mut self, _data: &super::character::data::Data<Self>) {}
 }

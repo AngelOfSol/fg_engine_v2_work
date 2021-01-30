@@ -30,7 +30,7 @@ pub struct Data<C: Character> {
     pub sounds: SoundList<C::Sound>,
     pub graphics: HashMap<C::Graphic, AnimationGroup>,
     pub input_map: BTreeMap<Input, Vec<C::Command>>,
-    pub command_map: HashMap<C::Command, Command<C::State>>,
+    pub command_map: HashMap<C::Command, Command<C>>,
     pub state_graphics_map: HashMap<C::State, C::Graphic>,
     pub instance: InstanceData<C::ObjectData>,
     #[serde(default)]

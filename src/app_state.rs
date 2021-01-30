@@ -4,7 +4,9 @@ use fg_controller::pads_context::{GamepadId, PadsContext};
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
+use imgui::NavInput;
 use laminar::{Config, Socket};
+use sdl2::controller::Button;
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
@@ -68,14 +70,10 @@ impl AppStateRunner {
                             .cloned()
                     })
                     .map(|ip| {
-                        vec![
-                            ip.to_string() + ":10800",
-                            ip.to_string() + ":10801",
-                            ip.to_string() + ":10802",
-                            ip.to_string() + ":10803",
-                            ip.to_string() + ":10804",
-                            ip.to_string() + ":10805",
-                        ]
+                        (0..10)
+                            .into_iter()
+                            .map(|i| format!("{}:1080{}", ip, i))
+                            .collect()
                     })
                     .unwrap_or_else(|| vec!["127.0.0.1:10800".to_owned()])
                     .into_iter()
@@ -111,16 +109,16 @@ impl EventHandler for AppStateRunner {
             match event {
                 sdl2::event::Event::ControllerButtonDown { button, .. } => {
                     let nav_input = match button {
-                        sdl2::controller::Button::A => Some(imgui::NavInput::Activate),
-                        sdl2::controller::Button::X => Some(imgui::NavInput::Cancel),
-                        sdl2::controller::Button::B => Some(imgui::NavInput::Input),
-                        sdl2::controller::Button::Y => Some(imgui::NavInput::Menu),
-                        sdl2::controller::Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
-                        sdl2::controller::Button::DPadRight => Some(imgui::NavInput::DpadRight),
-                        sdl2::controller::Button::DPadUp => Some(imgui::NavInput::DpadUp),
-                        sdl2::controller::Button::DPadDown => Some(imgui::NavInput::DpadDown),
-                        sdl2::controller::Button::LeftShoulder => Some(imgui::NavInput::FocusPrev),
-                        sdl2::controller::Button::RightShoulder => Some(imgui::NavInput::FocusNext),
+                        Button::A => Some(NavInput::Activate),
+                        Button::X => Some(NavInput::Cancel),
+                        Button::B => Some(NavInput::Input),
+                        Button::Y => Some(NavInput::Menu),
+                        Button::DPadLeft => Some(NavInput::DpadLeft),
+                        Button::DPadRight => Some(NavInput::DpadRight),
+                        Button::DPadUp => Some(NavInput::DpadUp),
+                        Button::DPadDown => Some(NavInput::DpadDown),
+                        Button::LeftShoulder => Some(NavInput::FocusPrev),
+                        Button::RightShoulder => Some(NavInput::FocusNext),
                         _ => None,
                     };
 
@@ -130,16 +128,16 @@ impl EventHandler for AppStateRunner {
                 }
                 sdl2::event::Event::ControllerButtonUp { button, .. } => {
                     let nav_input = match button {
-                        sdl2::controller::Button::A => Some(imgui::NavInput::Activate),
-                        sdl2::controller::Button::X => Some(imgui::NavInput::Cancel),
-                        sdl2::controller::Button::B => Some(imgui::NavInput::Input),
-                        sdl2::controller::Button::Y => Some(imgui::NavInput::Menu),
-                        sdl2::controller::Button::DPadLeft => Some(imgui::NavInput::DpadLeft),
-                        sdl2::controller::Button::DPadRight => Some(imgui::NavInput::DpadRight),
-                        sdl2::controller::Button::DPadUp => Some(imgui::NavInput::DpadUp),
-                        sdl2::controller::Button::DPadDown => Some(imgui::NavInput::DpadDown),
-                        sdl2::controller::Button::LeftShoulder => Some(imgui::NavInput::FocusPrev),
-                        sdl2::controller::Button::RightShoulder => Some(imgui::NavInput::FocusNext),
+                        Button::A => Some(NavInput::Activate),
+                        Button::X => Some(NavInput::Cancel),
+                        Button::B => Some(NavInput::Input),
+                        Button::Y => Some(NavInput::Menu),
+                        Button::DPadLeft => Some(NavInput::DpadLeft),
+                        Button::DPadRight => Some(NavInput::DpadRight),
+                        Button::DPadUp => Some(NavInput::DpadUp),
+                        Button::DPadDown => Some(NavInput::DpadDown),
+                        Button::LeftShoulder => Some(NavInput::FocusPrev),
+                        Button::RightShoulder => Some(NavInput::FocusNext),
                         _ => None,
                     };
 

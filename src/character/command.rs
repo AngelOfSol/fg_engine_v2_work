@@ -1,3 +1,5 @@
+use crate::roster::character::typedefs::Character;
+
 use super::state::components::CommandType;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
@@ -11,7 +13,7 @@ pub enum Effect {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Inspect)]
-pub enum Requirement<Id> {
+pub enum Requirement<C: Character> {
     HasAirActions,
     InBlockstun,
     Grounded,
@@ -19,17 +21,18 @@ pub enum Requirement<Id> {
     NotLockedOut,
     CanCancel(CommandType),
     #[serde(alias = "CanCancelFrom")]
-    CancelFrom(Id),
-    NoCancelFrom(Id),
+    CancelFrom(C::State),
+    NoCancelFrom(C::State),
     Meter(i32),
     Spirit(i32),
+    CharacterSpecific(C::Requirement),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Inspect, Default)]
-pub struct Command<Id> {
-    pub reqs: Vec<Requirement<Id>>,
+pub struct Command<C: Character> {
+    pub reqs: Vec<Requirement<C>>,
     pub effects: Vec<Effect>,
-    pub state_id: Id,
+    pub state_id: C::State,
     pub frame: usize,
 }
 
@@ -38,7 +41,7 @@ impl Default for Effect {
         Self::UseAirAction
     }
 }
-impl<Id> Default for Requirement<Id> {
+impl<C: Character> Default for Requirement<C> {
     fn default() -> Self {
         Self::CanCancel(CommandType::default())
     }

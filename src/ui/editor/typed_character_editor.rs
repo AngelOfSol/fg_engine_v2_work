@@ -28,7 +28,7 @@ pub struct TypedCharacterEditor<C: Character> {
     resource: Rc<RefCell<Data<C>>>,
     assets: Rc<RefCell<Assets>>,
     transition: Transition,
-    command_map_state: <HashMap<C::Command, Command<C::State>> as Inspect>::State,
+    command_map_state: <HashMap<C::Command, Command<C>> as Inspect>::State,
     input_map_state: <BTreeMap<Input, Vec<C::Command>> as Inspect>::State,
 }
 
