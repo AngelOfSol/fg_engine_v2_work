@@ -39,10 +39,7 @@ mod test {
 
     #[test]
     fn test_button_set() {
-        let mut buffer = [InputState {
-            axis: Default::default(),
-            buttons: [ButtonState::Released; 5],
-        }; 5];
+        let mut buffer = [InputState::default(); 5];
 
         buffer[4].buttons[0] = ButtonState::JustPressed;
         buffer[4].buttons[1] = ButtonState::JustPressed;
@@ -61,10 +58,7 @@ mod test {
     }
     #[test]
     fn test_button_set_buffered() {
-        let mut buffer = [InputState {
-            axis: Default::default(),
-            buttons: [ButtonState::Released; 5],
-        }; 5];
+        let mut buffer = [InputState::default(); 5];
 
         buffer[4].buttons[0] = ButtonState::JustPressed;
         buffer[2].buttons[1] = ButtonState::JustPressed;

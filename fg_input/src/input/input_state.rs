@@ -1,6 +1,5 @@
-use crate::{axis::Axis, button::ButtonSet};
-
 use super::button::ButtonState;
+use crate::{axis::Axis, button::ButtonSet};
 use serde::{Deserialize, Serialize};
 
 pub type RawAxis = [i32; 2];
@@ -15,7 +14,7 @@ pub fn matches_cardinal(lhs: RawAxis, rhs: RawAxis) -> bool {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct InputState {
     pub axis: RawAxis,
-    pub buttons: [ButtonState; 5],
+    pub buttons: [ButtonState; 8],
 }
 
 impl InputState {

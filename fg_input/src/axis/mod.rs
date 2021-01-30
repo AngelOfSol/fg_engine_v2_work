@@ -2,6 +2,8 @@ pub mod directed_axis;
 pub mod direction;
 pub mod facing;
 
+use std::ops::BitAnd;
+
 pub use directed_axis::DirectedAxis;
 pub use direction::Direction;
 pub use facing::Facing;
@@ -10,41 +12,37 @@ use strum::Display;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Display)]
 pub enum Axis {
-    Up,
-    Down,
-    Right,
-    Left,
-    Neutral,
-    UpRight,
-    UpLeft,
-    DownRight,
-    DownLeft,
+    Neutral = 0b0000,
+    Up = 0b1000,
+    Down = 0b0001,
+    Right = 0b0010,
+    Left = 0b0100,
+    UpRight = 0b1010,
+    UpLeft = 0b1100,
+    DownRight = 0b0011,
+    DownLeft = 0b0101,
 }
 
-impl Axis {
-    pub fn shift_down(self) -> Self {
-        match self {
-            Self::Up => Self::Neutral,
-            Self::Right => Self::DownRight,
-            Self::Left => Self::DownLeft,
-            Self::Neutral => Self::Down,
-            Self::UpRight => Self::Right,
-            Self::UpLeft => Self::Left,
-            _ => self,
-        }
-    }
-    pub fn shift_up(self) -> Self {
-        match self {
-            Self::Down => Self::Neutral,
-            Self::Right => Self::UpRight,
-            Self::Left => Self::UpLeft,
-            Self::Neutral => Self::Up,
-            Self::DownRight => Self::Right,
-            Self::DownLeft => Self::Left,
-            _ => self,
-        }
+impl BitAnd for Axis {
+    type Output = bool;
+    fn bitand(self, rhs: Self) -> Self::Output {
+        self as u8 & rhs as u8 != 0
     }
 }
+/*
+#[test]
+fn test_axis() {
+    //
+
+    assert_eq!(TestAxis::DownRight & TestAxis::DownLeft, true);
+    assert_eq!(TestAxis::DownRight & TestAxis::UpRight, true);
+    assert_eq!(TestAxis::DownRight & TestAxis::UpLeft, false);
+
+    assert_eq!(TestAxis::Right & TestAxis::DownRight, true);
+    assert_eq!(TestAxis::Right & TestAxis::Left, false);
+    assert_eq!(TestAxis::Right & TestAxis::Up, false);
+    assert_eq!(TestAxis::Right & TestAxis::Neutral, false);
+} */
 
 impl From<[i32; 2]> for Axis {
     fn from([x, y]: [i32; 2]) -> Self {

@@ -3,10 +3,10 @@ use strum::Display;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Hash, PartialEq, Eq, Display)]
 pub enum ButtonState {
-    Released,
-    JustReleased,
-    Pressed,
-    JustPressed,
+    Released = 0b00,
+    JustReleased = 0b10,
+    Pressed = 0b01,
+    JustPressed = 0b11,
 }
 
 impl ButtonState {

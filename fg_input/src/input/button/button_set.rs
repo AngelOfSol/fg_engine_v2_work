@@ -25,11 +25,14 @@ impl Ord for ButtonSet {
     }
 }
 
-pub const A: ButtonSet = ButtonSet(0b00001);
-pub const B: ButtonSet = ButtonSet(0b00010);
-pub const C: ButtonSet = ButtonSet(0b00100);
-pub const D: ButtonSet = ButtonSet(0b01000);
-pub const E: ButtonSet = ButtonSet(0b10000);
+pub const A: ButtonSet = ButtonSet(0b00000001);
+pub const B: ButtonSet = ButtonSet(0b00000010);
+pub const C: ButtonSet = ButtonSet(0b00000100);
+pub const D: ButtonSet = ButtonSet(0b00001000);
+pub const E: ButtonSet = ButtonSet(0b00010000);
+pub const F: ButtonSet = ButtonSet(0b00100000);
+pub const G: ButtonSet = ButtonSet(0b01000000);
+pub const H: ButtonSet = ButtonSet(0b10000000);
 
 impl ButtonSet {
     pub fn from_id(id: usize) -> Self {
