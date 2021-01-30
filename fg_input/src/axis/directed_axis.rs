@@ -42,48 +42,31 @@ impl Default for DirectedAxis {
 }
 
 impl DirectedAxis {
-    #[allow(dead_code)]
-    pub fn direction_multiplier(self, facing: bool) -> i32 {
-        let facing = if facing { 1 } else { -1 };
-        let self_value = match self {
-            DirectedAxis::Forward | DirectedAxis::UpForward | DirectedAxis::DownForward => 1,
-            DirectedAxis::Backward | DirectedAxis::UpBackward | DirectedAxis::DownBackward => -1,
-            _ => 0,
-        };
-        facing * self_value
-    }
-
-    pub fn is_cardinal(self) -> bool {
+    pub fn matches(self, rhs: Self) -> bool {
         matches!(
-            self,
-            DirectedAxis::Forward | DirectedAxis::Up | DirectedAxis::Backward | DirectedAxis::Down
+            (self, rhs),
+            (
+                DirectedAxis::DownForward,
+                DirectedAxis::DownForward | DirectedAxis::Down
+            ) | (
+                DirectedAxis::UpForward,
+                DirectedAxis::UpForward | DirectedAxis::Up
+            ) | (
+                DirectedAxis::DownBackward,
+                DirectedAxis::DownBackward | DirectedAxis::Down
+            ) | (
+                DirectedAxis::UpBackward,
+                DirectedAxis::UpBackward | DirectedAxis::Up
+            ) | (
+                DirectedAxis::Forward,
+                DirectedAxis::Forward | DirectedAxis::Neutral
+            ) | (
+                DirectedAxis::Backward,
+                DirectedAxis::Backward | DirectedAxis::Neutral
+            ) | (DirectedAxis::Down, DirectedAxis::Down)
+                | (DirectedAxis::Up, DirectedAxis::Up)
+                | (DirectedAxis::Neutral, DirectedAxis::Neutral)
         )
-    }
-    pub fn matches_cardinal(self, target: DirectedAxis) -> bool {
-        target.is_cardinal()
-            && match target {
-                DirectedAxis::Forward => match self {
-                    DirectedAxis::UpForward | DirectedAxis::DownForward | DirectedAxis::Forward => {
-                        true
-                    }
-                    _ => false,
-                },
-                DirectedAxis::Up => matches!(
-                    self,
-                    DirectedAxis::UpForward | DirectedAxis::UpBackward | DirectedAxis::Up
-                ),
-                DirectedAxis::Backward => matches!(
-                    self,
-                    DirectedAxis::UpBackward | DirectedAxis::DownBackward | DirectedAxis::Backward
-                ),
-                DirectedAxis::Down => match self {
-                    DirectedAxis::DownForward | DirectedAxis::DownBackward | DirectedAxis::Down => {
-                        true
-                    }
-                    _ => false,
-                },
-                _ => unreachable!(),
-            }
     }
 
     pub fn is_backward(self) -> bool {

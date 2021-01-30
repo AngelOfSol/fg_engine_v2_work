@@ -20,9 +20,13 @@ pub fn interpret(
     motion_size: usize,
     buffer: InputBuffer<'_>,
 ) -> Vec<Input> {
-    let buttons = (0..buffer_size).into_iter().find_map(|start| {
-        peek(button_set::interpret_buffered(grace_period))(&buffer[..buffer.len() - start])
-    });
+    let buttons = (0..buffer_size.min(buffer.len()))
+        .into_iter()
+        .map(|start| {
+            peek(button_set::interpret_buffered(grace_period))(&buffer[..buffer.len() - start])
+        })
+        .flatten()
+        .find(|(_, buttons)| !buttons.is_empty());
 
     buttons
         .map(|(button_set_buffer, buttons)| {

@@ -74,7 +74,7 @@ where
 }
 
 pub fn next_axis(buffer: InputBuffer<'_>) -> IResult<'_, Axis> {
-    map(next, |state| state.axis())(buffer)
+    map(next, |state| state.axis)(buffer)
 }
 
 #[cfg(test)]
@@ -99,16 +99,16 @@ mod test {
     #[test]
     fn test_take_while_m_n() {
         let mut buffer = [InputState::default(); 10];
-        buffer[buffer.len() - 1].axis = [1, 1];
+        buffer[buffer.len() - 1].axis = Axis::UpRight;
         let buffer = buffer;
 
         assert_eq!(
-            take_while_m_n(0, 3, |state| state.axis() == Axis::UpRight)(&buffer),
+            take_while_m_n(0, 3, |state| state.axis == Axis::UpRight)(&buffer),
             Some((&buffer[0..buffer.len() - 1], &buffer[buffer.len() - 1..]))
         );
 
         assert_eq!(
-            take_while_m_n(2, 3, |state| state.axis() == Axis::UpRight)(&buffer),
+            take_while_m_n(2, 3, |state| state.axis == Axis::UpRight)(&buffer),
             None
         );
 

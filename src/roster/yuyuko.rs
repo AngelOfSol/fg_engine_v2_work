@@ -7,7 +7,9 @@ mod state;
 
 use super::{
     character::{
+        data::Data,
         draw::UiContext,
+        player_state::PlayerState,
         typedefs::{state::StateConsts, Character, Timed},
         Player,
     },
@@ -52,7 +54,14 @@ impl Character for YuyukoType {
     type StaticData = ();
     type Requirement = ();
 
-    fn round_start_reset(&mut self, _data: &super::character::data::Data<Self>) {}
+    fn round_start_reset(&mut self, _data: &Data<Self>) {}
+    fn check_requirement(
+        _state: &PlayerState<Self>,
+        _data: &Data<Self>,
+        _req: &Self::Requirement,
+    ) -> bool {
+        true
+    }
 }
 impl StateConsts for State {
     const GAME_START: Self = Self::RoundStart;

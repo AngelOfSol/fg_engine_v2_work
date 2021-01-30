@@ -2,25 +2,13 @@ use super::button::ButtonState;
 use crate::{axis::Axis, button::ButtonSet};
 use serde::{Deserialize, Serialize};
 
-pub type RawAxis = [i32; 2];
-
-pub fn matches_cardinal(lhs: RawAxis, rhs: RawAxis) -> bool {
-    !lhs.iter()
-        .zip(rhs.iter())
-        .filter(|(l, _)| **l != 0)
-        .all(|(l, r)| l != r)
-}
-
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct InputState {
-    pub axis: RawAxis,
+    pub axis: Axis,
     pub buttons: [ButtonState; 8],
 }
 
 impl InputState {
-    pub fn axis(&self) -> Axis {
-        self.axis.into()
-    }
     pub fn just_pressed(&self) -> ButtonSet {
         self.buttons
             .iter()

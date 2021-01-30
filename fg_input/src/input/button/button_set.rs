@@ -105,6 +105,16 @@ mod test {
         assert!(ButtonSet::from_str("acb").is_err());
         assert!(ButtonSet::from_str("aa").is_err());
     }
+
+    #[test]
+    fn is_superset() {
+        assert_eq!(super::A.is_superset(super::B), false);
+        assert_eq!(super::B.is_superset(super::B), true);
+        assert_eq!((super::A | super::B).is_superset(super::A), true);
+        assert_eq!((super::A | super::B).is_superset(super::B), true);
+        assert_eq!(super::A.is_superset(super::A | super::B), false);
+        assert_eq!(super::B.is_superset(super::A | super::B), false);
+    }
 }
 
 impl<Rhs> BitOr<Rhs> for ButtonSet

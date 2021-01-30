@@ -95,12 +95,10 @@ pub trait Character: Sized + Default + Clone + Debug + PartialEq + Eq + 'static 
     fn round_start_reset(&mut self, data: &Data<Self>);
 
     fn check_requirement(
-        _state: &PlayerState<Self>,
-        _data: &Data<Self>,
-        _req: &Self::Requirement,
-    ) -> bool {
-        false
-    }
+        state: &PlayerState<Self>,
+        data: &Data<Self>,
+        req: &Self::Requirement,
+    ) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Inspect, Serialize, Deserialize)]

@@ -13,7 +13,7 @@ pub struct AxisRequired {
 impl<'a> ReadInput<'a, Axis> for AxisRequired {
     fn read_input(&mut self, buffer: InputBuffer<'a>) -> IResult<'a, Axis> {
         let axis = self.axis;
-        let (buffer, _) = take_while_m_n(1, self.motion_size, move |input| axis == input.axis())
+        let (buffer, _) = take_while_m_n(1, self.motion_size, move |input| axis == input.axis)
             .read_input(buffer)?;
         Some((buffer, self.axis))
     }
@@ -28,7 +28,7 @@ pub struct AxisOptional {
 impl<'a> ReadInput<'a, Axis> for AxisOptional {
     fn read_input(&mut self, buffer: InputBuffer<'a>) -> IResult<'a, Axis> {
         let axis = self.axis;
-        let (buffer, _) = take_while_m_n(0, self.motion_size, move |input| axis == input.axis())
+        let (buffer, _) = take_while_m_n(0, self.motion_size, move |input| axis == input.axis)
             .read_input(buffer)?;
         Some((buffer, self.axis))
     }

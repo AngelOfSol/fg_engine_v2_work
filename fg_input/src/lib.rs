@@ -1,3 +1,5 @@
+#![feature(or_patterns)]
+
 pub mod axis;
 pub mod guard;
 mod input;

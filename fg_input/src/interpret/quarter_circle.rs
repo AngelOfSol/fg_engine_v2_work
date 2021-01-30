@@ -39,7 +39,10 @@ fn interpret_internal(motion_size: usize, buffer: InputBuffer<'_>) -> IResult<'_
 
 #[cfg(test)]
 mod test {
-    use crate::{axis::Direction, InputState};
+    use crate::{
+        axis::{Axis, Direction},
+        InputState,
+    };
 
     use super::interpret_internal;
 
@@ -50,13 +53,13 @@ mod test {
             buttons: Default::default(),
         }; 10];
 
-        buffer[0].axis = [1, 0];
-        buffer[1].axis = [1, 0];
-        buffer[2].axis = [1, 0];
-        buffer[3].axis = [1, -1];
-        buffer[4].axis = [1, -1];
-        buffer[5].axis = [1, -1];
-        buffer[6].axis = [0, -1];
+        buffer[0].axis = Axis::Right;
+        buffer[1].axis = Axis::Right;
+        buffer[2].axis = Axis::Right;
+        buffer[3].axis = Axis::DownRight;
+        buffer[4].axis = Axis::DownRight;
+        buffer[5].axis = Axis::DownRight;
+        buffer[6].axis = Axis::Down;
 
         let buffer: Vec<_> = buffer.iter().rev().copied().collect();
 
@@ -73,13 +76,13 @@ mod test {
             buttons: Default::default(),
         }; 10];
 
-        buffer[0].axis = [1, 0];
-        buffer[1].axis = [1, 0];
-        buffer[2].axis = [1, 0];
-        buffer[3].axis = [1, -1];
-        buffer[4].axis = [-1, 0];
-        buffer[5].axis = [1, -1];
-        buffer[6].axis = [0, -1];
+        buffer[0].axis = Axis::Right;
+        buffer[1].axis = Axis::Right;
+        buffer[2].axis = Axis::Right;
+        buffer[3].axis = Axis::DownRight;
+        buffer[4].axis = Axis::Left;
+        buffer[5].axis = Axis::DownRight;
+        buffer[6].axis = Axis::Down;
 
         let buffer: Vec<_> = buffer.iter().rev().copied().collect();
 
@@ -93,13 +96,13 @@ mod test {
             buttons: Default::default(),
         }; 10];
 
-        buffer[0].axis = [1, 1];
-        buffer[1].axis = [1, 0];
-        buffer[2].axis = [1, 0];
-        buffer[3].axis = [1, -1];
-        buffer[4].axis = [1, -1];
-        buffer[5].axis = [1, -1];
-        buffer[6].axis = [0, -1];
+        buffer[0].axis = Axis::UpRight;
+        buffer[1].axis = Axis::Right;
+        buffer[2].axis = Axis::Right;
+        buffer[3].axis = Axis::DownRight;
+        buffer[4].axis = Axis::DownRight;
+        buffer[5].axis = Axis::DownRight;
+        buffer[6].axis = Axis::Down;
 
         let buffer: Vec<_> = buffer.iter().rev().copied().collect();
 
@@ -114,13 +117,13 @@ mod test {
             buttons: Default::default(),
         }; 10];
 
-        buffer[0].axis = [-1, 0];
-        buffer[1].axis = [-1, 0];
-        buffer[2].axis = [-1, 0];
-        buffer[3].axis = [-1, -1];
-        buffer[4].axis = [-1, -1];
-        buffer[5].axis = [-1, -1];
-        buffer[6].axis = [0, -1];
+        buffer[0].axis = Axis::Left;
+        buffer[1].axis = Axis::Left;
+        buffer[2].axis = Axis::Left;
+        buffer[3].axis = Axis::DownLeft;
+        buffer[4].axis = Axis::DownLeft;
+        buffer[5].axis = Axis::DownLeft;
+        buffer[6].axis = Axis::Down;
 
         let buffer: Vec<_> = buffer.iter().rev().copied().collect();
 

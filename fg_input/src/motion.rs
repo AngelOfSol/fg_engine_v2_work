@@ -22,6 +22,28 @@ pub enum Input {
     Idle(DirectedAxis),
 }
 
+impl Input {
+    pub fn matches(&self, rhs: &Self) -> bool {
+        match (self, rhs) {
+            (Self::DragonPunch(lhs_dir, lhs_buttons), Self::DragonPunch(rhs_dir, rhs_buttons))
+            | (
+                Self::QuarterCircle(lhs_dir, lhs_buttons),
+                Self::QuarterCircle(rhs_dir, rhs_buttons),
+            ) => lhs_dir == rhs_dir && lhs_buttons.is_superset(*rhs_buttons),
+
+            (
+                Self::PressButton(lhs_buttons, lhs_axis),
+                Self::PressButton(rhs_buttons, rhs_axis),
+            ) => lhs_axis.matches(*rhs_axis) && lhs_buttons.is_superset(*rhs_buttons),
+            (Self::SuperJump(lhs), Self::SuperJump(rhs))
+            | (Self::DoubleTap(lhs), Self::DoubleTap(rhs))
+            | (Self::Idle(lhs), Self::Idle(rhs)) => lhs == rhs,
+            _ => false,
+        }
+        //
+    }
+}
+
 impl Inspect for Input {
     const FLATTEN: bool = true;
     type State = Option<String>;
