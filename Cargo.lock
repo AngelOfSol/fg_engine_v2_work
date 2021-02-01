@@ -755,6 +755,7 @@ version = "0.1.0"
 dependencies = [
  "fg_input",
  "sdl2",
+ "serde",
 ]
 
 [[package]]
@@ -2636,6 +2637,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sdl_controller_backend"
+version = "0.1.0"
+dependencies = [
+ "fg_controller",
+ "fg_input",
+ "sdl2",
+ "slab",
+]
+
+[[package]]
 name = "semver"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2739,6 +2750,12 @@ dependencies = [
  "tempfile",
  "walkdir",
 ]
+
+[[package]]
+name = "slab"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "slice-deque"

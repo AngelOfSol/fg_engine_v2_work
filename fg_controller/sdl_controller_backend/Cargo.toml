@@ -1,12 +1,13 @@
 [package]
 authors = ["AngelOfSol <julietckilian@gmail.com>"]
 edition = "2018"
-name = "fg_controller"
+name = "sdl_controller_backend"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fg_input = {path = "../fg_input"}
+fg_controller = {path = "../"}
+fg_input = {path = "../../fg_input"}
 sdl2 = {version = "0.34.1", features = ["bundled", "static-link"]}
-serde = "1.0.123"
+slab = "0.4.2"

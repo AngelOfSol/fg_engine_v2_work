@@ -8,6 +8,7 @@ version = "0.1.0"
 members = [
   "fg_input",
   "fg_controller",
+  "fg_controller/sdl_controller_backend",
   "fg_datastructures",
   "fg_netcode",
 ]

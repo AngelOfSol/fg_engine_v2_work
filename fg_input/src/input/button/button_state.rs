@@ -13,6 +13,15 @@ impl ButtonState {
     pub fn is_pressed(self) -> bool {
         matches!(self, ButtonState::Pressed | ButtonState::JustPressed)
     }
+
+    pub fn next_with(self, new: bool) -> Self {
+        match (self.is_pressed(), new) {
+            (false, false) => Self::Released,
+            (true, true) => Self::Pressed,
+            (true, false) => Self::JustReleased,
+            (false, true) => Self::JustPressed,
+        }
+    }
 }
 
 impl Default for ButtonState {

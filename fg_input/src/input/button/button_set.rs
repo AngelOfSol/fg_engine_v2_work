@@ -44,6 +44,33 @@ impl ButtonSet {
     pub fn is_empty(self) -> bool {
         self.0 == 0
     }
+
+    pub fn iter(&self) -> ButtonIter {
+        ButtonIter {
+            index: 0,
+            remaining: self.0,
+        }
+    }
+}
+
+pub struct ButtonIter {
+    index: usize,
+    remaining: u8,
+}
+
+impl Iterator for ButtonIter {
+    type Item = (usize, bool);
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            None
+        } else {
+            let index = self.index;
+            let flag = self.remaining & 1 == 1;
+            self.index += 1;
+            self.remaining >>= 1;
+            Some((index, flag))
+        }
+    }
 }
 
 impl FromStr for ButtonSet {

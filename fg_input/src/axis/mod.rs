@@ -41,7 +41,7 @@ impl Axis {
         (self as u8 & 0b1001).try_into().unwrap()
     }
 
-    fn socd(lhs: Self, rhs: Self) -> Self {
+    pub fn socd(lhs: Self, rhs: Self) -> Self {
         let x = lhs.x() + rhs.x();
         let y = if lhs.y() == Axis::Up || rhs.y() == Axis::Up {
             Axis::Up

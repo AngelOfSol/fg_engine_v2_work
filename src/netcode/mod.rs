@@ -433,7 +433,6 @@ pub trait RollbackableGameState {
     type Input;
     type SavedState;
 
-    // TODO  make this take an iterator of inputs
     fn advance_frame(&mut self, input: InputSet<'_, Self::Input>);
     fn save_state(&self) -> Self::SavedState;
     fn load_state(&mut self, load: Self::SavedState);

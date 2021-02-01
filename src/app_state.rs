@@ -6,7 +6,7 @@ use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 use imgui::NavInput;
 use laminar::{Config, Socket};
-use sdl2::controller::Button;
+use sdl2::{controller::Button, event::Event};
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
@@ -107,7 +107,7 @@ impl EventHandler for AppStateRunner {
         for event in self.app_ctx.sdl_events.poll_iter() {
             self.app_ctx.pads.handle(event.clone());
             match event {
-                sdl2::event::Event::ControllerButtonDown { button, .. } => {
+                Event::ControllerButtonDown { button, .. } => {
                     let nav_input = match button {
                         Button::A => Some(NavInput::Activate),
                         Button::X => Some(NavInput::Cancel),
@@ -126,7 +126,7 @@ impl EventHandler for AppStateRunner {
                         self.app_ctx.imgui.handle_gamepad_input(nav_input, 1.0);
                     }
                 }
-                sdl2::event::Event::ControllerButtonUp { button, .. } => {
+                Event::ControllerButtonUp { button, .. } => {
                     let nav_input = match button {
                         Button::A => Some(NavInput::Activate),
                         Button::X => Some(NavInput::Cancel),

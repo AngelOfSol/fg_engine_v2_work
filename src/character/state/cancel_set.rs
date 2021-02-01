@@ -83,19 +83,12 @@ pub enum CommandType {
     Walk,
     Jump,
     HiJump,
-    #[serde(alias = "AirDash")]
     Dash,
-    #[serde(alias = "AirMelee")]
-    Melee,
-    #[serde(alias = "AirMagic")]
-    Magic,
-    #[serde(alias = "AirMeleeSpecial")]
-    MeleeSpecial,
-    #[serde(alias = "AirMagicSpecial")]
-    MagicSpecial,
-    #[serde(alias = "AirSuper")]
+    #[serde(alias = "Melee", alias = "Magic")]
+    Normal,
+    #[serde(alias = "MagicSpecial", alias = "MeleeSpecial")]
+    Special,
     Super,
-    #[serde(alias = "AirFollowup")]
     Followup,
     Fly,
 }
@@ -106,22 +99,20 @@ impl Default for CommandType {
     }
 }
 
-const ALL_MOVE_TYPES: [CommandType; 12] = [
+const ALL_MOVE_TYPES: [CommandType; 10] = [
     CommandType::Idle,
     CommandType::Walk,
     CommandType::Jump,
     CommandType::HiJump,
     CommandType::Dash,
-    CommandType::Melee,
-    CommandType::Magic,
-    CommandType::MeleeSpecial,
-    CommandType::MagicSpecial,
+    CommandType::Normal,
+    CommandType::Special,
     CommandType::Super,
     CommandType::Followup,
     CommandType::Fly,
 ];
 impl CommandType {
-    pub fn all() -> &'static [CommandType; 12] {
+    pub fn all() -> &'static [CommandType; 10] {
         &ALL_MOVE_TYPES
     }
 }
@@ -137,10 +128,8 @@ impl Display for CommandType {
                 CommandType::HiJump => "High Jump",
                 CommandType::Dash => "Dash",
                 CommandType::Fly => "Fly",
-                CommandType::Melee => "Melee",
-                CommandType::Magic => "Magic",
-                CommandType::MeleeSpecial => "Melee Special",
-                CommandType::MagicSpecial => "Magic Special",
+                CommandType::Normal => "Normal",
+                CommandType::Special => "Special",
                 CommandType::Super => "Super",
                 CommandType::Followup => "Follow Up",
             }
