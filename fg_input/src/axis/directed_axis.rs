@@ -65,7 +65,7 @@ impl DirectedAxis {
                 DirectedAxis::Backward | DirectedAxis::Neutral
             ) | (DirectedAxis::Down, DirectedAxis::Down)
                 | (DirectedAxis::Up, DirectedAxis::Up)
-                | (_, DirectedAxis::Neutral)
+                | (DirectedAxis::Neutral, DirectedAxis::Neutral)
         )
     }
 

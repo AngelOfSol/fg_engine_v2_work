@@ -1,75 +1,94 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use fg_controller::control_scheme::{is_valid_input_button, render_button_list, PadControlScheme};
-use fg_controller::pads_context::{Event, EventType, GamepadId, PadsContext};
+use fg_controller::{
+    backend::{Button, ControllerBackend, ControllerState},
+    control_mapping::ControlMapping,
+};
+use fg_input::{axis::Axis, button::ButtonSet};
 use ggez::graphics;
 use ggez::timer;
 use ggez::{Context, GameResult};
 use imgui::*;
-use sdl2::controller::Button;
+use sdl_controller_backend::ControllerId;
+use strum::IntoEnumIterator;
 
 pub struct ButtonCheck {
-    active_control_schemes: Vec<CreateScheme>,
+    active_control_mappings: Vec<CreateMapping>,
     delay: u32,
 }
 
-struct CreateScheme {
-    scheme: PadControlScheme,
+struct CreateMapping {
+    id: ControllerId,
+    mapping: ControlMapping,
     selected_cell: usize,
-    ready: bool,
+    movement_delay: usize,
+    button_change_delay: usize,
+    start_delay: usize,
 }
 
-impl CreateScheme {
-    fn new(scheme: PadControlScheme) -> Self {
+impl CreateMapping {
+    fn new(id: ControllerId, scheme: ControlMapping) -> Self {
         Self {
-            scheme,
+            id,
+            mapping: scheme,
             selected_cell: 0,
-            ready: false,
+            movement_delay: 0,
+            button_change_delay: 0,
+            start_delay: 60,
         }
     }
 
-    pub fn update_button(&mut self, id: GamepadId, button: Button) {
-        if self.scheme.gamepad != id {
-            return;
+    pub fn update(&mut self, state: ControllerState) -> bool {
+        self.start_delay = self.start_delay.saturating_sub(1);
+        self.movement_delay = self.movement_delay.saturating_sub(1);
+        self.button_change_delay = self.button_change_delay.saturating_sub(1);
+
+        if state[Button::Start] {
+            return self.start_delay == 0;
         }
-        if is_valid_input_button(button) {
-            if self.selected_cell == 5 {
-                self.ready = !self.ready;
+
+        if self.movement_delay == 0 && (state.dpad + state.left_stick) & Axis::Up == Axis::Up {
+            if self.selected_cell > 0 {
+                self.selected_cell -= 1;
             } else {
-                let buttons = &mut self.scheme.buttons[self.selected_cell];
-
-                if !buttons.contains(&button) {
-                    buttons.clear();
-                    buttons.insert(button);
-                }
+                self.selected_cell = 5;
             }
-        } else {
-            match button {
-                Button::DPadUp => {
-                    if self.selected_cell > 0 {
-                        self.selected_cell -= 1;
+            self.movement_delay = 30;
+        } else if self.movement_delay == 0
+            && (state.dpad + state.left_stick) & Axis::Down == Axis::Down
+        {
+            if self.selected_cell < 5 {
+                self.selected_cell += 1
+            } else {
+                self.selected_cell = 0;
+            }
+            self.movement_delay = 30;
+        }
+        if let Some(new_button) = Button::iter().find(|button| state[*button]) {
+            if self.button_change_delay == 0 {
+                let new_set = ButtonSet::from_id(self.selected_cell);
+
+                if let Some(old_button) = self.mapping.find_button(&new_set) {
+                    if let Some(old_set) = self.mapping.buttons.get(&new_button).copied() {
+                        self.mapping.buttons.insert(old_button, old_set);
                     } else {
-                        self.selected_cell = 5;
+                        self.mapping.buttons.remove(&old_button);
                     }
                 }
-                Button::DPadDown => {
-                    if self.selected_cell < 5 {
-                        self.selected_cell += 1
-                    } else {
-                        self.selected_cell = 0;
-                    }
-                }
-                _ => (),
+                self.mapping.buttons.insert(new_button, new_set);
+
+                self.button_change_delay = 30;
             }
         }
+        false
     }
 
-    pub fn draw_ui(&mut self, ui: &Ui<'_>, pads: &PadsContext) {
-        let gamepad = pads.gamepad(self.scheme.gamepad);
-        let id = ui.push_id(&format!("{}", gamepad.instance_id()));
+    pub fn draw_ui(&mut self, ui: &Ui<'_>) {
+        let id = ui.push_id(&format!("{:?}", self.id));
 
-        ui.text(format!("Gamepad: {}", gamepad.name()));
+        ui.text(format!("Gamepad: {:?}", self.id));
 
         ui.columns(2, im_str!("Columns"), true);
+
         for index in 0..5 {
             let token = if index == self.selected_cell {
                 Some(ui.push_style_color(StyleColor::Text, GREEN))
@@ -86,7 +105,11 @@ impl CreateScheme {
                 _ => unreachable!(),
             });
             ui.next_column();
-            ui.text(render_button_list(&self.scheme.buttons[index]));
+
+            if let Some(button) = self.mapping.find_button(&ButtonSet::from_id(index)) {
+                ui.text(im_str!("{:?}", button))
+            }
+
             ui.next_column();
 
             if let Some(token) = token {
@@ -111,7 +134,7 @@ impl CreateScheme {
 impl ButtonCheck {
     pub fn new(_: &mut Context) -> GameResult<Self> {
         Ok(ButtonCheck {
-            active_control_schemes: Vec::new(),
+            active_control_mappings: Vec::new(),
             delay: 30,
         })
     }
@@ -122,17 +145,15 @@ impl AppState for ButtonCheck {
         &mut self,
         _: &mut Context,
         AppContext {
-            ref mut pads,
+            ref mut controllers,
             ref control_schemes,
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
-        if let Some((id, _)) = pads.gamepads().next() {
-            let scheme = control_schemes
-                .get(&id)
-                .cloned()
-                .unwrap_or_else(|| PadControlScheme::new(id));
-            self.active_control_schemes.push(CreateScheme::new(scheme));
+        if let Some(id) = controllers.active_controller() {
+            let mapping = control_schemes.get(&id).cloned().unwrap_or_default();
+            self.active_control_mappings
+                .push(CreateMapping::new(id, mapping));
         }
         Ok(())
     }
@@ -140,50 +161,47 @@ impl AppState for ButtonCheck {
         &mut self,
         ctx: &mut Context,
         AppContext {
-            ref mut pads,
+            ref mut controllers,
             ref mut control_schemes,
             ..
         }: &mut AppContext,
     ) -> GameResult<Transition> {
         while timer::check_update_time(ctx, 60) {
             self.delay = self.delay.saturating_sub(1);
-            while let Some(event) = pads.next_event() {
-                if self.delay > 0 {
-                    // delay so the button moving into controller select does not
-                    continue;
-                }
-                // let id = event.id;
-                let Event { id, event, .. } = event;
-                if let EventType::ButtonPressed(button) = event {
-                    if let Button::Start = button {
-                        if !self
-                            .active_control_schemes
-                            .iter()
-                            .any(|item| item.scheme.gamepad == id)
-                        {
-                            let scheme = control_schemes
-                                .get(&id)
-                                .cloned()
-                                .unwrap_or_else(|| PadControlScheme::new(id));
-                            self.active_control_schemes.push(CreateScheme::new(scheme));
-                        }
+            if self.delay > 0 {
+                // delay so the button moving into controller select does not
+                continue;
+            }
+            for id in controllers.controllers() {
+                let state = controllers.current_state(&id);
+                let retain = if let Some(mapping) = self
+                    .active_control_mappings
+                    .iter_mut()
+                    .find(|item| item.id == id)
+                {
+                    mapping.update(state)
+                } else {
+                    if state[Button::Start] {
+                        let mapping = control_schemes.get(&id).cloned().unwrap_or_default();
+                        self.active_control_mappings
+                            .push(CreateMapping::new(id, mapping));
                     }
-                    for scheme in self.active_control_schemes.iter_mut() {
-                        scheme.update_button(id, button);
-                    }
-                    let (retain, updated): (Vec<_>, Vec<_>) = self
-                        .active_control_schemes
-                        .drain(..)
-                        .partition(|item| !item.ready);
-                    self.active_control_schemes = retain;
-                    for scheme in updated {
-                        control_schemes.insert(scheme.scheme.gamepad, scheme.scheme);
+                    true
+                };
+
+                if !retain {
+                    if let Some(index) = self
+                        .active_control_mappings
+                        .iter()
+                        .position(|item| item.id == id)
+                    {
+                        self.active_control_mappings.remove(index);
                     }
                 }
             }
         }
 
-        if !self.active_control_schemes.is_empty() {
+        if !self.active_control_mappings.is_empty() {
             Ok(Transition::None)
         } else {
             Ok(Transition::Pop)
@@ -194,7 +212,7 @@ impl AppState for ButtonCheck {
         ctx: &mut Context,
         AppContext {
             ref mut imgui,
-            ref mut pads,
+            ref mut controllers,
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
@@ -204,18 +222,18 @@ impl AppState for ButtonCheck {
         imgui
             .frame()
             .run(|ui| {
-                let schemes = &mut self.active_control_schemes;
+                let schemes = &mut self.active_control_mappings;
                 let offset = schemes.len() as f32 / 2.0;
                 let middle = graphics::drawable_size(ctx).0 / 2.0;
                 for (idx, scheme) in schemes.iter_mut().enumerate() {
-                    imgui::Window::new(&im_str!("Gamepad {}", scheme.scheme.gamepad))
+                    imgui::Window::new(&im_str!("Gamepad {:?}", scheme.id))
                         .size([190.0, 210.0], Condition::Always)
                         .position(
                             [(idx as f32 - offset) * 200.0 + middle, 200.0],
                             Condition::Always,
                         )
                         .build(ui, || {
-                            scheme.draw_ui(ui, pads);
+                            scheme.draw_ui(ui);
                         });
                 }
 
@@ -223,13 +241,13 @@ impl AppState for ButtonCheck {
                     .position([middle - 150.0, 0.0], Condition::Always)
                     .size([300.0, 200.0], Condition::Always)
                     .build(ui, || {
-                        for (id, _) in pads.gamepads().filter(|(id, _)| {
+                        for id in controllers.controllers().filter(|id| {
                             !self
-                                .active_control_schemes
+                                .active_control_mappings
                                 .iter()
-                                .any(|scheme| scheme.scheme.gamepad == *id)
+                                .any(|scheme| scheme.id == *id)
                         }) {
-                            ui.text(format!("Gamepad {}", id.to_string()));
+                            ui.text(format!("Gamepad {:?}", id));
                         }
                     });
             })

@@ -4,7 +4,7 @@ use super::CharacterSelect;
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::imgui_extra::UiExtensions;
 use crate::player_list::{PlayerList, PlayerType};
-use fg_controller::pads_context::{Button, EventType};
+use fg_controller::backend::{Button, ControllerBackend};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
 use laminar::{Packet, SocketEvent};
@@ -97,7 +97,7 @@ impl AppState for NetworkConnect {
         &mut self,
         ctx: &mut Context,
         AppContext {
-            ref mut pads,
+            ref mut controllers,
             ref mut socket,
             ..
         }: &mut AppContext,
@@ -282,31 +282,24 @@ impl AppState for NetworkConnect {
             }
         }
 
-        while ggez::timer::check_update_time(ctx, 2) {}
+        while ggez::timer::check_update_time(ctx, 60) {}
 
-        while let Some(event) = pads.next_event() {
-            if let EventType::ButtonPressed(button) = event.event {
-                if button == Button::Start
-                    && self.connected
-                    && self.mode == Mode::Host
-                    && self
-                        .player_list
-                        .current_players
-                        .p1()
-                        .gamepad_id()
-                        .map(|id| id == event.id)
-                        .unwrap_or(false)
-                {
-                    for addr in self.player_list.network_addrs() {
-                        let _ = socket.send(Packet::reliable_ordered(
-                            addr,
-                            bincode::serialize(&NetPacket::MoveToCharacterSelect).unwrap(),
-                            None,
-                        ));
-                    }
-                    self.next = Some(NextState::Next);
-                }
+        let pressed_start = controllers
+            .active_state()
+            .map(|(id, state)| {
+                id == self.player_list.current_players.p1().gamepad_id().unwrap()
+                    && state[Button::Start]
+            })
+            .unwrap_or(false);
+        if self.mode == Mode::Host && pressed_start && self.connected {
+            for addr in self.player_list.network_addrs() {
+                let _ = socket.send(Packet::reliable_ordered(
+                    addr,
+                    bincode::serialize(&NetPacket::MoveToCharacterSelect).unwrap(),
+                    None,
+                ));
             }
+            self.next = Some(NextState::Next);
         }
 
         match std::mem::replace(&mut self.next, None) {

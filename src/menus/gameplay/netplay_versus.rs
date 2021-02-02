@@ -1,8 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::netcode::{NetcodeClient as Client, Packet as NetcodeClientPacket, PlayerHandle};
-use fg_controller::control_scheme::PadControlScheme;
-use fg_controller::pads_context::{Event, EventType};
+use fg_controller::backend::ControllerBackend;
 use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
 use laminar::{Packet as SocketPacket, SocketEvent};
@@ -123,38 +122,13 @@ impl AppState for NetplayVersus {
         &mut self,
         ctx: &mut Context,
         &mut AppContext {
-            ref mut pads,
+            ref mut controllers,
             ref control_schemes,
             ref audio,
             ref mut socket,
             ..
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        let mut events = Vec::new();
-        while let Some(event) = pads.next_event() {
-            events.push(event);
-        }
-        let events = events;
-
-        for (player, current_frame) in self.local_input.iter_mut() {
-            if let Some(gamepad) = self.player_list.current_players[*player].gamepad_id() {
-                let control_scheme = &control_schemes[&gamepad];
-                for event in events.iter() {
-                    let Event { id, event, .. } = event;
-                    if *id == control_scheme.gamepad {
-                        match event {
-                            EventType::ButtonPressed(button) => {
-                                control_scheme.handle_press(*button, current_frame);
-                            }
-                            EventType::ButtonReleased(button) => {
-                                control_scheme.handle_release(*button, current_frame);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         if let Some(ref mut socket) = socket {
             socket.manual_poll(Instant::now());
             while let Some(event) = socket.recv() {
@@ -217,10 +191,18 @@ impl AppState for NetplayVersus {
         }
 
         while ggez::timer::check_update_time(ctx, 60) {
-            for (handle, current_frame) in self.local_input.iter_mut() {
-                let output = self.client.handle_local_input(*current_frame, *handle);
-                if let Some(ref mut socket) = socket {
-                    if let Some(output) = output {
+            for ((handle, input), player) in self.local_input.iter_mut().zip(
+                self.player_list
+                    .current_players
+                    .iter()
+                    .filter_map(|player| player.gamepad_id()),
+            ) {
+                let control_scheme = &control_schemes[&player];
+
+                *input = control_scheme.map(*input, &controllers.current_state(&player));
+
+                if let Some(output) = self.client.handle_local_input(*input, *handle) {
+                    if let Some(ref mut socket) = socket {
                         let output = NetworkData::Client(output);
                         for addr in self.player_list.network_addrs() {
                             let _ = socket.send(SocketPacket::unreliable(
@@ -230,11 +212,6 @@ impl AppState for NetplayVersus {
                         }
                     }
                 }
-
-                let control_scheme = &control_schemes[&self.player_list.current_players[*handle]
-                    .gamepad_id()
-                    .unwrap()];
-                control_scheme.update_frame(current_frame);
             }
 
             if let Some(ref mut socket) = socket {
@@ -282,9 +259,7 @@ impl AppState for NetplayVersus {
         }: &mut AppContext,
     ) -> GameResult<()> {
         for player in self.player_list.gamepads() {
-            control_schemes
-                .entry(player)
-                .or_insert_with(|| PadControlScheme::new(player));
+            control_schemes.entry(player).or_default();
         }
         Ok(())
     }

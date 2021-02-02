@@ -61,7 +61,7 @@ pub struct ButtonIter {
 impl Iterator for ButtonIter {
     type Item = (usize, bool);
     fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining == 0 {
+        if self.index >= 8 {
             None
         } else {
             let index = self.index;
@@ -109,6 +109,26 @@ mod test {
     use super::ButtonSet;
 
     use std::str::FromStr;
+
+    #[test]
+    fn test_iter() {
+        for (x, y) in super::A.iter() {
+            assert_eq!(y, x == 0)
+        }
+        for (x, y) in super::B.iter() {
+            assert_eq!(y, x == 1)
+        }
+        for (x, y) in (super::A | super::B).iter() {
+            assert_eq!(y, x <= 1)
+        }
+        for (x, y) in (super::A | super::C).iter() {
+            assert_eq!(y, x == 0 || x == 2)
+        }
+
+        for ((x, _), y) in (super::A | super::B).iter().zip(0..9) {
+            assert_eq!(x, y);
+        }
+    }
 
     #[test]
     fn single_button() {

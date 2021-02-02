@@ -1,6 +1,6 @@
 use std::collections::{hash_map::Keys, HashMap};
 
-use fg_controller::backend::{Button, ControllerBackend, ControllerState, Event, EventType};
+use fg_controller::backend::{Button, ControllerBackend, ControllerState};
 use fg_input::axis::Axis;
 use sdl2::{
     controller::GameController,
@@ -60,9 +60,9 @@ fn value_to_x_axis(value: i16, dead_zone: i16) -> Axis {
 }
 fn value_to_y_axis(value: i16, dead_zone: i16) -> Axis {
     if value >= dead_zone {
-        Axis::Up
-    } else if value <= -dead_zone {
         Axis::Down
+    } else if value <= -dead_zone {
+        Axis::Up
     } else {
         Axis::Neutral
     }
@@ -86,6 +86,7 @@ impl<'this> ControllerBackend<'this> for SdlController {
                     let controller = self.controller_subsystem.open(which).unwrap();
                     let id = ControllerId(controller.instance_id());
                     self.controllers.insert(id, controller);
+                    self.active_controller = Some(id);
                 }
                 SdlEvent::ControllerDeviceRemoved { which, .. } => {
                     let id = ControllerId(which);
@@ -119,6 +120,22 @@ impl<'this> ControllerBackend<'this> for SdlController {
         state[Button::R1] = controller.button(SdlButton::RightShoulder);
         state[Button::R2] = controller.axis(SdlAxis::TriggerRight) > TRIGGER_DEAD_ZONE;
         state[Button::RightStick] = controller.button(SdlButton::RightStick);
+
+        state.dpad = if controller.button(SdlButton::DPadLeft) {
+            Axis::Left
+        } else {
+            Axis::Neutral
+        } + if controller.button(SdlButton::DPadRight) {
+            Axis::Right
+        } else {
+            Axis::Neutral
+        } + if controller.button(SdlButton::DPadUp) {
+            Axis::Up
+        } else if controller.button(SdlButton::DPadDown) {
+            Axis::Down
+        } else {
+            Axis::Neutral
+        };
 
         state.left_stick = value_to_x_axis(controller.axis(SdlAxis::LeftX), STICK_DEAD_ZONE)
             + value_to_y_axis(controller.axis(SdlAxis::LeftY), STICK_DEAD_ZONE);

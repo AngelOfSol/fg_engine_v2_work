@@ -1,14 +1,11 @@
 [package]
 authors = ["AngelOfSol <julietckilian@gmail.com>"]
 edition = "2018"
-name = "fg_controller"
+name = "fg_ui"
 version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fg_input = {path = "../fg_input"}
-sdl2 = {version = "0.34.1", features = ["bundled", "static-link"]}
-serde = "1.0.123"
-strum = {version = "0.20", features = ["derive"]}
-maplit = "1.0.2"
+fg_controller = {path = "../fg_controller"}
+serde = {version = "1.0.123", features = ["derive"]}

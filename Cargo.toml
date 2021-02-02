@@ -11,6 +11,7 @@ members = [
   "fg_controller/sdl_controller_backend",
   "fg_datastructures",
   "fg_netcode",
+  "fg_ui",
 ]
 
 [profile.release]
@@ -27,6 +28,7 @@ enum_dispatch = "0.3.2"
 fg_controller = {path = "./fg_controller"}
 fg_datastructures = {path = "./fg_datastructures"}
 fg_input = {path = "./fg_input"}
+fg_ui = {path = "./fg_ui"}
 flate2 = "1.0.14"
 gfx = "0.18.2"
 gfx_core = "0.9.2"
@@ -50,6 +52,7 @@ nom = "6.0.1"
 paste = "1.0.4"
 rodio = "0.11.0"
 sdl2 = {version = "0.34.1", features = ["bundled", "static-link"]}
+sdl_controller_backend = {path = "./fg_controller/sdl_controller_backend"}
 serde = {version = "1.0.114", features = ["derive"]}
 serde_json = "1.0.55"
 strum = {version = "0.20", features = ["derive"]}

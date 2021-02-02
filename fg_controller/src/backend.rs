@@ -1,7 +1,7 @@
-use std::ops::{Index, IndexMut};
-
-use fg_input::axis::Axis;
+pub use fg_input::axis::Axis;
 use serde::{Deserialize, Serialize};
+use std::ops::{Index, IndexMut};
+use strum::EnumIter;
 
 pub struct Event<ControllerId> {
     pub id: ControllerId,
@@ -31,7 +31,7 @@ pub trait ControllerBackend<'this> {
     fn current_state(&self, id: &Self::ControllerId) -> ControllerState;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Hash, EnumIter)]
 pub enum Button {
     A,
     B,
@@ -55,6 +55,12 @@ pub struct ControllerState {
     pub right_stick: Axis,
 
     pub buttons: [bool; 13],
+}
+
+impl ControllerState {
+    pub fn axis(&self) -> Axis {
+        self.dpad + self.left_stick
+    }
 }
 
 impl Index<Button> for ControllerState {

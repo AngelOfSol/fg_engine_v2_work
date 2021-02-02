@@ -754,8 +754,10 @@ name = "fg_controller"
 version = "0.1.0"
 dependencies = [
  "fg_input",
+ "maplit",
  "sdl2",
  "serde",
+ "strum",
 ]
 
 [[package]]
@@ -777,6 +779,7 @@ dependencies = [
  "fg_controller",
  "fg_datastructures",
  "fg_input",
+ "fg_ui",
  "flate2",
  "gfx",
  "gfx_core",
@@ -800,6 +803,7 @@ dependencies = [
  "paste",
  "rodio",
  "sdl2",
+ "sdl_controller_backend",
  "serde",
  "serde_json",
  "strum",
@@ -823,6 +827,14 @@ dependencies = [
 [[package]]
 name = "fg_netcode"
 version = "0.1.0"
+
+[[package]]
+name = "fg_ui"
+version = "0.1.0"
+dependencies = [
+ "fg_controller",
+ "serde",
+]
 
 [[package]]
 name = "filetime"

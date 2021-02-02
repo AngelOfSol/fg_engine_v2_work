@@ -1,12 +1,15 @@
 use crate::imgui_wrapper::ImGuiWrapper;
-use fg_controller::control_scheme::PadControlScheme;
-use fg_controller::pads_context::{GamepadId, PadsContext};
+use fg_controller::{
+    backend::{Button, ControllerBackend},
+    control_mapping::ControlMapping,
+};
+use fg_input::axis::Axis;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
 use imgui::NavInput;
 use laminar::{Config, Socket};
-use sdl2::{controller::Button, event::Event};
+use sdl_controller_backend::{ControllerId, SdlController};
 use std::collections::HashMap;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::time::Duration;
@@ -19,14 +22,11 @@ pub enum Transition {
 }
 
 pub struct AppContext {
-    pub pads: PadsContext,
+    pub controllers: SdlController,
     pub imgui: ImGuiWrapper,
-    pub control_schemes: HashMap<GamepadId, PadControlScheme>,
+    pub control_schemes: HashMap<ControllerId, ControlMapping>,
     pub audio: rodio::Device,
     pub socket: Option<Socket>,
-    pub sdl_events: sdl2::EventPump,
-
-    _sdl: sdl2::Sdl,
 }
 
 pub trait AppState {
@@ -45,10 +45,6 @@ impl AppStateRunner {
     pub fn new(ctx: &mut Context, mut start: Box<dyn AppState>) -> GameResult<Self> {
         let audio = rodio::default_output_device().unwrap();
 
-        let _sdl = sdl2::init().unwrap();
-
-        let sdl_events = _sdl.event_pump().unwrap();
-        let sdl_controller = _sdl.game_controller().unwrap();
         let adapter = ipconfig::get_adapters().ok().and_then(|adapters| {
             adapters
                 .into_iter()
@@ -56,7 +52,7 @@ impl AppStateRunner {
         });
 
         let mut app_ctx = AppContext {
-            pads: PadsContext::new(sdl_controller),
+            controllers: SdlController::new().unwrap(),
             imgui: ImGuiWrapper::new(ctx),
             control_schemes: HashMap::new(),
             audio,
@@ -90,8 +86,6 @@ impl AppStateRunner {
                 },
             )
             .ok(),
-            _sdl,
-            sdl_events,
         };
         start.on_enter(ctx, &mut app_ctx)?;
         Ok(AppStateRunner {
@@ -104,50 +98,66 @@ impl AppStateRunner {
 
 impl EventHandler for AppStateRunner {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        for event in self.app_ctx.sdl_events.poll_iter() {
-            self.app_ctx.pads.handle(event.clone());
-            match event {
-                Event::ControllerButtonDown { button, .. } => {
-                    let nav_input = match button {
-                        Button::A => Some(NavInput::Activate),
-                        Button::X => Some(NavInput::Cancel),
-                        Button::B => Some(NavInput::Input),
-                        Button::Y => Some(NavInput::Menu),
-                        Button::DPadLeft => Some(NavInput::DpadLeft),
-                        Button::DPadRight => Some(NavInput::DpadRight),
-                        Button::DPadUp => Some(NavInput::DpadUp),
-                        Button::DPadDown => Some(NavInput::DpadDown),
-                        Button::LeftShoulder => Some(NavInput::FocusPrev),
-                        Button::RightShoulder => Some(NavInput::FocusNext),
-                        _ => None,
-                    };
+        self.app_ctx.controllers.poll();
 
-                    if let Some(nav_input) = nav_input {
-                        self.app_ctx.imgui.handle_gamepad_input(nav_input, 1.0);
-                    }
-                }
-                Event::ControllerButtonUp { button, .. } => {
-                    let nav_input = match button {
-                        Button::A => Some(NavInput::Activate),
-                        Button::X => Some(NavInput::Cancel),
-                        Button::B => Some(NavInput::Input),
-                        Button::Y => Some(NavInput::Menu),
-                        Button::DPadLeft => Some(NavInput::DpadLeft),
-                        Button::DPadRight => Some(NavInput::DpadRight),
-                        Button::DPadUp => Some(NavInput::DpadUp),
-                        Button::DPadDown => Some(NavInput::DpadDown),
-                        Button::LeftShoulder => Some(NavInput::FocusPrev),
-                        Button::RightShoulder => Some(NavInput::FocusNext),
-                        _ => None,
-                    };
+        if let Some((_, controller)) = self.app_ctx.controllers.active_state() {
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::Activate,
+                if controller[Button::A] { 1.0 } else { 0.0 },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::Cancel,
+                if controller[Button::X] { 1.0 } else { 0.0 },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::Input,
+                if controller[Button::B] { 1.0 } else { 0.0 },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::Menu,
+                if controller[Button::Y] { 1.0 } else { 0.0 },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::FocusPrev,
+                if controller[Button::L1] { 1.0 } else { 0.0 },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::FocusNext,
+                if controller[Button::R1] { 1.0 } else { 0.0 },
+            );
 
-                    if let Some(nav_input) = nav_input {
-                        self.app_ctx.imgui.handle_gamepad_input(nav_input, 0.0);
-                    }
-                }
-                _ => (),
-            }
-            //
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::DpadLeft,
+                if controller.axis().x() == Axis::Left {
+                    1.0
+                } else {
+                    0.0
+                },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::DpadRight,
+                if controller.axis().x() == Axis::Right {
+                    1.0
+                } else {
+                    0.0
+                },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::DpadUp,
+                if controller.axis().y() == Axis::Up {
+                    1.0
+                } else {
+                    0.0
+                },
+            );
+            self.app_ctx.imgui.handle_gamepad_input(
+                NavInput::DpadDown,
+                if controller.axis().y() == Axis::Down {
+                    1.0
+                } else {
+                    0.0
+                },
+            );
         }
 
         if let Some(state) = self.history.last_mut() {

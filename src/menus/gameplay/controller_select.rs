@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::player_list::{PlayerList, PlayerType};
-use fg_controller::pads_context::{Button, EventType};
+use fg_controller::backend::{Axis, Button, ControllerBackend};
 use fg_datastructures::player_data::PlayerData;
+use fg_ui::delay::Delay;
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
+use sdl_controller_backend::ControllerId;
 
 enum NextState {
     Next,
@@ -19,6 +23,7 @@ pub struct ControllerSelect<Target> {
     selectable: PlayerData<bool>,
     selected_gamepad: PlayerData<Option<PlayerType>>,
 
+    reset: HashMap<ControllerId, Delay>,
     _marker: std::marker::PhantomData<Target>,
 }
 
@@ -28,6 +33,7 @@ impl<Target> ControllerSelect<Target> {
             next: None,
             selectable,
             selected_gamepad: [None, None].into(),
+            reset: Default::default(),
             _marker: std::marker::PhantomData,
         }
     }
@@ -36,49 +42,51 @@ impl<Target> ControllerSelect<Target> {
 impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSelect<Target> {
     fn update(
         &mut self,
-        _: &mut Context,
-        AppContext { ref mut pads, .. }: &mut AppContext,
+        ctx: &mut Context,
+        AppContext {
+            ref mut controllers,
+            ..
+        }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        while let Some(event) = pads.next_event() {
-            if let EventType::ButtonPressed(button) = event.event {
-                match button {
-                    Button::DPadLeft => {
-                        if &Some(event.id.into()) == self.selected_gamepad.p2() {
-                            *self.selected_gamepad.p2_mut() = None;
-                        } else if self.selected_gamepad.p1().is_none() && *self.selectable.p1() {
-                            *self.selected_gamepad.p1_mut() = Some(event.id.into());
-                        }
+        while ggez::timer::check_update_time(ctx, 60) {
+            for (id, state) in controllers
+                .controllers()
+                .map(|id| (id, controllers.current_state(&id)))
+            {
+                let reset = self.reset.entry(id).or_insert_with(|| Delay::new(20));
+                reset.update();
+
+                if state.axis().x() == Axis::Left && reset.is_ready() {
+                    if &Some(id.into()) == self.selected_gamepad.p2() {
+                        *self.selected_gamepad.p2_mut() = None;
+                    } else if self.selected_gamepad.p1().is_none() && *self.selectable.p1() {
+                        *self.selected_gamepad.p1_mut() = Some(id.into());
                     }
-                    Button::DPadRight => {
-                        if &Some(event.id.into()) == self.selected_gamepad.p1() {
-                            *self.selected_gamepad.p1_mut() = None;
-                        } else if self.selected_gamepad.p2().is_none() && *self.selectable.p2() {
-                            *self.selected_gamepad.p2_mut() = Some(event.id.into());
-                        }
+                } else if state.axis().x() == Axis::Right && reset.is_ready() {
+                    if &Some(id.into()) == self.selected_gamepad.p1() {
+                        *self.selected_gamepad.p1_mut() = None;
+                    } else if self.selected_gamepad.p2().is_none() && *self.selectable.p2() {
+                        *self.selected_gamepad.p2_mut() = Some(id.into());
                     }
-                    Button::B => {
-                        if &Some(event.id.into()) == self.selected_gamepad.p1() {
-                            *self.selected_gamepad.p1_mut() = None;
-                        } else if &Some(event.id.into()) == self.selected_gamepad.p2() {
-                            *self.selected_gamepad.p2_mut() = None;
-                        } else {
-                            self.next = Some(NextState::Back);
-                        }
-                    }
-                    Button::Start | Button::A => {
-                        #[allow(clippy::clippy::blocks_in_if_conditions)]
-                        if self
-                            .selectable
-                            .iter()
-                            .zip(self.selected_gamepad.iter())
-                            .fold(true, |acc, (selectable, gamepad)| {
-                                *selectable == gamepad.is_some() && acc
-                            })
-                        {
-                            self.next = Some(NextState::Next);
-                        }
-                    }
-                    _ => (),
+                } else if state.axis().x() == Axis::Neutral {
+                    reset.ready();
+                }
+
+                if state[Button::B] {
+                    self.next = Some(NextState::Back);
+                }
+
+                #[allow(clippy::clippy::blocks_in_if_conditions)]
+                if (state[Button::A] || state[Button::Start])
+                    && self
+                        .selectable
+                        .iter()
+                        .zip(self.selected_gamepad.iter())
+                        .fold(true, |acc, (selectable, gamepad)| {
+                            *selectable == gamepad.is_some() && acc
+                        })
+                {
+                    self.next = Some(NextState::Next);
                 }
             }
         }
@@ -107,7 +115,7 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
         ctx: &mut Context,
         AppContext {
             ref mut imgui,
-            ref pads,
+            ref controllers,
             ..
         }: &mut AppContext,
     ) -> GameResult<()> {
@@ -120,18 +128,18 @@ impl<Target: FromControllerList + AppState + 'static> AppState for ControllerSel
                 imgui::Window::new(im_str!("Controllers")).build(ui, || {
                     ui.columns(3, im_str!("Controller##Gamepads"), true);
                     if let Some(gamepad) = self.selected_gamepad.p1() {
-                        ui.text(&im_str!("Gamepad {}", gamepad.gamepad_id().unwrap()));
+                        ui.text(&im_str!("Gamepad {:?}", gamepad.gamepad_id().unwrap()));
                     }
                     ui.next_column();
-                    for gamepad in pads.gamepads().map(|(id, _)| id).filter(|item| {
+                    for gamepad in controllers.controllers().filter(|item| {
                         Some((*item).into()) != *self.selected_gamepad.p1()
                             && Some((*item).into()) != *self.selected_gamepad.p2()
                     }) {
-                        ui.text(&im_str!("Gamepad {}", gamepad));
+                        ui.text(&im_str!("Gamepad {:?}", gamepad));
                     }
                     ui.next_column();
                     if let Some(gamepad) = self.selected_gamepad.p2() {
-                        ui.text(&im_str!("Gamepad {}", gamepad.gamepad_id().unwrap()));
+                        ui.text(&im_str!("Gamepad {:?}", gamepad.gamepad_id().unwrap()));
                     }
                 });
             })

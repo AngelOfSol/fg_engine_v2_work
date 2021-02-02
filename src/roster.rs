@@ -36,7 +36,20 @@ pub enum CharacterData {
     Yuyuko(Rc<Data<YuyukoType>>),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, EnumIter, Display, EnumCount, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumIter,
+    Display,
+    EnumCount,
+    Serialize,
+    Deserialize,
+    Eq,
+    PartialOrd,
+    Ord,
+)]
 pub enum RosterCharacter {
     Yuyuko,
 }

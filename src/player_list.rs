@@ -1,11 +1,11 @@
-use fg_controller::pads_context::GamepadId;
 use fg_datastructures::player_data::PlayerData;
+use sdl_controller_backend::ControllerId;
 use std::net::SocketAddr;
 use strum::Display;
 
 #[derive(Debug, Copy, Clone, PartialEq, Display)]
 pub enum PlayerType {
-    LocalGamepad(GamepadId),
+    LocalGamepad(ControllerId),
     Networked(SocketAddr),
     Dummy,
 }
@@ -28,7 +28,7 @@ impl PlayerType {
         matches!(self, Self::Dummy)
     }
 
-    pub fn gamepad_id(&self) -> Option<GamepadId> {
+    pub fn gamepad_id(&self) -> Option<ControllerId> {
         match self {
             Self::LocalGamepad(id) => Some(*id),
             Self::Dummy => None,
@@ -44,8 +44,8 @@ impl PlayerType {
     }
 }
 
-impl From<GamepadId> for PlayerType {
-    fn from(value: GamepadId) -> Self {
+impl From<ControllerId> for PlayerType {
+    fn from(value: ControllerId) -> Self {
         Self::LocalGamepad(value)
     }
 }
@@ -70,7 +70,7 @@ impl PlayerList {
         }
     }
 
-    pub fn gamepads(&self) -> impl Iterator<Item = GamepadId> + '_ {
+    pub fn gamepads(&self) -> impl Iterator<Item = ControllerId> + '_ {
         self.current_players
             .iter()
             .filter_map(PlayerType::gamepad_id)

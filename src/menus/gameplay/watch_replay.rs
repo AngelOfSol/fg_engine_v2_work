@@ -1,7 +1,6 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{MatchSettings, MatchSettingsError, NoLogMatch};
 use crate::netcode::RollbackableGameState;
-use fg_controller::pads_context::{Button, Event, EventType};
 use fg_datastructures::player_data::PlayerData;
 use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
@@ -47,11 +46,7 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
     fn update(
         &mut self,
         ctx: &mut Context,
-        &mut AppContext {
-            ref audio,
-            ref mut pads,
-            ..
-        }: &mut AppContext,
+        &mut AppContext { ref audio, .. }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
         'game_play: while ggez::timer::check_update_time(ctx, 60) {
             let speed = 1; // this can be changed to do a performance test
@@ -113,18 +108,6 @@ impl<Reader: Read> AppState for WatchReplay<Reader> {
                 }
 
                 self.game_state.render_sounds(60 * speed, audio)?;
-            }
-        }
-
-        while let Some(event) = pads.next_event() {
-            let Event { event, .. } = event;
-            if let EventType::ButtonPressed(button) = event {
-                match button {
-                    Button::B | Button::Start => {
-                        self.next = Some(NextState::Back);
-                    }
-                    _ => {}
-                }
             }
         }
 

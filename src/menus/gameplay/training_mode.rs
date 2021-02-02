@@ -1,8 +1,7 @@
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::game_match::{FromMatchSettings, Match, MatchSettings};
 use crate::player_list::PlayerList;
-use fg_controller::control_scheme::PadControlScheme;
-use fg_controller::pads_context::{Event, EventType};
+use fg_controller::backend::ControllerBackend;
 use fg_datastructures::player_data::PlayerData;
 use fg_input::InputState;
 use ggez::{graphics, Context, GameResult};
@@ -62,43 +61,31 @@ impl AppState for TrainingMode {
         ctx: &mut Context,
         &mut AppContext {
             ref audio,
-            ref mut pads,
+            ref mut controllers,
             ref control_schemes,
             ..
         }: &mut AppContext,
     ) -> GameResult<crate::app_state::Transition> {
-        let mut events = Vec::new();
-        while let Some(event) = pads.next_event() {
-            events.push(event);
-        }
-        let events = events;
-
-        // only iterates over the first player
-        for (input, player) in self
-            .inputs
-            .iter_mut()
-            .zip(self.player_list.current_players.iter())
-            .take(1)
-        {
-            let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
-            let current_frame = input.last_mut().unwrap();
-            for event in events.iter() {
-                let Event { id, event, .. } = event;
-                if *id == control_scheme.gamepad {
-                    match event {
-                        EventType::ButtonPressed(button) => {
-                            control_scheme.handle_press(*button, current_frame);
-                        }
-                        EventType::ButtonReleased(button) => {
-                            control_scheme.handle_release(*button, current_frame);
-                        }
-                    }
-                }
-            }
-        }
-
         let mut count = 0;
         while ggez::timer::check_update_time(ctx, self.fps) {
+            for (input, player) in self
+                .inputs
+                .iter_mut()
+                .zip(
+                    self.player_list
+                        .current_players
+                        .iter()
+                        .map(|player| player.gamepad_id().unwrap()),
+                )
+                .take(1)
+            {
+                let control_scheme = &control_schemes[&player];
+
+                input.push(
+                    control_scheme.map(*input.last().unwrap(), &controllers.current_state(&player)),
+                );
+            }
+
             count += 1;
             self.game_state
                 .update(self.inputs.as_ref().map(|item| item.as_slice()));
@@ -108,17 +95,6 @@ impl AppState for TrainingMode {
                 self.next = Some(NextState::Back);
             }
 
-            for (input, player) in self
-                .inputs
-                .iter_mut()
-                .zip(self.player_list.current_players.iter())
-                .take(1)
-            {
-                let control_scheme = &control_schemes[&player.gamepad_id().unwrap()];
-                let mut last_frame = *input.last().unwrap();
-                control_scheme.update_frame(&mut last_frame);
-                input.push(last_frame);
-            }
             self.dirty = true;
         }
         if count > 1 {
@@ -141,9 +117,7 @@ impl AppState for TrainingMode {
         }: &mut AppContext,
     ) -> GameResult<()> {
         for player in self.player_list.gamepads() {
-            control_schemes
-                .entry(player)
-                .or_insert_with(|| PadControlScheme::new(player));
+            control_schemes.entry(player).or_default();
         }
         Ok(())
     }
