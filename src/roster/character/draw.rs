@@ -111,7 +111,6 @@ impl<C: Character> Player<C> {
             )>()
             .iter()
         {
-            // TODO (draw taking into account Option<&Facing>, so that objects with and without facing)
             self.data.graphics[graphic].draw_at_time(
                 ctx,
                 assets,

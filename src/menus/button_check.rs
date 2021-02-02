@@ -218,7 +218,6 @@ impl AppState for ButtonCheck {
     ) -> GameResult<()> {
         graphics::clear(ctx, graphics::BLACK);
 
-        // TODO organize windows positioning wise
         imgui
             .frame()
             .run(|ui| {

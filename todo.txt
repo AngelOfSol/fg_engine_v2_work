@@ -329,10 +329,11 @@ TODO (2/15/2020):
     [x] move state to take a <C: Character>
     [] separate out game pieces into crates
         [x] input 
-        [] controller
+        [x] controller
             [x] separate crate
-            [] controller backend -> physical controller -> control scheme -> virtual controller
-            [] create backends
+            [x] controller backend -> physical controller -> control scheme -> virtual controller
+            [x] create backends
+        [] switch to turbulence
         [] separate out graphics from rest of data
     [] consider reworking input reading to use nom to parse inputs from controllers?
     [] rework sound renderer

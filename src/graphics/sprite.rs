@@ -91,10 +91,7 @@ impl Sprite {
             }
             graphics::set_transform(ctx, Matrix4::identity());
             graphics::apply_transformations(ctx)?;
-        } else {
-            // TODO: log no image
         }
-
         Ok(())
     }
     pub fn draw_debug(

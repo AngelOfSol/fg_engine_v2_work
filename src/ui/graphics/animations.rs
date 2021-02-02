@@ -43,7 +43,6 @@ impl AnimationsUi {
 
         ui.same_line(0.0);
         if ui.small_button(im_str!("New")) {
-            // TODO add popup?
             data.push(Animation::new("new"));
         }
 
