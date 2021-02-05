@@ -1,4 +1,4 @@
-use std::{collections::HashMap, net::SocketAddr};
+use std::{collections::HashMap, io::ErrorKind, net::SocketAddr};
 
 use futures::SinkExt;
 use smol::{
@@ -86,6 +86,8 @@ async fn messages_loop(
 ) {
     let messages = &mut messages;
     loop {
+        // TODO make it so only the channels that are actually used appear here.
+        // that way when the other ends are all dropped this task ends up failing.
         incoming.join_request.try_forward_incoming(messages).await;
         incoming.join_response.try_forward_incoming(messages).await;
 
@@ -194,7 +196,10 @@ async fn in_loop(
                     };
                 }
             }
-            Err(_e) => {}
+            Err(e) if e.kind() == ErrorKind::WouldBlock => (),
+            x => {
+                x.unwrap();
+            }
         }
         yield_now().await
     }

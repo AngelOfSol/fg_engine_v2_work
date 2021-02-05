@@ -11,7 +11,7 @@ use smol::{
     future::yield_now,
     lock::RwLock,
     net::{AsyncToSocketAddrs, UdpSocket},
-    Executor,
+    Executor, Task,
 };
 use std::{net::SocketAddr, ops::DerefMut, sync::Arc};
 use turbulence_impl::TurbulenceRuntime;
@@ -20,6 +20,7 @@ type BackendHandle = Arc<RwLock<BackendInner>>;
 
 pub struct UdpBackend {
     handle: BackendHandle,
+    _task: Task<()>,
 }
 
 pub struct BackendInner {
@@ -63,7 +64,6 @@ impl NetworkingSubsytem for UdpBackend {
         let handle = self.handle.clone();
         let response = {
             let mut inner = self.handle.write().await;
-            dbg!("writing");
             let socket = inner.socket.clone();
             let runtime = TurbulenceRuntime::from(inner.runtime.clone());
             let connection = inner.connections.get_connection(lobby, socket, runtime);
@@ -72,13 +72,10 @@ impl NetworkingSubsytem for UdpBackend {
                 connection.outgoing.join_request.send.clone(),
             );
             drop(inner);
-            dbg!("sending");
             outgoing.send(JoinRequest { addr: lobby }).await.unwrap();
-            dbg!("receiving");
             incoming.recv().await.unwrap()
         };
 
-        dbg!("processing");
         match response {
             JoinResponse::Denied => Err(JoinError::Denied),
             JoinResponse::Accepted { self_addr } => {
@@ -92,7 +89,7 @@ impl NetworkingSubsytem for UdpBackend {
 }
 
 async fn main_loop(handle: BackendHandle) {
-    let mut temp_buffer = vec![0; 20];
+    let mut temp_buffer = vec![0; 1024];
     loop {
         {
             let mut handle = handle.write().await;
@@ -114,7 +111,6 @@ async fn main_loop(handle: BackendHandle) {
 
             if let Some(Ok((_, addr))) = handle.socket.peek_from(&mut temp_buffer).now_or_never() {
                 if !handle.connections.connections.contains_key(&addr) {
-                    dbg!("new incoming connection");
                     handle.connections.get_connection(
                         addr,
                         handle.socket.clone(),
@@ -127,7 +123,6 @@ async fn main_loop(handle: BackendHandle) {
                 handle.self_addr = updated_address;
             }
         }
-
         yield_now().await
     }
 }
@@ -144,9 +139,12 @@ impl UdpBackend {
             connections: Connections::default(),
         }));
 
-        runtime.spawn(main_loop(handle.clone())).detach();
+        let task = runtime.spawn(main_loop(handle.clone()));
 
-        Self { handle }
+        Self {
+            handle,
+            _task: task,
+        }
     }
 }
 
@@ -162,16 +160,16 @@ mod test {
     #[test]
     fn integ_test() {
         let exec = Arc::new(Executor::new());
-        let server = UdpBackend::new("127.0.0.1:10800", exec.clone());
+        let _server = UdpBackend::new("127.0.0.1:10800", exec.clone());
         let mut client = UdpBackend::new("127.0.0.1:10801", exec.clone());
 
-        smol::block_on(exec.run(async move {
+        smol::block_on(exec.run(exec.spawn(async move {
             assert_eq!(
                 client
                     .request_join("127.0.0.1:10800".to_socket_addrs().unwrap().next().unwrap())
                     .await,
                 Err(JoinError::Denied)
             );
-        }));
+        })));
     }
 }
