@@ -14,7 +14,6 @@ use smol::{
     Executor, Task,
 };
 use std::{net::SocketAddr, ops::DerefMut, sync::Arc};
-use turbulence_impl::TurbulenceRuntime;
 
 type BackendHandle = Arc<RwLock<BackendInner>>;
 
@@ -62,19 +61,22 @@ impl NetworkingSubsytem for UdpBackend {
 
     async fn request_join(&mut self, lobby: Self::LobbyId) -> Result<Self::LobbyId, JoinError> {
         let handle = self.handle.clone();
-        let response = {
+        let (incoming, outgoing) = {
             let mut inner = self.handle.write().await;
-            let socket = inner.socket.clone();
-            let runtime = TurbulenceRuntime::from(inner.runtime.clone());
-            let connection = inner.connections.get_connection(lobby, socket, runtime);
-            let (incoming, outgoing) = (
+            let inner = inner.deref_mut();
+            let connection = inner.connections.get_connection(
+                lobby,
+                inner.socket.clone(),
+                inner.runtime.clone(),
+            );
+            (
                 connection.incoming.join_response.recv.clone(),
                 connection.outgoing.join_request.send.clone(),
-            );
-            drop(inner);
-            outgoing.send(JoinRequest { addr: lobby }).await.unwrap();
-            incoming.recv().await.unwrap()
+            )
         };
+
+        outgoing.send(JoinRequest { addr: lobby }).await.unwrap();
+        let response = incoming.recv().await.unwrap();
 
         match response {
             JoinResponse::Denied => Err(JoinError::Denied),
@@ -114,7 +116,7 @@ async fn main_loop(handle: BackendHandle) {
                     handle.connections.get_connection(
                         addr,
                         handle.socket.clone(),
-                        TurbulenceRuntime::from(handle.runtime.clone()),
+                        handle.runtime.clone(),
                     );
                 }
             }

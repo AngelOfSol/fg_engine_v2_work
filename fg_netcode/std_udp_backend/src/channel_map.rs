@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::ErrorKind, net::SocketAddr};
+use std::{collections::HashMap, io::ErrorKind, net::SocketAddr, sync::Arc};
 
 use futures::SinkExt;
 use smol::{
@@ -6,6 +6,7 @@ use smol::{
     future::yield_now,
     net::UdpSocket,
     stream::StreamExt,
+    Executor,
 };
 use turbulence::{
     message_channels::ChannelMessage, BufferPacket, BufferPacketPool, IncomingMultiplexedPackets,
@@ -15,7 +16,7 @@ use turbulence::{
 
 use crate::{
     join::{self, JoinRequest, JoinResponse},
-    turbulence_impl::SimpleBufferPool,
+    turbulence_impl::{SimpleBufferPool, TurbulenceRuntime},
 };
 
 #[derive(Clone)]
@@ -57,22 +58,28 @@ pub struct Connections {
 }
 
 impl Connections {
-    pub fn get_connection<R: Runtime + 'static>(
+    // TODO replace R type param with Executor<'static> that way I can save the tasks somewhere and have them dropped when the connections struct dies
+    pub fn get_connection(
         &mut self,
         addr: SocketAddr,
         socket: UdpSocket,
-        executor: R,
+        executor: Arc<Executor<'static>>,
     ) -> &mut Connection {
+        let runtime = TurbulenceRuntime::from(executor.clone());
         let exists = self.connections.contains_key(&addr);
         let connection = self.connections.entry(addr).or_default();
         if !exists {
             let Connection { outgoing, incoming } = connection;
-            let (messages, raw_in, raw_out) = build_message_channels(executor.clone());
+            let (messages, raw_in, raw_out) = build_message_channels(runtime.clone());
 
-            executor.spawn(out_loop(raw_out, addr, socket.clone()));
-            executor.spawn(in_loop(raw_in, addr, socket));
+            executor
+                .spawn(out_loop(raw_out, addr, socket.clone()))
+                .detach();
+            executor.spawn(in_loop(raw_in, addr, socket)).detach();
 
-            executor.spawn(messages_loop(outgoing.clone(), incoming.clone(), messages));
+            executor
+                .spawn(messages_loop(outgoing.clone(), incoming.clone(), messages))
+                .detach();
         }
 
         connection
@@ -103,7 +110,7 @@ mod test {
 
     use smol::{net::UdpSocket, Executor};
 
-    use crate::{join::JoinResponse, turbulence_impl::TurbulenceRuntime};
+    use crate::join::JoinResponse;
 
     use super::Connections;
 
@@ -116,13 +123,13 @@ mod test {
         let server = {
             let mut conn = Connections::default();
             let socket = smol::block_on(UdpSocket::bind("127.0.0.1:10800")).unwrap();
-            conn.get_connection(client_addr, socket, TurbulenceRuntime::from(exec.clone()));
+            conn.get_connection(client_addr, socket, exec.clone());
             conn
         };
         let client = {
             let mut conn = Connections::default();
             let socket = smol::block_on(UdpSocket::bind("127.0.0.1:10801")).unwrap();
-            conn.get_connection(server_addr, socket, TurbulenceRuntime::from(exec.clone()));
+            conn.get_connection(server_addr, socket, exec.clone());
             conn
         };
 
