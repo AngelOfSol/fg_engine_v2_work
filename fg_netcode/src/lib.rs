@@ -24,10 +24,10 @@ pub trait NetworkingSubsytem {
 /// Allows you to view available games, check the player list for player's who
 /// aren't a game, and enter or leave games.
 ///
-/// When the handle is dropped or consumed via leave, the lobby state should
+/// When all copies of a handle are dropped or consumed via leave, the lobby state should
 /// reflect that player leaving.
 #[async_trait]
-pub trait Lobby {
+pub trait Lobby: Clone {
     type Playing: Playing<Meta = Self::Meta>;
     type Spectating: Spectating<Meta = Self::Meta>;
     type Meta;
@@ -54,7 +54,7 @@ pub struct GameInfo<'a, PlayerInfo, Meta> {
 /// When the handle is dropped or consumed via stop, the lobby state should
 /// reflect that player leaving the game.
 #[async_trait]
-pub trait Spectating {
+pub trait Spectating: Clone {
     type Meta;
 
     /// Returns a usize representing which player sent the data.
@@ -70,12 +70,15 @@ pub trait Spectating {
 /// When the handle is dropped or consumed via stop, the lobby state should
 /// reflect that player leaving the game.
 #[async_trait]
-pub trait Playing {
+pub trait Playing: Clone {
     type Meta;
-    /// Provides a way to send game updates unreliably.
+    /// Provides a way to send game updates unreliably.  Should return an error
+    /// if the other player who is playing disconnects, and errors from spectators
+    /// should be ignored.
     ///
     /// Assumes that only 2 players can be playing, so there is no ID
-    /// specified to indicate who to send to.
+    /// specified to indicate who to send to.  Addtionally all data should
+    /// be sent to all spectators in the game, so they can keep up to date.
     async fn send_raw(&self, data: &[u8]) -> Result<(), NetworkError>;
     /// Returns a usize representing which player sent the data.
     async fn recv_raw(&self, data: &mut [u8]) -> Result<usize, NetworkError>;
