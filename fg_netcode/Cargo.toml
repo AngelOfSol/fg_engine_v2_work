@@ -10,3 +10,4 @@ version = "0.1.0"
 async-trait = "0.1.42"
 fg_datastructures = {path = "../fg_datastructures"}
 futures = "0.3.12"
+tokio = {version = "1.2", features = ["sync"]}

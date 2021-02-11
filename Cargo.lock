@@ -940,6 +940,7 @@ dependencies = [
  "fg_controller",
  "fg_datastructures",
  "fg_input",
+ "fg_netcode",
  "fg_ui",
  "flate2",
  "gfx",
@@ -992,6 +993,7 @@ dependencies = [
  "async-trait",
  "fg_datastructures",
  "futures",
+ "tokio",
 ]
 
 [[package]]
@@ -3442,6 +3444,16 @@ name = "tinyvec_macros"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
+
+[[package]]
+name = "tokio"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8190d04c665ea9e6b6a0dc45523ade572c088d2e6566244c1122671dbf4ae3a"
+dependencies = [
+ "autocfg 1.0.1",
+ "pin-project-lite",
+]
 
 [[package]]
 name = "toml"

@@ -30,6 +30,7 @@ enum_dispatch = "0.3.2"
 fg_controller = {path = "./fg_controller"}
 fg_datastructures = {path = "./fg_datastructures"}
 fg_input = {path = "./fg_input"}
+fg_netcode = {path = "./fg_netcode"}
 fg_ui = {path = "./fg_ui"}
 flate2 = "1.0.14"
 gfx = "0.18.2"

@@ -3,6 +3,7 @@ mod display_settings;
 pub mod gameplay;
 pub mod loading_screen;
 mod main_menu;
+pub mod networked;
 mod settings_menu;
 
 pub use button_check::*;

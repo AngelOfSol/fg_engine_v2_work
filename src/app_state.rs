@@ -4,6 +4,7 @@ use fg_controller::{
     control_mapping::ControlMapping,
 };
 use fg_input::axis::Axis;
+use fg_netcode::Networking;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{Context, GameResult};
@@ -27,6 +28,7 @@ pub struct AppContext {
     pub control_schemes: HashMap<ControllerId, ControlMapping>,
     pub audio: rodio::Device,
     pub socket: Option<Socket>,
+    pub networking: Networking,
 }
 
 pub trait AppState {
@@ -56,6 +58,7 @@ impl AppStateRunner {
             imgui: ImGuiWrapper::new(ctx),
             control_schemes: HashMap::new(),
             audio,
+            networking: Networking::default(),
             socket: Socket::bind_with_config(
                 adapter
                     .and_then(|adapter| {

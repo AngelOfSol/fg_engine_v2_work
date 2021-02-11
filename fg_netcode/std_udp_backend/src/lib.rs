@@ -4,7 +4,6 @@ mod turbulence_impl;
 
 use async_trait::async_trait;
 use channel_map::Connections;
-use fg_netcode::NetworkingSubsytem;
 use futures::FutureExt;
 use join::{JoinRequest, JoinResponse};
 use smol::{
@@ -189,7 +188,6 @@ impl UdpBackend {
 mod test {
     use std::{net::ToSocketAddrs, sync::Arc};
 
-    use fg_netcode::NetworkingSubsytem;
     use smol::Executor;
 
     use crate::UdpBackend;

@@ -1,7 +1,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum JoinLobbyError {
-    AlreadyConnected,
+    InLobby,
     Denied,
+
     NetworkError,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

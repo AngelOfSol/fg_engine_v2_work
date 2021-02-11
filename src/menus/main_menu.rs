@@ -1,8 +1,8 @@
-use super::gameplay::local_versus::LocalVersus;
 use super::gameplay::training_mode::TrainingMode;
 use super::gameplay::watch_replay::WatchReplay;
 use super::gameplay::{CharacterSelect, ControllerSelect, NetworkConnect};
 use super::SettingsMenu;
+use super::{gameplay::local_versus::LocalVersus, networked::lobby_select::LobbySelect};
 
 use crate::app_state::{AppContext, AppState, Transition};
 use crate::ui::editor::EditorMenu;
@@ -17,6 +17,7 @@ enum NextState {
     TrainingModeControllerSelect,
     VsModeControllerSelect,
     NetworkSelect,
+    LobbySelect,
     WatchReplay(
         crate::game_match::MatchSettings,
         crate::replay::ReplayReaderFile,
@@ -47,6 +48,11 @@ impl AppState for MainMenu {
                 NextState::NetworkSelect => {
                     Ok(Transition::Push(Box::new(
                         ControllerSelect::<NetworkConnect>::new([true, false].into()),
+                    )))
+                }
+                NextState::LobbySelect => {
+                    Ok(Transition::Push(Box::new(
+                        ControllerSelect::<LobbySelect>::new([true, false].into()),
                     )))
                 }
                 NextState::TrainingModeControllerSelect => {
@@ -98,6 +104,9 @@ impl AppState for MainMenu {
                     }
                     if ui.small_button(im_str!("Network")) {
                         self.next = Some(NextState::NetworkSelect);
+                    }
+                    if ui.small_button(im_str!("Lobby Select")) {
+                        self.next = Some(NextState::LobbySelect);
                     }
                     if ui.small_button(im_str!("Watch Replay")) {
                         let test = nfd::open_file_dialog(Some("rep"), None);
