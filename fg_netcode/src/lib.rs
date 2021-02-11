@@ -30,7 +30,7 @@ pub trait NetworkingSubsytem {
 pub trait Lobby: Clone {
     type Playing: Playing<Meta = Self::Meta>;
     type Spectating: Spectating<Meta = Self::Meta>;
-    type Meta;
+    type Meta: Meta;
     type PlayerInfo;
 
     fn game_list(&self) -> &[GameInfo<'_, Self::PlayerInfo, Self::Meta>];
@@ -41,6 +41,11 @@ pub trait Lobby: Clone {
     async fn spectate_game(&self, id: usize) -> Result<Self::Spectating, SpectateGameError>;
     async fn leave(self) -> Result<(), NetworkError>;
 }
+
+pub trait Meta {
+    fn midgame(&self) -> bool;
+}
+
 pub struct GameInfo<'a, PlayerInfo, Meta> {
     pub players: &'a [PlayerInfo],
     pub spectators: &'a [PlayerInfo],
@@ -84,9 +89,6 @@ pub trait Playing: Clone {
     async fn recv_raw(&self, data: &mut [u8]) -> Result<usize, NetworkError>;
     async fn stop(self) -> Result<usize, NetworkError>;
 
-    /// Should indicate that the player is ready to start.
-    async fn ready(&mut self) -> Result<usize, NetworkError>;
-    async fn unready(&mut self) -> Result<usize, NetworkError>;
     /// Provide a function that makes changes to the game's settings
     /// This should be callable multiple times, so that if the update fails
     /// it can be retried.
