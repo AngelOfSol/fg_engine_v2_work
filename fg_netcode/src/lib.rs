@@ -2,8 +2,8 @@ pub mod error;
 
 use async_trait::async_trait;
 use error::{
-    CreateGameError, HostLobbyError, JoinGameError, JoinLobbyError, SpectateGameError,
-    UpdateMetaError,
+    CreateGameError, HostLobbyError, JoinGameError, JoinLobbyError, NetworkError,
+    SpectateGameError, UpdateMetaError,
 };
 
 /// You can join/host a lobby via an ID, and once you're a part of a lobby,
@@ -39,7 +39,7 @@ pub trait Lobby {
     async fn create_game(&self) -> Result<Self::Playing, CreateGameError>;
     async fn join_game(&self, id: usize) -> Result<Self::Playing, JoinGameError>;
     async fn spectate_game(&self, id: usize) -> Result<Self::Spectating, SpectateGameError>;
-    async fn leave(self);
+    async fn leave(self) -> Result<(), NetworkError>;
 }
 pub struct GameInfo<'a, PlayerInfo, Meta> {
     pub players: &'a [PlayerInfo],
@@ -57,8 +57,9 @@ pub struct GameInfo<'a, PlayerInfo, Meta> {
 pub trait Spectating {
     type Meta;
 
-    async fn recv_raw(&self, data: &mut [u8]);
-    async fn stop(self);
+    /// Returns a usize representing which player sent the data.
+    async fn recv_raw(&self, data: &mut [u8]) -> Result<usize, NetworkError>;
+    async fn stop(self) -> Result<(), NetworkError>;
     fn meta(&self) -> &Self::Meta;
 }
 
@@ -72,12 +73,17 @@ pub trait Spectating {
 pub trait Playing {
     type Meta;
     /// Provides a way to send game updates unreliably.
-    async fn send_raw(&self, data: &[u8]);
-    async fn recv_raw(&self, data: &mut [u8]);
-    async fn stop(self);
+    ///
+    /// Assumes that only 2 players can be playing, so there is no ID
+    /// specified to indicate who to send to.
+    async fn send_raw(&self, data: &[u8]) -> Result<(), NetworkError>;
+    /// Returns a usize representing which player sent the data.
+    async fn recv_raw(&self, data: &mut [u8]) -> Result<usize, NetworkError>;
+    async fn stop(self) -> Result<usize, NetworkError>;
 
     /// Should indicate that the player is ready to start.
-    async fn ready(&mut self);
+    async fn ready(&mut self) -> Result<usize, NetworkError>;
+    async fn unready(&mut self) -> Result<usize, NetworkError>;
     /// Provide a function that makes changes to the game's settings
     /// This should be callable multiple times, so that if the update fails
     /// it can be retried.

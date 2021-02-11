@@ -34,4 +34,7 @@ pub enum UpdateMetaError {
     NetworkError,
 }
 
-pub struct NetworkError;
+pub enum NetworkError {
+    PeerDisconnected,
+    HostDisconneted,
+}
