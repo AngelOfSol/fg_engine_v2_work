@@ -1,44 +1,10 @@
-use std::sync::Arc;
+pub mod error;
 
 use async_trait::async_trait;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum JoinLobbyError {
-    AlreadyConnected,
-    Denied,
-    NetworkError,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum HostLobbyError {
-    InLobby,
-    NetworkError,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum JoinGameError {
-    NoSuchGame,
-    GameFull,
-    AlreadyInGame,
-    GameAlreadyStarted,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SpectateGameError;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum CreateGameError {
-    AlreadyInGame,
-    OutOfGames,
-}
-
-pub enum UpdateMetaError {
-    InvalidPermission,
-    InvalidUpdate,
-    OutOfDate,
-    NetworkError,
-}
-
-pub struct NetworkError;
+use error::{
+    CreateGameError, HostLobbyError, JoinGameError, JoinLobbyError, SpectateGameError,
+    UpdateMetaError,
+};
 
 /// You can join/host a lobby via an ID, and once you're a part of a lobby,
 /// you get a "handle" that represents the lobby and allows you to access its state.
@@ -105,6 +71,7 @@ pub trait Spectating {
 #[async_trait]
 pub trait Playing {
     type Meta;
+    /// Provides a way to send game updates unreliably.
     async fn send_raw(&self, data: &[u8]);
     async fn recv_raw(&self, data: &mut [u8]);
     async fn stop(self);
