@@ -1,12 +1,17 @@
-use std::{collections::HashMap, io::ErrorKind, net::SocketAddr, sync::Arc};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    io::ErrorKind,
+    net::SocketAddr,
+    sync::Arc,
+};
 
-use futures::SinkExt;
+use futures::{Future, SinkExt};
 use smol::{
-    channel::{unbounded, Receiver, Sender},
+    channel::{unbounded, Receiver, SendError, Sender},
     future::yield_now,
     net::UdpSocket,
     stream::StreamExt,
-    Executor,
+    Executor, Task,
 };
 use turbulence::{
     message_channels::ChannelMessage, BufferPacket, BufferPacketPool, IncomingMultiplexedPackets,
@@ -21,14 +26,24 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Channel<T> {
-    pub send: Sender<T>,
-    pub recv: Receiver<T>,
+    pub outgoing: Sender<T>,
+    pub incoming: Receiver<T>,
 }
 
-impl<T> Default for Channel<T> {
-    fn default() -> Self {
-        let (tx, rx) = unbounded();
-        Self { send: tx, recv: rx }
+impl<T> Channel<T> {
+    fn make() -> (Self, Self) {
+        let (in_tx, in_rx) = unbounded();
+        let (out_tx, out_rx) = unbounded();
+        (
+            Self {
+                outgoing: out_tx,
+                incoming: in_rx,
+            },
+            Self {
+                outgoing: in_tx,
+                incoming: out_rx,
+            },
+        )
     }
 }
 
@@ -38,72 +53,91 @@ pub struct ChannelList {
     pub join_response: Channel<JoinResponse>,
 }
 
-impl Default for ChannelList {
-    fn default() -> Self {
-        Self {
-            join_request: Channel::default(),
-            join_response: Channel::default(),
-        }
+impl ChannelList {
+    fn make() -> (Self, Self) {
+        let (left_join_request, right_join_request) = Channel::make();
+        let (left_join_response, right_join_response) = Channel::make();
+
+        (
+            Self {
+                join_request: left_join_request,
+                join_response: left_join_response,
+            },
+            Self {
+                join_request: right_join_request,
+                join_response: right_join_response,
+            },
+        )
     }
 }
-#[derive(Clone, Default)]
+
 pub struct Connection {
-    pub incoming: ChannelList,
-    pub outgoing: ChannelList,
+    pub channels: ChannelList,
+    _main_loop: Task<()>,
+    _outgoing: Task<()>,
+    _incoming: Task<()>,
 }
 
-#[derive(Clone, Default)]
+impl Connection {
+    pub fn send_request(
+        &self,
+        value: JoinRequest,
+    ) -> impl Future<Output = Result<(), SendError<JoinRequest>>> {
+        let outgoing = self.channels.join_request.outgoing.clone();
+        async move { outgoing.send(value).await }
+    }
+}
+
+#[derive(Default)]
 pub struct Connections {
     pub connections: HashMap<SocketAddr, Connection>,
 }
 
 impl Connections {
-    // TODO replace R type param with Executor<'static> that way I can save the tasks somewhere and have them dropped when the connections struct dies
-    pub fn get_connection(
+    pub fn get_or_create_connection(
         &mut self,
         addr: SocketAddr,
         socket: UdpSocket,
         executor: Arc<Executor<'static>>,
-    ) -> &mut Connection {
-        let runtime = TurbulenceRuntime::from(executor.clone());
-        let exists = self.connections.contains_key(&addr);
-        let connection = self.connections.entry(addr).or_default();
-        if !exists {
-            let Connection { outgoing, incoming } = connection;
-            let (messages, raw_in, raw_out) = build_message_channels(runtime.clone());
+    ) -> &Connection {
+        if let Entry::Vacant(vacant) = self.connections.entry(addr) {
+            let (left, right) = ChannelList::make();
+            let (messages, raw_in, raw_out) =
+                build_message_channels(TurbulenceRuntime::from(executor.clone()));
 
-            executor
-                .spawn(out_loop(raw_out, addr, socket.clone()))
-                .detach();
-            executor.spawn(in_loop(raw_in, addr, socket)).detach();
+            let outgoing = executor.spawn(out_loop(raw_out, addr, socket.clone()));
 
-            executor
-                .spawn(messages_loop(outgoing.clone(), incoming.clone(), messages))
-                .detach();
+            let incoming = executor.spawn(in_loop(raw_in, addr, socket));
+
+            let main_loop = executor.spawn(messages_loop(right, messages));
+
+            vacant.insert(Connection {
+                channels: left,
+                _outgoing: outgoing,
+                _incoming: incoming,
+                _main_loop: main_loop,
+            });
         }
 
-        connection
+        self.connections.get(&addr).unwrap()
     }
 }
 
-async fn messages_loop(
-    outgoing: ChannelList,
-    incoming: ChannelList,
-    mut messages: MessageChannels,
-) {
+async fn messages_loop(channels: ChannelList, mut messages: MessageChannels) {
     let messages = &mut messages;
     loop {
         // TODO make it so only the channels that are actually used appear here.
         // that way when the other ends are all dropped this task ends up failing.
-        incoming.join_request.try_forward_incoming(messages).await;
-        incoming.join_response.try_forward_incoming(messages).await;
+        channels.join_request.try_forward_incoming(messages).await;
+        channels.join_response.try_forward_incoming(messages).await;
 
-        outgoing.join_request.try_forward_outgoing(messages).await;
-        outgoing.join_response.try_forward_outgoing(messages).await;
+        channels.join_request.try_forward_outgoing(messages).await;
+        channels.join_response.try_forward_outgoing(messages).await;
 
         yield_now().await
     }
 }
+
 #[cfg(test)]
 mod test {
     use std::{net::ToSocketAddrs, sync::Arc};
@@ -123,28 +157,28 @@ mod test {
         let server = {
             let mut conn = Connections::default();
             let socket = smol::block_on(UdpSocket::bind("127.0.0.1:10800")).unwrap();
-            conn.get_connection(client_addr, socket, exec.clone());
+            conn.get_or_create_connection(client_addr, socket, exec.clone());
             conn
         };
         let client = {
             let mut conn = Connections::default();
             let socket = smol::block_on(UdpSocket::bind("127.0.0.1:10801")).unwrap();
-            conn.get_connection(server_addr, socket, exec.clone());
+            conn.get_or_create_connection(server_addr, socket, exec.clone());
             conn
         };
 
         smol::block_on(exec.run(async move {
             server.connections[&client_addr]
-                .outgoing
+                .channels
                 .join_response
-                .send
+                .outgoing
                 .send(JoinResponse::Denied)
                 .await
                 .unwrap();
             let response = client.connections[&server_addr]
-                .incoming
+                .channels
                 .join_response
-                .recv
+                .incoming
                 .recv()
                 .await
                 .unwrap();
@@ -156,7 +190,7 @@ mod test {
 
 impl<T: ChannelMessage> Channel<T> {
     async fn try_forward_outgoing(&self, messages: &mut MessageChannels) {
-        if let Ok(value) = self.recv.try_recv() {
+        if let Ok(value) = self.incoming.try_recv() {
             messages.async_send(value).await.unwrap();
             messages.flush::<T>();
         }
@@ -164,7 +198,7 @@ impl<T: ChannelMessage> Channel<T> {
 
     async fn try_forward_incoming(&self, messages: &mut MessageChannels) {
         if let Some(value) = messages.recv::<T>() {
-            self.send.send(value).await.unwrap()
+            self.outgoing.send(value).await.unwrap()
         }
     }
 }

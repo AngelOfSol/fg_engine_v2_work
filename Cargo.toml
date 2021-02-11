@@ -37,7 +37,7 @@ gfx_core = "0.9.2"
 gfx_device_gl = "0.16.2"
 ggez = {path = "../ggez"}
 glob = "0.3.0"
-hecs = {git = "https://github.com/AngelOfSol/hecs.git", branch = "temp-clone", features = ["clone"]}
+hecs = {git = "https://github.com/AngelOfSol/hecs.git", branch = "clone-columnar", features = ["clone"]}
 image = "0.23.6"
 imgui = "0.6.1"
 imgui-gfx-renderer = "0.6.1"

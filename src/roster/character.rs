@@ -44,7 +44,7 @@ impl<C: Character> Player<C> {
         Self {
             state: PlayerState::new(&data),
             data,
-            world: World::new_with(clone::registry_for::<C>()),
+            world: World::with_registry(clone::registry_for::<C>()),
             ui_state: UiState {
                 last_combo_state: None,
                 combo_text: RefCell::new(None),

@@ -1,5 +1,3 @@
-use hecs::CloneRegistry;
-
 use crate::{
     character::state::components::GlobalGraphic,
     game_object::{
@@ -11,6 +9,7 @@ use crate::{
     },
 };
 use fg_input::Facing;
+use hecs::clone::CloneRegistry;
 
 use super::typedefs::Character;
 

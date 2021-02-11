@@ -1516,7 +1516,7 @@ dependencies = [
 [[package]]
 name = "hecs"
 version = "0.3.1"
-source = "git+https://github.com/AngelOfSol/hecs.git?branch=temp-clone#eb3799d68a94d37ff43b9ed9327c0b66c9f73e19"
+source = "git+https://github.com/AngelOfSol/hecs.git?branch=clone-columnar#c720242399dd9296d8486556adf3cd0fde09ba27"
 dependencies = [
  "hashbrown",
 ]
