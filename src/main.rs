@@ -1,4 +1,5 @@
 #![allow(clippy::zero_prefixed_literal, clippy::inconsistent_digit_grouping)]
+#![feature(const_type_id)]
 
 use ggez::conf;
 use ggez::ContextBuilder;

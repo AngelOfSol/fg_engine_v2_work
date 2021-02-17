@@ -1,42 +1,66 @@
 pub mod error;
 pub mod lobby;
-pub mod query;
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::mpsc::TryRecvError, thread, time::Duration};
 
 use error::{HostLobbyError, JoinLobbyError};
-use futures::channel::oneshot::channel;
-use lobby::{Lobby, LobbyState, PlayerInfo};
-use query::{Pending, Query};
+use lobby::{Lobby, LobbyState, Player, PlayerInfo};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
-#[derive(Default)]
-pub struct Networking {}
+pub struct Networking {
+    rx: Receiver<NetworkingMessage>,
+    tx: SyncSender<NetworkingMessage>,
+    // actual tx:
+    // tx: Sender<NetworkingRequest>
+}
 
-pub type HostLobbyQuery = Query<Lobby, HostLobbyError>;
-pub type JoinLobbyQuery = Query<Lobby, JoinLobbyError>;
+pub enum NetworkingMessage {
+    Host(Result<Lobby, HostLobbyError>),
+    Join(Result<Lobby, JoinLobbyError>),
+}
 
 impl Networking {
-    pub fn request_host(&mut self, name: String) -> HostLobbyQuery {
-        let (tx, rx) = channel();
+    pub fn new() -> Self {
+        let (tx, rx) = sync_channel(4);
 
-        let _ = tx.send(Ok(Lobby::new(LobbyState {
-            host: PlayerInfo { name: name.clone() },
-            player_list: vec![PlayerInfo { name }],
-        })));
-
-        Query::Waiting(Pending(rx))
+        Self { tx, rx }
     }
-    pub fn request_join(&mut self, _id: SocketAddr, name: String) -> JoinLobbyQuery {
-        let (tx, rx) = channel();
+    pub fn request_host(&mut self, name: String) {
+        let tx = self.tx.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(2));
+            tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
+                player_list: vec![PlayerInfo { name }],
+                user: 0,
+                games: vec![],
+            }))))
+            .unwrap();
+        });
+    }
+    pub fn request_join(&mut self, _id: SocketAddr, name: String) {
+        let tx = self.tx.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(2));
+            tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
+                player_list: vec![
+                    PlayerInfo {
+                        name: "none".to_string(),
+                    },
+                    PlayerInfo { name },
+                ],
+                user: 1,
+                games: vec![],
+            }))))
+            .unwrap();
+        });
+    }
 
-        let _ = tx.send(Ok(Lobby::new(LobbyState {
-            host: PlayerInfo {
-                name: "none".to_string(),
-            },
-            player_list: vec![PlayerInfo { name }],
-        })));
-
-        Query::Waiting(Pending(rx))
+    pub fn poll(&mut self) -> Option<NetworkingMessage> {
+        match self.rx.try_recv() {
+            Ok(value) => Some(value),
+            Err(TryRecvError::Disconnected) => panic!("Backing network was disconnected."),
+            Err(TryRecvError::Empty) => None,
+        }
     }
 }
 

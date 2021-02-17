@@ -58,7 +58,7 @@ impl AppStateRunner {
             imgui: ImGuiWrapper::new(ctx),
             control_schemes: HashMap::new(),
             audio,
-            networking: Networking::default(),
+            networking: Networking::new(),
             socket: Socket::bind_with_config(
                 adapter
                     .and_then(|adapter| {

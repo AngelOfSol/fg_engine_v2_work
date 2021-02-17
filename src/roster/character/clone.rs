@@ -13,15 +13,13 @@ use hecs::clone::CloneRegistry;
 
 use super::typedefs::Character;
 
-pub fn registry_for<C: Character>() -> CloneRegistry {
+pub fn default_registry() -> CloneRegistry {
     CloneRegistry::default()
-        .register::<C::Graphic>()
         .register::<Timer>()
         .register::<ExpiresAfterAnimation>()
         .register::<HasHitbox>()
         .register::<Facing>()
         .register::<BulletHp>()
-        .register::<ObjectAttack<C>>()
         .register::<TotalHits>()
         .register::<GrazeResistance>()
         .register::<Rotation>()
@@ -30,5 +28,11 @@ pub fn registry_for<C: Character>() -> CloneRegistry {
         .register::<GlobalGraphic>()
         .register::<Hitstop>()
         .register::<HitDelay>()
+}
+
+pub fn registry_for<C: Character>() -> CloneRegistry {
+    default_registry()
+        .register::<ObjectAttack<C>>()
         .register::<C::ObjectData>()
+        .register::<C::Graphic>()
 }

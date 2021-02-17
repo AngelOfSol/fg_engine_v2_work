@@ -9,14 +9,15 @@ use crate::{
     timeline::Timeline,
 };
 use inspect_design::Inspect;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
 use typedefs::{AttackData, Speed, TotalHits};
 
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, Any, TypeId},
     collections::HashMap,
     convert::TryInto,
     hash::Hash,
+    marker::PhantomData,
 };
 use strum::{Display, EnumIter};
 
@@ -193,6 +194,10 @@ impl<DataId: Hash + Eq> InstanceData<DataId> {
     pub fn remove_any(&mut self, key: DataId, type_id: TypeId) -> Option<PropertyType> {
         self.data.remove(&(type_id, key))
     }
+}
+
+fn test() -> Vec<Mapping> {
+    vec![Mapping::new::<GlobalGraphic>("GlobalGraphic".to_string())]
 }
 
 impl<DataId: Hash + Eq + Clone> InstanceData<DataId> {

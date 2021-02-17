@@ -5,8 +5,6 @@ use imgui::{im_str, Condition};
 
 use sdl_controller_backend::ControllerId;
 
-use super::lobby_select;
-
 enum NextState {
     Back,
     None,
@@ -51,21 +49,67 @@ impl AppState for LobbyView {
         graphics::clear(ctx, graphics::BLACK);
 
         let frame = imgui.frame();
-
+        enum Action {
+            None,
+            CreateGame,
+        }
+        let mut action = Action::None;
         frame
             .run(|ui| {
                 imgui::Window::new(im_str!("Lobby"))
                     .save_settings(false)
-                    .size([0.0, 0.0], Condition::Appearing)
+                    .size([0.0, 0.0], Condition::Always)
                     .resizable(false)
                     .build(ui, || {
                         let lobby_state = self.lobby.state();
+                        ui.text(im_str!("Host: {}", lobby_state.host().name));
+                        ui.separator();
+                        ui.text(im_str!("Clients:"));
+                        ui.indent();
+                        for player in lobby_state.clients().iter() {
+                            ui.text(im_str!("{}", player.name));
+                        }
+                        ui.unindent();
+                        ui.separator();
                         ui.text(im_str!("Players:"));
                         ui.indent();
-                        for player in lobby_state.player_list.iter() {}
+                        for player in lobby_state.players().iter() {
+                            ui.text(im_str!("{}", player.name));
+                        }
                         ui.unindent();
+                        ui.separator();
+
+                        if ui.small_button(im_str!("Create Game")) {
+                            action = Action::CreateGame;
+                        }
 
                         ui.separator();
+                        ui.indent();
+                        for (idx, game) in lobby_state.games().iter().enumerate() {
+                            ui.text(im_str!("Game {}:", idx + 1));
+                            ui.indent();
+
+                            ui.text(im_str!("Players:"));
+                            ui.indent();
+                            for player in game.players().iter().map(|player| &lobby_state[*player])
+                            {
+                                ui.text(im_str!("{}", player.name));
+                            }
+                            ui.unindent();
+
+                            ui.text(im_str!("Spectators:"));
+                            ui.indent();
+                            for player in
+                                game.spectators().iter().map(|player| &lobby_state[*player])
+                            {
+                                ui.text(im_str!("{}", player.name));
+                            }
+                            ui.unindent();
+
+                            ui.unindent();
+                            ui.separator();
+                        }
+                        ui.unindent();
 
                         if ui.small_button(im_str!("Leave")) {
                             self.next = NextState::Back;
@@ -73,6 +117,11 @@ impl AppState for LobbyView {
                     });
             })
             .render(ctx);
+
+        match action {
+            Action::CreateGame => self.lobby.create_game(),
+            Action::None => (),
+        }
 
         graphics::present(ctx)?;
 
