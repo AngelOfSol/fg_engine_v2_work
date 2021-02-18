@@ -9,7 +9,7 @@ use crate::{
     timeline::Timeline,
 };
 use inspect_design::Inspect;
-use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use typedefs::{AttackData, Speed, TotalHits};
 
 use std::{

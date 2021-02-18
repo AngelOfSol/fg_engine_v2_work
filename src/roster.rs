@@ -11,7 +11,10 @@ use crate::{assets::Assets, character::components::AttackInfo};
 use crate::{character::state::components::GlobalGraphic, game_object::state::BulletTier};
 use character::{data::Data, Player};
 use enum_dispatch::enum_dispatch;
-use fg_datastructures::math::{collision, graphics};
+use fg_datastructures::{
+    math::{collision, graphics},
+    roster::RosterCharacter,
+};
 use fg_input::{Facing, InputState};
 pub use generic_character::*;
 use ggez::{Context, GameResult};
@@ -36,41 +39,19 @@ pub enum CharacterData {
     Yuyuko(Rc<Data<YuyukoType>>),
 }
 
-#[derive(
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    EnumIter,
-    Display,
-    EnumCount,
-    Serialize,
-    Deserialize,
-    Eq,
-    PartialOrd,
-    Ord,
-)]
-pub enum RosterCharacter {
-    Yuyuko,
-}
-
-impl Default for RosterCharacter {
-    fn default() -> Self {
-        Self::Yuyuko
-    }
-}
-
-impl RosterCharacter {
-    pub fn load_data(self, ctx: &mut Context, assets: &mut Assets) -> GameResult<CharacterData> {
-        match self {
-            RosterCharacter::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(
-                Data::<YuyukoType>::new_with_path(
-                    ctx,
-                    assets,
-                    PathBuf::from("./resources/yuyuko.json"),
-                )?,
-            ))),
-        }
+pub fn load_data(
+    value: RosterCharacter,
+    ctx: &mut Context,
+    assets: &mut Assets,
+) -> GameResult<CharacterData> {
+    match value {
+        RosterCharacter::Yuyuko => Ok(CharacterData::Yuyuko(Rc::new(
+            Data::<YuyukoType>::new_with_path(
+                ctx,
+                assets,
+                PathBuf::from("./resources/yuyuko.json"),
+            )?,
+        ))),
     }
 }
 // TODO TEST

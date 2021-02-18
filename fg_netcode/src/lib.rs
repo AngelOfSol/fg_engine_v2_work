@@ -4,14 +4,12 @@ pub mod lobby;
 use std::{net::SocketAddr, sync::mpsc::TryRecvError, thread, time::Duration};
 
 use error::{HostLobbyError, JoinLobbyError};
-use lobby::{GameInfo, Lobby, LobbyState, Player, PlayerInfo};
+use lobby::{GameInfo, Lobby, LobbyState, PlayerInfo};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 pub struct Networking {
     rx: Receiver<NetworkingMessage>,
     tx: SyncSender<NetworkingMessage>,
-    // actual tx:
-    // tx: Sender<NetworkingRequest>
 }
 
 pub enum NetworkingMessage {
@@ -66,6 +64,7 @@ impl Networking {
     }
 }
 
+#[cfg(feature = "never")]
 mod traits {
     use crate::error::{
         CreateGameError, HostLobbyError, JoinGameError, JoinLobbyError, NetworkError,

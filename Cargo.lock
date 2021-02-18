@@ -926,6 +926,7 @@ version = "0.1.0"
 dependencies = [
  "nalgebra 0.24.0",
  "serde",
+ "strum",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use crate::roster::RosterCharacter;
+use fg_datastructures::roster::RosterCharacter;
 use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 

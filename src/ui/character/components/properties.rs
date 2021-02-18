@@ -1,6 +1,6 @@
 use crate::character::components::Properties;
 use crate::imgui_extra::UiExtensions;
-use crate::roster::RosterCharacter;
+use fg_datastructures::roster::RosterCharacter;
 use imgui::*;
 use strum::IntoEnumIterator;
 

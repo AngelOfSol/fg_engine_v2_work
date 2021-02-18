@@ -1,4 +1,3 @@
-use crate::assets::Assets;
 use crate::game_match::{
     GlobalGraphic, GlobalSound, PlayArea, PlayerUi, RoundStartUi, ShieldUi, SoundList, Stage,
     UiElements,
@@ -6,8 +5,8 @@ use crate::game_match::{
 use crate::graphics::animation_group::AnimationGroup;
 use crate::player_list::PlayerList;
 use crate::roster::CharacterData;
-use crate::roster::RosterCharacter;
-use fg_datastructures::player_data::PlayerData;
+use crate::{assets::Assets, roster};
+use fg_datastructures::{player_data::PlayerData, roster::RosterCharacter};
 use ggez::{graphics, Context, GameResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -80,7 +79,7 @@ impl MatchSettings {
                             .find(|data| data.is_for(*chara))
                             .cloned()
                             .map(Result::Ok)
-                            .unwrap_or_else(|| chara.load_data(ctx, &mut data.assets))
+                            .unwrap_or_else(|| roster::load_data(*chara, ctx, &mut data.assets))
                     })
                     .collect::<GameResult<PlayerData<_>>>()?;
             }
@@ -227,7 +226,7 @@ impl MatchSettings {
                     character_data: self
                         .characters
                         .clone()
-                        .map(|item| item.load_data(ctx, &mut assets))
+                        .map(|chara| roster::load_data(chara, ctx, &mut assets))
                         .transpose()?,
                     assets,
                     graphics,

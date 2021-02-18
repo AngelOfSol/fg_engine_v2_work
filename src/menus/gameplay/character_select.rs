@@ -1,13 +1,12 @@
 use super::controller_select::FromControllerList;
 use crate::game_match::{FromMatchSettings, MatchSettings};
 use crate::player_list::PlayerList;
-use crate::roster::RosterCharacter;
 use crate::{
     app_state::{AppContext, AppState, Transition},
     player_list::PlayerType,
 };
 use fg_controller::backend::ControllerBackend;
-use fg_datastructures::player_data::PlayerData;
+use fg_datastructures::{player_data::PlayerData, roster::RosterCharacter};
 use fg_ui::{
     delay::Delay,
     menu::{Menu, MenuAction, MenuState},

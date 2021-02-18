@@ -9,3 +9,4 @@ version = "0.1.0"
 [dependencies]
 nalgebra = "0.24.0"
 serde = {version = "1.0.123", features = ["derive"]}
+strum = {version = "0.20", features = ["derive"]}
