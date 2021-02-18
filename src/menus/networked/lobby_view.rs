@@ -52,6 +52,7 @@ impl AppState for LobbyView {
         enum Action {
             None,
             CreateGame,
+            JoinGame(usize),
         }
         let mut action = Action::None;
         frame
@@ -107,6 +108,9 @@ impl AppState for LobbyView {
                             ui.unindent();
 
                             ui.unindent();
+                            if ui.small_button(im_str!("Join")) {
+                                action = Action::JoinGame(idx);
+                            }
                             ui.separator();
                         }
                         ui.unindent();
@@ -119,6 +123,7 @@ impl AppState for LobbyView {
             .render(ctx);
 
         match action {
+            Action::JoinGame(idx) => self.lobby.join_game(idx).unwrap(),
             Action::CreateGame => self.lobby.create_game(),
             Action::None => (),
         }

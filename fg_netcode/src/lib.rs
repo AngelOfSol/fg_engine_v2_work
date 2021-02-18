@@ -4,7 +4,7 @@ pub mod lobby;
 use std::{net::SocketAddr, sync::mpsc::TryRecvError, thread, time::Duration};
 
 use error::{HostLobbyError, JoinLobbyError};
-use lobby::{Lobby, LobbyState, Player, PlayerInfo};
+use lobby::{GameInfo, Lobby, LobbyState, Player, PlayerInfo};
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 pub struct Networking {
@@ -49,7 +49,9 @@ impl Networking {
                     PlayerInfo { name },
                 ],
                 user: 1,
-                games: vec![],
+                games: vec![GameInfo {
+                    player_list: vec![0],
+                }],
             }))))
             .unwrap();
         });

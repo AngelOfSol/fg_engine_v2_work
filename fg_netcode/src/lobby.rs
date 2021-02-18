@@ -11,7 +11,7 @@ pub type Player = usize;
 
 #[derive(Clone, Debug)]
 pub struct GameInfo {
-    player_list: Vec<Player>,
+    pub(crate) player_list: Vec<Player>,
 }
 
 impl GameInfo {
@@ -64,6 +64,9 @@ pub struct Lobby {
     tx: watch::Sender<LobbyState>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InvalidGame;
+
 impl Lobby {
     pub(crate) fn new(state: LobbyState) -> Self {
         let (tx, rx) = watch::channel(state);
@@ -82,5 +85,17 @@ impl Lobby {
         });
 
         self.tx.send(temp).unwrap();
+    }
+    pub fn join_game(&mut self, idx: usize) -> Result<(), InvalidGame> {
+        let mut temp = (*self.state.borrow()).clone();
+
+        if idx >= temp.games.len() {
+            Err(InvalidGame)
+        } else {
+            temp.games[idx].player_list.push(temp.user);
+
+            self.tx.send(temp).unwrap();
+            Ok(())
+        }
     }
 }
