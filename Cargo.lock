@@ -924,6 +924,8 @@ dependencies = [
 name = "fg_datastructures"
 version = "0.1.0"
 dependencies = [
+ "imgui",
+ "inspect_design",
  "nalgebra 0.24.0",
  "serde",
  "strum",

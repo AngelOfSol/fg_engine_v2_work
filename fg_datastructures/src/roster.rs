@@ -1,3 +1,4 @@
+use inspect_design::Inspect;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumCount, EnumIter};
 
@@ -14,6 +15,7 @@ use strum::{Display, EnumCount, EnumIter};
     Eq,
     PartialOrd,
     Ord,
+    Inspect,
 )]
 pub enum RosterCharacter {
     Yuyuko,

@@ -5,9 +5,9 @@ use crate::{
     app_state::{AppContext, AppState, Transition},
     menus::gameplay::controller_select::FromControllerList,
 };
+use fg_datastructures::roster::RosterCharacter;
 use fg_netcode::{
-    error::{HostLobbyError, JoinLobbyError},
-    lobby::Lobby,
+    lobby::{Lobby, PlayerInfo},
     NetworkingMessage,
 };
 use ggez::{graphics, Context, GameResult};
@@ -39,20 +39,23 @@ enum UiState {
 
 pub struct LobbySelect {
     next: NextState,
-    name: String,
     state: UiState,
     join_ip: InspectAsText<SocketAddr>,
     main_player: ControllerId,
+    user: PlayerInfo,
 }
 
 impl LobbySelect {
     pub fn new(main_player: ControllerId) -> GameResult<Self> {
         Ok(Self {
             next: NextState::None,
-            name: "THE Angel of Sol".to_string(),
             state: UiState::Main(None),
             join_ip: InspectAsText::default(),
             main_player,
+            user: PlayerInfo {
+                name: "THE Angel of Sol".to_string(),
+                character: RosterCharacter::default(),
+            },
         })
     }
 }
@@ -104,7 +107,8 @@ impl AppState for LobbySelect {
                     if ui.small_button(im_str!("Back")) {
                         self.next = NextState::Back;
                     }
-                    self.name.inspect_mut("Name", &mut (), ui);
+                    self.user.name.inspect_mut("Name", &mut (), ui);
+                    self.user.character.inspect_mut("Character", &mut (), ui);
 
                     match &self.state {
                         UiState::Main(text) => {
@@ -112,7 +116,7 @@ impl AppState for LobbySelect {
                                 ui.text(im_str!("{}", text));
                             }
                             if ui.small_button(im_str!("Host")) {
-                                networking.request_host(self.name.clone());
+                                networking.request_host(self.user.clone());
                                 self.state = UiState::Hosting;
                             }
 
@@ -136,7 +140,7 @@ impl AppState for LobbySelect {
                                 if ui.small_button(im_str!("Join")) {
                                     networking.request_join(
                                         self.join_ip.take().unwrap(),
-                                        self.name.clone(),
+                                        self.user.clone(),
                                     );
                                     self.state = UiState::Joining;
                                     ui.close_current_popup();

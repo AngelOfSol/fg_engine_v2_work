@@ -1,10 +1,11 @@
+use fg_datastructures::roster::RosterCharacter;
 use std::ops::Index;
-
 use tokio::sync::watch;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct PlayerInfo {
     pub name: String,
+    pub character: RosterCharacter,
 }
 
 pub type Player = usize;
@@ -97,5 +98,11 @@ impl Lobby {
             self.tx.send(temp).unwrap();
             Ok(())
         }
+    }
+
+    pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&mut self, update: F) {
+        let mut temp = (*self.state.borrow()).clone();
+        update(&mut temp.player_list[temp.user]);
+        self.tx.send(temp).unwrap();
     }
 }

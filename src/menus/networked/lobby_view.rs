@@ -1,8 +1,9 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use fg_netcode::lobby::Lobby;
+use fg_netcode::lobby::{Lobby, PlayerInfo};
 use ggez::{graphics, Context, GameResult};
 use imgui::{im_str, Condition};
 
+use inspect_design::traits::InspectMut;
 use sdl_controller_backend::ControllerId;
 
 enum NextState {
@@ -53,6 +54,7 @@ impl AppState for LobbyView {
             None,
             CreateGame,
             JoinGame(usize),
+            UpdateUser(PlayerInfo),
         }
         let mut action = Action::None;
         frame
@@ -115,6 +117,16 @@ impl AppState for LobbyView {
                         }
                         ui.unindent();
 
+                        ui.separator();
+                        let mut user = lobby_state.user().clone();
+                        user.name.inspect_mut("Name", &mut (), ui);
+                        user.character.inspect_mut("Character", &mut (), ui);
+                        if &user != lobby_state.user() {
+                            action = Action::UpdateUser(user);
+                        }
+
+                        ui.separator();
+
                         if ui.small_button(im_str!("Leave")) {
                             self.next = NextState::Back;
                         }
@@ -126,6 +138,7 @@ impl AppState for LobbyView {
             Action::JoinGame(idx) => self.lobby.join_game(idx).unwrap(),
             Action::CreateGame => self.lobby.create_game(),
             Action::None => (),
+            Action::UpdateUser(user) => self.lobby.update_player_data(move |data| *data = user),
         }
 
         graphics::present(ctx)?;

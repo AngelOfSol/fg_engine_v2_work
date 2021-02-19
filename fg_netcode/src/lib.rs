@@ -17,35 +17,34 @@ pub enum NetworkingMessage {
     Join(Result<Lobby, JoinLobbyError>),
 }
 
-impl Networking {
-    pub fn new() -> Self {
+impl Default for Networking {
+    fn default() -> Self {
         let (tx, rx) = sync_channel(4);
-
         Self { tx, rx }
     }
-    pub fn request_host(&mut self, name: String) {
+}
+impl Networking {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn request_host(&mut self, player: PlayerInfo) {
         let tx = self.tx.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(2));
             tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-                player_list: vec![PlayerInfo { name }],
+                player_list: vec![player],
                 user: 0,
                 games: vec![],
             }))))
             .unwrap();
         });
     }
-    pub fn request_join(&mut self, _id: SocketAddr, name: String) {
+    pub fn request_join(&mut self, _id: SocketAddr, player: PlayerInfo) {
         let tx = self.tx.clone();
         thread::spawn(move || {
             thread::sleep(Duration::from_secs(2));
             tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-                player_list: vec![
-                    PlayerInfo {
-                        name: "none".to_string(),
-                    },
-                    PlayerInfo { name },
-                ],
+                player_list: vec![PlayerInfo::default(), player],
                 user: 1,
                 games: vec![GameInfo {
                     player_list: vec![0],

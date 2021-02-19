@@ -7,6 +7,8 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+imgui = "0.6.1"
+inspect_design = {path = "../../inspect_design"}
 nalgebra = "0.24.0"
 serde = {version = "1.0.123", features = ["derive"]}
 strum = {version = "0.20", features = ["derive"]}

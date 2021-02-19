@@ -21,12 +21,10 @@ use ggez::{Context, GameResult};
 use hecs::Entity;
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::rc::Rc;
-use strum::{Display, EnumCount, EnumIter};
 use yuyuko::YuyukoType;
 
 #[enum_dispatch]
