@@ -1,5 +1,5 @@
 use crate::app_state::{AppContext, AppState, Transition};
-use fg_netcode::lobby::{Lobby, PlayerInfo};
+use fg_netcode::{lobby::Lobby, player_info::PlayerInfo};
 use ggez::{graphics, Context, GameResult};
 use imgui::{im_str, Condition};
 

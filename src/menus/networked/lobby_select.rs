@@ -6,10 +6,7 @@ use crate::{
     menus::gameplay::controller_select::FromControllerList,
 };
 use fg_datastructures::roster::RosterCharacter;
-use fg_netcode::{
-    lobby::{Lobby, PlayerInfo},
-    NetworkingMessage,
-};
+use fg_netcode::{lobby::Lobby, player_info::PlayerInfo, NetworkingMessage};
 use ggez::{graphics, Context, GameResult};
 use imgui::im_str;
 use inspect_design::{from_str::InspectAsText, traits::InspectMut};

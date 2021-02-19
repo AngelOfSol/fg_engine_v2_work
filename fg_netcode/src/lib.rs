@@ -1,10 +1,12 @@
 pub mod error;
 pub mod lobby;
+pub mod player_info;
 
 use std::{net::SocketAddr, sync::mpsc::TryRecvError, thread, time::Duration};
 
 use error::{HostLobbyError, JoinLobbyError};
-use lobby::{GameInfo, Lobby, LobbyState, PlayerInfo};
+use lobby::{GameInfo, Lobby, LobbyState};
+use player_info::PlayerInfo;
 use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 pub struct Networking {

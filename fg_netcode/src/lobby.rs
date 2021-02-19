@@ -1,12 +1,7 @@
-use fg_datastructures::roster::RosterCharacter;
 use std::ops::Index;
 use tokio::sync::watch;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct PlayerInfo {
-    pub name: String,
-    pub character: RosterCharacter,
-}
+use crate::player_info::PlayerInfo;
 
 pub type Player = usize;
 
