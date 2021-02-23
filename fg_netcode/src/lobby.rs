@@ -72,11 +72,11 @@ impl Lobby {
 
         // self.tx.send(temp).unwrap();
     }
-    pub fn join_game(&mut self, idx: usize) -> Result<(), InvalidGame> {
+    pub fn join_game(&mut self, _idx: usize) -> Result<(), InvalidGame> {
         Err(InvalidGame)
     }
 
-    pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&mut self, update: F) {
+    pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&mut self, _update: F) {
         // let mut temp = (*self.state.borrow()).clone();
         // update(&mut temp.player_list[temp.user]);
         // self.tx.send(temp).unwrap();

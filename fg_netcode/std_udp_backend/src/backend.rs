@@ -47,7 +47,7 @@ impl State {
 }
 
 pub struct NetworkBackend {
-    pub messages: async_channel::Sender<NetworkingMessage>,
+    pub messages: crossbeam_channel::Sender<NetworkingMessage>,
     pub actions: mpsc::Receiver<NetworkingAction>,
     pub handle: tokio::runtime::Handle,
 }
@@ -60,15 +60,16 @@ impl NetworkBackend {
                     NetworkingAction::Host(_) => self
                         .messages
                         .send(NetworkingMessage::Host(Err(HostLobbyError::InLobby)))
-                        .await
+
                         .unwrap(),
                     NetworkingAction::ConnectTo(..) => self
                         .messages
                         .send(NetworkingMessage::Join(Err(JoinLobbyError::InLobby)))
-                        .await
+
                         .unwrap(),
                 }
             },
+            else => (),
         }
     }
     async fn main_loop(&mut self, quinn: &mut QuinnHandle) -> Option<LobbyBackend> {
@@ -91,7 +92,6 @@ impl NetworkBackend {
 
                 self.messages
                     .send(NetworkingMessage::Host(Ok(lobby_interface)))
-                    .await
                     .unwrap();
 
                 Some(backend)
@@ -100,13 +100,11 @@ impl NetworkBackend {
                 if let Ok((interface, backend)) = self.try_connect(addr, info, quinn).await {
                     self.messages
                         .send(NetworkingMessage::Join(Ok(interface)))
-                        .await
                         .unwrap();
                     Some(backend)
                 } else {
                     self.messages
                         .send(NetworkingMessage::Join(Err(JoinLobbyError::Denied)))
-                        .await
                         .unwrap();
                     None
                 }

@@ -10,17 +10,12 @@ use backend::State;
 use fg_netcode::{player_info::PlayerInfo, NetworkingMessage};
 
 use quinn::{
-    crypto::ServerConfig, Certificate, CertificateChain, Endpoint, Incoming, PrivateKey,
-    ServerConfigBuilder, TransportConfig,
+    Certificate, CertificateChain, Endpoint, Incoming, PrivateKey, ServerConfigBuilder,
+    TransportConfig,
 };
 
-use std::{collections::HashSet, net::SocketAddr, time::Duration};
-use tokio::{
-    runtime::{Builder as TokioBuilder, Handle},
-    select,
-    sync::{mpsc, watch},
-    task::JoinHandle,
-};
+use std::{net::SocketAddr, time::Duration};
+use tokio::{runtime::Handle, select, sync::mpsc, task::JoinHandle};
 
 #[derive(Debug)]
 pub enum NetworkingAction {
@@ -33,14 +28,14 @@ struct QuinnHandle {
 }
 
 pub struct BackendInterface {
-    pub messages: async_channel::Receiver<NetworkingMessage>,
+    pub messages: crossbeam_channel::Receiver<NetworkingMessage>,
     pub actions: mpsc::Sender<NetworkingAction>,
     pub shutdown: mpsc::Receiver<()>,
     _task: JoinHandle<Option<()>>,
 }
 
 pub fn start(addr: SocketAddr, handle: Handle) -> BackendInterface {
-    let (message_tx, message_rx) = async_channel::bounded(4);
+    let (message_tx, message_rx) = crossbeam_channel::bounded(4);
     let (action_tx, action_rx) = mpsc::channel(4);
 
     let (disconnect_tx, disconnect_rx) = mpsc::channel(1);
@@ -104,10 +99,7 @@ mod tests {
     use std::time::Duration;
 
     use fg_netcode::{player_info::PlayerInfo, NetworkingMessage};
-    use tokio::{
-        sync::mpsc,
-        task::{yield_now, JoinHandle},
-    };
+    use tokio::task::yield_now;
 
     use crate::{start, NetworkingAction};
 
@@ -137,13 +129,28 @@ mod tests {
             }))
             .unwrap();
         let host_lobby = loop {
-            if let Ok(NetworkingMessage::Host(Ok(lobby))) = host.messages.try_recv() {
+            if let Ok(NetworkingMessage::Host(Ok(lobby))) = host.messages.recv() {
                 break lobby;
             }
         };
 
         let client_addr = "127.0.0.1:10801".parse().unwrap();
         let mut client = start(client_addr, handle.clone());
+        let client_addr2 = "127.0.0.1:10802".parse().unwrap();
+        let client2 = start(client_addr2, handle);
+
+        client2
+            .actions
+            .blocking_send(NetworkingAction::ConnectTo(
+                PlayerInfo {
+                    name: "Client 2".to_string(),
+                    character: Default::default(),
+                    addr: client_addr2,
+                },
+                host_addr,
+            ))
+            .unwrap();
+
         client
             .actions
             .blocking_send(NetworkingAction::ConnectTo(
@@ -163,19 +170,6 @@ mod tests {
             }
         };
 
-        let client_addr2 = "127.0.0.1:10802".parse().unwrap();
-        let client2 = start(client_addr2, handle.clone());
-        client2
-            .actions
-            .blocking_send(NetworkingAction::ConnectTo(
-                PlayerInfo {
-                    name: "Client 2".to_string(),
-                    character: Default::default(),
-                    addr: client_addr2,
-                },
-                host_addr,
-            ))
-            .unwrap();
         let client_lobby2 = loop {
             match client2.messages.try_recv() {
                 Ok(NetworkingMessage::Join(Ok(lobby))) => break lobby,

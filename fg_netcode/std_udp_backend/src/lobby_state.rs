@@ -1,11 +1,6 @@
-use std::{borrow::BorrowMut, net::SocketAddr};
+use std::net::SocketAddr;
 
-use fg_netcode::{
-    lobby::lobby_state::LobbyState,
-    player_info::PlayerInfo,
-    player_list::{self, Player, PlayerList},
-};
-use futures_util::FutureExt;
+use fg_netcode::{lobby::lobby_state::LobbyState, player_info::PlayerInfo, player_list::Player};
 use tokio::{
     sync::{mpsc, watch},
     task::JoinHandle,
@@ -27,17 +22,7 @@ pub struct LobbyStateInterface {
 }
 
 pub fn host(info: PlayerInfo) -> (JoinHandle<()>, LobbyStateInterface) {
-    let (user, player_list) = {
-        let mut player_list = PlayerList::default();
-        let user = player_list.insert(info);
-        (user, player_list)
-    };
-
-    join(LobbyState {
-        games: vec![],
-        player_list,
-        user,
-    })
+    join(LobbyState::new(info))
 }
 
 pub fn join(lobby_state: LobbyState) -> (JoinHandle<()>, LobbyStateInterface) {

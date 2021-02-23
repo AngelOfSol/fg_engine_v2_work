@@ -1,6 +1,6 @@
 use crate::{
     lobby_state::{LobbyStateAction, LobbyStateInterface},
-    request::{Disconnected, HostPacket},
+    request::Disconnected,
 };
 use bytes::Bytes;
 use fg_netcode::{lobby::lobby_state::LobbyState, player_list::Player};
@@ -20,7 +20,7 @@ pub fn handle_incoming(
     let back_conn = BackendConnection::new(conn, peer_id, lsi, connection_type);
 
     tokio::spawn(async move {
-        let data = main_loop(back_conn).await;
+        let _ = main_loop(back_conn).await;
     })
 }
 
@@ -97,12 +97,12 @@ impl BackendConnection {
 
     async fn handle_bi(
         &mut self,
-        (send, recv): (SendStream, RecvStream),
+        (_send, _recv): (SendStream, RecvStream),
     ) -> Result<(), Disconnected> {
         Ok(())
     }
 
-    async fn handle_datagram(&mut self, bytes: Bytes) -> Result<(), Disconnected> {
+    async fn handle_datagram(&mut self, _bytes: Bytes) -> Result<(), Disconnected> {
         Ok(())
     }
 

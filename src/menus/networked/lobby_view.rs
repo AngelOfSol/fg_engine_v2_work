@@ -13,7 +13,7 @@ enum NextState {
 pub struct LobbyView {
     next: NextState,
     lobby: Lobby,
-    main_player: ControllerId,
+    _main_player: ControllerId,
 }
 
 impl LobbyView {
@@ -21,7 +21,7 @@ impl LobbyView {
         Self {
             next: NextState::None,
             lobby,
-            main_player,
+            _main_player: main_player,
         }
     }
 }

@@ -1,18 +1,14 @@
-use std::{borrow::Borrow, time::Duration};
-
-use super::{NetworkBackend, State};
 use crate::{
     connection::{handle_incoming, ConnectionType},
     lobby_state::{LobbyStateAction, LobbyStateInterface},
-    request::{Disconnected, HostPacket, JoinRequest, JoinResponse},
+    request::{Disconnected, JoinRequest, JoinResponse},
     QuinnHandle,
 };
 use fg_netcode::{
     lobby::{lobby_state::LobbyState, Lobby, LobbyAction, LobbyMessage},
     player_info::PlayerInfo,
-    player_list::Player,
 };
-use futures_util::{FutureExt, StreamExt};
+use futures_util::StreamExt;
 use quinn::Connecting;
 use tokio::{select, sync::mpsc, task::JoinHandle};
 

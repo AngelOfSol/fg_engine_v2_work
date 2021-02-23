@@ -1,6 +1,6 @@
 use crate::player_info::PlayerInfo;
 use serde::{Deserialize, Serialize};
-use std::ops::{Deref, Index, IndexMut};
+use std::ops::Deref;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Player(usize);

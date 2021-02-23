@@ -1,12 +1,8 @@
 use crate::{
-    game::Game,
     player_info::PlayerInfo,
     player_list::{Player, PlayerList},
 };
-use fg_datastructures::player_data::PlayerData;
 use serde::{Deserialize, Serialize};
-use std::ops::Index;
-use tokio::sync::watch;
 
 use super::GameInfo;
 
@@ -18,6 +14,18 @@ pub struct LobbyState {
 }
 
 impl LobbyState {
+    pub fn new(info: PlayerInfo) -> Self {
+        let (user, player_list) = {
+            let mut player_list = PlayerList::default();
+            let user = player_list.insert(info);
+            (user, player_list)
+        };
+        Self {
+            user,
+            player_list,
+            games: vec![],
+        }
+    }
     pub fn remove(&mut self, removed: &Player) -> Option<PlayerInfo> {
         let res = self.player_list.remove(removed);
         for game in self.games.iter_mut() {

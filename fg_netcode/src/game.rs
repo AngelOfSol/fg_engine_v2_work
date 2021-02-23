@@ -33,7 +33,7 @@ impl Match {
         None
     }
     pub fn send(&mut self) {}
-    pub fn who_is(&self, player: Player) -> WhoIs {
+    pub fn who_is(&self, _player: Player) -> WhoIs {
         WhoIs::P1
     }
 }

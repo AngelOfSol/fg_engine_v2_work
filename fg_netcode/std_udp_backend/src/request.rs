@@ -1,7 +1,7 @@
-use fg_netcode::{lobby::lobby_state::LobbyState, player_info::PlayerInfo, player_list::Player};
+use fg_netcode::{lobby::lobby_state::LobbyState, player_info::PlayerInfo};
 use quinn::{ConnectError, ConnectionError, ReadError, ReadToEndError, WriteError};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, net::SocketAddr};
+use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct JoinRequest {
