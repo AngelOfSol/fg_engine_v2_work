@@ -7,9 +7,9 @@ use crate::{
             ObjectAttack, Position, Rotation, Timer, Velocity,
         },
     },
+    roster::world::CloneRegistry,
 };
 use fg_input::Facing;
-use hecs::clone::CloneRegistry;
 
 use super::typedefs::Character;
 

@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod generic_character;
 pub mod character;
+pub mod world;
 pub mod yuyuko;
 
 use crate::game_match::sounds::{GlobalSound, SoundList};

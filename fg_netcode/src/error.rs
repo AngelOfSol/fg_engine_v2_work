@@ -2,7 +2,7 @@
 pub enum JoinLobbyError {
     InLobby,
     Denied,
-
+    InvalidLobby,
     NetworkError,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

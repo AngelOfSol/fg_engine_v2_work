@@ -12,7 +12,7 @@ use enum_dispatch::enum_dispatch;
 use fg_datastructures::math::{collision, graphics};
 use fg_input::{Facing, InputState};
 use ggez::{Context, GameResult};
-use hecs::{Entity, World};
+use hecs::Entity;
 use hit_info::{ComboEffect, HitEffect, HitResult, HitType, Source};
 use rodio::Device;
 use std::collections::HashMap;
@@ -146,7 +146,7 @@ pub trait GenericCharacterBehaviour {
     fn deal_hit_entity(&mut self, entity: Entity, info: &HitType);
 }
 
-use super::yuyuko::YuyukoType;
+use super::{world::World, yuyuko::YuyukoType};
 use std::borrow::Cow;
 
 #[derive(Clone)]

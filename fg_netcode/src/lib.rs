@@ -1,19 +1,22 @@
 pub mod error;
+pub mod game;
 pub mod lobby;
 pub mod player_info;
+pub mod player_list;
 
-use std::{net::SocketAddr, sync::mpsc::TryRecvError, thread, time::Duration};
+use std::{net::SocketAddr, thread, time::Duration};
 
+use crossbeam_channel::{bounded, Receiver, Sender, TryRecvError};
 use error::{HostLobbyError, JoinLobbyError};
-use lobby::{GameInfo, Lobby, LobbyState};
+use lobby::{GameInfo, Lobby};
 use player_info::PlayerInfo;
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 
 pub struct Networking {
     rx: Receiver<NetworkingMessage>,
-    tx: SyncSender<NetworkingMessage>,
+    tx: Sender<NetworkingMessage>,
 }
 
+#[derive(Debug)]
 pub enum NetworkingMessage {
     Host(Result<Lobby, HostLobbyError>),
     Join(Result<Lobby, JoinLobbyError>),
@@ -21,7 +24,7 @@ pub enum NetworkingMessage {
 
 impl Default for Networking {
     fn default() -> Self {
-        let (tx, rx) = sync_channel(4);
+        let (tx, rx) = bounded(4);
         Self { tx, rx }
     }
 }
@@ -30,30 +33,31 @@ impl Networking {
         Self::default()
     }
     pub fn request_host(&mut self, player: PlayerInfo) {
-        let tx = self.tx.clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_secs(2));
-            tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-                player_list: vec![player],
-                user: 0,
-                games: vec![],
-            }))))
-            .unwrap();
-        });
+        // let tx = self.tx.clone();
+        // thread::spawn(move || {
+        //     thread::sleep(Duration::from_secs(2));
+        //     tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
+        //         player_list: vec![player],
+        //         user: 0,
+        //         games: vec![],
+        //     }))))
+        //     .unwrap();
+        // });
     }
     pub fn request_join(&mut self, _id: SocketAddr, player: PlayerInfo) {
-        let tx = self.tx.clone();
-        thread::spawn(move || {
-            thread::sleep(Duration::from_secs(2));
-            tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-                player_list: vec![PlayerInfo::default(), player],
-                user: 1,
-                games: vec![GameInfo {
-                    player_list: vec![0],
-                }],
-            }))))
-            .unwrap();
-        });
+        // let tx = self.tx.clone();
+        // thread::spawn(move || {
+        //     thread::sleep(Duration::from_secs(2));
+        //     tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
+        //         player_list: vec![PlayerInfo::default(), player],
+        //         user: 1,
+        //         games: vec![GameInfo {
+        //             player_list: vec![0],
+        //             ready: [false, false].into(),
+        //         }],
+        //     }))))
+        //     .unwrap();
+        // });
     }
 
     pub fn poll(&mut self) -> Option<NetworkingMessage> {

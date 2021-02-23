@@ -52,6 +52,7 @@ impl LobbySelect {
             user: PlayerInfo {
                 name: "THE Angel of Sol".to_string(),
                 character: RosterCharacter::default(),
+                addr: "192.168.1.1:10800".parse().unwrap(),
             },
         })
     }

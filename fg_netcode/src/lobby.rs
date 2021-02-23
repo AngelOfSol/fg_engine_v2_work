@@ -1,13 +1,16 @@
-use std::ops::Index;
-use tokio::sync::watch;
+pub mod lobby_state;
 
-use crate::player_info::PlayerInfo;
+use crate::{game::Game, player_info::PlayerInfo, player_list::Player};
+use fg_datastructures::player_data::PlayerData;
+use serde::{Deserialize, Serialize};
+use tokio::sync::{mpsc, watch};
 
-pub type Player = usize;
+use self::lobby_state::LobbyState;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GameInfo {
-    pub(crate) player_list: Vec<Player>,
+    pub player_list: Vec<Player>,
+    pub ready: PlayerData<bool>,
 }
 
 impl GameInfo {
@@ -23,51 +26,37 @@ impl GameInfo {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct LobbyState {
-    pub(crate) player_list: Vec<PlayerInfo>,
-    pub(crate) games: Vec<GameInfo>,
-    pub(crate) user: Player,
-}
-
-impl Index<Player> for LobbyState {
-    type Output = PlayerInfo;
-    fn index(&self, index: Player) -> &Self::Output {
-        &self.player_list[index]
-    }
-}
-
-impl LobbyState {
-    pub fn host(&self) -> &PlayerInfo {
-        &self.player_list[0]
-    }
-    pub fn clients(&self) -> &[PlayerInfo] {
-        &self.player_list[1..]
-    }
-    pub fn players(&self) -> &[PlayerInfo] {
-        &self.player_list
-    }
-    pub fn user(&self) -> &PlayerInfo {
-        &self[self.user]
-    }
-    pub fn games(&self) -> &[GameInfo] {
-        &self.games
-    }
-}
-
+#[derive(Debug)]
 pub struct Lobby {
     state: watch::Receiver<LobbyState>,
-    tx: watch::Sender<LobbyState>,
+    message: async_channel::Receiver<LobbyMessage>,
+    action: mpsc::Sender<LobbyAction>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidGame;
 
-impl Lobby {
-    pub(crate) fn new(state: LobbyState) -> Self {
-        let (tx, rx) = watch::channel(state);
+pub enum LobbyAction {
+    CreateGame,
+    JoinGame(Game),
+    UpdatePlayerInfo(Box<dyn FnOnce(&mut PlayerInfo) + Send + Sync>),
+}
 
-        Self { state: rx, tx }
+pub enum LobbyMessage {
+    Empty,
+}
+
+impl Lobby {
+    pub fn new(
+        state: watch::Receiver<LobbyState>,
+        message: async_channel::Receiver<LobbyMessage>,
+        action: mpsc::Sender<LobbyAction>,
+    ) -> Self {
+        Self {
+            state,
+            message,
+            action,
+        }
     }
 
     pub fn state(&self) -> watch::Ref<'_, LobbyState> {
@@ -75,29 +64,25 @@ impl Lobby {
     }
 
     pub fn create_game(&mut self) {
-        let mut temp = (*self.state.borrow()).clone();
-        temp.games.push(GameInfo {
-            player_list: vec![temp.user, temp.user, temp.user],
-        });
+        // let mut temp = (*self.state.borrow()).clone();
+        // temp.games.push(GameInfo {
+        //     player_list: vec![temp.user, temp.user, temp.user],
+        //     ready: [false, false].into(),
+        // });
 
-        self.tx.send(temp).unwrap();
+        // self.tx.send(temp).unwrap();
     }
     pub fn join_game(&mut self, idx: usize) -> Result<(), InvalidGame> {
-        let mut temp = (*self.state.borrow()).clone();
-
-        if idx >= temp.games.len() {
-            Err(InvalidGame)
-        } else {
-            temp.games[idx].player_list.push(temp.user);
-
-            self.tx.send(temp).unwrap();
-            Ok(())
-        }
+        Err(InvalidGame)
     }
 
     pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&mut self, update: F) {
-        let mut temp = (*self.state.borrow()).clone();
-        update(&mut temp.player_list[temp.user]);
-        self.tx.send(temp).unwrap();
+        // let mut temp = (*self.state.borrow()).clone();
+        // update(&mut temp.player_list[temp.user]);
+        // self.tx.send(temp).unwrap();
+    }
+
+    pub fn poll(&mut self) -> Option<LobbyAction> {
+        None
     }
 }

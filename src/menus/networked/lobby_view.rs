@@ -94,7 +94,10 @@ impl AppState for LobbyView {
 
                             ui.text(im_str!("Players:"));
                             ui.indent();
-                            for player in game.players().iter().map(|player| &lobby_state[*player])
+                            for player in game
+                                .players()
+                                .iter()
+                                .map(|player| lobby_state.player_list.get(*player).unwrap())
                             {
                                 ui.text(im_str!("{}", player.name));
                             }
@@ -102,8 +105,10 @@ impl AppState for LobbyView {
 
                             ui.text(im_str!("Spectators:"));
                             ui.indent();
-                            for player in
-                                game.spectators().iter().map(|player| &lobby_state[*player])
+                            for player in game
+                                .spectators()
+                                .iter()
+                                .map(|player| lobby_state.player_list.get(*player).unwrap())
                             {
                                 ui.text(im_str!("{}", player.name));
                             }

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use super::InputRange;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,12 +51,12 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
         let relative_frame = relative_frame.unwrap();
 
         match relative_frame.cmp(&self.data.len()) {
-            std::cmp::Ordering::Equal => {
+            Ordering::Equal => {
                 self.canon.push(Canon::Canon);
                 self.data.push(data);
                 PredictionResult::Unpredicted
             }
-            std::cmp::Ordering::Greater => {
+            Ordering::Greater => {
                 self.canon.resize(relative_frame + 1, Canon::Empty);
                 self.data.resize(relative_frame + 1, Default::default());
 
@@ -62,7 +64,7 @@ impl<T: Default + Clone + PartialEq> NetworkedHistory<T> {
                 self.data[relative_frame] = data;
                 PredictionResult::Unpredicted
             }
-            std::cmp::Ordering::Less => {
+            Ordering::Less => {
                 match self.canon[relative_frame] {
                     Canon::Canon => {
                         //
