@@ -3,6 +3,7 @@ mod cert;
 mod connection;
 mod lobby_state;
 mod request;
+mod util;
 
 use backend::NetworkBackend;
 
@@ -98,7 +99,11 @@ async fn main_loop(addr: SocketAddr, mut state: State, shutdown: mpsc::Sender<()
 mod tests {
     use std::time::Duration;
 
-    use fg_netcode::{player_info::PlayerInfo, NetworkingMessage};
+    use fg_netcode::{
+        lobby::{InGame, LobbyMessage},
+        player_info::PlayerInfo,
+        NetworkingMessage,
+    };
     use tokio::task::yield_now;
 
     use crate::{start, NetworkingAction};
@@ -198,6 +203,38 @@ mod tests {
         assert_eq!(client_lobby.state().games, client_lobby2.state().games);
 
         assert_ne!(host_lobby.state().user, client_lobby.state().user);
+
+        // test change player info
+
+        host_lobby.update_player_data(|data| data.name = "Host Update".to_string());
+        host_lobby.create_game();
+        host_lobby.create_game();
+
+        std::thread::sleep(Duration::from_millis(1));
+
+        assert_eq!(client_lobby.state().host().name, "Host Update".to_string());
+        assert_eq!(client_lobby2.state().games().len(), 1);
+
+        assert_eq!(host_lobby.poll(), Some(LobbyMessage::CreateGame(Ok(0))));
+        assert_eq!(
+            host_lobby.poll(),
+            Some(LobbyMessage::CreateGame(Err(InGame)))
+        );
+
+        assert_eq!(
+            host_lobby.state().player_list,
+            client_lobby.state().player_list
+        );
+        assert_eq!(
+            host_lobby.state().player_list,
+            client_lobby2.state().player_list
+        );
+        assert_eq!(
+            client_lobby.state().player_list,
+            client_lobby2.state().player_list
+        );
+
+        // test disconnect
 
         client.shutdown.close();
 

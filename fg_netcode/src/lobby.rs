@@ -1,6 +1,7 @@
 pub mod lobby_state;
 
 use crate::{game::Game, player_info::PlayerInfo, player_list::Player};
+use crossbeam_channel::TryRecvError;
 use fg_datastructures::player_data::PlayerData;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, watch};
@@ -29,27 +30,39 @@ impl GameInfo {
 #[derive(Debug)]
 pub struct Lobby {
     state: watch::Receiver<LobbyState>,
-    message: async_channel::Receiver<LobbyMessage>,
+    message: crossbeam_channel::Receiver<LobbyMessage>,
     action: mpsc::Sender<LobbyAction>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidGame;
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum LobbyAction {
     CreateGame,
-    JoinGame(Game),
-    UpdatePlayerInfo(Box<dyn FnOnce(&mut PlayerInfo) + Send + Sync>),
+    JoinGame(usize),
+    UpdatePlayerInfo(PlayerInfo),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum JoinGameError {
+    InGame,
+    InvalidGame,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InGame;
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum LobbyMessage {
-    Empty,
+    CreateGame(Result<usize, InGame>),
+    JoinGame(Result<usize, JoinGameError>),
 }
 
 impl Lobby {
     pub fn new(
         state: watch::Receiver<LobbyState>,
-        message: async_channel::Receiver<LobbyMessage>,
+        message: crossbeam_channel::Receiver<LobbyMessage>,
         action: mpsc::Sender<LobbyAction>,
     ) -> Self {
         Self {
@@ -63,26 +76,26 @@ impl Lobby {
         self.state.borrow()
     }
 
-    pub fn create_game(&mut self) {
-        // let mut temp = (*self.state.borrow()).clone();
-        // temp.games.push(GameInfo {
-        //     player_list: vec![temp.user, temp.user, temp.user],
-        //     ready: [false, false].into(),
-        // });
-
-        // self.tx.send(temp).unwrap();
+    pub fn create_game(&self) {
+        self.action.blocking_send(LobbyAction::CreateGame).unwrap();
     }
     pub fn join_game(&mut self, _idx: usize) -> Result<(), InvalidGame> {
         Err(InvalidGame)
     }
 
-    pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&mut self, _update: F) {
-        // let mut temp = (*self.state.borrow()).clone();
-        // update(&mut temp.player_list[temp.user]);
-        // self.tx.send(temp).unwrap();
+    pub fn update_player_data<F: FnOnce(&mut PlayerInfo)>(&self, update: F) {
+        let mut temp = self.state.borrow().user().clone();
+        update(&mut temp);
+        self.action
+            .blocking_send(LobbyAction::UpdatePlayerInfo(temp))
+            .unwrap();
     }
 
-    pub fn poll(&mut self) -> Option<LobbyAction> {
-        None
+    pub fn poll(&self) -> Option<LobbyMessage> {
+        match self.message.try_recv() {
+            Ok(value) => Some(value),
+            Err(TryRecvError::Disconnected) => panic!("Backing network was disconnected."),
+            Err(TryRecvError::Empty) => None,
+        }
     }
 }

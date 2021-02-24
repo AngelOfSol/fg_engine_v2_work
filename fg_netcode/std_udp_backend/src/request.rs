@@ -3,6 +3,8 @@ use quinn::{ConnectError, ConnectionError, ReadError, ReadToEndError, WriteError
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
+use crate::util::{RequestRecvError, RequestSendError};
+
 #[derive(Serialize, Deserialize)]
 pub(crate) struct JoinRequest {
     pub(crate) target: SocketAddr,
@@ -25,6 +27,18 @@ pub enum HostPacket {
 
 #[derive(Debug)]
 pub struct Disconnected;
+
+impl From<RequestRecvError> for Disconnected {
+    fn from(_: RequestRecvError) -> Self {
+        Self
+    }
+}
+
+impl From<RequestSendError> for Disconnected {
+    fn from(_: RequestSendError) -> Self {
+        Self
+    }
+}
 
 impl From<ConnectionError> for Disconnected {
     fn from(_: ConnectionError) -> Self {

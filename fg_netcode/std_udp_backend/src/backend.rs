@@ -6,6 +6,7 @@ use crate::{
     connection::{handle_incoming, ConnectionType},
     lobby_state,
     request::{Disconnected, JoinRequest, JoinResponse},
+    util::{self},
     NetworkingAction, QuinnHandle,
 };
 use fg_netcode::{
@@ -87,8 +88,8 @@ impl NetworkBackend {
     ) -> Option<LobbyBackend> {
         match action {
             NetworkingAction::Host(info) => {
-                let (task, lsi) = lobby_state::host(info);
-                let (lobby_interface, backend) = LobbyBackend::new(task, lsi, vec![]);
+                let (_, lsi) = lobby_state::host(info);
+                let (lobby_interface, backend) = LobbyBackend::new(lsi);
 
                 self.messages
                     .send(NetworkingMessage::Host(Ok(lobby_interface)))
@@ -126,31 +127,29 @@ impl NetworkBackend {
             .unwrap();
         let remote_addr = conn.connection.remote_address();
 
-        let (mut join_request, join_response) = conn.connection.open_bi().await?;
-        join_request
-            .write_all(
-                &bincode::serialize(&JoinRequest {
-                    target: remote_addr,
-                    info,
-                })
-                .unwrap(),
-            )
-            .await?;
-        join_request.finish().await?;
+        let (send, recv) = conn.connection.open_bi().await?;
 
-        let response = join_response.read_to_end(1000).await?;
-        let _ = bincode::deserialize::<JoinResponse>(&response).map_err(|_| Disconnected)?;
+        util::write_to(
+            &JoinRequest {
+                target: remote_addr,
+                info,
+            },
+            send,
+        )
+        .await?;
+
+        let _response = util::read_from::<JoinResponse>(1000, recv).await?;
 
         let lobby_stream = conn.uni_streams.next().await.ok_or(Disconnected)??;
-        let lobby_data = lobby_stream.read_to_end(1000).await?;
-        let lobby_data =
-            bincode::deserialize::<LobbyState>(&lobby_data).map_err(|_| Disconnected)?;
+
+        let lobby_data = util::read_from::<LobbyState>(1000, lobby_stream).await?;
+
         let peer_id = lobby_data.host_id();
 
-        let (lsi_task, lsi) = lobby_state::join(lobby_data);
+        let (_, lsi) = lobby_state::join(lobby_data);
 
-        let conn_task = handle_incoming(conn, peer_id, lsi.clone(), ConnectionType::PeerToHost);
+        handle_incoming(conn, peer_id, lsi.clone(), ConnectionType::PeerToHost);
 
-        Ok(LobbyBackend::new(lsi_task, lsi, vec![conn_task]))
+        Ok(LobbyBackend::new(lsi))
     }
 }

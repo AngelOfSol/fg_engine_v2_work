@@ -2,7 +2,7 @@ use crate::{
     connection::{handle_incoming, ConnectionType},
     lobby_state::{LobbyStateAction, LobbyStateInterface},
     request::{Disconnected, JoinRequest, JoinResponse},
-    QuinnHandle,
+    util, QuinnHandle,
 };
 use fg_netcode::{
     lobby::{lobby_state::LobbyState, Lobby, LobbyAction, LobbyMessage},
@@ -10,28 +10,21 @@ use fg_netcode::{
 };
 use futures_util::StreamExt;
 use quinn::Connecting;
-use tokio::{select, sync::mpsc, task::JoinHandle};
+use tokio::{
+    select,
+    sync::{mpsc, oneshot},
+};
 
 pub struct LobbyBackend {
-    pub messages: async_channel::Sender<LobbyMessage>,
+    pub messages: crossbeam_channel::Sender<LobbyMessage>,
     pub connection_message: (mpsc::Sender<()>, mpsc::Receiver<()>),
     pub actions: mpsc::Receiver<LobbyAction>,
     pub lobby_state: LobbyStateInterface,
-    tasks: LobbyTasks,
-}
-
-struct LobbyTasks {
-    pub _lobby_state: JoinHandle<()>,
-    pub connections: Vec<JoinHandle<()>>,
 }
 
 impl LobbyBackend {
-    pub fn new(
-        lobby_state_task: JoinHandle<()>,
-        interface: LobbyStateInterface,
-        connections: Vec<JoinHandle<()>>,
-    ) -> (Lobby, Self) {
-        let (message_tx, message_rx) = async_channel::bounded(4);
+    pub fn new(interface: LobbyStateInterface) -> (Lobby, Self) {
+        let (message_tx, message_rx) = crossbeam_channel::bounded(4);
         let (action_tx, action_rx) = mpsc::channel(4);
 
         let lobby_interface = Lobby::new(interface.state.clone(), message_rx, action_tx);
@@ -43,10 +36,6 @@ impl LobbyBackend {
                 actions: action_rx,
                 connection_message: mpsc::channel(4),
                 lobby_state: interface,
-                tasks: LobbyTasks {
-                    _lobby_state: lobby_state_task,
-                    connections,
-                },
             },
         )
     }
@@ -60,20 +49,16 @@ impl LobbyBackend {
     }
 
     async fn handle_incoming(&mut self, incoming: Connecting) -> Result<(), Disconnected> {
-        // TODO branch on whether self is host
-        // then start connection and add it to the list of tasks
         let mut conn = incoming.await?;
         let remote_addr = conn.connection.remote_address();
         let is_host = self.lobby_state.state.borrow().is_user_host();
         let actions = self.lobby_state.actions.clone();
 
         if is_host {
-            let (mut join_response, join_request) =
+            let (join_response, join_request) =
                 conn.bi_streams.next().await.ok_or(Disconnected)??;
 
-            let request = join_request.read_to_end(1000).await?;
-            let request =
-                bincode::deserialize::<JoinRequest>(&request).map_err(|_| Disconnected)?;
+            let request = util::read_from::<JoinRequest>(1000, join_request).await?;
 
             actions
                 .send(LobbyStateAction::UpdateAddr(request.target))
@@ -81,12 +66,13 @@ impl LobbyBackend {
                 .unwrap();
             self.lobby_state.state.changed().await.unwrap();
 
-            let data = bincode::serialize(&JoinResponse {
-                target: remote_addr,
-            })
-            .unwrap();
-            join_response.write_all(&data).await?;
-            join_response.finish().await.unwrap();
+            util::write_to(
+                &JoinResponse {
+                    target: remote_addr,
+                },
+                join_response,
+            )
+            .await?;
 
             let info = PlayerInfo {
                 addr: remote_addr,
@@ -109,23 +95,16 @@ impl LobbyBackend {
             .ok_or(Disconnected)?;
         let connection_type = ConnectionType::from_peer(peer_id, &lobby_state);
 
-        let mut uni = conn.connection.open_uni().await?;
-        uni.write_all(
-            &bincode::serialize(&LobbyState {
+        util::write_to(
+            &LobbyState {
                 user: peer_id,
                 ..lobby_state
-            })
-            .unwrap(),
+            },
+            conn.connection.open_uni().await?,
         )
         .await?;
-        uni.finish().await?;
 
-        self.tasks.connections.push(handle_incoming(
-            conn,
-            peer_id,
-            self.lobby_state.clone(),
-            connection_type,
-        ));
+        handle_incoming(conn, peer_id, self.lobby_state.clone(), connection_type);
 
         Ok(())
     }
@@ -147,10 +126,45 @@ impl LobbyBackend {
     }
 
     async fn handle_action(&mut self, action: LobbyAction) -> Option<()> {
-        match action {
-            LobbyAction::CreateGame => {}
-            LobbyAction::JoinGame(_) => {}
-            LobbyAction::UpdatePlayerInfo(_) => {}
+        let is_host = self.lobby_state.state.borrow().is_user_host();
+        let user = self.lobby_state.state.borrow().user;
+
+        if is_host {
+            match action {
+                LobbyAction::CreateGame => {
+                    let (send, recv) = oneshot::channel();
+
+                    self.lobby_state
+                        .actions
+                        .send(LobbyStateAction::CreateGame(user, send))
+                        .await
+                        .ok()?;
+
+                    self.messages
+                        .send(LobbyMessage::CreateGame(recv.await.ok()?))
+                        .ok()?;
+                }
+                LobbyAction::JoinGame(game) => {
+                    let (send, recv) = oneshot::channel();
+
+                    self.lobby_state
+                        .actions
+                        .send(LobbyStateAction::JoinGame(game, user, send))
+                        .await
+                        .ok()?;
+
+                    self.messages
+                        .send(LobbyMessage::JoinGame(recv.await.ok()?))
+                        .ok()?;
+                }
+                LobbyAction::UpdatePlayerInfo(info) => {
+                    self.lobby_state
+                        .actions
+                        .send(LobbyStateAction::UpdatePlayer(user, info))
+                        .await
+                        .ok()?;
+                }
+            }
         }
 
         None

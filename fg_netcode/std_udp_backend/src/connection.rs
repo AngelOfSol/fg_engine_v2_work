@@ -1,6 +1,7 @@
 use crate::{
     lobby_state::{LobbyStateAction, LobbyStateInterface},
     request::Disconnected,
+    util,
 };
 use bytes::Bytes;
 use fg_netcode::{lobby::lobby_state::LobbyState, player_list::Player};
@@ -78,11 +79,8 @@ impl BackendConnection {
 
         match self.connection_type {
             ConnectionType::PeerToHost => {
-                let value =
-                    match bincode::deserialize::<LobbyState>(&stream.read_to_end(1000).await?) {
-                        Ok(value) => value,
-                        Err(_) => return Ok(()),
-                    };
+                let value = util::read_from::<LobbyState>(1000, stream).await?;
+
                 self.lsi
                     .actions
                     .send(LobbyStateAction::RawUpdate(value))
@@ -111,11 +109,10 @@ impl BackendConnection {
 
         match self.connection_type {
             ConnectionType::HostToPeer => {
-                let mut send = self.connection.open_uni().await?;
+                let send = self.connection.open_uni().await?;
                 let mut data = self.lsi.state.borrow().clone();
                 data.user = self.peer_id;
-                send.write_all(&bincode::serialize(&data).unwrap()).await?;
-                send.finish().await?;
+                util::write_to(&data, send).await?;
             }
             ConnectionType::PeerToHost | ConnectionType::PeerToPeer => {}
         }
