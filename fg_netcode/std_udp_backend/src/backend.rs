@@ -1,6 +1,6 @@
 mod lobby;
 
-use std::net::SocketAddr;
+use std::{collections::HashMap, net::SocketAddr};
 
 use crate::{
     connection::{handle_incoming, ConnectionType},
@@ -50,7 +50,6 @@ impl State {
 pub struct NetworkBackend {
     pub messages: crossbeam_channel::Sender<NetworkingMessage>,
     pub actions: mpsc::Receiver<NetworkingAction>,
-    pub handle: tokio::runtime::Handle,
 }
 
 impl NetworkBackend {
@@ -88,8 +87,8 @@ impl NetworkBackend {
     ) -> Option<LobbyBackend> {
         match action {
             NetworkingAction::Host(info) => {
-                let (_, lsi) = lobby_state::host(info);
-                let (lobby_interface, backend) = LobbyBackend::new(lsi);
+                let result = lobby_state::host(info);
+                let (lobby_interface, backend) = LobbyBackend::new(result);
 
                 self.messages
                     .send(NetworkingMessage::Host(Ok(lobby_interface)))
@@ -119,12 +118,10 @@ impl NetworkBackend {
         info: PlayerInfo,
         quinn: &mut QuinnHandle,
     ) -> Result<(Lobby, LobbyBackend), Disconnected> {
-        let mut conn = quinn
-            .endpoint
-            .connect(&addr, "lobby_server")
-            .unwrap()
-            .await
-            .unwrap();
+        println!("pre-conn client for {}", info.name);
+        let conn = quinn.endpoint.connect(&addr, "lobby_server")?.await?;
+        println!("post-conn client for {}", info.name);
+
         let remote_addr = conn.connection.remote_address();
 
         let (send, recv) = conn.connection.open_bi().await?;
@@ -138,18 +135,26 @@ impl NetworkBackend {
         )
         .await?;
 
-        let _response = util::read_from::<JoinResponse>(1000, recv).await?;
+        let (this_addr, mut lobby_state) =
+            util::read_from::<(SocketAddr, LobbyState)>(1000, recv).await?;
 
-        let lobby_stream = conn.uni_streams.next().await.ok_or(Disconnected)??;
+        let peer_id = lobby_state.host_id();
 
-        let lobby_data = util::read_from::<LobbyState>(1000, lobby_stream).await?;
+        lobby_state.user = lobby_state
+            .player_list
+            .pairs()
+            .find(|(_, info)| info.addr == this_addr)
+            .map(|(id, _)| *id)
+            .ok_or(Disconnected)?;
 
-        let peer_id = lobby_data.host_id();
+        let result = lobby_state::join(lobby_state);
 
-        let (_, lsi) = lobby_state::join(lobby_data);
+        let (lobby, mut lobby_backend) = LobbyBackend::new(result);
 
-        handle_incoming(conn, peer_id, lsi.clone(), ConnectionType::PeerToHost);
+        lobby_backend.attach_peer(conn, peer_id, ConnectionType::PeerToHost);
 
-        Ok(LobbyBackend::new(lsi))
+        // TODO, attempt to connect p2p to all the other connections
+
+        Ok((lobby, lobby_backend))
     }
 }

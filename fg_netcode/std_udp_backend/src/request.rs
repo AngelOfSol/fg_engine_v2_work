@@ -1,4 +1,7 @@
-use fg_netcode::{lobby::lobby_state::LobbyState, player_info::PlayerInfo};
+use fg_netcode::{
+    lobby::{lobby_state::LobbyState, LobbyAction},
+    player_info::PlayerInfo,
+};
 use quinn::{ConnectError, ConnectionError, ReadError, ReadToEndError, WriteError};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -17,7 +20,7 @@ pub(crate) struct JoinResponse {
 
 #[derive(Serialize, Deserialize)]
 pub enum ClientPacket {
-    CreateGame,
+    LobbyAction(LobbyAction),
 }
 
 #[derive(Serialize, Deserialize)]

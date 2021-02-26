@@ -37,7 +37,7 @@ pub struct Lobby {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidGame;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LobbyAction {
     CreateGame,
     JoinGame(usize),

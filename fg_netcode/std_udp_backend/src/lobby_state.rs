@@ -1,108 +1,117 @@
 use std::net::SocketAddr;
 
 use fg_netcode::{
-    lobby::{lobby_state::LobbyState, GameInfo, InGame, JoinGameError},
+    lobby::{lobby_state::LobbyState, GameInfo, InGame, JoinGameError, LobbyMessage},
     player_info::PlayerInfo,
     player_list::Player,
 };
+use serde::{Deserialize, Serialize};
 use tokio::{
-    sync::{mpsc, oneshot, watch},
+    select,
+    sync::{broadcast, mpsc, oneshot, watch},
     task::JoinHandle,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LobbyStateAction {
     NewPlayer(PlayerInfo),
     UpdatePlayer(Player, PlayerInfo),
     Disconnect(Player),
-    RawUpdate(LobbyState),
-    UpdateAddr(SocketAddr),
-    CreateGame(Player, oneshot::Sender<Result<usize, InGame>>),
-    JoinGame(usize, Player, oneshot::Sender<Result<usize, JoinGameError>>),
+    CreateGame(Player),
+    JoinGame(Player, usize),
+    UpdateAddr(Player, SocketAddr),
+    #[serde(skip)]
     Kill,
 }
 
-#[derive(Clone)]
-pub struct LobbyStateInterface {
+pub struct LobbyTaskResult {
+    pub task: JoinHandle<()>,
     pub state: watch::Receiver<LobbyState>,
     pub actions: mpsc::Sender<LobbyStateAction>,
+    pub recv: crossbeam_channel::Receiver<LobbyMessage>,
 }
 
-pub fn host(info: PlayerInfo) -> (JoinHandle<()>, LobbyStateInterface) {
+pub fn host(info: PlayerInfo) -> LobbyTaskResult {
     join(LobbyState::new(info))
 }
 
-pub fn join(lobby_state: LobbyState) -> (JoinHandle<()>, LobbyStateInterface) {
+pub fn join(lobby_state: LobbyState) -> LobbyTaskResult {
     let user = lobby_state.user;
 
     let (watch_tx, watch_rx) = watch::channel(lobby_state);
 
     let (actions_tx, actions_rx) = mpsc::channel(4);
 
-    let task = tokio::spawn(lobby_state_loop(user, watch_tx, actions_rx));
+    let (messages_tx, messages_rx) = crossbeam_channel::bounded(4);
 
-    (
+    let lobby_actor = LobbyActor {
+        state: watch_tx,
+        incoming: actions_rx,
+        messages: messages_tx,
+    };
+
+    let task = tokio::spawn(lobby_state_loop(user, lobby_actor));
+
+    LobbyTaskResult {
         task,
-        LobbyStateInterface {
-            state: watch_rx,
-            actions: actions_tx,
-        },
-    )
+        recv: messages_rx,
+        state: watch_rx,
+        actions: actions_tx,
+    }
 }
 
-async fn lobby_state_loop(
-    user: Player,
-    tx: watch::Sender<LobbyState>,
-    mut actions: mpsc::Receiver<LobbyStateAction>,
-) {
-    let mut lobby_state = tx.borrow().clone();
-    while let Some(action) = actions.recv().await {
+struct LobbyActor {
+    state: watch::Sender<LobbyState>,
+    incoming: mpsc::Receiver<LobbyStateAction>,
+    messages: crossbeam_channel::Sender<LobbyMessage>,
+}
+
+async fn lobby_state_loop(user: Player, mut actor: LobbyActor) {
+    let mut lobby_state = actor.state.borrow().clone();
+
+    while let Some(action) = actor.incoming.recv().await {
+        if lobby_state.user != lobby_state.host_id() {
+            dbg!("handling incoming action for user:");
+            dbg!(user);
+            dbg!(&action);
+        }
         match action {
+            LobbyStateAction::Kill => break,
+            LobbyStateAction::UpdateAddr(player, addr) => {
+                lobby_state.player_list.get_mut(player).unwrap().addr = addr;
+            }
             LobbyStateAction::NewPlayer(info) => {
-                let _id = lobby_state.player_list.insert(info);
+                lobby_state.player_list.insert(info);
             }
             LobbyStateAction::Disconnect(id) => {
                 if id == user {
                     break;
                 }
-                let _old_player = lobby_state.remove(&id);
+                lobby_state.remove(&id);
             }
-            LobbyStateAction::RawUpdate(new_lobby_state) => {
-                assert_eq!(lobby_state.user, user);
-                lobby_state = new_lobby_state;
-            }
-            LobbyStateAction::Kill => break,
-            LobbyStateAction::UpdateAddr(addr) => {
-                lobby_state.player_list.get_mut(user).unwrap().addr = addr;
-            }
-            LobbyStateAction::CreateGame(player, result) => {
+            LobbyStateAction::CreateGame(player) => {
                 if lobby_state
                     .games
                     .iter()
                     .any(|game| game.player_list.iter().any(|item| item == &player))
                 {
-                    let _ = result.send(Err(InGame));
                 } else {
                     lobby_state.games.push(GameInfo {
                         player_list: vec![player],
                         ready: [false, false].into(),
                     });
-
-                    let _ = result.send(Ok(lobby_state.games.len() - 1));
                 }
             }
-            LobbyStateAction::JoinGame(game, player, result) => {
+            LobbyStateAction::JoinGame(player, game) => {
                 if lobby_state
                     .games
                     .iter()
                     .any(|game| game.player_list.iter().any(|item| item == &player))
                 {
-                    let _ = result.send(Err(JoinGameError::InGame));
                 } else if game >= lobby_state.games.len() {
-                    let _ = result.send(Err(JoinGameError::InvalidGame));
+                    todo!()
                 } else {
                     lobby_state.games[game].player_list.push(player);
-                    let _ = result.send(Ok(game));
                 }
             }
             LobbyStateAction::UpdatePlayer(player, info) => {
@@ -111,9 +120,13 @@ async fn lobby_state_loop(
                 }
             }
         }
-        match tx.send(lobby_state.clone()) {
-            Ok(_) => {}
-            Err(_) => break,
+        match actor.state.send(lobby_state.clone()) {
+            Ok(_) => {
+                if lobby_state.user != lobby_state.host_id() {
+                    dbg!("action handled");
+                }
+            }
+            Err(inside) => panic!(inside),
         }
     }
 }

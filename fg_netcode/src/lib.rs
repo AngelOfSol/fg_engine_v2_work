@@ -32,33 +32,8 @@ impl Networking {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn request_host(&mut self, _player: PlayerInfo) {
-        // let tx = self.tx.clone();
-        // thread::spawn(move || {
-        //     thread::sleep(Duration::from_secs(2));
-        //     tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-        //         player_list: vec![player],
-        //         user: 0,
-        //         games: vec![],
-        //     }))))
-        //     .unwrap();
-        // });
-    }
-    pub fn request_join(&mut self, _id: SocketAddr, _player: PlayerInfo) {
-        // let tx = self.tx.clone();
-        // thread::spawn(move || {
-        //     thread::sleep(Duration::from_secs(2));
-        //     tx.send(NetworkingMessage::Host(Ok(Lobby::new(LobbyState {
-        //         player_list: vec![PlayerInfo::default(), player],
-        //         user: 1,
-        //         games: vec![GameInfo {
-        //             player_list: vec![0],
-        //             ready: [false, false].into(),
-        //         }],
-        //     }))))
-        //     .unwrap();
-        // });
-    }
+    pub fn request_host(&mut self, _player: PlayerInfo) {}
+    pub fn request_join(&mut self, _id: SocketAddr, _player: PlayerInfo) {}
 
     pub fn poll(&mut self) -> Option<NetworkingMessage> {
         match self.rx.try_recv() {

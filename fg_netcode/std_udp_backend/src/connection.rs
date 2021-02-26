@@ -1,38 +1,63 @@
 use crate::{
-    lobby_state::{LobbyStateAction, LobbyStateInterface},
-    request::Disconnected,
+    lobby_state::LobbyStateAction,
+    request::{ClientPacket, Disconnected},
     util,
 };
 use bytes::Bytes;
-use fg_netcode::{lobby::lobby_state::LobbyState, player_list::Player};
+use fg_netcode::{
+    lobby::{lobby_state::LobbyState, LobbyAction},
+    player_list::Player,
+};
 use futures_util::StreamExt;
 use quinn::{
     Connection, ConnectionError, Datagrams, IncomingBiStreams, IncomingUniStreams, NewConnection,
     RecvStream, SendStream,
 };
-use tokio::{select, task::JoinHandle};
+use tokio::{
+    select,
+    sync::{broadcast, mpsc, watch},
+    task::JoinHandle,
+};
+
+pub struct Peer {
+    pub task: JoinHandle<()>,
+}
 
 pub fn handle_incoming(
     conn: NewConnection,
     peer_id: Player,
-    lsi: LobbyStateInterface,
+    lobby_state: watch::Receiver<LobbyState>,
     connection_type: ConnectionType,
-) -> JoinHandle<()> {
-    let back_conn = BackendConnection::new(conn, peer_id, lsi, connection_type);
-
-    tokio::spawn(async move {
-        let _ = main_loop(back_conn).await;
-    })
+    incoming: mpsc::Sender<LobbyStateAction>,
+    outgoing: broadcast::Receiver<LobbyStateAction>,
+) -> Peer {
+    let back_conn = BackendConnection::new(
+        conn,
+        peer_id,
+        lobby_state,
+        incoming,
+        outgoing,
+        connection_type,
+    );
+    Peer {
+        task: tokio::spawn(async move {
+            let _ = main_loop(back_conn).await;
+        }),
+    }
 }
 
 pub struct BackendConnection {
-    pub connection: Connection,
-    pub uni_streams: IncomingUniStreams,
-    pub bi_streams: IncomingBiStreams,
-    pub datagrams: Datagrams,
+    connection: Connection,
+    uni_streams: IncomingUniStreams,
+    bi_streams: IncomingBiStreams,
+    datagrams: Datagrams,
 
-    pub lsi: LobbyStateInterface,
-    pub peer_id: Player,
+    incoming: mpsc::Sender<LobbyStateAction>,
+    outgoing: broadcast::Receiver<LobbyStateAction>,
+
+    lobby_state: watch::Receiver<LobbyState>,
+
+    peer_id: Player,
     connection_type: ConnectionType,
 }
 
@@ -52,7 +77,9 @@ impl BackendConnection {
     fn new(
         conn: NewConnection,
         peer_id: Player,
-        lsi: LobbyStateInterface,
+        lobby_state: watch::Receiver<LobbyState>,
+        incoming: mpsc::Sender<LobbyStateAction>,
+        outgoing: broadcast::Receiver<LobbyStateAction>,
         connection_type: ConnectionType,
     ) -> Self {
         Self {
@@ -61,13 +88,15 @@ impl BackendConnection {
             bi_streams: conn.bi_streams,
             datagrams: conn.datagrams,
             peer_id,
-            lsi,
+            incoming,
+            outgoing,
+            lobby_state,
             connection_type,
         }
     }
 
     fn update_connection_type(&mut self) {
-        let lobby_state = self.lsi.state.borrow();
+        let lobby_state = self.lobby_state.borrow();
         self.connection_type = ConnectionType::from_peer(self.peer_id, &lobby_state);
     }
 
@@ -78,16 +107,11 @@ impl BackendConnection {
         let stream = stream.ok_or(Disconnected)??;
 
         match self.connection_type {
-            ConnectionType::PeerToHost => {
-                let value = util::read_from::<LobbyState>(1000, stream).await?;
-
-                self.lsi
-                    .actions
-                    .send(LobbyStateAction::RawUpdate(value))
-                    .await
-                    .unwrap()
+            ConnectionType::HostToPeer | ConnectionType::PeerToHost => {
+                let value = util::read_from::<LobbyStateAction>(1000, stream).await?;
+                self.incoming.send(value).await.map_err(|_| Disconnected)?;
             }
-            ConnectionType::HostToPeer | ConnectionType::PeerToPeer => {}
+            ConnectionType::PeerToPeer => {}
         }
 
         Ok(())
@@ -95,7 +119,7 @@ impl BackendConnection {
 
     async fn handle_bi(
         &mut self,
-        (_send, _recv): (SendStream, RecvStream),
+        (send, recv): (SendStream, RecvStream),
     ) -> Result<(), Disconnected> {
         Ok(())
     }
@@ -104,23 +128,22 @@ impl BackendConnection {
         Ok(())
     }
 
-    async fn lsi_changed(&mut self) -> Result<(), Disconnected> {
-        self.update_connection_type();
-
+    async fn handle_outgoing(&mut self, outgoing: LobbyStateAction) -> Result<(), Disconnected> {
         match self.connection_type {
-            ConnectionType::HostToPeer => {
+            ConnectionType::PeerToHost | ConnectionType::HostToPeer => {
                 let send = self.connection.open_uni().await?;
-                let mut data = self.lsi.state.borrow().clone();
-                data.user = self.peer_id;
-                util::write_to(&data, send).await?;
+                util::write_to(&outgoing, send).await?;
             }
-            ConnectionType::PeerToHost | ConnectionType::PeerToPeer => {}
+            ConnectionType::PeerToPeer => {
+                // TODO warn
+            }
         }
 
         Ok(())
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectionType {
     HostToPeer,
     PeerToHost,
@@ -130,10 +153,14 @@ pub enum ConnectionType {
 async fn main_loop(mut connection: BackendConnection) -> Result<(), Disconnected> {
     loop {
         let status = select! {
-            Ok(()) = connection.lsi.state.changed() => connection.lsi_changed().await,
+            Ok(()) = connection.lobby_state.changed() => {
+                connection.update_connection_type();
+                Ok(())
+            },
+            Ok(outgoing) = connection.outgoing.recv() => connection.handle_outgoing(outgoing).await,
             incoming = connection.uni_streams.next() => connection.handle_uni(incoming).await,
-            Some(Ok(incoming)) = connection.bi_streams.next() => connection.handle_bi(incoming).await,
-            Some(Ok(incoming)) = connection.datagrams.next() => connection.handle_datagram(incoming).await,
+            // Some(Ok(incoming)) = connection.bi_streams.next() => connection.handle_bi(incoming).await,
+            // Some(Ok(incoming)) = connection.datagrams.next() => connection.handle_datagram(incoming).await,
             else => Err(Disconnected),
         };
         match status {
@@ -142,13 +169,12 @@ async fn main_loop(mut connection: BackendConnection) -> Result<(), Disconnected
                 match connection.connection_type {
                     ConnectionType::HostToPeer => {
                         let _ = connection
-                            .lsi
-                            .actions
+                            .incoming
                             .send(LobbyStateAction::Disconnect(connection.peer_id))
                             .await;
                     }
                     ConnectionType::PeerToHost => {
-                        let _ = connection.lsi.actions.send(LobbyStateAction::Kill).await;
+                        let _ = connection.incoming.send(LobbyStateAction::Kill).await;
                     }
                     ConnectionType::PeerToPeer => {}
                 }
